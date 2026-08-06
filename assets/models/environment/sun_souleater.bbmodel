@@ -1,0 +1,3368 @@
+{
+  "meta": {
+    "format_version": "4.0",
+    "creation_time": 1783219384,
+    "model_identifier": "",
+    "model_format": "modded_entity"
+  },
+  "name": "Sol de Soul Eater",
+  "geometry_name": "Sol de Soul Eater",
+  "visible_box": [
+    16,
+    16,
+    16
+  ],
+  "resolution": {
+    "width": 16,
+    "height": 12
+  },
+  "elements": [
+    {
+      "name": "corpo_sol",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        4,
+        4,
+        5
+      ],
+      "to": [
+        12,
+        12,
+        11
+      ],
+      "autouv": 0,
+      "color": 3,
+      "color_hex": "#f57c00",
+      "origin": [
+        8,
+        8,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "sun_core"
+    },
+    {
+      "name": "rosto_frontal",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        4.5,
+        4.5,
+        11
+      ],
+      "to": [
+        11.5,
+        11.5,
+        11.5
+      ],
+      "autouv": 0,
+      "color": 2,
+      "color_hex": "#ffa726",
+      "origin": [
+        8,
+        8,
+        11.25
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4.25,
+            0.25,
+            7.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            4.25,
+            0.25,
+            7.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            4.25,
+            0.25,
+            7.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            4.25,
+            0.25,
+            7.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            4.25,
+            0.25,
+            7.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            4.25,
+            0.25,
+            7.75,
+            3.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "sun_face_front"
+    },
+    {
+      "name": "nariz_base",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        7,
+        7.5,
+        11.5
+      ],
+      "to": [
+        9,
+        9.5,
+        13.5
+      ],
+      "autouv": 0,
+      "color": 3,
+      "color_hex": "#e65100",
+      "origin": [
+        8,
+        8.5,
+        12.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "nose_base"
+    },
+    {
+      "name": "nariz_meio",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        7.2,
+        8,
+        13.5
+      ],
+      "to": [
+        8.8,
+        9.6,
+        15.5
+      ],
+      "autouv": 0,
+      "color": 4,
+      "color_hex": "#d84315",
+      "origin": [
+        8,
+        8.8,
+        14.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "nose_mid"
+    },
+    {
+      "name": "nariz_ponta",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        7.5,
+        8.5,
+        15.5
+      ],
+      "to": [
+        8.5,
+        9.5,
+        17.5
+      ],
+      "autouv": 0,
+      "color": 4,
+      "color_hex": "#bf360c",
+      "origin": [
+        8,
+        9,
+        16.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            4.25,
+            3.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            0.25,
+            4.25,
+            3.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            0.25,
+            4.25,
+            3.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            0.25,
+            4.25,
+            3.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            0.25,
+            4.25,
+            3.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            0.25,
+            4.25,
+            3.75,
+            7.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "nose_tip"
+    },
+    {
+      "name": "boca_fundo",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        5,
+        4.5,
+        11.6
+      ],
+      "to": [
+        11,
+        7.5,
+        11.7
+      ],
+      "autouv": 0,
+      "color": 1,
+      "color_hex": "#1a1a1a",
+      "origin": [
+        8,
+        6,
+        11.649999999999999
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4.25,
+            4.25,
+            7.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            4.25,
+            4.25,
+            7.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            4.25,
+            4.25,
+            7.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            4.25,
+            4.25,
+            7.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            4.25,
+            4.25,
+            7.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            4.25,
+            4.25,
+            7.75,
+            7.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "mouth_background"
+    },
+    {
+      "name": "dentes_superiores",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        5.2,
+        6.2,
+        11.8
+      ],
+      "to": [
+        10.8,
+        7.3,
+        12
+      ],
+      "autouv": 0,
+      "color": 7,
+      "color_hex": "#ffffff",
+      "origin": [
+        8,
+        6.75,
+        11.9
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "teeth_top"
+    },
+    {
+      "name": "dentes_inferiores",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        5.2,
+        4.7,
+        11.8
+      ],
+      "to": [
+        10.8,
+        5.8,
+        12
+      ],
+      "autouv": 0,
+      "color": 7,
+      "color_hex": "#ffffff",
+      "origin": [
+        8,
+        5.25,
+        11.9
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "teeth_bottom"
+    },
+    {
+      "name": "canto_boca_L",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        4.5,
+        6,
+        11.6
+      ],
+      "to": [
+        5.2,
+        7,
+        11.8
+      ],
+      "autouv": 0,
+      "color": 1,
+      "color_hex": "#1a1a1a",
+      "origin": [
+        4.85,
+        6.5,
+        11.7
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4.25,
+            4.25,
+            7.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            4.25,
+            4.25,
+            7.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            4.25,
+            4.25,
+            7.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            4.25,
+            4.25,
+            7.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            4.25,
+            4.25,
+            7.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            4.25,
+            4.25,
+            7.75,
+            7.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "mouth_corner_l"
+    },
+    {
+      "name": "canto_boca_R",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        10.8,
+        6,
+        11.6
+      ],
+      "to": [
+        11.5,
+        7,
+        11.8
+      ],
+      "autouv": 0,
+      "color": 1,
+      "color_hex": "#1a1a1a",
+      "origin": [
+        11.15,
+        6.5,
+        11.7
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4.25,
+            4.25,
+            7.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            4.25,
+            4.25,
+            7.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            4.25,
+            4.25,
+            7.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            4.25,
+            4.25,
+            7.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            4.25,
+            4.25,
+            7.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            4.25,
+            4.25,
+            7.75,
+            7.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "mouth_corner_r"
+    },
+    {
+      "name": "olho_L",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        5,
+        8.5,
+        11.6
+      ],
+      "to": [
+        6.8,
+        9.7,
+        11.8
+      ],
+      "autouv": 0,
+      "color": 1,
+      "color_hex": "#111111",
+      "origin": [
+        5.9,
+        9.1,
+        11.7
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            12.25,
+            4.25,
+            15.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            12.25,
+            4.25,
+            15.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            12.25,
+            4.25,
+            15.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            12.25,
+            4.25,
+            15.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            12.25,
+            4.25,
+            15.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            12.25,
+            4.25,
+            15.75,
+            7.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "eye_l"
+    },
+    {
+      "name": "olho_pupila_L",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        5.8,
+        9,
+        11.8
+      ],
+      "to": [
+        6.2,
+        9.4,
+        11.9
+      ],
+      "autouv": 0,
+      "color": 7,
+      "color_hex": "#ffffff",
+      "origin": [
+        6,
+        9.2,
+        11.850000000000001
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "eye_pupil_l"
+    },
+    {
+      "name": "sobrancelha_L",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        4.8,
+        9.6,
+        11.7
+      ],
+      "to": [
+        7,
+        10.2,
+        12
+      ],
+      "autouv": 0,
+      "color": 3,
+      "color_hex": "#e65100",
+      "origin": [
+        5.9,
+        9.899999999999999,
+        11.85
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "eyebrow_l"
+    },
+    {
+      "name": "olho_R",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        9.2,
+        8.5,
+        11.6
+      ],
+      "to": [
+        11,
+        9.7,
+        11.8
+      ],
+      "autouv": 0,
+      "color": 1,
+      "color_hex": "#111111",
+      "origin": [
+        10.1,
+        9.1,
+        11.7
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            12.25,
+            4.25,
+            15.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            12.25,
+            4.25,
+            15.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            12.25,
+            4.25,
+            15.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            12.25,
+            4.25,
+            15.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            12.25,
+            4.25,
+            15.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            12.25,
+            4.25,
+            15.75,
+            7.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "eye_r"
+    },
+    {
+      "name": "olho_pupila_R",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        9.8,
+        9,
+        11.8
+      ],
+      "to": [
+        10.2,
+        9.4,
+        11.9
+      ],
+      "autouv": 0,
+      "color": 7,
+      "color_hex": "#ffffff",
+      "origin": [
+        10,
+        9.2,
+        11.850000000000001
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            8.25,
+            4.25,
+            11.75,
+            7.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "eye_pupil_r"
+    },
+    {
+      "name": "sobrancelha_R",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        9,
+        9.6,
+        11.7
+      ],
+      "to": [
+        11.2,
+        10.2,
+        12
+      ],
+      "autouv": 0,
+      "color": 3,
+      "color_hex": "#e65100",
+      "origin": [
+        10.1,
+        9.899999999999999,
+        11.85
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "eyebrow_r"
+    },
+    {
+      "name": "raio_topo_1",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        7,
+        12,
+        7
+      ],
+      "to": [
+        9,
+        15,
+        9
+      ],
+      "autouv": 0,
+      "color": 2,
+      "color_hex": "#ffb300",
+      "origin": [
+        8,
+        13.5,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "ray_top_1"
+    },
+    {
+      "name": "raio_topo_2",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        7.5,
+        15,
+        7.5
+      ],
+      "to": [
+        8.5,
+        17,
+        8.5
+      ],
+      "autouv": 0,
+      "color": 2,
+      "color_hex": "#ffe082",
+      "origin": [
+        8,
+        16,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "ray_top_2"
+    },
+    {
+      "name": "raio_baixo_1",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        7,
+        1,
+        7
+      ],
+      "to": [
+        9,
+        4,
+        9
+      ],
+      "autouv": 0,
+      "color": 3,
+      "color_hex": "#ff8f00",
+      "origin": [
+        8,
+        2.5,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            8.25,
+            8.25,
+            11.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            8.25,
+            8.25,
+            11.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            8.25,
+            8.25,
+            11.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            8.25,
+            8.25,
+            11.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            8.25,
+            8.25,
+            11.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            8.25,
+            8.25,
+            11.75,
+            11.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "ray_bottom_1"
+    },
+    {
+      "name": "raio_baixo_2",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        7.5,
+        -1,
+        7.5
+      ],
+      "to": [
+        8.5,
+        1,
+        8.5
+      ],
+      "autouv": 0,
+      "color": 3,
+      "color_hex": "#ff6f00",
+      "origin": [
+        8,
+        0,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            12.25,
+            8.25,
+            15.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            12.25,
+            8.25,
+            15.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            12.25,
+            8.25,
+            15.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            12.25,
+            8.25,
+            15.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            12.25,
+            8.25,
+            15.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            12.25,
+            8.25,
+            15.75,
+            11.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "ray_bottom_2"
+    },
+    {
+      "name": "raio_esquerda_1",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        1,
+        7,
+        7
+      ],
+      "to": [
+        4,
+        9,
+        9
+      ],
+      "autouv": 0,
+      "color": 2,
+      "color_hex": "#ffb300",
+      "origin": [
+        2.5,
+        8,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "ray_left_1"
+    },
+    {
+      "name": "raio_esquerda_2",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        -1,
+        7.5,
+        7.5
+      ],
+      "to": [
+        1,
+        8.5,
+        8.5
+      ],
+      "autouv": 0,
+      "color": 2,
+      "color_hex": "#ffe082",
+      "origin": [
+        0,
+        8,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "ray_left_2"
+    },
+    {
+      "name": "raio_direita_1",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        12,
+        7,
+        7
+      ],
+      "to": [
+        15,
+        9,
+        9
+      ],
+      "autouv": 0,
+      "color": 2,
+      "color_hex": "#ffb300",
+      "origin": [
+        13.5,
+        8,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "ray_right_1"
+    },
+    {
+      "name": "raio_direita_2",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        15,
+        7.5,
+        7.5
+      ],
+      "to": [
+        17,
+        8.5,
+        8.5
+      ],
+      "autouv": 0,
+      "color": 2,
+      "color_hex": "#ffe082",
+      "origin": [
+        16,
+        8,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "ray_right_2"
+    },
+    {
+      "name": "raio_sup_esq_1",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        2,
+        11,
+        7
+      ],
+      "to": [
+        4,
+        13,
+        9
+      ],
+      "autouv": 0,
+      "color": 2,
+      "color_hex": "#ffb300",
+      "origin": [
+        3,
+        12,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "ray_tl_1"
+    },
+    {
+      "name": "raio_sup_esq_2",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        0,
+        13,
+        7.5
+      ],
+      "to": [
+        2,
+        15,
+        8.5
+      ],
+      "autouv": 0,
+      "color": 2,
+      "color_hex": "#ffe082",
+      "origin": [
+        1,
+        14,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "ray_tl_2"
+    },
+    {
+      "name": "raio_sup_dir_1",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        12,
+        11,
+        7
+      ],
+      "to": [
+        14,
+        13,
+        9
+      ],
+      "autouv": 0,
+      "color": 2,
+      "color_hex": "#ffb300",
+      "origin": [
+        13,
+        12,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            0.25,
+            8.25,
+            3.75,
+            11.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "ray_tr_1"
+    },
+    {
+      "name": "raio_sup_dir_2",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        14,
+        13,
+        7.5
+      ],
+      "to": [
+        16,
+        15,
+        8.5
+      ],
+      "autouv": 0,
+      "color": 2,
+      "color_hex": "#ffe082",
+      "origin": [
+        15,
+        14,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            4.25,
+            8.25,
+            7.75,
+            11.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "ray_tr_2"
+    },
+    {
+      "name": "raio_inf_esq_1",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        2,
+        3,
+        7
+      ],
+      "to": [
+        4,
+        5,
+        9
+      ],
+      "autouv": 0,
+      "color": 3,
+      "color_hex": "#ff8f00",
+      "origin": [
+        3,
+        4,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            8.25,
+            8.25,
+            11.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            8.25,
+            8.25,
+            11.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            8.25,
+            8.25,
+            11.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            8.25,
+            8.25,
+            11.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            8.25,
+            8.25,
+            11.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            8.25,
+            8.25,
+            11.75,
+            11.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "ray_bl_1"
+    },
+    {
+      "name": "raio_inf_esq_2",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        0,
+        1,
+        7.5
+      ],
+      "to": [
+        2,
+        3,
+        8.5
+      ],
+      "autouv": 0,
+      "color": 3,
+      "color_hex": "#ff6f00",
+      "origin": [
+        1,
+        2,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            12.25,
+            8.25,
+            15.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            12.25,
+            8.25,
+            15.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            12.25,
+            8.25,
+            15.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            12.25,
+            8.25,
+            15.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            12.25,
+            8.25,
+            15.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            12.25,
+            8.25,
+            15.75,
+            11.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "ray_bl_2"
+    },
+    {
+      "name": "raio_inf_dir_1",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        12,
+        3,
+        7
+      ],
+      "to": [
+        14,
+        5,
+        9
+      ],
+      "autouv": 0,
+      "color": 3,
+      "color_hex": "#ff8f00",
+      "origin": [
+        13,
+        4,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            8.25,
+            8.25,
+            11.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            8.25,
+            8.25,
+            11.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            8.25,
+            8.25,
+            11.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            8.25,
+            8.25,
+            11.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            8.25,
+            8.25,
+            11.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            8.25,
+            8.25,
+            11.75,
+            11.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "ray_br_1"
+    },
+    {
+      "name": "raio_inf_dir_2",
+      "box_uv": false,
+      "rescale": false,
+      "locked": false,
+      "from": [
+        14,
+        1,
+        7.5
+      ],
+      "to": [
+        16,
+        3,
+        8.5
+      ],
+      "autouv": 0,
+      "color": 3,
+      "color_hex": "#ff6f00",
+      "origin": [
+        15,
+        2,
+        8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            12.25,
+            8.25,
+            15.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            12.25,
+            8.25,
+            15.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            12.25,
+            8.25,
+            15.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            12.25,
+            8.25,
+            15.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            12.25,
+            8.25,
+            15.75,
+            11.75
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            12.25,
+            8.25,
+            15.75,
+            11.75
+          ],
+          "texture": 0
+        }
+      },
+      "uuid": "ray_br_2"
+    }
+  ],
+  "outliner": [
+    "sun_core",
+    "sun_face_front",
+    "nose_base",
+    "nose_mid",
+    "nose_tip",
+    "mouth_background",
+    "teeth_top",
+    "teeth_bottom",
+    "mouth_corner_l",
+    "mouth_corner_r",
+    "eye_l",
+    "eye_pupil_l",
+    "eyebrow_l",
+    "eye_r",
+    "eye_pupil_r",
+    "eyebrow_r",
+    "ray_top_1",
+    "ray_top_2",
+    "ray_bottom_1",
+    "ray_bottom_2",
+    "ray_left_1",
+    "ray_left_2",
+    "ray_right_1",
+    "ray_right_2",
+    "ray_tl_1",
+    "ray_tl_2",
+    "ray_tr_1",
+    "ray_tr_2",
+    "ray_bl_1",
+    "ray_bl_2",
+    "ray_br_1",
+    "ray_br_2"
+  ],
+  "textures": [
+    {
+      "path": "",
+      "name": "sol_de_soul_eater.png",
+      "folder": "",
+      "namespace": "",
+      "id": "0",
+      "width": 16,
+      "height": 12,
+      "uv_width": 16,
+      "uv_height": 12,
+      "particle": false,
+      "layers_enabled": false,
+      "use_as_default": false,
+      "render_mode": "default",
+      "visible": true,
+      "internal": true,
+      "saved": true,
+      "uuid": "25183ac8-9281-48f8-89c3-2f5fa752d8e7",
+      "relative_path": "",
+      "source": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAMCAYAAABr5z2BAAAAa0lEQVR4AdzRoQ2AQBQD0HIaiyB4dsCRMAELoPFY2IEtcAzAAAgEmgVAgjkcSbH1Zy73k2d/0ta8Pag45VRXDaqjSqgMHM+DB9sSQ2WdhUpnQhX7B+VBBMcRYMrBQp1rC4UxgrqbByqADn4AAAD//95Vb7YAAAAGSURBVAMANHRcRYprY1MAAAAASUVORK5CYII="
+    }
+  ],
+  "animations": [
+    {
+      "uuid": "c740f058-fa30-4738-b02f-0f5d0376988c",
+      "name": "sol_vivo_idle",
+      "loop": "loop",
+      "length": 2,
+      "snapping": 24,
+      "anim_time_update": "",
+      "bones": {
+        "corpo_sol": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              -1,
+              0,
+              -2
+            ],
+            "2": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              1,
+              0,
+              2
+            ],
+            "1.5": [
+              0.5,
+              0,
+              1
+            ]
+          },
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              0,
+              -0.2,
+              0
+            ],
+            "2": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              0,
+              0.4,
+              0
+            ],
+            "1.5": [
+              0,
+              0.2,
+              0
+            ]
+          }
+        },
+        "olho_pupila_L": {
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "2": [
+              0,
+              0,
+              0
+            ],
+            "0.4": [
+              -0.3,
+              0.1,
+              0
+            ],
+            "0.8": [
+              0.2,
+              -0.1,
+              0
+            ],
+            "1.2": [
+              0,
+              0.2,
+              0
+            ],
+            "1.6": [
+              -0.1,
+              0,
+              0
+            ]
+          }
+        },
+        "olho_pupila_R": {
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "2": [
+              0,
+              0,
+              0
+            ],
+            "0.4": [
+              -0.3,
+              0.1,
+              0
+            ],
+            "0.8": [
+              0.2,
+              -0.1,
+              0
+            ],
+            "1.2": [
+              0,
+              0.2,
+              0
+            ],
+            "1.6": [
+              -0.1,
+              0,
+              0
+            ]
+          }
+        },
+        "sobrancelha_L": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              0,
+              0,
+              -4
+            ],
+            "2": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              0,
+              0,
+              8
+            ],
+            "1.5": [
+              0,
+              0,
+              3
+            ]
+          },
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              0,
+              -0.1,
+              0
+            ],
+            "2": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              0,
+              0.2,
+              0
+            ],
+            "1.5": [
+              0,
+              0.1,
+              0
+            ]
+          }
+        },
+        "sobrancelha_R": {
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              0,
+              0,
+              4
+            ],
+            "2": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              0,
+              0,
+              -8
+            ],
+            "1.5": [
+              0,
+              0,
+              -3
+            ]
+          },
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              0,
+              -0.1,
+              0
+            ],
+            "2": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              0,
+              0.2,
+              0
+            ],
+            "1.5": [
+              0,
+              0.1,
+              0
+            ]
+          }
+        },
+        "nariz_ponta": {
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              0,
+              -0.1,
+              -0.05
+            ],
+            "2": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              0,
+              0.15,
+              0.1
+            ],
+            "1.5": [
+              0,
+              0.1,
+              0.05
+            ]
+          }
+        },
+        "dentes_inferiores": {
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              0,
+              0,
+              0
+            ],
+            "2": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              0,
+              -0.3,
+              0
+            ],
+            "1.5": [
+              0,
+              -0.2,
+              0
+            ]
+          }
+        },
+        "raio_topo_2": {
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              0,
+              -0.3,
+              0
+            ],
+            "2": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              0,
+              0.6,
+              0
+            ],
+            "1.5": [
+              0,
+              0.3,
+              0
+            ]
+          }
+        },
+        "raio_baixo_2": {
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              0,
+              0.3,
+              0
+            ],
+            "2": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              0,
+              -0.6,
+              0
+            ],
+            "1.5": [
+              0,
+              -0.3,
+              0
+            ]
+          }
+        },
+        "raio_esquerda_2": {
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              0.3,
+              0,
+              0
+            ],
+            "2": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              -0.6,
+              0,
+              0
+            ],
+            "1.5": [
+              -0.3,
+              0,
+              0
+            ]
+          }
+        },
+        "raio_direita_2": {
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              -0.3,
+              0,
+              0
+            ],
+            "2": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              0.6,
+              0,
+              0
+            ],
+            "1.5": [
+              0.3,
+              0,
+              0
+            ]
+          }
+        },
+        "raio_sup_esq_2": {
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              0.2,
+              -0.2,
+              0
+            ],
+            "2": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              -0.4,
+              0.4,
+              0
+            ],
+            "1.5": [
+              -0.2,
+              0.2,
+              0
+            ]
+          }
+        },
+        "raio_sup_dir_2": {
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              -0.2,
+              -0.2,
+              0
+            ],
+            "2": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              0.4,
+              0.4,
+              0
+            ],
+            "1.5": [
+              0.2,
+              0.2,
+              0
+            ]
+          }
+        },
+        "raio_inf_esq_2": {
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              0.2,
+              0.2,
+              0
+            ],
+            "2": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              -0.4,
+              -0.4,
+              0
+            ],
+            "1.5": [
+              -0.2,
+              -0.2,
+              0
+            ]
+          }
+        },
+        "raio_inf_dir_2": {
+          "position": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "1": [
+              -0.2,
+              0.2,
+              0
+            ],
+            "2": [
+              0,
+              0,
+              0
+            ],
+            "0.5": [
+              0.4,
+              -0.4,
+              0
+            ],
+            "1.5": [
+              0.2,
+              -0.2,
+              0
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

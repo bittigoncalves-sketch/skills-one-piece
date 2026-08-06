@@ -1,0 +1,109 @@
+{
+  "_comentario": "Estilos de luta de One Piece — dados para o protótipo SKILLS ONE PIECE.",
+  "estilos": [
+    {
+      "id": "rokushiki",
+      "nome": "Rokushiki (Seis Poderes)",
+      "categoria": "Corpo-a-corpo",
+      "descricao": "Conjunto de seis técnicas sobre-humanas usadas pela CP9/CP0.",
+      "golpes": ["Soru", "Geppou", "Rankyaku", "Shigan", "Tekkai", "Kami-e", "Rokuougan"],
+      "usuarios": ["Rob Lucci", "Kaku", "Blueno", "Kalifa"]
+    },
+    {
+      "id": "black_leg",
+      "nome": "Perna Negra (Black Leg)",
+      "categoria": "Perna",
+      "descricao": "Estilo de chutes que preserva as mãos do cozinheiro; evolui para o Diable Jambe.",
+      "golpes": ["Collier", "Mouton Shot", "Diable Jambe", "Concasse", "Party Table Kick Course"],
+      "usuarios": ["Sanji", "Zeff"]
+    },
+    {
+      "id": "santoryu",
+      "nome": "Santoryu (Três Espadas)",
+      "categoria": "Espada",
+      "descricao": "Estilo de três espadas, uma em cada mão e uma na boca.",
+      "golpes": ["Oni Giri", "Tora Gari", "Tatsumaki", "Santoryu Ougi: Sanzen Sekai"],
+      "usuarios": ["Roronoa Zoro"]
+    },
+    {
+      "id": "ittoryu_nitoryu",
+      "nome": "Ittoryu / Nitoryu",
+      "categoria": "Espada",
+      "descricao": "Variações de uma e duas espadas do kendo de One Piece.",
+      "golpes": ["Iai", "Shishi Sonson", "Nitoryu Iai: Rashomon"],
+      "usuarios": ["Zoro", "Tashigi", "Kuina"]
+    },
+    {
+      "id": "fishman_karate",
+      "nome": "Kenpo do Homem-Peixe",
+      "categoria": "Homem-Peixe",
+      "descricao": "Karatê que manipula a água, inclusive a do corpo do oponente.",
+      "golpes": ["Buraikan", "Uchimizu", "Yarinami", "Murasame"],
+      "usuarios": ["Jinbe", "Arlong", "Hody Jones"]
+    },
+    {
+      "id": "fishman_jujutsu",
+      "nome": "Jujutsu do Homem-Peixe",
+      "categoria": "Homem-Peixe",
+      "descricao": "Agarrões e projeções que canalizam a força marinha.",
+      "golpes": ["Karakusagawara Seiken", "Onigawara Seiken"],
+      "usuarios": ["Jinbe"]
+    },
+    {
+      "id": "electro",
+      "nome": "Electro",
+      "categoria": "Mink",
+      "descricao": "Descarga elétrica natural da tribo Mink.",
+      "golpes": ["Electro", "Sulong (transformação na lua cheia)"],
+      "usuarios": ["Carrot", "Pedro", "Inuarashi", "Nekomamushi"]
+    },
+    {
+      "id": "ryusoken",
+      "nome": "Ryusoken (Garra do Dragão)",
+      "categoria": "Corpo-a-corpo",
+      "descricao": "Arte marcial cujos golpes imitam as garras de um dragão.",
+      "golpes": ["Ryu no Ibuki", "Hiryu: Kaen"],
+      "usuarios": ["Sabo"]
+    },
+    {
+      "id": "hasshoken",
+      "nome": "Hasshoken (Punho das Oito Colisões)",
+      "categoria": "Corpo-a-corpo",
+      "descricao": "Ondas de choque transmitidas através do alvo por vibração.",
+      "golpes": ["Colisão em cadeia de ondas de choque"],
+      "usuarios": ["Don Chinjao", "Sai", "Boo"]
+    },
+    {
+      "id": "okama_kenpo",
+      "nome": "Okama Kenpo",
+      "categoria": "Corpo-a-corpo",
+      "descricao": "Estilo de balé-luta imprevisível dos Okamas.",
+      "golpes": ["Okama Kenpo: Swan Arabesque", "Winter Nightless City"],
+      "usuarios": ["Bentham (Bon Clay)", "Emporio Ivankov"]
+    },
+    {
+      "id": "life_return",
+      "nome": "Life Return",
+      "categoria": "Corpo-a-corpo",
+      "descricao": "Controle consciente de cada parte do corpo (músculos, cabelo, energia).",
+      "golpes": ["Controle total do corpo", "Kabuki Shinshou"],
+      "usuarios": ["Kumadori", "Kaku"]
+    },
+    {
+      "id": "haki",
+      "nome": "Haki",
+      "categoria": "Haki",
+      "descricao": "Poder espiritual latente em todos; três ramos.",
+      "golpes": ["Busoshoku (Armadura)", "Kenbunshoku (Observação)", "Haoshoku (Conquistador)"],
+      "usuarios": ["Luffy", "Rayleigh", "Shanks", "Kaido"]
+    },
+    {
+      "id": "teste_animacao",
+      "nome": "Teste de Animação",
+      "categoria": "Teste",
+      "descricao": "Estilo especial de combate para teste de animações importadas do Mixamo.",
+      "golpes": ["punching", "mmakick", "groundsmash"],
+      "usuarios": ["Jogador"]
+    }
+  ]
+}

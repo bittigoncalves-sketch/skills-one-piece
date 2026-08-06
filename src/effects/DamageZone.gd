@@ -1,0 +1,56 @@
+class_name DamageZone
+extends Area3D
+# Área de dano móvel: aplica dano + knockback em corpos com take_damage() (menos
+# o próprio caster). Já pronta para inimigos futuros; hoje só não acha alvos.
+
+const DAMAGE_SCALE := 0.12   # foco é knockback, não dano -> dano bem baixo
+
+var damage: float = 0.0
+var knockback: float = 0.0
+var vel: Vector3 = Vector3.ZERO
+var caster: Node = null
+var _hit: Dictionary = {}
+
+# Cria a colisão e a agenda de vida. Chamar logo após add_child.
+func setup(dmg: float, kb: float, velocity: Vector3, life: float, caster_node: Node, radius: float) -> void:
+	damage = dmg
+	knockback = kb
+	vel = velocity
+	caster = caster_node
+
+	var col := CollisionShape3D.new()
+	var shape := SphereShape3D.new()
+	shape.radius = radius
+	col.shape = shape
+	add_child(col)
+
+	body_entered.connect(_on_body)
+	FxUtil.autofree(self, life)
+
+func _physics_process(delta: float) -> void:
+	if vel != Vector3.ZERO:
+		global_position += vel * delta
+
+func _on_body(body: Node3D) -> void:
+	# Autoridade de combate: só o SERVIDOR aplica dano/knockback. Em clientes a zona
+	# é apenas visual/inerte (sem peer = SP -> is_server true -> aplica normalmente).
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	if body == caster or _hit.has(body):
+		return
+	if body.has_method("take_damage"):
+		_hit[body] = true
+		var dir: Vector3 = body.global_position - global_position
+		dir.y = 0.0
+		dir = dir.normalized() if dir.length() > 0.01 else Vector3.FORWARD
+		var kb: Vector3 = dir * knockback + Vector3.UP * knockback * 0.35
+		# Dano BAIXO de propósito: o foco é o KNOCKBACK jogar o alvo pra fora do mapa.
+		body.take_damage(damage * DAMAGE_SCALE, global_position, kb)
+		# Camera Feel no impacto: micro-pausa + flash quente + aberração cromática.
+		var gf := get_node_or_null("/root/GameFlow")
+		if gf and gf.has_method("hit_stop"):
+			gf.hit_stop()
+		var sfx := get_node_or_null("/root/ScreenFX")
+		if sfx and sfx.has_method("flash"):
+			sfx.flash(Color(1.0, 0.9, 0.6), 0.22)
+			sfx.chromatic_pulse(0.5)

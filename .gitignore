@@ -1,0 +1,16 @@
+# Cache de import do Godot — regenerado sozinho ao abrir o projeto (~149 MB).
+.godot/
+# Builds exportados
+/build/
+*.tmp
+
+# Python
+__pycache__/
+*.pyc
+
+# Logs
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db

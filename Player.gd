@@ -1,0 +1,1361 @@
+extends CharacterBody3D
+# ============================================================================
+#  Jogador = um bloco cinza. Anda (WASD / setas), pula (Espaco).
+#  F5 alterna 1a <-> 3a pessoa. Mouse olha. ESC solta o mouse; segure pra sair.
+#
+#  Sem InputMap: le o teclado direto, entao o projeto roda sem configuracao.
+# ============================================================================
+
+const SPEED := 4.2
+const JUMP_VELOCITY := 16.0
+const GRAVITY := 32.0        # gravidade reforcada (Godot padrao ~9.8)
+const MOUSE_SENS := 0.0035
+const CLIMB_SPEED := 4.5
+const CLIMB_STICK_SPEED := 1.0
+const CLIMB_WALL_NORMAL_MAX_Y := 0.2
+
+var cam_distance: float = 6.0 # afastamento da camera em 3a pessoa (ajustável com scroll)
+const CAM_HEIGHT_TPS := 2.2  # altura do pivo em 3a pessoa
+const CAM_HEIGHT_FPS := 0.6  # altura do "olho" em 1a pessoa
+const SHOULDER_RIGHT := 1.1  # deslocamento p/ o ombro direito (over-the-shoulder)
+
+var current_fruit_id: String = ""
+var speed_multiplier: float = 1.0
+var jump_multiplier: float = 1.0
+
+# Vida (barra verde, HUD) — máx 2048. Foco continua no knockback pra fora do mapa,
+# mas agora o dano importa e é mostrado.
+var health: float = 2048.0
+var max_health: float = 2048.0
+# Energia (barra azul, HUD) — máx 4096. Regenera com o tempo; skills consomem.
+var energy: float = 4096.0
+var max_energy: float = 4096.0
+const ENERGY_REGEN := 320.0        # por segundo
+const ENERGY_BULLET := 10.0        # por bala da rajada Z
+const ENERGY_SKILL := 180.0        # por skill lançada
+var is_suppressed: bool = false
+var suppression_timer: float = 0.0
+
+var combat_mode: String = "fruit" # "fruit" ou "style"
+var current_style_idx: int = 0
+const STYLES_LIST: Array[String] = ["karate_tritao", "pacifista", "mink", "boxe", "cyborg", "teste_animacao"]
+
+var _charging: bool = false
+var _charge_slot: String = ""
+var _movement_locked_timer: float = 0.0
+
+var _yaw := 0.0     # rotacao horizontal da camera
+var _pitch := -0.25 # rotacao vertical da camera
+var _first_person := false
+var _is_climbing := false
+var max_geppo: int = 1      # número de pulos duplos aéreos (Geppo / Técnica do CP9)
+var _geppo_count: int = 0   # contador atual de geppo desde o último toque no chão
+
+var _pivot: Node3D
+var _shoulder: Node3D
+var _spring: SpringArm3D
+var _cam: Camera3D
+var _shake: float = 0.0   # Camera Feel: tremor de tela (screen-shake) que decai
+var _was_floor: bool = true   # p/ detectar aterrissagem
+var _fov_punch: float = 0.0   # zoom-in momentâneo ao atacar (decai)
+var _long_jump_t: float = 0.0 # Parkour: janela de impulso horizontal (salto longo/vault)
+var _space_was: bool = false  # borda do Espaço (salto longo só na batida, não segurando)
+var _was_on_floor: bool = false   # Parkour: detecção de POUSO (#4)
+var _fall_peak: float = 0.0       # maior velocidade de queda acumulada no ar
+var _precision_armed: bool = false # Espaço no ar armou o pouso de precisão
+var _roll_t: float = 0.0          # janela da animação de rolamento (pós-pouso)
+var _bob_t: float = 0.0       # fase do balanço de câmera (head bob) ao andar/correr
+# Mera Mera Z: rajada de balas de fogo (segura pra atirar; para ao soltar ou 16 balas).
+const RAPID_INTERVAL := 0.09
+const RAPID_MAX := 16
+var _rapid_fire: bool = false
+var _rapid_count: int = 0
+var _rapid_t: float = 0.0
+var _gun_recoil: float = 0.0   # coice da rajada Z (1->0 por tiro) p/ a pose de mira
+var _pistols: Array = []       # pistolas nas DUAS mãos (visíveis só na rajada Z)
+var _bullet_side: int = 0      # alterna a mão a cada tiro (0=esq, 1=dir)
+var _yami_pistol_active: bool = false # Yami Z: pistola ativa por toggle
+var _yami_shot_cooldown: float = 0.0  # cadência do tiro do Yami Z
+var _skill_cooldowns: Dictionary = {"Z": 0.0, "X": 0.0, "C": 0.0, "V": 0.0}
+var aim_assist: bool = false   # assistência de mira (liga/desliga no E)
+
+func trigger_skill_cooldown(slot: String) -> void:
+	match slot:
+		"Z": _skill_cooldowns["Z"] = 5.0
+		"X": _skill_cooldowns["X"] = 7.0
+		"C": _skill_cooldowns["C"] = 10.0
+		"V": _skill_cooldowns["V"] = 60.0 # 1 minuto para skills ultimate em V
+var _mesh: MeshInstance3D
+var _crosshair: Control
+
+var character_id: String = "ace"   # personagem inicial = Ace (skinnado Meshy)
+var _animator: CharacterAnimator
+var _char_model: Node3D
+var _proc_anim: ProceduralAnimator   # animação procedural em tempo real do rig
+var _skel_anim: SkeletalAnimator = null   # animador ESQUELETAL (personagens skinnados)
+var _is_skinned: bool = false             # o personagem atual é skinnado (Skeleton3D)?
+var _breath = null                   # VFX de fôlego (instância de VFX/BreathVFX.tscn; sem tipo p/ não depender do cache de class_name)
+var _head_node: Node3D               # cabeça do modelo atual (âncora do fôlego)
+
+# ---- Rede (Fase 4) ----
+# _is_authority = este player é controlado por ESTE cliente (input+câmera). No
+# singleplayer o host é a autoridade -> tudo funciona igual. Players remotos só
+# reproduzem a pose a partir do estado replicado (net_velocity/net_facing).
+var _is_authority: bool = true
+@export var net_velocity: Vector3 = Vector3.ZERO   # replicado (autoridade -> demais)
+@export var net_facing: float = 0.0
+@export var net_on_floor: bool = true
+
+func _ready() -> void:
+	add_to_group("player")   # o HUD encontra o jogador por este grupo
+	_is_authority = is_multiplayer_authority()   # SP: host=autoridade -> true
+
+	# Substitui o quadrado cinza pelo modelo 3D Voxel e equipa a Akuma no Mi correspondente
+	set_character(character_id)
+
+	# Colisor do jogador.
+	var col := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(1.0, 1.6, 1.0)
+	col.shape = shape
+	add_child(col)
+
+	# Cadeia da camera:
+	#   _pivot (yaw/pitch)  ->  _shoulder (offset lateral)  ->  _spring  ->  _cam
+	# O _shoulder empurra a camera pro ombro direito (over-the-shoulder),
+	# deixando o corpo a esquerda e a mira um pouco a direita dele.
+	_pivot = Node3D.new()
+	add_child(_pivot)
+
+	_shoulder = Node3D.new()
+	_pivot.add_child(_shoulder)
+
+	# SpringArm evita a camera atravessar paredes/blocos.
+	_spring = SpringArm3D.new()
+	_spring.margin = 0.15
+	var sphere := SphereShape3D.new()
+	sphere.radius = 0.15
+	_spring.shape = sphere
+	_shoulder.add_child(_spring)
+	_spring.add_excluded_object(get_rid())  # nunca colidir com o próprio corpo do player
+
+	_cam = Camera3D.new()
+	_cam.near = 0.05
+	_cam.current = _is_authority   # só a câmera do MEU player fica ativa
+	_spring.add_child(_cam)
+
+	# Mira + captura de mouse SÓ para o player local (players remotos não têm HUD/mira).
+	if _is_authority:
+		var layer := CanvasLayer.new()
+		add_child(layer)
+		var center := CenterContainer.new()
+		center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		layer.add_child(center)
+		var dot := Label.new()
+		dot.text = "+"
+		dot.add_theme_font_size_override("font_size", 24)
+		center.add_child(dot)
+		_crosshair = center
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+	_apply_perspective()
+	_update_pivot()
+
+func _apply_perspective() -> void:
+	if _first_person:
+		_pivot.position.y = CAM_HEIGHT_FPS
+		_shoulder.position.x = 0.0
+		_spring.spring_length = 0.0
+		if _char_model:
+			_char_model.visible = false      # some o proprio corpo na 1a pessoa
+	else:
+		_pivot.position.y = CAM_HEIGHT_TPS
+		_shoulder.position.x = SHOULDER_RIGHT
+		_spring.spring_length = cam_distance
+		if _char_model:
+			_char_model.visible = true
+
+func _input(event: InputEvent) -> void:
+	if not _is_authority:
+		return
+	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		_yaw -= event.relative.x * MOUSE_SENS
+		_pitch = clamp(_pitch - event.relative.y * MOUSE_SENS, -1.2, 0.5)
+		_update_pivot()
+	elif event is InputEventMouseButton and not _first_person:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
+			cam_distance = clampf(cam_distance - 0.5, 2.0, 15.0)
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
+			cam_distance = clampf(cam_distance + 0.5, 2.0, 15.0)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not _is_authority:
+		return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F5:
+		# Alterna 1a <-> 3a pessoa.
+		_first_person = not _first_person
+		_apply_perspective()
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F6:
+		# Alterna modelo 3D Voxel: Base <-> Buggy <-> Nami <-> Ace
+		var char_list := ["base", "buggy", "nami", "ace"]
+		var idx := char_list.find(character_id)
+		var next_char: String = char_list[(idx + 1) % char_list.size()] if idx != -1 else "buggy"
+		set_character(next_char)
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R:
+		toggle_combat_mode()
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_T:
+		_cycle_fruit()   # DEBUG: cicla entre as frutas pra testar as skills
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E:
+		aim_assist = not aim_assist   # liga/desliga a assistência de mira
+		print("🎯 Assistência de mira: ", "LIGADA" if aim_assist else "DESLIGADA")
+		var hud := get_tree().get_first_node_in_group("hud")
+		if hud and hud.has_method("set_aim_assist"):
+			hud.set_aim_assist(aim_assist)
+		if Engine.has_singleton("ScreenFX") or get_node_or_null("/root/ScreenFX"):
+			get_node("/root/ScreenFX").set_aim_assist(aim_assist, self)
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		if event.echo:
+			get_tree().quit()
+		else:
+			var hud := get_tree().get_first_node_in_group("hud")
+			if hud and hud.has_method("toggle_main_menu"):
+				hud.toggle_main_menu()
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		if not _yami_pistol_active:
+			_try_tame()   # Fase 8: botão direito DOMA o inimigo mirado
+
+func toggle_combat_mode() -> void:
+	if combat_mode == "fruit":
+		combat_mode = "style"
+	else:
+		combat_mode = "fruit"
+	var active_style: String = STYLES_LIST[current_style_idx]
+	print("⚔️ Alternou Modo de Combate (R): ", combat_mode.to_upper(), " - Estilo: ", active_style)
+	var hud := get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("update_combat_mode"):
+		hud.update_combat_mode(combat_mode, active_style, current_fruit_id)
+
+func set_fighting_style(style_id: String) -> void:
+	var idx := STYLES_LIST.find(style_id)
+	if idx >= 0:
+		current_style_idx = idx
+		combat_mode = "style"
+		var active_style: String = STYLES_LIST[current_style_idx]
+		print("🥋 Novo Estilo de Luta Selecionado (Menu M): ", active_style)
+		var hud := get_tree().get_first_node_in_group("hud")
+		if hud and hud.has_method("update_combat_mode"):
+			hud.update_combat_mode(combat_mode, active_style, current_fruit_id)
+
+# Toca um clipe de ESTILO retargetado (Mixamo -> rig por-nós) pelo ProceduralAnimator.
+# O clipe fica em res://assets/animations/<nome>.res (bakeado do FBX do Mixamo).
+func play_style_anim(anim_name: String) -> void:
+	if _proc_anim == null:
+		return
+	var path := "res://assets/animations/%s.res" % anim_name
+	if not ResourceLoader.exists(path):
+		print("[StyleAnim] falta o bake do rig: ", path, " (baixe o FBX do Mixamo e rode o baker)")
+		return
+	var a = load(path)
+	if a is Animation:
+		_proc_anim.play_baked(a)
+		lock_movement(a.length + 0.1, anim_name)
+
+# --- Teste de Animação: cicla por TODOS os .res bakeados (Mixamo) ---
+var _style_anims: Array = []
+var _style_anim_idx: int = -1
+
+func _scan_style_anims() -> void:
+	_style_anims.clear()
+	var d := DirAccess.open("res://assets/animations/")
+	if d:
+		for f in d.get_files():
+			if f.to_lower().ends_with(".res"):
+				_style_anims.append(f.get_basename())
+	_style_anims.sort()
+
+func cycle_style_anim(dir: int) -> void:
+	if _style_anims.is_empty():
+		_scan_style_anims()
+	if _style_anims.is_empty():
+		return
+	if _style_anim_idx < 0:
+		_style_anim_idx = 0
+	else:
+		_style_anim_idx = wrapi(_style_anim_idx + dir, 0, _style_anims.size())
+	var nm: String = _style_anims[_style_anim_idx]
+	play_style_anim(nm)
+	print("🎬 [", _style_anim_idx + 1, "/", _style_anims.size(), "] ", nm)
+	var hud := get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("show_anim_name"):
+		hud.show_anim_name("%d/%d  %s" % [_style_anim_idx + 1, _style_anims.size(), nm])
+
+func _update_pivot() -> void:
+	_pivot.rotation = Vector3(_pitch, _yaw, 0)
+
+# ---- Camera Feel: screen-shake (h_offset/v_offset NÃO afetam a mira) ----
+func add_camera_shake(amount: float) -> void:
+	if _is_authority:
+		_shake = clampf(maxf(_shake, amount), 0.0, 1.0)
+
+func _process(delta: float) -> void:
+	if not _is_authority or _cam == null:
+		return
+	var planar := Vector2(velocity.x, velocity.z).length()
+	var spd := clampf(planar / SPEED, 0.0, 1.2)
+	var on_floor := is_on_floor()
+
+	# --- offsets da câmera = SHAKE + BOB (balanço ao andar/correr) ---
+	var sh := _shake * 0.09
+	if _shake > 0.0:
+		_shake = maxf(_shake - delta * 3.5, 0.0)
+	var sx := randf_range(-sh, sh)
+	var sy := randf_range(-sh, sh)
+	# Head bob: frequência e amplitude crescem com a velocidade (só andando no chão).
+	var moving := spd > 0.05 and on_floor
+	_bob_t += delta * (4.0 + spd * 9.0)
+	var amp := (spd * 0.024) if moving else 0.0
+	_cam.h_offset = lerpf(_cam.h_offset, sx + cos(_bob_t) * amp, 0.5)
+	_cam.v_offset = lerpf(_cam.v_offset, sy + absf(sin(_bob_t)) * amp, 0.5)
+
+	# FOV dinâmico (correr abre MAIS) menos o punch de ataque (zoom-in), que decai.
+	_fov_punch = maxf(_fov_punch - delta * 22.0, 0.0)
+	var target_fov := lerpf(70.0, 84.0, spd) - _fov_punch
+	_cam.fov = lerpf(_cam.fov, target_fov, 8.0 * delta)
+
+	# Camera tilt: rolagem ao andar de lado + leve gingado no ritmo do passo.
+	var right := Basis(Vector3.UP, _yaw) * Vector3(1, 0, 0)
+	var strafe := clampf(velocity.dot(right) / SPEED, -1.0, 1.0)
+	var tilt := -strafe * 3.5 + (sin(_bob_t) * spd * 1.2 if moving else 0.0)
+	_cam.rotation.z = lerpf(_cam.rotation.z, deg_to_rad(tilt), 6.0 * delta)
+
+	# Recuo da câmera ao correr (só 3a pessoa)
+	if not _first_person and _spring:
+		_spring.spring_length = lerpf(_spring.spring_length, cam_distance + spd * 0.9, 4.0 * delta)
+
+	# Shake ao aterrissar
+	if on_floor and not _was_floor:
+		add_camera_shake(0.3)
+	_was_floor = on_floor
+
+	# Screen FX por velocidade: vinheta + speed lines mais perceptíveis ao correr.
+	ScreenFX.set_vignette(clampf((spd - 0.4) * 1.2, 0.0, 0.5))
+	ScreenFX.set_speed_lines(clampf((spd - 0.85) * 2.5, 0.0, 1.0))
+
+func _physics_process(delta: float) -> void:
+	if not _is_authority:
+		_remote_process(delta)   # player de outro cliente: só reproduz o estado replicado
+		return
+	for g in _pistols:
+		if is_instance_valid(g):
+			g.visible = _rapid_fire or _yami_pistol_active
+	energy = minf(energy + ENERGY_REGEN * delta, max_energy)   # regen contínua de energia
+	if _yami_shot_cooldown > 0.0:
+		_yami_shot_cooldown = maxf(_yami_shot_cooldown - delta, 0.0)
+	for slot_k in _skill_cooldowns.keys():
+		if _skill_cooldowns[slot_k] > 0.0:
+			_skill_cooldowns[slot_k] = maxf(_skill_cooldowns[slot_k] - delta, 0.0)
+	if _yami_pistol_active:
+		_process_yami_pistol(delta)
+	# HOLD-TO-CAST / RAJADA Z: enquanto a tecla está SEGURADA (ou a rajada Z ativa), o
+	# personagem fica PARADO — inclusive NO AR, sem gravidade — até soltar a tecla ou
+	# as balas acabarem. Só a câmera continua livre (mira). A rajada dispara aqui.
+	if _charging or _rapid_fire or _movement_locked_timer > 0.0 or (has_meta("is_frozen") and get_meta("is_frozen")) or (has_meta("in_vortex") and get_meta("in_vortex")) or (has_meta("in_kurouzu") and get_meta("in_kurouzu")) or (has_meta("in_black_hole") and get_meta("in_black_hole")):
+		if _charging and not (has_meta("is_casting") and get_meta("is_casting")):
+			_charging = false          # cast foi interrompido (ex.: dano) -> destrava
+		else:
+			velocity = Vector3.ZERO    # congela no lugar (sem gravidade)
+			if _breath:
+				_breath.set_running(false)
+			# Rajada Z: vira o corpo p/ a direção da mira (pose de pistoleiro) + coice decai.
+			if _rapid_fire and _char_model:
+				_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw, 18.0 * delta)
+			if _gun_recoil > 0.0:
+				_gun_recoil = maxf(_gun_recoil - delta * 7.0, 0.0)
+			if _proc_anim:
+				# Na RAJADA Z não passa charge_slot: senão herda o active_skill ("C") e o
+				# animator aplica o tremor de torso do Gatling, quebrando a pose das pistolas.
+				var slot_to_pass = "" if (_rapid_fire or _yami_pistol_active) else (_charge_slot if _charging else get_meta("active_skill", ""))
+				_proc_anim.update(velocity, is_on_floor(), false, delta, _pitch, false, _charging, slot_to_pass, "", _rapid_fire or _yami_pistol_active, _gun_recoil)
+			move_and_slide()
+			_tick_rapid_fire(delta)    # dispara as balas de fogo/gelo enquanto a rajada dura
+
+			if _movement_locked_timer > 0.0:
+				_movement_locked_timer -= delta
+				
+			return
+
+	# Direcao relativa a ORIENTACAO REAL da camera (nada de adivinhar o yaw).
+	var f := 0.0  # frente(+)/tras(-)
+	var r := 0.0  # direita(+)/esquerda(-)
+	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):    f += 1.0
+		if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN):  f -= 1.0
+		if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT): r += 1.0
+		if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):  r -= 1.0
+
+	# Base do pivo da camera pura (yaw), sem distorcao de pitch
+	var cam_basis := Basis.from_euler(Vector3(0, _yaw, 0))
+	var forward := -cam_basis.z
+	var right := cam_basis.x
+
+	var dir := (forward * f + right * r)
+	if dir.length() > 1.0:
+		dir = dir.normalized()
+	# Rajada (Mera/Hie Z): fica PARADO enquanto atira; só a câmera gira. Volta a
+	# andar ao soltar o botão ou acabar as balas (release_charge zera _rapid_fire).
+	if _rapid_fire:
+		dir = Vector3.ZERO
+
+	# Corrida (Shift): Aumenta a velocidade em 1.5x ao segurar Shift enquanto se move
+	var is_sprinting := Input.is_key_pressed(KEY_SHIFT) and dir.length_squared() > 0.01
+	if _long_jump_t > 0.0:
+		_long_jump_t -= delta
+	# Borda do Espaço: salto longo/vault só disparam na BATIDA da tecla (não segurando).
+	var space_down := Input.is_key_pressed(KEY_SPACE) and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	var space_just := space_down and not _space_was
+	_space_was = space_down
+
+	# POUSO DE PRECISÃO (#4): Espaço apertado NO AR (caindo) arma um rolamento; ao
+	# tocar o chão após uma queda real, o player rola e PRESERVA o embalo + poeira.
+	var on_floor_now := is_on_floor()
+	if not on_floor_now:
+		_fall_peak = maxf(_fall_peak, -velocity.y)
+		if space_just and velocity.y < 3.0 and not _is_climbing:
+			_precision_armed = true
+	elif not _was_on_floor:                       # acabou de tocar o chão
+		if _precision_armed and _fall_peak > 9.0:
+			_long_jump_t = maxf(_long_jump_t, 0.28)
+			_roll_t = 0.4                 # dispara a animação de rolamento
+			_land_puff()
+		_fall_peak = 0.0
+		_precision_armed = false
+	_was_on_floor = on_floor_now
+	if _roll_t > 0.0:
+		_roll_t -= delta
+
+	var effective_speed := SPEED * speed_multiplier * (1.5 if is_sprinting else 1.0)
+	if _long_jump_t > 0.0:
+		effective_speed *= 1.5   # Parkour: impulso horizontal (salto longo / vault)
+
+	# Escalada: no ar, segure ESPAÇO enquanto avança contra uma parede vertical.
+	# W/sobe e S/desce; ao soltar Espaço ou perder a parede, a gravidade volta.
+	var wants_climb := Input.is_key_pressed(KEY_SPACE) and f > 0.0
+	var wall_normal := _climbable_wall_normal(dir)
+	if _is_climbing and (not wants_climb or wall_normal == Vector3.ZERO):
+		_is_climbing = false
+	if not _is_climbing and wants_climb and not is_on_floor() and wall_normal != Vector3.ZERO:
+		_is_climbing = true
+
+	# WALL RUN (#3): no ar, CORRENDO (Shift) rente a uma parede LATERAL -> corre por ela.
+	var side_wall := _wall_side_normal(dir) if not _is_climbing else Vector3.ZERO
+	var wall_running := not _is_climbing and not is_on_floor() and is_sprinting and f > 0.0 and side_wall != Vector3.ZERO and velocity.y < 5.0
+
+	# Recarrega as cargas do Geppo assim que apoiar no chão ou em paredes/escada
+	if on_floor_now or _is_climbing or wall_running:
+		_geppo_count = 0
+
+	if _is_climbing:
+		# Uma leve pressão contra a parede preserva o contato de colisão entre
+		# frames; sem isso, ao mover apenas no eixo Y a escalada terminaria logo.
+		# W sobe / S desce (#7), parado = segura; A/D faz travessia lateral (#8).
+		var tang := wall_normal.cross(Vector3.UP).normalized()   # horizontal ao longo da parede
+		velocity.x = -wall_normal.x * CLIMB_STICK_SPEED + tang.x * r * CLIMB_SPEED * 0.8
+		velocity.z = -wall_normal.z * CLIMB_STICK_SPEED + tang.z * r * CLIMB_SPEED * 0.8
+		velocity.y = CLIMB_SPEED * clampf(f, -1.0, 1.0)
+		# SUBIR NA BEIRADA / MANTLE (#6): chegou ao TOPO (cabeça livre acima da beirada)
+		# e empurra pra cima (W) -> impulso pra cima + pra frente e larga a parede.
+		if f > 0.1 and _head_clear_of_wall(wall_normal):
+			velocity = -wall_normal * 6.0 + Vector3.UP * (JUMP_VELOCITY * 0.8)
+			_is_climbing = false
+			_long_jump_t = 0.25
+	elif wall_running:
+		# WALL RUN: quase sem gravidade + corre ao longo da parede; Espaço = pula pra longe.
+		velocity.y = maxf(velocity.y - GRAVITY * 0.12 * delta, -1.5)   # "cola" e cai devagar
+		var tangent := side_wall.cross(Vector3.UP).normalized()        # horizontal, ao longo da parede
+		if tangent.dot(forward) < 0.0:
+			tangent = -tangent                                          # sentido = pra onde o player olha
+		velocity.x = tangent.x * effective_speed - side_wall.x * 2.0    # corre + encosta na parede
+		velocity.z = tangent.z * effective_speed - side_wall.z * 2.0
+		if space_just:
+			velocity = side_wall * 9.0 + Vector3.UP * (JUMP_VELOCITY * 0.85)   # empurra PRA LONGE
+			_long_jump_t = 0.3
+	else:
+		# Gravidade.
+		if not is_on_floor():
+			velocity.y -= GRAVITY * delta
+
+		# Pulo + PARKOUR.
+		if is_on_floor() and is_sprinting and f > 0.0 and _long_jump_t <= 0.0 and _low_obstacle_ahead(dir):
+			# VAULT automático: correndo contra um obstáculo BAIXO -> pula por cima.
+			velocity.y = JUMP_VELOCITY * 0.7
+			_long_jump_t = 0.35
+		elif space_just and is_on_floor():
+			# Salto longo SÓ na batida do Espaço correndo (evita velocidade infinita).
+			if is_sprinting and f > 0.0:
+				velocity.y = JUMP_VELOCITY * 0.95   # SALTO LONGO (Shift+Espaço)
+				_long_jump_t = 0.55
+			else:
+				velocity.y = JUMP_VELOCITY * jump_multiplier   # pulo normal
+		elif space_down and is_on_floor():
+			velocity.y = JUMP_VELOCITY * jump_multiplier       # segurar Espaço = pulo normal
+		elif space_just and not is_on_floor() and not _is_climbing and not wall_running and _geppo_count < max_geppo:
+			# GEPPO (Técnica do CP9 / Pulo Duplo): chuta o ar com anel de ar comprimido!
+			_geppo_count += 1
+			_fall_peak = 0.0
+			_precision_armed = false
+			if dir.length_squared() > 0.01:
+				velocity.x = dir.x * effective_speed * 1.35
+				velocity.z = dir.z * effective_speed * 1.35
+				velocity.y = JUMP_VELOCITY * jump_multiplier * 0.95
+			else:
+				velocity.y = JUMP_VELOCITY * jump_multiplier * 1.15
+			add_camera_shake(0.28)
+			AudioFX.whoosh(get_tree().current_scene, global_position, 1.35)
+			AudioFX.snap(get_tree().current_scene, global_position, 0.85)
+			FxUtil.geppo_effect(get_tree().current_scene, global_position + Vector3(0, -0.75, 0), dir, _yaw, self)
+			if _proc_anim:
+				_proc_anim.trigger_recovery("Z")
+
+		velocity.x = dir.x * effective_speed
+		velocity.z = dir.z * effective_speed
+
+	# A FRENTE do personagem se move dinamicamente durante a locomoção.
+	if _char_model:
+		if _is_climbing and wall_normal != Vector3.ZERO:
+			# Convenção do projeto: FRENTE = -Z. Ao escalar, a frente vira PARA DENTRO
+			# da parede, ou seja, o -Z do modelo aponta ao longo de -wall_normal
+			# (wall_normal aponta da parede para o jogador). Daí atan2(wn.x, wn.z).
+			var target_rot := atan2(wall_normal.x, wall_normal.z)
+			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, target_rot, 24.0 * delta)
+		elif dir.length_squared() > 0.01:
+			var move_rot := atan2(-dir.x, -dir.z)
+			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, move_rot, 35.0 * delta)
+		else:
+			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw, 24.0 * delta)
+
+	# Animação: rig procedural (por-nós) OU esqueletal (skinnado).
+	if _skel_anim:
+		_skel_anim.update(velocity, is_on_floor(), _is_climbing, delta, is_sprinting)
+	elif _proc_anim:
+		var parkour := ""
+		if wall_running:
+			parkour = "wall_run"
+		elif _roll_t > 0.0:
+			parkour = "roll"
+		elif _long_jump_t > 0.0 and not on_floor_now:
+			parkour = "long_jump"
+		_proc_anim.update(velocity, is_on_floor(), _is_climbing, delta, _pitch, is_sprinting, false, "", parkour, _rapid_fire or _yami_pistol_active, _gun_recoil)
+
+	_update_breath()
+	_tick_rapid_fire(delta)   # Mera Z: dispara as balas de fogo enquanto a rajada está ativa
+
+	# Rede (Fase 4): a autoridade publica seu estado p/ os outros clientes replicarem.
+	net_velocity = velocity
+	net_on_floor = is_on_floor()
+	if _char_model:
+		net_facing = _char_model.rotation.y
+
+	# Processamento de Supressão da Passiva Yami Yami
+	if is_suppressed:
+		suppression_timer -= delta
+		if suppression_timer <= 0.0:
+			is_suppressed = false
+			print("✨ Poderes reativados!")
+
+	# Verificação de Void (Morte ao cair no Void)
+	if SkillSystem.process_void_check(self):
+		return
+
+	move_and_slide()
+
+## Posiciona o VFX de fôlego na frente da boca (segue cabeça + facing -Z) e regula
+## a intensidade pela velocidade. Só "respira forte" correndo no chão.
+func _update_breath() -> void:
+	if _breath == null:
+		return
+	if _char_model and _head_node and is_instance_valid(_head_node):
+		var yaw := _char_model.rotation.y
+		var fwd := Basis(Vector3.UP, yaw) * Vector3(0, 0, -1)   # frente do projeto = -Z
+		# À frente da boca (não atravessa o rosto) e um tico abaixo do centro da cabeça.
+		_breath.global_position = _head_node.global_position + fwd * 0.28 + Vector3(0, -0.04, 0)
+		_breath.rotation = Vector3(0, yaw, 0)   # local +Z = costas -> baforada vai p/ trás
+	var planar := Vector2(velocity.x, velocity.z).length()
+	var running := planar > 1.0 and is_on_floor() and not _is_climbing
+	_breath.set_running(running)
+	_breath.set_intensity(planar / SPEED)   # 1.0 = corrida normal, ~1.5 = sprint
+
+## Chamado pelo braço elástico (GomuArm) quando o punho retorna ao corpo:
+## dispara o tranco de recepção (chicote) na animação procedural.
+func trigger_recovery_anim(slot: String = "Z") -> void:
+	if _proc_anim:
+		_proc_anim.trigger_recovery(slot)
+
+# ---- Fase 8: DOMAR inimigo (botão direito) ----
+# DESATIVADO por ora (Fase 9): muito conteúdo pendente (frutas/estilos). Código
+# mantido; é só religar TAMING_ENABLED = true quando quiser retomar os companions.
+const TAMING_ENABLED := false
+
+# Raycast da câmera; se mirar um inimigo perto, pede a doma ao SERVIDOR (autoridade).
+func _try_tame() -> void:
+	if not TAMING_ENABLED or _cam == null:
+		return
+	var from := _cam.global_position
+	var to := from + (-_cam.global_transform.basis.z) * 9.0
+	var q := PhysicsRayQueryParameters3D.create(from, to)
+	q.exclude = [get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	if hit.is_empty():
+		return
+	var col = hit.get("collider")
+	if col and col.is_in_group("enemy"):
+		_request_tame(str(col.name))
+
+func _request_tame(enemy_name: String) -> void:
+	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
+		_do_tame(enemy_name, str(name).to_int())
+	else:
+		_net_tame.rpc_id(1, enemy_name, str(name).to_int())
+
+@rpc("any_peer", "reliable")
+func _net_tame(enemy_name: String, owner_peer: int) -> void:
+	if multiplayer.is_server():
+		_do_tame(enemy_name, owner_peer)
+
+func _do_tame(enemy_name: String, owner_peer: int) -> void:
+	for e in get_tree().get_nodes_in_group("enemy"):
+		if e.name == enemy_name and e.has_method("tame"):
+			e.tame(owner_peer)
+			return
+
+## Player REMOTO (controlado por outro cliente): não simula física (a posição vem
+## replicada). Só reproduz a animação a partir do estado replicado e vira o modelo
+## pelo facing replicado, pra parecer vivo na tela dos outros.
+func _remote_process(delta: float) -> void:
+	velocity = net_velocity
+	if _char_model:
+		_char_model.rotation.y = lerp_angle(_char_model.rotation.y, net_facing, 18.0 * delta)
+	if _skel_anim:
+		_skel_anim.update(net_velocity, net_on_floor, false, delta, false)
+	elif _proc_anim:
+		_proc_anim.update(net_velocity, net_on_floor, false, delta, _pitch, false)
+
+# Parkour: há um obstáculo BAIXO logo à frente? (bate na altura do joelho, mas está
+# livre na altura da cabeça -> dá pra pular por cima = vault).
+func _low_obstacle_ahead(move_dir: Vector3) -> bool:
+	var flat := Vector3(move_dir.x, 0.0, move_dir.z)
+	if flat.length_squared() < 0.01:
+		return false
+	flat = flat.normalized()
+	var space := get_world_3d().direct_space_state
+	var base := global_position
+	var low_q := PhysicsRayQueryParameters3D.create(base + Vector3(0, -0.4, 0), base + Vector3(0, -0.4, 0) + flat * 1.2)
+	low_q.exclude = [get_rid()]
+	if space.intersect_ray(low_q).is_empty():
+		return false                       # nada na altura do joelho -> não é vault
+	var hi_q := PhysicsRayQueryParameters3D.create(base + Vector3(0, 0.7, 0), base + Vector3(0, 0.7, 0) + flat * 1.2)
+	hi_q.exclude = [get_rid()]
+	return space.intersect_ray(hi_q).is_empty()   # livre em cima -> obstáculo é baixo
+
+# Wall run (#3): procura uma parede à ESQUERDA ou à DIREITA (perpendicular ao
+# movimento) dentro de ~0.85m. Retorna a normal da parede (aponta pra fora dela).
+func _wall_side_normal(move_dir: Vector3) -> Vector3:
+	var flat := Vector3(move_dir.x, 0.0, move_dir.z)
+	if flat.length_squared() < 0.01:
+		return Vector3.ZERO
+	flat = flat.normalized()
+	var side := flat.cross(Vector3.UP)      # perpendicular horizontal
+	var space := get_world_3d().direct_space_state
+	var base := global_position
+	for s in [side, -side]:
+		var q := PhysicsRayQueryParameters3D.create(base, base + s * 0.85)
+		q.exclude = [get_rid()]
+		var hit := space.intersect_ray(q)
+		if not hit.is_empty():
+			var n: Vector3 = hit["normal"]
+			if absf(n.y) < 0.3:             # parede vertical (não chão/teto)
+				return n
+	return Vector3.ZERO
+
+# Mantle (#6): true quando a CABEÇA já passou do topo da parede (raio à altura da
+# cabeça, em direção à parede, não bate em nada) -> dá pra subir na beirada.
+func _head_clear_of_wall(wall_normal: Vector3) -> bool:
+	var space := get_world_3d().direct_space_state
+	var from := global_position + Vector3(0, 0.95, 0)
+	var q := PhysicsRayQueryParameters3D.create(from, from - wall_normal * 0.9)  # -normal = pra parede
+	q.exclude = [get_rid()]
+	return space.intersect_ray(q).is_empty()
+
+# Poeira do pouso de precisão (#4).
+func _land_puff() -> void:
+	var world := get_tree().current_scene
+	if world == null:
+		return
+	var pm := ParticleProcessMaterial.new()
+	pm.direction = Vector3.UP
+	pm.spread = 85.0
+	pm.initial_velocity_min = 1.5
+	pm.initial_velocity_max = 4.0
+	pm.gravity = Vector3(0, -5.0, 0)
+	pm.scale_min = 0.2
+	pm.scale_max = 0.5
+	pm.color_ramp = FxUtil.gradient([Color(0.82, 0.79, 0.72, 0.7), Color(0.82, 0.79, 0.72, 0)])
+	var burst := FxUtil.particles(24, 0.5, true, pm, FxUtil.grain(0.3), 1.0)
+	world.add_child(burst)
+	burst.global_position = global_position + Vector3(0, -0.7, 0)
+	FxUtil.autofree(burst, 0.8)
+
+func _climbable_wall_normal(move_direction: Vector3) -> Vector3:
+	# Usa as colisões do último movimento. Isso evita RayCast extra e faz a
+	# escalada funcionar em qualquer StaticBody3D, inclusive os blocos do mapa.
+	for i in get_slide_collision_count():
+		var collision := get_slide_collision(i)
+		var normal := collision.get_normal()
+		if abs(normal.y) <= CLIMB_WALL_NORMAL_MAX_Y and move_direction.dot(normal) < -0.15:
+			return normal
+	return Vector3.ZERO
+
+# ----------------------------------------------------------- troca de modelo ---
+# API pública usada pelo menu de Personagens (muda modelo e equipa a Akuma no Mi correta).
+func set_character(cid: String) -> void:
+	_setup_character_model(cid)
+	match cid:
+		"ace":
+			current_fruit_id = "mera_mera"
+			combat_mode = "fruit"
+		"buggy":
+			current_fruit_id = "bara_bara"
+			combat_mode = "fruit"
+		"nami":
+			current_fruit_id = "goro_goro"
+			combat_mode = "fruit"
+		"blackbeard":
+			current_fruit_id = "yami_yami"
+			combat_mode = "fruit"
+		"crocodile":
+			current_fruit_id = "suna_suna"
+			combat_mode = "fruit"
+		"base", _:
+			current_fruit_id = "gomu_gomu"
+			combat_mode = "fruit"
+	var active_style: String = STYLES_LIST[current_style_idx] if current_style_idx < STYLES_LIST.size() else ""
+	var hud := get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("update_combat_mode"):
+		hud.update_combat_mode(combat_mode, active_style, current_fruit_id)
+
+func _setup_character_model(cid: String) -> void:
+	if _char_model:
+		_char_model.queue_free()
+	if _animator:
+		_animator.queue_free()
+
+	character_id = cid
+	# limpa estado do modelo anterior
+	if _skel_anim:
+		_skel_anim.queue_free()
+		_skel_anim = null
+	if _proc_anim:
+		_proc_anim.queue_free()
+		_proc_anim = null
+	_pistols = []
+	_is_skinned = false
+
+	var char_data := CharacterBuilder.build_character(cid)
+	_char_model = char_data["node"]
+	_is_skinned = char_data.get("skinned", false)   # antes do fit (afeta a escala)
+	add_child(_char_model)
+	_fit_model_to_body()   # normaliza tamanho e assenta os pés no chão
+
+	# --- PERSONAGEM SKINNADO (Skeleton3D, ex.: Meshy AI) ---
+	# RIG ÚNICO: o esqueleto do Meshy é mapeado nos 13 papéis do rig A pelo
+	# SkeletonDriver (via BodyScanner), então ele usa o MESMO ProceduralAnimator
+	# e os MESMOS clipes do Mixamo que os personagens voxel. O SkeletalAnimator
+	# e os walks nativos por modelo ficaram obsoletos.
+	if _is_skinned:
+		_animator = null   # skinnado não usa CharacterAnimator (rig por-nós)
+		# DIREÇÃO: modelos Meshy nascem olhando +Z (pra câmera); a convenção do jogo é
+		# FRENTE = -Z. Giro a Armature 180° pra alinhar (o facing gira o _char_model).
+		var arm := _char_model.find_child("Armature", true, false)
+		if arm is Node3D:
+			(arm as Node3D).rotation.y += PI
+		# O AnimationPlayer do próprio modelo brigaria com o driver pelos ossos.
+		var model_ap: AnimationPlayer = char_data.get("anim_player")
+		if model_ap:
+			model_ap.active = false
+		_setup_procedural_anim(cid)
+		_head_node = _char_model.find_child("Head", true, false) as Node3D
+		return
+
+	_attach_pistol(_char_model)   # pistola na mão direita (oculta até a rajada Z)
+
+	# Marcador Visual de COSTAS: Mochila Dourada Emissiva em z = -0.35
+	var back_marker := MeshInstance3D.new()
+	back_marker.name = "BackMarkerVisual"
+	var marker_mesh := BoxMesh.new()
+	marker_mesh.size = Vector3(0.42, 0.52, 0.18)
+	back_marker.mesh = marker_mesh
+	var marker_mat := StandardMaterial3D.new()
+	marker_mat.albedo_color = Color(1.0, 0.8, 0.1)
+	marker_mat.emission_enabled = true
+	marker_mat.emission = Color(1.0, 0.75, 0.1)
+	marker_mat.emission_energy_multiplier = 2.5
+	back_marker.material_override = marker_mat
+	back_marker.position = Vector3(0, 0.1, 0.35)
+	_char_model.add_child(back_marker)
+
+	# Marcador Visual de FRENTE (PEITO): Insígnia Vermelha no Peito em z = -0.35
+	var chest_marker := MeshInstance3D.new()
+	chest_marker.name = "ChestMarkerFront"
+	var chest_mesh := BoxMesh.new()
+	chest_mesh.size = Vector3(0.35, 0.35, 0.15)
+	chest_marker.mesh = chest_mesh
+	var chest_mat := StandardMaterial3D.new()
+	chest_mat.albedo_color = Color(1.0, 0.15, 0.15)
+	chest_mat.emission_enabled = true
+	chest_mat.emission = Color(1.0, 0.2, 0.1)
+	chest_mat.emission_energy_multiplier = 3.0
+	chest_marker.material_override = chest_mat
+	chest_marker.position = Vector3(0, 0.15, -0.35)
+	_char_model.add_child(chest_marker)
+
+	_animator = CharacterAnimator.new()
+	_animator.character_id = cid
+	_animator.animation_player = char_data["anim_player"]
+	add_child(_animator)
+	# Os paths procedurais das animações são relativos ao CharacterRoot.
+	# Deixamos isso explícito para não depender do valor padrão do Godot.
+	if _animator.animation_player:
+		_animator.animation_player.root_node = NodePath("..")
+		# Desliga o AnimationPlayer antigo: ele mira nomes de nós antigos e
+		# brigaria com a animação procedural que dirige o rig novo diretamente.
+		_animator.animation_player.active = false
+
+	_setup_procedural_anim(cid)
+
+	# Fôlego (VFX): cacheia a cabeça (âncora da boca) e garante o componente.
+	_head_node = _char_model.find_child("Head", true, false) as Node3D
+	if _breath == null:
+		_breath = load("res://VFX/BreathVFX.tscn").instantiate()
+		add_child(_breath)   # filho do Player (sem a escala do rig)
+
+	print("🎭 Modelo 3D Voxel Carregado: ", cid.capitalize())
+
+# Animação PROCEDURAL: mede o corpo (BodyScanner) e dirige o rig em runtime.
+# Serve os DOIS tipos de personagem — o BodyScanner resolve os 13 papéis em nós
+# (voxel) ou em ossos via SkeletonDriver (skinnado), e devolve o mesmo perfil.
+func _setup_procedural_anim(cid: String) -> void:
+	if _proc_anim:
+		_proc_anim.queue_free()
+	_proc_anim = ProceduralAnimator.new()
+	add_child(_proc_anim)
+	_proc_anim.setup(BodyScanner.scan(_char_model))
+	# Corpo girado 180° em Y (SkinPivot do Buggy / Armature dos Meshy): os offsets
+	# são autorados p/ FRENTE = -Z, então precisam ser espelhados em X/Z.
+	if _is_skinned or (cid == "buggy" and _char_model.has_node("SkinPivot")):
+		_proc_anim.is_backwards = true
+
+# Normaliza o modelo importado (que vem grande) para a altura do jogador e
+# assenta os PÉS no fundo da colisão (senão o boneco fica gigante e flutuando).
+# Altura ÚNICA de TODOS os personagens jogáveis (voxel + skinnado) -> todos do mesmo
+# tamanho. Basta mudar este número p/ deixar todos maiores/menores.
+const CHAR_TARGET_H := 1.5
+const MODEL_TARGET_H := CHAR_TARGET_H    # voxel
+const SKINNED_TARGET_H := CHAR_TARGET_H  # skinnado (Meshy)
+const FEET_Y := -0.8           # fundo da colisão = chão
+
+# Cria a PISTOLA (oculta) na ponta do antebraço direito. Fica invisível até a rajada
+# Z (mera/hie), quando `_pistol.visible` é ligado. Cano ao longo de -Y = aponta pra
+# frente quando o braço estende na pose de mira (_finger_gun).
+func _attach_pistol(model: Node3D) -> void:
+	_pistols = []
+	if model == null:
+		return
+	for side in ["ForeArm_L", "ForeArm_R"]:
+		var arm := model.find_child(side, true, false)
+		if not (arm is Node3D):
+			continue
+		var gun := PlayerModelKit.build_pistol()
+		gun.position = Vector3(0, -0.36, 0.02)   # ponta do antebraço (mão)
+		gun.visible = false
+		(arm as Node3D).add_child(gun)
+		_pistols.append(gun)
+
+# Pistola, AABB e bake de profundidade -> PlayerModelKit (src/utils/).
+func _fit_model_to_body() -> void:
+	if _char_model == null:
+		return
+	var ab := PlayerModelKit.skeleton_aabb(_char_model) if _is_skinned else PlayerModelKit.model_aabb(_char_model)
+	# Altura-alvo: skinnado (Meshy) é mais encorpado -> um pouco menor p/ casar com o mundo.
+	var target_h := SKINNED_TARGET_H if _is_skinned else MODEL_TARGET_H
+	if character_id == "blackbeard":
+		target_h *= 1.5   # Barba Negra tem 1.5 de tamanho em comparação aos demais
+	var ky := 1.0
+	if ab.size.y > 0.01:
+		ky = target_h / ab.size.y
+	# Voxel: engrossa o eixo Z (1.85x). SKINNADO (Skeleton3D): escala UNIFORME —
+	# escala não-uniforme num skeleton corrompe o skinning (transform NaN -> tela cinza).
+	var zscale := ky if _is_skinned else ky * 1.85
+	_char_model.scale = Vector3(ky, ky, zscale)
+	# pés (base da AABB) no fundo da colisão
+	_char_model.position.y = FEET_Y - ky * ab.position.y
+
+# ---------------------------------------------------------------- combate ---
+func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knockback: Vector3 = Vector3.ZERO) -> void:
+	if get_meta("damage_immune", false) or get_meta("custom_pose", "") == "hibashira":
+		print("🛡️ DANO E KNOCKBACK BLOQUEADOS! O usuário está IMUNE a danos durante a habilidade!")
+		return
+
+	# 1. INTERRUPÇÃO DE ATAQUE SOBRE DANO
+	SkillSystem.interrupt_casting(self)
+
+	if _animator:
+		_animator.trigger_damage()
+	elif _skel_anim:
+		_skel_anim.play_one_shot("damage")
+
+	health = maxf(health - amount, 0.0)
+	# Feedback de dano: pisca vermelho, som de recepção e número flutuante.
+	FxUtil.flash_red(_char_model)
+	AudioFX.hurt(get_tree().current_scene, global_position + Vector3.UP * 1.0)
+	FxUtil.damage_number(get_tree().current_scene, global_position + Vector3.UP * 1.7, amount, Color(1.0, 0.75, 0.2))
+	var hud := get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("on_player_damaged"):
+		hud.on_player_damaged(amount, health, max_health)
+	print("💥 Dano Recebido: ", amount, " | HP Restante: ", health, "/", max_health)
+
+	# 2. KNOCKBACK ESCALADO E MODIFICADO POR AR E MOVIMENTO
+	if base_knockback.length() > 0.1:
+		var final_knockback := SkillSystem.calculate_knockback(base_knockback, health, max_health)
+		# Regra 1: Quando alguém é atingido no ar o knockback DOBRA.
+		if not is_on_floor():
+			final_knockback *= 2.0
+			print("✈️ Atingido no AR! Knockback dobrado!")
+		# Regra 2: O knockback pode ser reduzido em até 70% se tentar se mover para outra direção (nunca 100%).
+		var f_kb := 0.0; var r_kb := 0.0
+		if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):    f_kb += 1.0
+		if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN):  f_kb -= 1.0
+		if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT): r_kb += 1.0
+		if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):  r_kb -= 1.0
+		var move_attempt := ((-Basis.from_euler(Vector3(0, _yaw, 0)).z) * f_kb + (Basis.from_euler(Vector3(0, _yaw, 0)).x) * r_kb)
+		if move_attempt.length_squared() > 0.01:
+			move_attempt = move_attempt.normalized()
+			var kb_dir := final_knockback.normalized()
+			var dot := move_attempt.dot(kb_dir)
+			if dot < 0.85: # Tentativa de mover para outra direção / resistir
+				var reduction_pct := remap(clampf(dot, -1.0, 0.5), 0.5, -1.0, 0.0, 0.70)
+				var mult := clampf(1.0 - reduction_pct, 0.30, 1.0) # Nunca menos que 30% (nunca reduzido completamente)
+				final_knockback *= mult
+				print("🛡️ Knockback Reduzido por Movimento (", int(reduction_pct * 100), "% resistido)!")
+		velocity += final_knockback
+		print("🚀 Knockback Final Aplicado: ", final_knockback)
+
+	# 3. VERIFICAÇÃO DE MORTE
+	if health <= 0.0:
+		die_and_respawn()
+
+func die_and_respawn() -> void:
+	print("💀 MORTE REGISTRADA! Respawnando na plataforma...")
+	if _animator:
+		_animator.trigger_death()
+	elif _skel_anim:
+		_skel_anim.play_one_shot("death")
+
+	# Se o jogador possuía uma fruta, devolve a fruta para a sua árvore
+	if current_fruit_id != "":
+		TreeAndFruitGenerator.respawn_fruit(current_fruit_id)
+		current_fruit_id = ""
+		speed_multiplier = 1.0
+		jump_multiplier = 1.0
+
+	health = max_health
+	energy = max_energy
+	velocity = Vector3.ZERO
+	global_position = Vector3(0, 6, 0) # Respawn no centro da plataforma
+
+func suppress_skills_temporarily(duration: float) -> void:
+	is_suppressed = true
+	suppression_timer = duration
+	print("🚫 PODERES DESATIVADOS POR YAMI YAMI! Tempo restante: ", duration, "s")
+
+func lock_movement(duration: float, skill_id: String = "") -> void:
+	_movement_locked_timer = maxf(_movement_locked_timer, duration)
+	set_meta("active_skill", skill_id)
+
+# Começa a segurar a skill: congela + pausa animação (mira com o mouse).
+func begin_charge(slot: String) -> void:
+	if is_suppressed:
+		print("❌ Poderes desativados (Yami Yami).")
+		return
+	if _skill_cooldowns.get(slot, 0.0) > 0.0:
+		print("⏳ Habilidade [%s] em recarga! Aguarde %.1fs." % [slot, _skill_cooldowns[slot]])
+		return
+	if slot != "Z" and _yami_pistol_active:
+		_yami_pistol_active = false
+		for g in _pistols: if is_instance_valid(g): g.visible = false
+		print("🌑 Yami Pistol desativada (Outra habilidade foi acionada).")
+	if slot == "C" and combat_mode == "fruit" and current_fruit_id == "yami_yami" and not is_on_floor():
+		print("❌ Black Hole requer contato com o solo!")
+		return
+	if slot == "Z" and combat_mode == "fruit" and current_fruit_id == "yami_yami":
+		_yami_pistol_active = not _yami_pistol_active
+		print("🌑 Yami Pistol: ", "EMPUNHADA (Bt Dir=Mirar / Bt Esq=Atirar)" if _yami_pistol_active else "GUARDADA")
+		return
+	if slot == "C" and combat_mode == "fruit" and current_fruit_id == "yami_yami":
+		set_meta("yami_black_hole_active", true)
+		_charging = true
+		_charge_slot = "C"
+		velocity = Vector3.ZERO
+		_request_cast("C")
+		return
+	# Z RAJADA (Mera = balas de fogo; Hie = flechas de gelo) — começa ao PRESSIONAR,
+	# não congela o player; para ao soltar ou ao atingir RAPID_MAX.
+	if slot == "Z" and combat_mode == "fruit" and (current_fruit_id == "mera_mera" or current_fruit_id == "hie_hie"):
+		trigger_skill_cooldown("Z")
+		_rapid_fire = true
+		_rapid_count = 0
+		_rapid_t = 0.0
+		return
+	if combat_mode == "style" and STYLES_LIST[current_style_idx] == "teste_animacao":
+		energy = maxf(energy - ENERGY_SKILL, 0.0)
+		_request_cast(slot)
+		return
+	if _charging:
+		return
+	_charging = true
+	_charge_slot = slot
+	velocity = Vector3.ZERO
+	set_meta("is_casting", true)   # interrompível por dano
+	if _animator and _animator.animation_player:
+		_animator.animation_player.speed_scale = 0.0
+
+# Solta a tecla -> dispara a skill na direção mirada e destrava.
+func release_charge(slot: String) -> void:
+	if combat_mode == "style" and STYLES_LIST[current_style_idx] == "teste_animacao":
+		return
+	if slot == "C" and combat_mode == "fruit" and current_fruit_id == "yami_yami":
+		if has_meta("yami_black_hole_active"):
+			set_meta("yami_black_hole_active", false)
+		_charging = false
+		_charge_slot = ""
+		return
+	# MERA MERA Z: soltar a tecla ENCERRA a rajada.
+	if _rapid_fire and slot == "Z":
+		_rapid_fire = false
+		return
+	if not _charging or _charge_slot != slot:
+		return
+	_charging = false
+	if _animator and _animator.animation_player:
+		_animator.animation_player.speed_scale = 1.0
+	energy = maxf(energy - ENERGY_SKILL, 0.0)   # skill consome energia
+	_request_cast(slot)
+
+# Compat: disparo imediato (sem segurar).
+func cast_skill_slot(slot_key: String) -> void:
+	if is_suppressed or _skill_cooldowns.get(slot_key, 0.0) > 0.0:
+		return
+	_request_cast(slot_key)
+
+# ---- Fase 5: casting SERVIDOR-AUTORIDADE ----
+# Cliente PEDE o cast -> servidor valida e é dono da hitbox -> a PRESENTATION
+# (VFX/anim) roda em TODOS os clientes; o dano/knockback (DamageZone) só é ativo
+# no servidor. Sem peer (SP puro/harness) roda tudo local, idêntico.
+func _request_cast(slot: String) -> void:
+	if not _is_authority or is_suppressed or _skill_cooldowns.get(slot, 0.0) > 0.0:
+		return
+	trigger_skill_cooldown(slot)
+	if slot != "Z" and _yami_pistol_active:
+		_yami_pistol_active = false
+		for g in _pistols: if is_instance_valid(g): g.visible = false
+	var cam_dir := -_cam.global_transform.basis.z
+	var origin := global_position + Vector3.UP * 1.0 + cam_dir * 1.5
+	
+	var space := get_world_3d().direct_space_state
+	var cam_pos := _cam.global_position
+	var end_pos := cam_pos + cam_dir * 150.0
+	var query := PhysicsRayQueryParameters3D.create(cam_pos, end_pos)
+	query.exclude = [get_rid()]
+	
+	# Ignora áreas (como triggers e a própria DamageZone) para a mira não bater no ar
+	query.collide_with_areas = false
+	query.collide_with_bodies = true
+	
+	var hit := space.intersect_ray(query)
+	var target_point := end_pos
+	if not hit.is_empty():
+		target_point = hit.position
+		
+	var aim := (target_point - origin).normalized()
+	
+	# Camera Feel ao usar skill (V = ultimate: mais forte + slow-mo + flash).
+	var ult := slot == "V"
+	add_camera_shake(0.85 if ult else 0.6)
+	_fov_punch = 8.0 if ult else 5.0
+	ScreenFX.chromatic_pulse(0.7 if ult else 0.35)
+	if ult:
+		GameFlow.slow_mo()
+		ScreenFX.flash(Color(1, 1, 1), 0.3)
+	# Host/SP JÁ é o servidor -> executa a autoridade DIRETO (rpc_id a si mesmo é
+	# proibido pelo Godot). Cliente puro -> pede ao servidor (peer 1).
+	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
+		_do_server_cast(slot, aim, origin)
+	else:
+		_net_cast.rpc_id(1, slot, aim, origin)
+
+@rpc("any_peer", "reliable")
+func _net_cast(slot: String, aim: Vector3, origin: Vector3) -> void:
+	if multiplayer.is_server():
+		_do_server_cast(slot, aim, origin)
+
+# SERVIDOR = autoridade: (validaria cooldown/estado) e manda TODOS reproduzirem.
+func _do_server_cast(slot: String, aim: Vector3, origin: Vector3) -> void:
+	if multiplayer.has_multiplayer_peer():
+		_net_play_cast.rpc(slot, aim, origin)            # broadcast + call_local
+	else:
+		_net_play_cast(slot, aim, origin)                # sem rede: local direto
+
+# ---- MERA MERA Z: rajada de balas de fogo (servidor-autoridade, como o cast) ----
+func _tick_rapid_fire(delta: float) -> void:
+	if not _rapid_fire:
+		return
+	if energy < ENERGY_BULLET:
+		_rapid_fire = false                              # sem energia -> encerra a rajada
+		return
+	_rapid_t -= delta
+	if _rapid_t <= 0.0:
+		_rapid_t = RAPID_INTERVAL
+		energy = maxf(energy - ENERGY_BULLET, 0.0)       # cada bala gasta energia
+		_request_bullet()
+		add_camera_shake(0.12)                           # Camera Feel: coice de cada tiro
+		_gun_recoil = 1.0                                # coice visual do braço (mira)
+		_rapid_count += 1
+		if _rapid_count >= RAPID_MAX:
+			_rapid_fire = false                          # 16 balas -> para
+
+func _request_bullet() -> void:
+	if not _is_authority or is_suppressed:
+		return
+	# MIRA CORRIGIDA: acha o ponto no mundo sob a mira (raycast) e faz a bala CONVERGIR
+	# nele partindo do cano da pistola — assim ela acerta exatamente onde a mira aponta.
+	var target := _aim_target_point()
+	var origin := _muzzle_pos(_bullet_side)              # alterna esquerda/direita a cada tiro
+	_bullet_side = 1 - _bullet_side
+	var aim := (target - origin)
+	if aim.length() < 0.01:
+		aim = -_cam.global_transform.basis.z
+	aim = aim.normalized()
+	origin += aim * 0.25                                 # sai à frente do cano
+	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
+		_do_server_bullet(aim, origin)
+	else:
+		_net_bullet_req.rpc_id(1, aim, origin)
+
+# Ponta do cano da pistola da mão `side` (0=esq, 1=dir); fallback = à frente do peito.
+func _muzzle_pos(side: int) -> Vector3:
+	if side < _pistols.size() and is_instance_valid(_pistols[side]):
+		var g: Node3D = _pistols[side]
+		return g.global_position - g.global_transform.basis.y * 0.34   # cano = -Y local
+	return global_position + Vector3.UP * 1.0 - _cam.global_transform.basis.z * 1.2
+
+# Ponto no mundo sob a MIRA. Com aim assist, puxa pro inimigo mais alinhado no cone.
+func _aim_target_point() -> Vector3:
+	var cam_pos := _cam.global_position
+	var fwd := -_cam.global_transform.basis.z
+	if aim_assist:
+		var e := _aim_assist_target(cam_pos, fwd)
+		if e != null:
+			return e.global_position + Vector3.UP * 0.6
+	var space := get_world_3d().direct_space_state
+	var q := PhysicsRayQueryParameters3D.create(cam_pos, cam_pos + fwd * 200.0)
+	q.exclude = [get_rid()]
+	var hit := space.intersect_ray(q)
+	if not hit.is_empty():
+		return hit["position"]
+	return cam_pos + fwd * 60.0
+
+# Inimigo mais ALINHADO à mira dentro do cone (~25°) e alcance — p/ a assistência.
+func _aim_assist_target(cam_pos: Vector3, fwd: Vector3) -> Node3D:
+	var best: Node3D = null
+	var best_align := 0.9      # cos do cone
+	for e in get_tree().get_nodes_in_group("enemy"):
+		if not (e is Node3D):
+			continue
+		var to: Vector3 = (e.global_position + Vector3.UP * 0.6) - cam_pos
+		var d := to.length()
+		if d > 55.0 or d < 0.5:
+			continue
+		var align := fwd.dot(to / d)
+		if align > best_align:
+			best_align = align
+			best = e
+	return best
+
+@rpc("any_peer", "reliable")
+func _net_bullet_req(aim: Vector3, origin: Vector3) -> void:
+	if multiplayer.is_server():
+		_do_server_bullet(aim, origin)
+
+func _do_server_bullet(aim: Vector3, origin: Vector3) -> void:
+	if multiplayer.has_multiplayer_peer():
+		_net_bullet_play.rpc(aim, origin)
+	else:
+		_net_bullet_play(aim, origin)
+
+@rpc("any_peer", "call_local", "reliable")
+func _net_bullet_play(aim: Vector3, origin: Vector3) -> void:
+	if get_tree() and get_tree().current_scene:
+		AudioFX.gunshot(get_tree().current_scene, origin, randf_range(0.95, 1.12))
+	if current_fruit_id == "hie_hie":
+		IceFX.bullet(get_tree().current_scene, origin, aim, 8.0, self)   # flecha de gelo
+	elif current_fruit_id == "yami_yami":
+		YamiFX.bullet(get_tree().current_scene, origin, aim, 25.0, self) # bala de trevas abissais
+	else:
+		FireFX.bullet(get_tree().current_scene, origin, aim, 8.0, self)  # bala de fogo
+
+@rpc("any_peer", "call_local", "reliable")
+func _net_play_cast(slot: String, aim: Vector3, origin: Vector3) -> void:
+	_fire_skill(slot, aim, origin)
+
+# Presentation da skill (roda em todos): VFX pela fruta/estilo. A DamageZone criada
+# dentro só aplica dano no SERVIDOR (ver DamageZone).
+func _fire_skill(slot: String, aim: Vector3, origin: Vector3) -> void:
+	var variant: int = ["Z", "X", "C", "V"].find(slot)
+	if variant < 0:
+		variant = 0
+
+	if _animator:
+		_animator.trigger_kill()
+
+	var world := get_tree().current_scene
+
+	if combat_mode == "style":
+		var active_style: String = STYLES_LIST[current_style_idx]
+		var sdata: Dictionary = FightingStyles.STYLES[active_style]["skills"][slot]
+		var dano: float = float(sdata.get("dano", 25))
+		print("🥊 ESTILO ", active_style.to_upper(), ": ", sdata.get("nome", slot))
+		FightingStyles.cast(world, active_style, variant, origin, aim, dano, self)
+	else:
+		var fruit_skills := SkillSystem.get_fruit_skills()
+		var fid := current_fruit_id if fruit_skills.has(current_fruit_id) else "gomu_gomu"
+		var sdata: Dictionary = fruit_skills[fid][slot]
+		var cor: Color = sdata.get("cor", Color.WHITE)
+		var dano: float = float(sdata.get("dano", 20))
+		print("⚡ FRUTA ", fid.to_upper(), ": ", sdata.get("nome", slot))
+
+		match fid:
+			"gomu_gomu": GomuFX.cast(world, origin, aim, variant, dano, self)
+			"suna_suna": SandFX.cast(world, origin, aim, variant, dano, self)
+			"mera_mera": FireFX.cast(world, origin, aim, variant, dano, self)
+			"hie_hie":   IceFX.cast(world, origin, aim, variant, dano, self)
+			"goro_goro": GoroFX.cast(world, origin, aim, variant, dano, self)
+			"yami_yami": YamiFX.cast(world, origin, aim, variant, dano, self)
+			"bara_bara": BaraFX.cast(world, origin, aim, variant, dano, self)
+			"gura_gura": GuraFX.cast(world, origin, aim, variant, dano, self)
+			"buki_buki": BukiFX.cast(world, origin, aim, variant, dano, self)
+			_: _generic_vfx(cor, aim, origin)
+
+	get_tree().create_timer(0.3).timeout.connect(func(): set_meta("is_casting", false))
+
+# VFX genérico para frutas ainda sem efeito dedicado.
+func _generic_vfx(cor: Color, aim: Vector3, origin: Vector3) -> void:
+	var vfx := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.6
+	sphere.height = 1.2
+	vfx.mesh = sphere
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(cor.r, cor.g, cor.b, 0.85)
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.emission_enabled = true
+	m.emission = cor
+	m.emission_energy_multiplier = 3.5
+	vfx.material_override = m
+	vfx.position = origin
+	get_tree().current_scene.add_child(vfx)
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(vfx, "position", origin + aim * 8.0, 0.45)
+	tw.tween_property(vfx, "scale", Vector3.ONE * 5.0, 0.45)
+	tw.tween_property(m, "albedo_color:a", 0.0, 0.45)
+	tw.set_parallel(false)
+	tw.tween_callback(vfx.queue_free)
+
+func cast_skill(cor: Color) -> void:
+	cast_skill_slot("Z")
+
+# DEBUG (tecla T): cicla entre todas as frutas p/ testar as skills rapidamente.
+func _cycle_fruit() -> void:
+	var ids: Array = SkillSystem.get_fruit_skills().keys()
+	var i: int = ids.find(current_fruit_id)
+	var nxt: String = ids[(i + 1) % ids.size()]
+	combat_mode = "fruit"       # garante que o cast use a fruta (não o estilo)
+	equip_fruit(nxt)
+	print("🔀 Fruta de teste: ", nxt)
+
+func equip_fruit(fruit_id: String) -> void:
+	current_fruit_id = fruit_id
+	# Troca automática de aparência ao comer/equipar uma Akuma no Mi
+	var new_cid := ""
+	match fruit_id:
+		"mera_mera": new_cid = "ace"
+		"yami_yami": new_cid = "blackbeard"
+		"suna_suna": new_cid = "crocodile"
+		"goro_goro": new_cid = "nami"
+		"bara_bara": new_cid = "buggy"
+		"gomu_gomu": new_cid = "base"
+	if new_cid != "" and character_id != new_cid:
+		print("🔄 Troca automática de aparência: comendo a fruta [", fruit_id, "] -> transformado em [", new_cid, "]!")
+		_setup_character_model(new_cid)
+	_yami_pistol_active = false
+	set_meta("yami_black_hole_active", false)
+	var all_passives := FruitPassiveSystem.get_all_passives()
+	if all_passives.has(fruit_id):
+		var p_data: Dictionary = all_passives[fruit_id]
+		speed_multiplier = float(p_data.get("speed_mod", 1.0))
+		jump_multiplier = float(p_data.get("jump_mod", 1.0))
+		print("⚡ Fruta Equipada: ", fruit_id, " | Passiva: ", p_data.get("nome", ""), " [Speed: x", speed_multiplier, " Jump: x", jump_multiplier, "]")
+
+	# Atualiza a barra de tecnicas para a fruta equipada — vale para QUALQUER
+	# caminho de coleta (esfera no chao OU fruta na arvore), consertando o caso
+	# em que o poder era ganho mas a HUD nao refletia.
+	# HUD só reflete a fruta do MEU player (equipar em player remoto não mexe no meu HUD).
+	var hud := get_tree().get_first_node_in_group("hud")
+	if _is_authority and hud and hud.has_method("update_skills_for_fruit"):
+		hud.update_skills_for_fruit(fruit_id)
+
+func _process_yami_pistol(delta: float) -> void:
+	if Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+		var target := _find_closest_enemy_yami(35.0)
+		if target and is_instance_valid(target):
+			var to_target: Vector3 = (target.global_position + Vector3.UP * 0.9) - _cam.global_position
+			var target_yaw := atan2(-to_target.x, -to_target.z)
+			var h_dist := Vector2(to_target.x, to_target.z).length()
+			var target_pitch := clampf(atan2(to_target.y, h_dist), -1.3, 1.3)
+			_yaw = lerp_angle(_yaw, target_yaw, 15.0 * delta)
+			_pitch = lerpf(_pitch, target_pitch, 15.0 * delta)
+			_update_pivot()
+			if _char_model:
+				_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw, 20.0 * delta)
+	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and _yami_shot_cooldown <= 0.0:
+		_yami_shot_cooldown = 0.35
+		_gun_recoil = 1.0
+		var cam_dir := -_cam.global_transform.basis.z
+		var origin := global_position + Vector3.UP * 1.2 + cam_dir * 0.8
+		var aim := _aim_target_point()
+		var shoot_dir := (aim - origin).normalized()
+		if get_tree() and get_tree().current_scene:
+			YamiFX.bullet(get_tree().current_scene, origin, shoot_dir, 25.0, self)
+
+func _find_closest_enemy_yami(max_dist: float) -> Node3D:
+	var best: Node3D = null
+	var best_d := max_dist
+	if get_tree() and get_tree().current_scene:
+		var cands := get_tree().get_nodes_in_group("enemy") + get_tree().get_nodes_in_group("player")
+		for c in cands:
+			if not (c is Node3D) or c == self:
+				continue
+			var d: float = global_position.distance_to(c.global_position)
+			if d < best_d and d > 0.2:
+				best_d = d
+				best = c
+	return best

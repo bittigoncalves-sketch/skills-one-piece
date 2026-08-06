@@ -1,0 +1,40 @@
+; Engine configuration file.
+; SKILLS ONE PIECE — clone da base de jogos 3D.
+
+config_version=5
+
+[application]
+
+config/name="SKILLS ONE PIECE"
+run/main_scene="res://MainMenu.tscn"
+config/features=PackedStringArray("4.6", "Forward Plus")
+
+[autoload]
+
+ServerManager="*res://network/ServerManager.gd"
+ClientManager="*res://network/ClientManager.gd"
+FruitNet="*res://network/FruitNet.gd"
+GameFlow="*res://autoload/GameFlow.gd"
+ScreenFX="*res://src/fx/ScreenFX.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+; "canvas_items": o 3D renderiza na RESOLUÇÃO REAL da janela (nítido em tela cheia);
+; só a UI é escalada a partir da base 1280x720. "viewport" renderizava tudo em 720p
+; e fazia upscale -> borrava em fullscreen. "expand" preenche telas widescreen.
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+; Mouse capturado (câmera): no Godot 4.6 o backend WAYLAND NATIVO usa o protocolo
+; zwp_relative_pointer, feito p/ mouse capturado/FPS — o movimento relativo funciona
+; mesmo segurando WASD. Forçar X11 (XWayland) numa sessão Wayland cai no pointer
+; warping emulado, que TRAVA o relative ao andar (era a causa do bug da câmera).
+; Por isso usamos o driver nativo. Vale p/ qualquer forma de abrir (editor, lançador).
+display_server/driver.linuxbsd="wayland"
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+anti_aliasing/quality/msaa_3d=1
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=2

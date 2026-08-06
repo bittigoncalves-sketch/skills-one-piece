@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://VFX/BreathVFX.gd" id="1_2p76c"]
+
+[node name="BreathVFX" type="Node3D" unique_id=638945782]
+script = ExtResource("1_2p76c")

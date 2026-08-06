@@ -1,0 +1,225 @@
+{
+  "_comentario": "Akuma no Mi (Frutos do Diabo) — dados com passivas dinâmicas para o projeto SKILLS ONE PIECE.",
+  "frutos": [
+    {
+      "id": "gomu_gomu",
+      "nome": "Gomu Gomu no Mi",
+      "tipo": "Paramecia",
+      "usuario": "Monkey D. Luffy",
+      "poder": "Corpo de borracha elástica.",
+      "passiva": "Corpo Elástico (Kinetic Bounce)",
+      "passiva_descricao": "Pulos ganham +20% de impulso mecânico. Reduz repulsão (knockback) recebida em 40%.",
+      "cor": "#c94b3b",
+      "skills": ["Gomu Gomu no Pistol", "Gatling", "Red Hawk", "Gear 4"]
+    },
+    {
+      "id": "mera_mera",
+      "nome": "Mera Mera no Mi",
+      "tipo": "Logia",
+      "usuario": "Portgas D. Ace / Sabo",
+      "poder": "Gera e controla chamas vulcânicas.",
+      "passiva": "Combustão Progressiva (Overheat Charges)",
+      "passiva_descricao": "Cada habilidade gera 1 carga de Chama. Com 5 cargas, o próximo ataque estoura em explosão de Fogo em área e +25% velocidade de ataque.",
+      "cor": "#ff6a1f",
+      "skills": ["Hiken", "Higan", "Kagerou", "Dai Enkai: Entei"]
+    },
+    {
+      "id": "hie_hie",
+      "nome": "Hie Hie no Mi",
+      "tipo": "Logia",
+      "usuario": "Kuzan (Aokiji)",
+      "poder": "Gera e manipula gelo.",
+      "passiva": "Trilha Congelante (Frost Trail)",
+      "passiva_descricao": "Deixa um rastro de gelo ao correr que desacelera inimigos em 35% e dá +15% de velocidade de movimento ao usuário.",
+      "cor": "#7fd0ff",
+      "skills": ["Ice Age", "Ice Time", "Pheasant Beak"]
+    },
+    {
+      "id": "pika_pika",
+      "nome": "Pika Pika no Mi",
+      "tipo": "Logia",
+      "usuario": "Borsalino (Kizaru)",
+      "poder": "Gera e ataca na velocidade da luz.",
+      "passiva": "Fóton Reativo (Light Dash)",
+      "passiva_descricao": "Após utilizar uma habilidade, o próximo dash se torna um feixe de luz instantâneo com +35% de dano bônus de Luz.",
+      "cor": "#fff27a",
+      "skills": ["Yasakani no Magatama", "Ama no Murakumo"]
+    },
+    {
+      "id": "magu_magu",
+      "nome": "Magu Magu no Mi",
+      "tipo": "Logia",
+      "usuario": "Sakazuki (Akainu)",
+      "poder": "Gera e lança magma ardente.",
+      "passiva": "Núcleo Vulcânico (Volcanic Core)",
+      "passiva_descricao": "Quanto menor a vida atual, maior o dano das habilidades (até +50%). Golpes normais aplicam queimadura contínua.",
+      "cor": "#b3271a",
+      "skills": ["Dai Funka", "Meigou"]
+    },
+    {
+      "id": "goro_goro",
+      "nome": "Goro Goro no Mi",
+      "tipo": "Logia",
+      "usuario": "Enel",
+      "poder": "Gera e manipula eletricidade.",
+      "passiva": "Sobrecarga Voltáica (Volt Meter)",
+      "passiva_descricao": "Movimentar-se acumula voltagem (0 a 100). Em 100, dispara um raio automático no inimigo mais próximo, atordoando por 0.5s.",
+      "cor": "#f4e04d",
+      "skills": ["El Thor", "Sango", "Amaru", "Mamaragan"]
+    },
+    {
+      "id": "suna_suna",
+      "nome": "Suna Suna no Mi",
+      "tipo": "Logia",
+      "usuario": "Crocodile",
+      "poder": "Gera areia e desidrata oponentes.",
+      "passiva": "Drenagem Desértica (Desiccation)",
+      "passiva_descricao": "Acertos absorvem a umidade do alvo, roubando estamina e curando 12% do dano infligido.",
+      "cor": "#d9b46a",
+      "skills": ["Desert Spada", "Ground Death", "Sables"]
+    },
+    {
+      "id": "yami_yami",
+      "nome": "Yami Yami no Mi",
+      "tipo": "Logia",
+      "usuario": "Marshall D. Teach (Barba Negra)",
+      "poder": "Controla gravidade e trevas.",
+      "passiva": "Supressão Abissal (Fruit Nullification Aura)",
+      "passiva_descricao": "Desativação temporária dos poderes e habilidades ativas de usuários de fruta em um raio de 8 metros.",
+      "cor": "#2b2b33",
+      "skills": ["Disparo de Pistola", "Kurouzu", "Black Hole", "Liberation"]
+    },
+    {
+      "id": "gura_gura",
+      "nome": "Gura Gura no Mi",
+      "tipo": "Paramecia",
+      "usuario": "Edward Newgate (Barba Branca)",
+      "poder": "Cria ondas de choque e terremotos.",
+      "passiva": "Ruptura Tectônica (Seismic Wave)",
+      "passiva_descricao": "Ataques carregados geram ondas de choque sísmicas no chão que quebram a guarda de inimigos próximos.",
+      "cor": "#8fa0b3",
+      "skills": ["Seaquake", "Tsunami"]
+    },
+    {
+      "id": "ope_ope",
+      "nome": "Ope Ope no Mi",
+      "tipo": "Paramecia",
+      "usuario": "Trafalgar D. Water Law",
+      "poder": "Cria o espaço 'Room' para cirurgias em combate.",
+      "passiva": "Precisão Cirúrgica (Spatial Mastery)",
+      "passiva_descricao": "Dentro da 'Room', a chance de acerto crítico aumenta em +30% e habilidades consomem 50% menos estamina.",
+      "cor": "#6fd6c7",
+      "skills": ["Room", "Shambles", "Gamma Knife", "Kikoku"]
+    },
+    {
+      "id": "bara_bara",
+      "nome": "Bara Bara no Mi",
+      "tipo": "Paramecia",
+      "usuario": "Buggy",
+      "poder": "Desmembra o corpo em partes flutuantes.",
+      "passiva": "Esquiva Desmembrada (Split Reflex)",
+      "passiva_descricao": "Ao receber dano físico cortante ou frontal, possui 35% de chance de desmembrar o corpo automaticamente e esquivar sem tomar dano.",
+      "cor": "#d06fa8",
+      "skills": ["Bara Bara Ho", "Bara Bara Festival"]
+    },
+    {
+      "id": "hana_hana",
+      "nome": "Hana Hana no Mi",
+      "tipo": "Paramecia",
+      "usuario": "Nico Robin",
+      "poder": "Faz brotar partes do corpo em superfícies.",
+      "passiva": "Florada Múltipla (Multi-Limb Grasp)",
+      "passiva_descricao": "Golpes têm 20% de chance de fazer brotar mãos adicionais no alvo que o imobilizam por 1.0s.",
+      "cor": "#9b6fd0",
+      "skills": ["Clutch", "Mil Fleur", "Gigante Fleur"]
+    },
+    {
+      "id": "ito_ito",
+      "nome": "Ito Ito no Mi",
+      "tipo": "Paramecia",
+      "usuario": "Donquixote Doflamingo",
+      "poder": "Cria e manipula fios cortantes.",
+      "passiva": "Fios Marionete (Puppet Threads)",
+      "passiva_descricao": "Aplica marcas de Fio. Ao acumular 3 marcas, o inimigo fica paralisado e confuso por 1.5s.",
+      "cor": "#e0669b",
+      "skills": ["Overheat", "Parasite", "Birdcage", "Awakening"]
+    },
+    {
+      "id": "zushi_zushi",
+      "nome": "Zushi Zushi no Mi",
+      "tipo": "Paramecia",
+      "usuario": "Issho (Fujitora)",
+      "poder": "Controla a força da gravidade.",
+      "passiva": "Pressão Gravitacional (Heavy Gravity)",
+      "passiva_descricao": "Aumenta o peso dos alvos atingidos, reduzindo a altura do pulo deles e aplicando lentidão acumulativa.",
+      "cor": "#7a86c9",
+      "skills": ["Gravito", "Meteoro"]
+    },
+    {
+      "id": "moku_moku",
+      "nome": "Moku Moku no Mi",
+      "tipo": "Logia",
+      "usuario": "Smoker",
+      "poder": "Gera fumaça tática.",
+      "passiva": "Cortina de Fumaça (Smokescreen Dash)",
+      "passiva_descricao": "Esquivar deixa um rastro densíssimo de fumaça que cega inimigos e reduz a precisão deles em 50%.",
+      "cor": "#c8ccd2",
+      "skills": ["White Blow", "White Snake"]
+    },
+    {
+      "id": "tori_tori_phoenix",
+      "nome": "Tori Tori no Mi, Modelo Fênix",
+      "tipo": "Zoan Mítica",
+      "usuario": "Marco",
+      "poder": "Forma de Fênix de fogo azul.",
+      "passiva": "Chamas da Renascença (Phoenix Healing)",
+      "passiva_descricao": "Regenera 2.5% da vida máxima por segundo continuamente e concede pulo duplo no ar.",
+      "cor": "#4fb0ff",
+      "skills": ["Chamas da Ressurreição", "Voo"]
+    },
+    {
+      "id": "neko_neko_leopard",
+      "nome": "Neko Neko no Mi, Modelo Leopardo",
+      "tipo": "Zoan",
+      "usuario": "Rob Lucci",
+      "poder": "Transformação em leopardo felino.",
+      "passiva": "Instinto Predador (Predator Sprint)",
+      "passiva_descricao": "Ganha +30% de velocidade de movimento ao correr na direção de inimigos feridos.",
+      "cor": "#d7b45a",
+      "skills": ["Rokuougan", "Forma híbrida"]
+    },
+    {
+      "id": "hito_hito_nika",
+      "nome": "Hito Hito no Mi, Modelo Nika",
+      "tipo": "Zoan Mítica",
+      "usuario": "Monkey D. Luffy (Gear 5)",
+      "poder": "Forma Nika do Deus Guerreiro do Sol.",
+      "passiva": "Libertação Cartunesca (Joy Boy Rhythm)",
+      "passiva_descricao": "Pular gera um pulso de gargalhada radiante que restaura estamina e acelera aliados próximos em +20%.",
+      "cor": "#f5f0e1",
+      "skills": ["Gear 5", "Bajrang Gun", "Liberação da imaginação"]
+    },
+    {
+      "id": "uo_uo_seiryu",
+      "nome": "Uo Uo no Mi, Modelo Seiryu",
+      "tipo": "Zoan Mítica",
+      "usuario": "Kaido",
+      "poder": "Forma de Dragão Seiryu.",
+      "passiva": "Escamas de Dragão & Nuvens (Wind Floating)",
+      "passiva_descricao": "Concede +30% de resistência a dano geral e a habilidade de planar temporariamente no ar.",
+      "cor": "#5fa8d3",
+      "skills": ["Boro Breath", "Bolt of Kong", "Tempestade de nuvens"]
+    },
+    {
+      "id": "gasu_gasu",
+      "nome": "Gasu Gasu no Mi",
+      "tipo": "Logia",
+      "usuario": "Caesar Clown",
+      "poder": "Gera gases tóxicos e rarefeitos.",
+      "passiva": "Depleção de Oxigênio (Asphyxiation Aura)",
+      "passiva_descricao": "Inimigos muito próximos perdem estamina gradualmente e sofrem dano de sufocamento contínuo.",
+      "cor": "#a7d06f",
+      "skills": ["Gastanet", "Gas Robber"]
+    }
+  ]
+}

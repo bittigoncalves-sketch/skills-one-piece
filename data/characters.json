@@ -1,0 +1,58 @@
+{
+  "characters": {
+    "buggy": {
+      "id": "buggy_clown",
+      "display_name": "Buggy o Palhaço",
+      "type": "paramecia",
+      "base_stats": {
+        "health": 120,
+        "speed": 7.5,
+        "jump_velocity": 16.0
+      },
+      "animations": {
+        "idle": { "file": "res://assets/models/buggy/buggy_idle.res", "fps": 30, "loop": true },
+        "run": { "file": "res://assets/models/buggy/buggy_run.res", "fps": 30, "loop": true },
+        "jump": { "file": "res://assets/models/buggy/buggy_jump.res", "fps": 30, "loop": false },
+        "damage": { "file": "res://assets/models/buggy/buggy_damage.res", "fps": 30, "loop": false },
+        "kill": { "file": "res://assets/models/buggy/buggy_kill.res", "fps": 30, "loop": false },
+        "death": { "file": "res://assets/models/buggy/buggy_death.res", "fps": 30, "loop": false }
+      }
+    },
+    "nami": {
+      "id": "nami_cat_burglar",
+      "display_name": "Nami A Gata Gatuna",
+      "type": "weather_tactician",
+      "base_stats": {
+        "health": 90,
+        "speed": 8.2,
+        "jump_velocity": 17.5
+      },
+      "animations": {
+        "idle": { "file": "res://assets/models/nami/nami_idle.res", "fps": 30, "loop": true },
+        "run": { "file": "res://assets/models/nami/nami_run.res", "fps": 30, "loop": true },
+        "jump": { "file": "res://assets/models/nami/nami_jump.res", "fps": 30, "loop": false },
+        "damage": { "file": "res://assets/models/nami/nami_damage.res", "fps": 30, "loop": false },
+        "kill": { "file": "res://assets/models/nami/nami_kill.res", "fps": 30, "loop": false },
+        "death": { "file": "res://assets/models/nami/nami_death.res", "fps": 30, "loop": false }
+      }
+    },
+    "ace": {
+      "id": "ace_fire_fist",
+      "display_name": "Portgas D. Ace",
+      "type": "logia",
+      "base_stats": {
+        "health": 110,
+        "speed": 8.0,
+        "jump_velocity": 17.0
+      },
+      "animations": {
+        "idle": { "file": "res://assets/models/ace/ace_idle.res", "fps": 30, "loop": true },
+        "run": { "file": "res://assets/models/ace/ace_run.res", "fps": 30, "loop": true },
+        "jump": { "file": "res://assets/models/ace/ace_jump.res", "fps": 30, "loop": false },
+        "damage": { "file": "res://assets/models/ace/ace_damage.res", "fps": 30, "loop": false },
+        "kill": { "file": "res://assets/models/ace/ace_kill.res", "fps": 30, "loop": false },
+        "death": { "file": "res://assets/models/ace/ace_death.res", "fps": 30, "loop": false }
+      }
+    }
+  }
+}
