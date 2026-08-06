@@ -849,9 +849,11 @@ func _setup_procedural_anim(cid: String) -> void:
 	_proc_anim = ProceduralAnimator.new()
 	add_child(_proc_anim)
 	_proc_anim.setup(BodyScanner.scan(_char_model))
-	# Corpo girado 180° em Y (SkinPivot do Buggy / Armature dos Meshy): os offsets
-	# são autorados p/ FRENTE = -Z, então precisam ser espelhados em X/Z.
-	if _is_skinned or (cid == "buggy" and _char_model.has_node("SkinPivot")):
+	# Corpo girado 180° em Y: os offsets são autorados p/ FRENTE = -Z e precisam
+	# ser espelhados. Vale só pro SkinPivot do Buggy — no SKINNADO a basis do
+	# SkeletonDriver já inclui o giro da Armature, então marcar aqui aplicaria a
+	# correção DUAS vezes e os membros balançariam ao contrário.
+	if not _is_skinned and cid == "buggy" and _char_model.has_node("SkinPivot"):
 		_proc_anim.is_backwards = true
 
 # Normaliza o modelo importado (que vem grande) para a altura do jogador e

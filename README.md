@@ -8,12 +8,21 @@ habilidades próprias, estilos de luta, parkour e multiplayer cliente-servidor.
 
 ## Rodar
 
-O projeto usa o Godot 4.6 baixado direto do site (não precisa de export templates):
+Precisa do **Godot 4.6** (baixado do site; não precisa de export templates).
 
 ```bash
 ./jogar.sh          # abre o jogo
 ./servidor.sh       # sobe um servidor dedicado (headless)
 ```
+
+Os scripts acham o Godot sozinhos (`$GODOT`, PATH, ou pastas comuns de download).
+Se não acharem: `GODOT=/caminho/do/godot ./jogar.sh`.
+
+⚠️ **Primeira execução depois de clonar** demora alguns minutos: o `jogar.sh`
+chama o `setup.sh` sozinho para importar os assets (~275 MB) e gerar o cache de
+`class_name`. **Não pule esse passo** — a pasta `.godot/` não vai no repositório,
+e sem o cache de `class_name` o `Main.gd` nem compila: o jogo abre em **tela
+cinza** ao entrar no singleplayer. Para rodar à mão: `./setup.sh`.
 
 O `jogar.sh` força o driver **wayland** de propósito — numa sessão Wayland o
 XWayland quebra o mouse capturado ao andar. Em sessão X11 o Godot cai em x11

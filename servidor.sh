@@ -4,6 +4,18 @@ set -e
 # local). Clientes conectam pelo IP desta máquina (porta 24565). Para nuvem, é só
 # rodar isto numa VPS e apontar o cliente pro IP — a lógica do jogo é a mesma.
 # O "-- --server" passa o argumento de usuário que o GameFlow lê p/ subir dedicado.
-GODOT="/home/gabriel-bitti/Downloads/Godot_v4.6.3-stable_linux.x86_64"
+
 PROJ="$(cd "$(dirname "$0")" && pwd)"
+GODOT="$("$PROJ/find_godot.sh" || true)"
+
+if [ -z "$GODOT" ]; then
+    echo "Godot 4.6 não encontrado. Rode: GODOT=/caminho/do/godot ./servidor.sh" >&2
+    exit 1
+fi
+
+if [ ! -f "$PROJ/.godot/global_script_class_cache.cfg" ]; then
+    echo "Primeira execução — preparando o projeto..."
+    GODOT="$GODOT" "$PROJ/setup.sh"
+fi
+
 exec "$GODOT" --headless --path "$PROJ" -- --server

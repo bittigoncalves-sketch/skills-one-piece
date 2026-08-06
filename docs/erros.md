@@ -7,7 +7,87 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
-## 2026-08-06 — Ninguém planta o pé no chão ao andar (ABERTO)
+## 2026-08-06 — Tela cinza ao abrir o singleplayer no clone do GitHub
+
+**Sintoma:** o usuário baixou o repositório em outro computador; o menu abre, mas
+ao entrar no singleplayer a tela fica **cinza permanente**.
+
+**Causa raiz:** ao publicar, coloquei `.godot/` no `.gitignore` (150 MB de cache
+regenerável). Dentro dela mora o `global_script_class_cache.cfg`, que registra
+todos os `class_name` do projeto. Sem ele, **todo script que cita `MapBuilder`,
+`Hud`, `TreeScatter` etc. falha ao parsear** — o `Main.gd` inteiro não carrega, a
+cena fica sem script, e então não há mapa, nem player, nem câmera. O Godot desenha
+uma cena 3D sem câmera com a clear color padrão: cinza.
+
+**Evidência:** clonei o repo para `/tmp` e rodei — reproduziu na hora:
+
+```
+SCRIPT ERROR: Parse Error: Identifier "MapBuilder" not declared in the current scope.
+ERROR: Failed to load script "res://Main.gd" with error "Parse error".
+```
+
+Depois do `--editor --quit` (que gera o cache): **0 erros**, modelo carrega normal.
+
+**Descartado:** um diagnóstico externo atribuiu o cinza a um frame sem câmera
+seguido de congelamento do `MapBuilder` com "2601 iterações / 7.800 nós". Não
+procede: `OBSTACLE_COUNT = 90`, e `MapBuilder.build()` é chamado **direto no
+`_ready()`** ([Main.gd:28](../Main.gd)), não dentro do `call_deferred`. O cinza
+não é um frame — é permanente, porque o script nunca carregou.
+
+**Correção:** `setup.sh` (importa assets + gera o cache), chamado
+**automaticamente** por `jogar.sh`/`servidor.sh` quando o cache não existe, e
+`find_godot.sh` — porque os scripts também tinham o caminho do Godot e do projeto
+chumbados para a máquina do autor, o que quebraria em qualquer outro computador.
+
+**Como detectar de novo:** clonar para uma pasta limpa e rodar. Se aparecer
+`Parse Error: Identifier "<algum class_name>" not declared`, é o cache faltando.
+
+---
+
+## 2026-08-06 — Cadência da marcha: usei 2π onde era π
+
+**Sintoma:** pé patinando no chão durante a caminhada, mesmo com a IK de pé.
+
+**Causa raiz:** para o pé não deslizar, ele tem que recuar exatamente na
+velocidade do corpo durante o apoio. Cada perna fica em apoio **metade** do ciclo,
+e nessa metade o corpo avança **uma** passada — logo `ω = π·v/passada`. Eu usei
+`2π`, o que dobra a cadência. Além disso a trajetória do pé no apoio precisa ser
+**linear**: com senoide o pé varre rápido no meio e devagar nas pontas, enquanto o
+corpo avança a velocidade constante — deslize garantido.
+
+**Evidência:** com `2π` + senoide, o pé recuava a 2,2 m/s contra 4,2 m/s do corpo.
+Com `π` + linear: **4,20 vs 4,20 — deslize 0%**.
+
+**Correção:** `_passada()` e o avanço de fase em `ProceduralAnimator.update()`;
+trajetória linear no apoio em `_perna_ik()`.
+
+**Como detectar de novo:** `tools/dev_tests/test_walk_run.gd` compara
+`(passada/π)·ω` com a velocidade do corpo.
+
+---
+
+## 2026-08-06 — Pé de apoio flutuando: bob por fórmula não fecha
+
+**Sintoma:** mesmo com a IK, a altura do pé de apoio variava 2-9 cm ao longo do
+ciclo.
+
+**Causa raiz:** as rotações das juntas passam por um filtro de suavização
+(`STIFFNESS`), mas eu calculava a subida do quadril por **fórmula**. Filtrar um
+ângulo não é o mesmo que filtrar a altura resultante, então os dois nunca
+cancelavam. Aumentar a rigidez reduzia mas não zerava.
+
+**Correção:** inverter a lógica — `_bob_dos_pes()` **mede** a pose que de fato
+saiu (já filtrada) e ajusta o quadril para o pé mais baixo encostar sempre na
+mesma altura. E esse ajuste **não pode ser filtrado de novo**, senão reintroduz o
+atraso que ele existe para cancelar.
+
+**Evidência:** variação da altura do pé de apoio caiu para **0,0000**.
+
+**Como detectar de novo:** `test_walk_run.gd`, item "altura do pé de apoio varia".
+
+---
+
+## 2026-08-06 — Ninguém planta o pé no chão ao andar (RESOLVIDO)
 
 **Sintoma:** o personagem parece flutuar / quicar em vez de pisar. Visível na
 gravação lateral do Barba Negra.

@@ -48,8 +48,10 @@ func _run() -> void:
 			var q: Vector3 = A * _p(skel, "Hips")
 			var pd: Vector3 = A * _p(skel, "RightFoot")
 			var pe: Vector3 = A * _p(skel, "LeftFoot")
-			# quanto o pé mais baixo está ABAIXO do quadril (maior = mais esticado)
-			var mais_baixo: float = q.y - maxf(pd.y, pe.y)
+			# Quanto o pé MAIS BAIXO está abaixo do quadril. É o pé de APOIO —
+			# menor y = mais baixo, então minf(). (Usar maxf aqui mede o pé em
+			# BALANÇO e não diz nada sobre a pisada.)
+			var mais_baixo: float = q.y - minf(pd.y, pe.y)
 			lo = minf(lo, mais_baixo)
 			hi = maxf(hi, mais_baixo)
 		print("%-12s %7.3f %7.3f %7.3f | %8.3f %8.3f %8.3f" % [

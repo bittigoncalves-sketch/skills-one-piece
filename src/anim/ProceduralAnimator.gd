@@ -5,15 +5,29 @@ extends Node
 # idle / walk / sprint-run / jump-fall / climb em runtime.
 
 const SPEED_REF := 4.2     # SPEED do Player (para normalizar 0..1)
-const STIFFNESS := 16.0    # rigidez do lerp (resposta fluida e ágil)
+# Rigidez do lerp das juntas. 16 era folgado demais depois que a marcha passou a
+# ter ciclo curto (11-25 quadros): o filtro atrasava e atenuava a perna, o pé
+# plantado deixava de cancelar a subida do corpo e voltava a flutuar. 38 segue o
+# alvo de perto sem perder a suavidade das transições (que têm blend próprio).
+const STIFFNESS := 38.0
 # Passadas por metro percorrido (cadência ligada à DISTÂNCIA, não ao tempo).
 # Menor = animação de walk/run mais lenta e calma; maior = passos mais curtos/rápidos.
 const STRIDE_GAIN := 1.0
+# Teto da cadência (rad/s de fase). ~4 ciclos/s — acima disso as pernas viram
+# hélice. Se a passada máxima for curta demais para a velocidade, sobra um
+# resíduo de deslize; é o mal menor.
+const CADENCIA_MAX := 34.0
+# Altura do quadril como fração da perna esticada. Nunca 1.0: o joelho precisa
+# sobrar dobrado, senão a IK satura e o pé sobe em vez de esticar.
+const H_PARADO := 0.96
+const H_CORRIDA := 0.90
+const H_SPRINT := 0.86   # corrida agacha mais -> o pé alcança mais longe
 
 var _n: Dictionary = {}     # papel -> Node3D
 var _rest: Dictionary = {}  # papel -> Vector3 (rotação de descanso)
 var _m: Dictionary = {}     # métricas do corpo
 var _rest_torso_pos := Vector3.ZERO
+var _bob_suave := 0.0   # bob filtrado com a MESMA rigidez das juntas
 
 var _phase := 0.0
 var _air_w := 0.0
@@ -108,17 +122,23 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	var loco_w: float = ground_w * smoothstep(0.05, 0.35, speed01) * upper_free
 	var idle_w: float = ground_w * (1.0 - smoothstep(0.05, 0.25, speed01)) * upper_free
 
-	# ---- fase da marcha: LIGADA À DISTÂNCIA percorrida (não ao tempo) ----
-	# O pé acompanha o chão -> acaba o deslize/moonwalk, e a cadência acelera junto
-	# com a velocidade real (andar x correr no Shift) sem número mágico de frequência.
+	# ---- fase da marcha: DERIVADA DA PASSADA -> zero deslize ----
+	# Enquanto um pé está no chão, ele tem que andar para trás EXATAMENTE na
+	# velocidade do corpo. Cada perna fica em apoio metade do ciclo, e nessa
+	# metade o corpo avança uma passada. Logo:
+	#   T_ciclo = 2·passada / velocidade   ->   ω = π · velocidade / passada
+	# (Usar 2π aqui, como eu tinha feito, deixa a cadência DOBRADA e o pé patina.)
+	# A cadência passa a sair da geometria — perna curta dá passo mais rápido —
+	# em vez de um fator mágico.
 	var leg: float = maxf(_m.get("leg_len", 0.8), 0.3)
+	var passada: float = _passada(speed01, is_sprinting)
 
 	if climbing:
 		_phase += 6.5 * delta
 	elif parkour == "wall_run":
 		_phase += maxf(planar, 3.5) * delta * (STRIDE_GAIN / leg)   # pernas correndo na parede
 	elif on_floor and planar > 0.15:
-		_phase += planar * delta * (STRIDE_GAIN / leg)
+		_phase += minf(PI * planar / passada, CADENCIA_MAX) * delta
 
 	# ---- acumula offsets de rotação por junta ----
 	var off: Dictionary = {}
@@ -152,11 +172,21 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	# ---- bob do torso (oscilação vertical) ----
 	if _n.has("Torso"):
 		var bob := 0.0
-		var bob_mult := 1.6 if is_sprinting else 1.0
 		bob += 0.010 * sin(_t * 2.2) * idle_w
-		bob += 0.06 * bob_mult * (0.5 - 0.5 * cos(2.0 * _phase)) * loco_w
 		bob += 0.05 * sin(2.0 * _phase) * _climb_w   # puxada vertical da escalada (2 por ciclo)
-		(_n["Torso"] as Node3D).position = _rest_torso_pos + Vector3(0, bob, 0)
+		# QUADRIL SEGUE OS PÉS. O sobe/desce da caminhada não vem de fórmula: é
+		# MEDIDO na pose que de fato saiu (já filtrada pela rigidez) e ajustado
+		# para o pé mais baixo encostar sempre na mesma altura. Calcular por
+		# fórmula não fecha — o filtro atenua ângulo e altura de formas
+		# diferentes, e sobra o pé flutuando.
+		# Só o idle/escalada passam pelo filtro. A parte da caminhada NÃO pode ser
+		# filtrada: ela já foi medida na pose pós-filtro, e filtrar de novo
+		# reintroduziria exatamente o atraso que ela existe para cancelar.
+		_bob_suave = lerpf(_bob_suave, bob, a)
+		var bob_final := _bob_suave
+		if loco_w > 0.001:
+			bob_final += _bob_dos_pes(speed01, is_sprinting) * loco_w
+		(_n["Torso"] as Node3D).position = _rest_torso_pos + Vector3(0, bob_final, 0)
 
 	# Skinnado: espelha os proxies recém-escritos nos ossos do Skeleton3D.
 	if _driver:
@@ -193,40 +223,44 @@ func _locomotion(off: Dictionary, w: float, phase: float, speed01: float, is_spr
 	# ATENÇÃO ao mexer: o braço parte do repouso PENDURADO (−90° de elevação), então
 	# A_arm é o quanto ele sobe. A_arm=1.55 punha o braço quase na HORIZONTAL andando
 	# (elevação −21°) — era o bug do "andando com os braços para cima".
-	# Referência: caminhada ~20° de braço e ~25° de coxa; corrida ~45° e ~40°.
+	# Referência: caminhada ~20° de braço; corrida ~45°. As PERNAS não têm amplitude
+	# aqui — elas vêm da IK em _perna_ik(), que resolve a partir do alvo do pé.
 	var t: float = clampf(speed01, 0.0, 1.0)
-	var A_thigh := lerpf(0.18, 0.44, t)   # coxa:  10° -> 25°
-	var A_knee  := lerpf(0.25, 0.85, t)   # joelho: 14° -> 49°
 	var A_arm   := lerpf(0.12, 0.35, t)   # braço:   7° -> 20°
-	# Inclinação do tronco p/ FRENTE. Não é realismo puro — é leitura: sem ela o
-	# personagem anda "de pé reto" e parece deslizar em vez de se impulsionar.
-	# O corpo tem que apontar pra onde vai.
-	var lean    := lerpf(0.05, 0.17, t)   # tronco:  3° -> 10°
+	# Inclinação do tronco p/ FRENTE. A spec pede ~10-15° na CORRIDA e postura
+	# firme (não ereta) na caminhada. Não é realismo puro: é leitura — sem ela o
+	# personagem parece deslizar em vez de se impulsionar.
+	var lean    := lerpf(0.05, 0.11, t)   # tronco:  3° -> 6°  (caminhada)
 
 	if is_sprinting:
-		A_thigh *= 1.55   # -> 39°
-		A_knee *= 1.50    # -> 73°
 		A_arm *= 2.20     # -> 44°
-		lean += 0.16      # -> 19°  (corrida joga o peito à frente)
+		lean += 0.13      # -> 14°  (dentro dos 10-15° pedidos p/ corrida)
 
 	var sL := sin(phase)
 	var sR := sin(phase + PI)
 
-	# Pernas balançam opostas; joelho dobra para trás na passada
-	_add(off, "Thigh_L", Vector3(A_thigh * sL, 0, 0) * w)
-	_add(off, "Thigh_R", Vector3(A_thigh * sR, 0, 0) * w)
-	_add(off, "Shin_L", Vector3(-A_knee * clampf(sin(phase + 1.9), 0, 1), 0, 0) * w)
-	_add(off, "Shin_R", Vector3(-A_knee * clampf(sin(phase + PI + 1.9), 0, 1), 0, 0) * w)
-	_add(off, "Foot_L", Vector3(-(A_thigh * sL) * 0.5, 0, 0) * w)
-	_add(off, "Foot_R", Vector3(-(A_thigh * sR) * 0.5, 0, 0) * w)
+	# PERNAS por IK, não por balanço solto. Antes as duas coxas oscilavam com o
+	# mesmo padrão de joelho, então no cruzamento do ciclo as DUAS ficavam
+	# dobradas e o corpo afundava — o personagem parecia quicar em vez de pisar.
+	# Agora cada pé recebe um ALVO: no apoio ele fica na altura do chão (o corpo
+	# passa por cima dele), e na balanço levanta num arco.
+	# `lean` entra porque as coxas são FILHAS do torso: sem devolver a inclinação,
+	# a perna herda o tombo do tronco e o pé plantado sobe/desce junto.
+	_perna_ik(off, "Thigh_L", "Shin_L", "Foot_L", phase, speed01, is_sprinting, w, lean)
+	_perna_ik(off, "Thigh_R", "Shin_R", "Foot_R", phase + PI, speed01, is_sprinting, w, lean)
 
-	# Braços SOLTOS, opostos às pernas (não balançam quando atirando com pistola em _gun_w!)
+	# Braços SOLTOS, OPOSTOS às pernas (não balançam com pistola erguida, _gun_w).
+	# COSSENO, não seno: a perna agora vem da IK, cuja posição à frente é máxima
+	# em fase 0 (rampa linear de +passada/2 a −passada/2). Com seno o braço ficava
+	# 90° fora de fase — nem oposto nem junto, só estranho.
+	var cL := cos(phase)
+	var cR := cos(phase + PI)
 	var arm_out: float = lerpf(0.09, 0.15, t)   # afasta do corpo; muito abre "asa de galinha"
-	var sL_lag := sin(phase - 0.6)   # atraso -> sensação de braço "solto"
-	var sR_lag := sin(phase + PI - 0.6)
+	var sL_lag := cos(phase - 0.6)   # atraso -> sensação de braço "solto"
+	var sR_lag := cos(phase + PI - 0.6)
 	var arm_w: float = w * (1.0 - _gun_w)
-	_add(off, "UpperArm_L", Vector3(-A_arm * sL, 0, 0.08 + arm_out) * arm_w)
-	_add(off, "UpperArm_R", Vector3(-A_arm * sR, 0, -0.08 - arm_out) * arm_w)
+	_add(off, "UpperArm_L", Vector3(-A_arm * cL, 0, 0.08 + arm_out) * arm_w)
+	_add(off, "UpperArm_R", Vector3(-A_arm * cR, 0, -0.08 - arm_out) * arm_w)
 	# Cotovelo: dobra um pouco mais quando o braço vem à frente (não fica esticado).
 	var A_elbow: float = lerpf(0.16, 0.34, t) * (1.6 if is_sprinting else 1.0)
 	_add(off, "ForeArm_L", Vector3(0.18 + A_elbow * maxf(sL_lag, 0.0), 0, 0.08) * arm_w)
@@ -235,12 +269,143 @@ func _locomotion(off: Dictionary, w: float, phase: float, speed01: float, is_spr
 	# Torso inclina p/ FRENTE (-Z) + BALANÇO DOS OMBROS: giro no eixo Y (ombros gingam
 	# opostos ao passo) e leve rolamento no Z. rot.x+ joga o topo p/ +Z (trás), logo a
 	# inclinação p/ frente é NEGATIVA. Amplitude do giro sobe com a velocidade.
-	var shoulder: float = lerpf(0.05, 0.11, t)
+	var shoulder: float = lerpf(0.05, 0.11, t) * (1.4 if is_sprinting else 1.0)
 	_add(off, "Torso", Vector3(-lean, shoulder * sin(phase), 0.05 * sin(phase)) * w)
+	# QUADRIL contra-rotaciona os ombros — é isso que dá sensação de peso e de
+	# impulso. O rig não tem osso de pelve, então o giro entra nas duas coxas,
+	# no sentido oposto ao do torso.
+	var quadril: float = shoulder * 0.55
+	_add(off, "Thigh_L", Vector3(0, -quadril * sin(phase), 0) * w)
+	_add(off, "Thigh_R", Vector3(0, -quadril * sin(phase), 0) * w)
 	# Cabeça compensa a inclinação do tronco (senão o personagem corre olhando pro
 	# chão) e estabiliza o giro dos ombros. 0.75 = quase nivelada, mas ainda
 	# sobra um resto pra frente, que lê como "determinado".
 	_add(off, "Head", Vector3(lean * 0.75, -shoulder * 0.4 * sin(phase), 0) * w)
+
+# Altura do quadril acima do chão. Agacha com a velocidade (corrida é mais baixa).
+func _altura_quadril(speed01: float, sprint: bool) -> float:
+	var perna: float = _perna_len()
+	if sprint:
+		return perna * H_SPRINT
+	return perna * lerpf(H_PARADO, H_CORRIDA, clampf(speed01, 0.0, 1.0))
+
+func _perna_len() -> float:
+	return maxf(_m.get("thigh_len", 0.30), 0.05) + maxf(_m.get("shin_len", 0.30), 0.05)
+
+# Passada = quanto o pé viaja de frente a trás num ciclo. É a MESMA conta usada
+# pela cadência (em update) e pela IK — se as duas discordarem, o pé desliza.
+func _passada(speed01: float, sprint: bool) -> float:
+	var perna: float = _perna_len()
+	var p: float = perna * lerpf(0.45, 0.95, clampf(speed01, 0.0, 1.0))
+	if sprint:
+		p *= 1.25
+	# TETO GEOMÉTRICO: com o quadril a H do chão, o pé só alcança
+	# sqrt(alcance² − H²) para a frente. Pedir mais satura a IK e o pé sobe.
+	var H: float = _altura_quadril(speed01, sprint)
+	var alcance: float = perna * 0.98
+	var meia_max: float = sqrt(maxf(alcance * alcance - H * H, 0.0))
+	return maxf(minf(p, meia_max * 2.0), 0.05)
+
+# Sobe/desce do quadril ao longo do ciclo. O corpo está MAIS ALTO no meio de cada
+# apoio (perna esticada por baixo) e mais baixo no duplo apoio — duas subidas por
+# ciclo. É o "vault" que dá peso à caminhada, e a spec pede esse movimento
+# vertical do tronco. Vai somado tanto no torso quanto no alvo do pé, senão o pé
+# plantado subiria junto com o corpo.
+func _vault(speed01: float, sprint: bool) -> float:
+	var amp: float = _perna_len() * lerpf(0.012, 0.030, clampf(speed01, 0.0, 1.0))
+	if sprint:
+		amp *= 1.35
+	return amp * (0.5 - 0.5 * cos(2.0 * _phase))
+
+# Quanto o quadril precisa subir para o pé MAIS BAIXO encostar sempre na mesma
+# altura. Lê as rotações que realmente ficaram nas juntas (depois do filtro de
+# rigidez), então é exato por construção: seja qual for o atraso do filtro, o
+# porte do personagem ou a velocidade, o pé de apoio não flutua.
+func _bob_dos_pes(speed01: float, sprint: bool) -> float:
+	if not (_n.has("Torso") and _n.has("Thigh_L") and _n.has("Shin_L")):
+		return 0.0
+	var L1: float = maxf(_m.get("thigh_len", 0.30), 0.05)
+	var L2: float = maxf(_m.get("shin_len", 0.30), 0.05)
+	var tronco: float = (_n["Torso"] as Node3D).rotation.x
+	var mais_baixo := 0.0
+	var achou := false
+	for lado in ["L", "R"]:
+		if not (_n.has("Thigh_" + lado) and _n.has("Shin_" + lado)):
+			continue
+		# ângulo da coxa no espaço do PERSONAGEM (a coxa carrega +lean, o torso −lean)
+		var ac: float = (_n["Thigh_" + lado] as Node3D).rotation.x + tronco
+		var aj: float = ac + (_n["Shin_" + lado] as Node3D).rotation.x
+		var y: float = -(L1 * cos(ac) + L2 * cos(aj))
+		if not achou or y < mais_baixo:
+			mais_baixo = y
+			achou = true
+	if not achou:
+		return 0.0
+	# O pé de apoio deve ficar sempre a _altura_quadril abaixo do quadril de
+	# repouso; o que sobrar vira subida do corpo.
+	return -_altura_quadril(speed01, sprint) - mais_baixo
+
+# IK de duas juntas para uma perna, no plano sagital (frente/trás).
+#
+# Recebe o pé como ALVO e resolve coxa+joelho, em vez de girar as juntas às
+# cegas. É isso que faz o pé PLANTAR: durante o apoio o alvo fica na altura do
+# chão, então o joelho estica ou dobra sozinho para o corpo passar por cima do
+# pé — o "vault" que dá peso à caminhada.
+#
+# Convenção do rig: o membro pende em -Y e girar +X leva o pé para -Z (frente).
+# Com o joelho dobrando PARA TRÁS (como o humano), o ângulo do joelho é NEGATIVO.
+func _perna_ik(off: Dictionary, papel_coxa: String, papel_canela: String,
+		papel_pe: String, fase: float, speed01: float, sprint: bool, w: float,
+		lean: float = 0.0) -> void:
+	if w <= 0.001:
+		return
+	var L1: float = maxf(_m.get("thigh_len", 0.30), 0.05)
+	var L2: float = maxf(_m.get("shin_len", 0.30), 0.05)
+	var perna := L1 + L2
+
+	var H: float = _altura_quadril(speed01, sprint)
+	var passada: float = _passada(speed01, sprint)
+	var levanta: float = perna * lerpf(0.10, 0.22, clampf(speed01, 0.0, 1.0))
+
+	# Alvo do pé em relação ao quadril.
+	# APOIO (meia volta): trajetória LINEAR de +passada/2 até −passada/2. Tem que
+	# ser reta — com uma senoide o pé varreria rápido no meio e devagar nas pontas,
+	# e como o corpo avança a velocidade constante isso VIRA DESLIZE. Combinada
+	# com ω = π·v/passada, a linear dá velocidade do pé = −v exata: pé cravado.
+	# BALANÇO: volta à frente com entrada/saída suaves e levantando num arco.
+	var ciclo: float = fposmod(fase, TAU)
+	var apoio: bool = ciclo < PI
+	var frente: float
+	var sobe := 0.0
+	if apoio:
+		frente = (passada * 0.5) * (1.0 - 2.0 * (ciclo / PI))
+	else:
+		var u: float = (ciclo - PI) / PI            # 0 -> 1
+		frente = -passada * 0.5 + passada * (1.0 - cos(PI * u)) * 0.5
+		sobe = sin(PI * u) * levanta
+	# O corpo sobe no meio do apoio; o pé plantado NÃO pode subir junto, então a
+	# distância quadril->pé cresce na mesma medida.
+	var h: float = maxf(H + _vault(speed01, sprint) - sobe, perna * 0.30)
+
+	# --- IK analítica de 2 elos ---
+	var d: float = clampf(sqrt(h * h + frente * frente), absf(L1 - L2) + 0.001, perna - 0.001)
+	var cos_j: float = clampf((d * d - L1 * L1 - L2 * L2) / (2.0 * L1 * L2), -1.0, 1.0)
+	var joelho: float = -acos(cos_j)              # negativo = dobra p/ trás
+	var coxa: float = atan2(frente, h) - atan2(L2 * sin(joelho), L1 + L2 * cos(joelho))
+
+	# +lean devolve a inclinação que a perna herdou do torso, para a IK resolver
+	# num plano de fato vertical.
+	var coxa_final: float = coxa + lean
+	_add(off, papel_coxa, Vector3(coxa_final, 0, 0) * w)
+	_add(off, papel_canela, Vector3(joelho, 0, 0) * w)
+
+	# PÉ: no apoio fica PLANO no chão (cancela as duas juntas, exatamente — é o
+	# "pé toca completamente o chão" da spec). No balanço, ponta levantada para
+	# não raspar e para atacar o solo de calcanhar.
+	var pe_ang: float = -(coxa_final + joelho)
+	if not apoio:
+		pe_ang += 0.30 * maxf(0.0, -sin(fase))
+	_add(off, papel_pe, Vector3(pe_ang, 0, 0) * w)
 
 func _air(off: Dictionary, w: float, vy: float) -> void:
 	if w <= 0.001:
