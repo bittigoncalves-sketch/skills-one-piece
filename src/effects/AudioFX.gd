@@ -21,6 +21,9 @@ static func hurt(world: Node, pos: Vector3, pitch := 1.0) -> void:
 static func gunshot(world: Node, pos: Vector3, pitch := 1.0) -> void:
 	_play(world, pos, _gunshot_stream(), pitch, 0.95)
 
+static func cannon(world: Node, pos: Vector3, pitch := 1.0) -> void:
+	_play(world, pos, _cannon_stream(), pitch, 1.0)
+
 # ---- infra ----
 static func _play(world: Node, pos: Vector3, stream: AudioStream, pitch: float, vol_lin: float) -> void:
 	if world == null:
@@ -116,4 +119,32 @@ static func _gunshot_stream() -> AudioStreamWAV:
 		var rumble := sin(TAU * 75.0 * (float(i) / RATE)) * 0.3 * trail_env
 		var sample: float = (noise * 0.95 + tone) * blast_env + (noise * 0.2 + rumble) * trail_env * 0.4
 		s[i] = clampf(sample * 1.25, -1.0, 1.0)
+	return _wav(s)
+
+# CANHÃO — mais longo e mais grave que o tiro de pistola, com três camadas:
+#   1. estalo seco do disparo (ruído filtrado, morre em ~40 ms)
+#   2. corpo grave que ESCORREGA de 110 Hz para 38 Hz (é essa descida que dá a
+#      sensação de calibre; um tom fixo lê como bumbo de bateria)
+#   3. cauda de eco, que faz o som "ocupar espaço"
+static func _cannon_stream() -> AudioStreamWAV:
+	var n := int(RATE * 0.95)
+	var s := PackedFloat32Array()
+	s.resize(n)
+	var sub := 0.0          # integrador do sub-grave (mantém a fase contínua)
+	for i in n:
+		var t := float(i) / n
+		var seg := float(i) / RATE
+		var estalo := pow(1.0 - minf(t * 22.0, 1.0), 3.0)
+		var corpo := pow(1.0 - minf(t * 1.7, 1.0), 2.2)
+		var cauda := pow(1.0 - t, 1.5)
+
+		var f := lerpf(110.0, 38.0, minf(t * 2.4, 1.0))
+		sub += TAU * f / RATE
+		var grave := sin(sub) * corpo
+		var ruido := (randf() * 2.0 - 1.0)
+		# eco: repete o estalo atenuado a cada ~180 ms
+		var eco := sin(TAU * 52.0 * seg) * cauda * 0.22 * (0.5 + 0.5 * sin(TAU * 5.5 * seg))
+
+		var v: float = ruido * 0.85 * estalo + grave * 0.9 + ruido * 0.10 * cauda + eco
+		s[i] = clampf(v * 1.15, -1.0, 1.0)
 	return _wav(s)

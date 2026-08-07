@@ -111,13 +111,37 @@ static func _projetil(world: Node, origin: Vector3, dir: Vector3, damage: float,
 	zone.global_position = origin
 	zone.setup(damage, kb, fwd * velocidade, 3.0, caster, raio)
 
+	# PROJÉTIL: bala de latão (metralhadora) ou bola de ferro (canhão). O raio
+	# decide qual — o canhão usa 0.55, a metralhadora 0.22.
+	var bola := raio > 0.4
 	var corpo := MeshInstance3D.new()
-	var malha := CapsuleMesh.new()
-	malha.radius = raio * 0.6
-	malha.height = raio * 3.0
-	corpo.mesh = malha
-	corpo.rotation_degrees.x = 90.0   # capsula deitada no rumo do tiro
-	corpo.material_override = _mat_aco(true)
+	if bola:
+		var esf := SphereMesh.new()
+		esf.radius = raio * 0.62
+		esf.height = raio * 1.24
+		esf.radial_segments = 10
+		esf.rings = 6
+		corpo.mesh = esf
+		var mf := StandardMaterial3D.new()
+		mf.albedo_color = Color(0.13, 0.13, 0.15)     # ferro fosco
+		mf.metallic = 0.9
+		mf.roughness = 0.55
+		corpo.material_override = mf
+	else:
+		var cap := CapsuleMesh.new()
+		cap.radius = raio * 0.42
+		cap.height = raio * 2.6
+		cap.radial_segments = 8
+		corpo.mesh = cap
+		corpo.rotation_degrees.x = 90.0               # deitada no rumo do tiro
+		var ml := StandardMaterial3D.new()
+		ml.albedo_color = Color(0.86, 0.68, 0.28)     # latão
+		ml.metallic = 1.0
+		ml.roughness = 0.25
+		ml.emission_enabled = true
+		ml.emission = Color(1.0, 0.72, 0.30)
+		ml.emission_energy_multiplier = 1.4
+		corpo.material_override = ml
 	zone.add_child(corpo)
 
 	var rastro := GPUParticles3D.new()
@@ -179,6 +203,10 @@ static func _rajada(world: Node, origin: Vector3, dir: Vector3, damage: float,
 			var d := dir.normalized()
 			d += Vector3(randf_range(-0.05, 0.05), randf_range(-0.04, 0.04), randf_range(-0.05, 0.05))
 			_projetil(world, o, d, damage, caster, 0.22, velocidade, kb, alvo)
+			# Tiro a tiro, com o pitch variando um pouco: rajada com pitch fixo
+			# vira um zumbido só, e o ouvido para de contar os disparos.
+			AudioFX.gunshot(world, o, randf_range(0.92, 1.12))
+			_fogacho(world, o, d, 0.35)
 		)
 
 # ------------------------------------------------------------------- X: LÂMINA
@@ -229,26 +257,32 @@ static func _canhao_de_perna(world: Node, origin: Vector3, dir: Vector3, damage:
 static func _tiro_de_canhao(world: Node, origin: Vector3, dir: Vector3, damage: float,
 		caster: Node, kb: float, alvo: Node3D) -> void:
 	_projetil(world, origin, dir, damage, caster, 0.55, 16.0, kb, alvo)
-	# fogacho na boca do cano
+	_fogacho(world, origin, dir, 1.0)
+	AudioFX.cannon(world, origin, randf_range(0.94, 1.04))
+
+# Fogacho na boca do cano. `escala` 1.0 = canhão, 0.35 = metralhadora.
+static func _fogacho(world: Node, origin: Vector3, dir: Vector3, escala: float) -> void:
+	if world == null or not world.is_inside_tree():
+		return
+	var fwd := dir.normalized()
 	var flash := GPUParticles3D.new()
-	flash.amount = 40
-	flash.lifetime = 0.4
+	flash.amount = int(40 * escala) + 8
+	flash.lifetime = 0.18 + 0.22 * escala
 	flash.one_shot = true
 	flash.emitting = true
 	var pm := ParticleProcessMaterial.new()
-	pm.direction = dir.normalized()
+	pm.direction = fwd
 	pm.spread = 28.0
-	pm.initial_velocity_min = 4.0
-	pm.initial_velocity_max = 11.0
-	pm.scale_min = 0.4
-	pm.scale_max = 1.3
+	pm.initial_velocity_min = 4.0 * escala
+	pm.initial_velocity_max = 11.0 * escala
+	pm.scale_min = 0.4 * escala
+	pm.scale_max = 1.3 * escala
 	pm.color_ramp = FxUtil.gradient(FAISCA)
 	flash.process_material = pm
 	flash.draw_pass_1 = SphereMesh.new()
 	world.add_child(flash)
-	(flash as Node3D).global_position = origin + dir.normalized() * 0.8
+	(flash as Node3D).global_position = origin + fwd * 0.8
 	world.get_tree().create_timer(1.2).timeout.connect(flash.queue_free)
-	AudioFX.impact(world, origin)
 
 # ------------------------------------------------------- V: ARSENAL COMPLETO
 # Canhão -> metralhadora, TUDO teleguiado no inimigo mais próximo da mira.
@@ -292,33 +326,84 @@ static func _caixa(tam: Vector3, pos: Vector3, mat: StandardMaterial3D) -> MeshI
 	mi.material_override = mat
 	return mi
 
+static func _cil(raio: float, alt: float, pos: Vector3, mat: StandardMaterial3D,
+		eixo := "z") -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var c := CylinderMesh.new()
+	c.top_radius = raio
+	c.bottom_radius = raio
+	c.height = alt
+	c.radial_segments = 10          # facetado: combina com o resto do jogo
+	mi.mesh = c
+	mi.position = pos
+	# CylinderMesh nasce ao longo de +Y; deitar em Z é o eixo de tiro (frente = −Z)
+	if eixo == "z":
+		mi.rotation_degrees.x = 90.0
+	mi.material_override = mat
+	return mi
+
+# METRALHADORA — cano, camisa de refrigeração, tambor de munição e alça de mira.
+# O tambor e as ranhuras da camisa são o que fazem ler como "metralhadora" em vez
+# de "cano genérico"; sem eles vira um tubo.
 static func _construir_metralhadora() -> Node3D:
 	var r := Node3D.new()
 	r.name = "BukiMetralhadora"
 	var aco := _mat_aco()
+	var escuro := _mat_escuro()
 	var quente := _mat_aco(true)
-	# a arma cresce a partir da PONTA do antebraço, apontando pra frente (-Z)
-	r.add_child(_caixa(Vector3(0.16, 0.16, 0.62), Vector3(0, -0.34, -0.30), aco))
-	r.add_child(_caixa(Vector3(0.09, 0.09, 0.22), Vector3(0, -0.34, -0.68), quente))
-	r.add_child(_caixa(Vector3(0.22, 0.10, 0.20), Vector3(0, -0.28, -0.10), aco))
+	var y := -0.34                       # ponta do antebraço
+
+	r.add_child(_caixa(Vector3(0.20, 0.17, 0.30), Vector3(0, y + 0.02, -0.08), escuro))  # culatra
+	r.add_child(_cil(0.075, 0.60, Vector3(0, y, -0.42), aco))                            # cano
+	for i in 5:                                                                          # camisa
+		r.add_child(_cil(0.105, 0.028, Vector3(0, y, -0.22 - i * 0.085), escuro))
+	r.add_child(_cil(0.055, 0.10, Vector3(0, y, -0.76), quente))                          # boca
+	r.add_child(_cil(0.13, 0.10, Vector3(0, y - 0.13, -0.10), escuro, "y"))               # tambor
+	r.add_child(_caixa(Vector3(0.02, 0.07, 0.02), Vector3(0, y + 0.13, -0.20), escuro))   # alça
+	r.add_child(_caixa(Vector3(0.02, 0.05, 0.02), Vector3(0, y + 0.12, -0.62), escuro))   # massa
 	return r
 
+# LÂMINA — gume assimétrico (fio de um lado só), guarda e ricasso.
 static func _construir_lamina() -> Node3D:
 	var r := Node3D.new()
 	r.name = "BukiLamina"
 	var aco := _mat_aco()
 	var gume := _mat_aco(true)
-	r.add_child(_caixa(Vector3(0.07, 0.95, 0.16), Vector3(0, -0.72, -0.10), aco))
-	r.add_child(_caixa(Vector3(0.03, 0.95, 0.05), Vector3(0, -0.72, -0.19), gume))
-	r.add_child(_caixa(Vector3(0.16, 0.12, 0.22), Vector3(0, -0.30, -0.04), aco))
+	var escuro := _mat_escuro()
+
+	var corpo := _caixa(Vector3(0.055, 0.98, 0.17), Vector3(0, -0.78, -0.06), aco)
+	corpo.rotation_degrees.x = -6.0          # leve curvatura de sabre
+	r.add_child(corpo)
+	var fio := _caixa(Vector3(0.018, 0.96, 0.05), Vector3(0, -0.78, -0.155), gume)
+	fio.rotation_degrees.x = -6.0
+	r.add_child(fio)
+	r.add_child(_caixa(Vector3(0.10, 0.16, 0.10), Vector3(0, -0.30, -0.02), escuro))   # ricasso
+	r.add_child(_caixa(Vector3(0.24, 0.035, 0.10), Vector3(0, -0.37, -0.04), escuro))  # guarda
+	r.add_child(_caixa(Vector3(0.06, 0.16, 0.09), Vector3(0, -1.24, -0.12), gume))     # ponta
 	return r
 
+# CANHÃO — boca alargada, aros de reforço e câmara. É a peça mais pesada da
+# fruta, então a silhueta tem que ler como grossa mesmo de longe.
 static func _construir_canhao() -> Node3D:
 	var r := Node3D.new()
 	r.name = "BukiCanhao"
 	var aco := _mat_aco()
+	var escuro := _mat_escuro()
 	var boca := _mat_aco(true)
-	r.add_child(_caixa(Vector3(0.30, 0.30, 0.70), Vector3(0, -0.30, -0.34), aco))
-	r.add_child(_caixa(Vector3(0.38, 0.38, 0.14), Vector3(0, -0.30, -0.70), boca))
-	r.add_child(_caixa(Vector3(0.34, 0.34, 0.16), Vector3(0, -0.30, -0.02), aco))
+	var y := -0.30
+
+	r.add_child(_cil(0.19, 0.30, Vector3(0, y, -0.06), escuro))        # câmara (traseira)
+	r.add_child(_cil(0.155, 0.56, Vector3(0, y, -0.44), aco))          # corpo do cano
+	for i in 3:                                                        # aros de reforço
+		r.add_child(_cil(0.185, 0.05, Vector3(0, y, -0.26 - i * 0.20), escuro))
+	r.add_child(_cil(0.215, 0.14, Vector3(0, y, -0.78), aco))          # boca alargada
+	r.add_child(_cil(0.145, 0.06, Vector3(0, y, -0.83), boca))         # interior quente
+	r.add_child(_caixa(Vector3(0.10, 0.16, 0.10), Vector3(0, y - 0.17, -0.14), escuro))  # punho
 	return r
+
+static func _mat_escuro() -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.20, 0.21, 0.24)
+	m.metallic = 0.85
+	m.roughness = 0.45
+	return m

@@ -8,36 +8,62 @@ extends CanvasLayer
 const SHADER_CODE := """
 shader_type canvas_item;
 render_mode blend_mix;
+uniform sampler2D tela : hint_screen_texture, filter_linear_mipmap;
 uniform float vignette = 0.0;
 uniform float flash = 0.0;
 uniform vec4 flash_color : source_color = vec4(1.0);
 uniform float speed_lines = 0.0;
 uniform float blue_filter = 0.0;
+uniform float borrao = 0.0;      // arrasto radial: puxa a imagem p/ fora nas bordas
+uniform float aberracao = 0.0;   // separação de cor nas bordas
+uniform float tempo = 0.0;
 
 void fragment() {
 	vec2 dir = UV - vec2(0.5);
 	float d = length(dir);
-	// vinheta: preto nas bordas
-	float vig = smoothstep(0.36, 0.85, d) * vignette;
-	// speed lines: estrias brancas nas bordas
-	float sl = 0.0;
+	float borda = smoothstep(0.18, 0.72, d);   // 0 no centro, 1 nas bordas
+
+	// ---- ARRASTO RADIAL: o mundo escorre pra fora enquanto o centro fica nítido.
+	// É o que vende velocidade sem cegar quem está mirando.
+	vec3 base = texture(tela, SCREEN_UV).rgb;
+	if (borrao > 0.001) {
+		vec3 soma = vec3(0.0);
+		for (int i = 1; i <= 6; i++) {
+			float k = float(i) / 6.0;
+			soma += texture(tela, SCREEN_UV - dir * k * borrao * borda * 0.13).rgb;
+		}
+		base = mix(base, soma / 6.0, borda * clamp(borrao, 0.0, 1.0));
+	}
+
+	// ---- ABERRAÇÃO CROMÁTICA: só nas bordas, e só em velocidade/impacto.
+	if (aberracao > 0.001) {
+		float s = aberracao * borda * 0.006;
+		base.r = texture(tela, SCREEN_UV + dir * s).r;
+		base.b = texture(tela, SCREEN_UV - dir * s).b;
+	}
+
+	vec3 col = base;
+
+	// ---- LINHAS DE VELOCIDADE: estrias radiais animadas, não estáticas.
+	// Sem o deslocamento por `tempo` elas viram uma grade parada e o olho
+	// interpreta como sujeira na tela, não como movimento.
 	if (speed_lines > 0.001) {
 		float ang = atan(dir.y, dir.x);
-		float stripes = smoothstep(0.62, 0.5, abs(fract(ang * 14.0) - 0.5));
-		float edge = smoothstep(0.30, 0.62, d);
-		sl = stripes * edge * speed_lines * 0.6;
+		float faixa = fract(ang * 13.0 + sin(ang * 41.0) * 0.35 + tempo * 1.7);
+		float estria = smoothstep(0.62, 0.46, abs(faixa - 0.5));
+		float alcance = smoothstep(0.26, 0.68, d);
+		col = mix(col, vec3(1.0), estria * alcance * speed_lines * 0.55);
 	}
-	vec3 col = mix(vec3(0.0), vec3(1.0), sl);   // preto (vinheta) vs branco (linhas)
-	float a = max(vig, sl);
+
+	// ---- VINHETA por último entre os de velocidade, e mais suave que antes.
+	col = mix(col, vec3(0.0), smoothstep(0.40, 0.92, d) * vignette);
+
 	// filtro azul (assistência de mira / Haki da observação)
 	if (blue_filter > 0.001) {
-		col = mix(col, vec3(0.06, 0.22, 0.75), blue_filter);
-		a = max(a, blue_filter * 0.32);
+		col = mix(col, vec3(0.06, 0.22, 0.75), blue_filter * 0.32);
 	}
-	// flash por cima
 	col = mix(col, flash_color.rgb, flash);
-	a = max(a, flash);
-	COLOR = vec4(col, a);                        // alpha 0 quando nada ativo -> transparente
+	COLOR = vec4(col, 1.0);
 }
 """
 
@@ -46,6 +72,9 @@ var _flash := 0.0
 var _blue_filter_current := 0.0
 var _blue_filter_target := 0.0
 
+var _tempo := 0.0
+var _aberr_base := 0.0     # contínua, vinda da velocidade
+var _aberr_pulso := 0.0    # pico de impacto/dash, decai sozinho
 var aim_assist_active := false
 var _local_player: Node3D = null
 var _red_target_mat: StandardMaterial3D
@@ -73,6 +102,14 @@ func _ready() -> void:
 	_red_target_mat.emission_energy_multiplier = 2.8
 
 func _process(delta: float) -> void:
+	# `tempo` anima as estrias de velocidade. Sem ele, as linhas ficam paradas e
+	# o olho lê como sujeira na tela em vez de movimento.
+	_tempo += delta
+	_mat.set_shader_parameter("tempo", _tempo)
+	# Aberração decai sozinha: quem dispara (impacto, dash) só dá o pico.
+	if _aberr_pulso > 0.0:
+		_aberr_pulso = maxf(_aberr_pulso - delta * 3.2, 0.0)
+		_aplica_aberracao()
 	if _flash > 0.0:
 		_flash = maxf(_flash - delta * 4.5, 0.0)
 		_mat.set_shader_parameter("flash", _flash)
@@ -92,14 +129,27 @@ func flash(color: Color = Color(1, 1, 1), strength: float = 0.5) -> void:
 	_mat.set_shader_parameter("flash", _flash)
 
 func chromatic_pulse(strength: float = 1.0) -> void:
-	# CA removida (causava tela branca); mantém a API viva com um flash bem sutil.
-	flash(Color(1, 1, 1), strength * 0.08)
+	# Agora é aberração de verdade (o shader lê a tela). Some sozinha no _process.
+	_aberr_pulso = maxf(_aberr_pulso, clampf(strength, 0.0, 2.0))
+	_aplica_aberracao()
 
 func set_vignette(v: float) -> void:
 	_mat.set_shader_parameter("vignette", clampf(v, 0.0, 1.0) * _scale())
 
 func set_speed_lines(v: float) -> void:
 	_mat.set_shader_parameter("speed_lines", clampf(v, 0.0, 1.0) * _scale())
+
+# Arrasto radial por velocidade: o mundo escorre nas bordas, o centro fica nítido.
+func set_borrao(v: float) -> void:
+	_mat.set_shader_parameter("borrao", clampf(v, 0.0, 1.0) * _scale())
+
+# Aberração contínua (velocidade). O pulso de impacto soma por cima.
+func set_aberracao_base(v: float) -> void:
+	_aberr_base = clampf(v, 0.0, 1.0)
+	_aplica_aberracao()
+
+func _aplica_aberracao() -> void:
+	_mat.set_shader_parameter("aberracao", (_aberr_base + _aberr_pulso) * _scale())
 
 func _scale() -> float:
 	match GameFlow.device:

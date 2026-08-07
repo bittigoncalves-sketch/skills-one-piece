@@ -7,6 +7,31 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-07 — Cópia da fórmula no teste escondeu a mudança no código
+
+**Sintoma:** entrou o freio de cadência no animador, mas o teste de walk/run
+continuou reportando o mesmo ciclo e o mesmo deslize de antes — sem acusar nada.
+
+**Causa raiz:** o teste tinha a fórmula da cadência **replicada**
+(`minf(PI * planar / passada, CADENCIA_MAX)`). Quando o animador ganhou o fator
+de escala, a cópia ficou para trás e passou a medir um estado que não existia
+mais.
+
+**Evidência:** com `CADENCIA_ESCALA = 0.62` aplicado, o teste ainda dizia
+"ciclo 25 quadros, deslize 0%" para o `base` — exatamente os números de antes.
+
+**Correção:** `ProceduralAnimator` expõe `cadencia()` e `deslize()`, e o teste
+chama essas. Fonte única.
+
+**Como evitar de novo:** teste de cálculo **chama a função do código**. Se for
+preciso reescrever a conta para testar, o que está sendo testado é a cópia.
+
+**Achado junto:** o teste também não aplicava o `CHAR_TARGET_H` que o jogo aplica,
+então media o `base` com perna de 1,66 m em vez de 0,69 m — a cadência calculada
+não era a que roda em jogo.
+
+---
+
 ## 2026-08-07 — Trava de elenco vazou: o jogo abria com o Crocodile
 
 **Sintoma:** com o elenco trancado no `base`, o jogo continuava começando com o

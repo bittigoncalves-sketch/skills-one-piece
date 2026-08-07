@@ -58,6 +58,18 @@ var _cam: Camera3D
 var _shake: float = 0.0   # Camera Feel: tremor de tela (screen-shake) que decai
 var _was_floor: bool = true   # p/ detectar aterrissagem
 var _fov_punch: float = 0.0   # zoom-in momentâneo ao atacar (decai)
+
+# FOV por ESTADO. Degraus, não rampa: o salto de CORRENDO p/ SPRINT é o que faz
+# o Shift dar o "clique" na mão.
+const FOV_PARADO := 68.0
+const FOV_ANDANDO := 72.0
+const FOV_CORRENDO := 80.0
+const FOV_SPRINT := 90.0
+
+# Sprint = Shift segurado com direção. Usado pela câmera e pelos efeitos de tela;
+# o movimento tem a própria checagem em _physics_process.
+func _is_sprinting() -> bool:
+	return Input.is_key_pressed(KEY_SHIFT) and velocity.length_squared() > 0.5
 var _long_jump_t: float = 0.0 # Parkour: janela de impulso horizontal (salto longo/vault)
 var _space_was: bool = false  # borda do Espaço (salto longo só na batida, não segurando)
 var _was_on_floor: bool = false   # Parkour: detecção de POUSO (#4)
@@ -333,10 +345,23 @@ func _process(delta: float) -> void:
 	_cam.h_offset = lerpf(_cam.h_offset, sx + cos(_bob_t) * amp, 0.5)
 	_cam.v_offset = lerpf(_cam.v_offset, sy + absf(sin(_bob_t)) * amp, 0.5)
 
-	# FOV dinâmico (correr abre MAIS) menos o punch de ataque (zoom-in), que decai.
+	# ---------------------------------------------------------------- FOV
+	# Degraus por ESTADO, não uma rampa só: parado / andando / correndo / sprint.
+	# O salto entre correr e sprintar é o que faz o Shift "dar o clique" — numa
+	# rampa linear ele passa despercebido.
 	_fov_punch = maxf(_fov_punch - delta * 22.0, 0.0)
-	var target_fov := lerpf(70.0, 84.0, spd) - _fov_punch
-	_cam.fov = lerpf(_cam.fov, target_fov, 8.0 * delta)
+	var alvo_fov := FOV_PARADO
+	if spd > 0.05:
+		alvo_fov = lerpf(FOV_ANDANDO, FOV_CORRENDO, clampf(spd, 0.0, 1.0))
+		if _is_sprinting():
+			alvo_fov = lerpf(alvo_fov, FOV_SPRINT, clampf((spd - 0.7) / 0.5, 0.0, 1.0))
+	if not on_floor:
+		alvo_fov += 3.0                      # no ar abre um pouco: sensação de queda
+	alvo_fov -= _fov_punch
+	# Abre RÁPIDO e fecha DEVAGAR. Simétrico dá a impressão de a câmera "respirar"
+	# junto com cada tranco do passo.
+	var vel_fov := 9.0 if alvo_fov > _cam.fov else 3.5
+	_cam.fov = lerpf(_cam.fov, alvo_fov, vel_fov * delta)
 
 	# Camera tilt: rolagem ao andar de lado + leve gingado no ritmo do passo.
 	var right := Basis(Vector3.UP, _yaw) * Vector3(1, 0, 0)
@@ -353,9 +378,20 @@ func _process(delta: float) -> void:
 		add_camera_shake(0.3)
 	_was_floor = on_floor
 
-	# Screen FX por velocidade: vinheta + speed lines mais perceptíveis ao correr.
-	ScreenFX.set_vignette(clampf((spd - 0.4) * 1.2, 0.0, 0.5))
-	ScreenFX.set_speed_lines(clampf((spd - 0.85) * 2.5, 0.0, 1.0))
+	# ------------------------------------------- EFEITOS DE VELOCIDADE
+	# Antes só a vinheta era visível: ela entrava em spd 0.4 e as linhas só em
+	# 0.85, que quase nunca se alcança — o resultado prático era "a tela escurece".
+	# Agora quatro efeitos entram em faixas DIFERENTES, então a sensação cresce
+	# por camadas em vez de só escurecer:
+	#   0.35 -> arrasto radial (o mundo escorre nas bordas)
+	#   0.50 -> linhas de velocidade
+	#   0.62 -> aberração cromática
+	#   0.70 -> vinheta (por último, e mais fraca que antes)
+	var vel_fx: float = spd * (1.15 if _is_sprinting() else 1.0)
+	ScreenFX.set_borrao(clampf((vel_fx - 0.35) * 1.45, 0.0, 1.0))
+	ScreenFX.set_speed_lines(clampf((vel_fx - 0.50) * 1.60, 0.0, 0.85))
+	ScreenFX.set_aberracao_base(clampf((vel_fx - 0.62) * 1.60, 0.0, 0.7))
+	ScreenFX.set_vignette(clampf((vel_fx - 0.70) * 1.20, 0.0, 0.34))
 
 func _physics_process(delta: float) -> void:
 	if not _is_authority:

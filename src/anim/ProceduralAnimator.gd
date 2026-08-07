@@ -13,15 +13,32 @@ const STIFFNESS := 38.0
 # Passadas por metro percorrido (cadência ligada à DISTÂNCIA, não ao tempo).
 # Menor = animação de walk/run mais lenta e calma; maior = passos mais curtos/rápidos.
 const STRIDE_GAIN := 1.0
-# Teto da cadência (rad/s de fase). ~4 ciclos/s — acima disso as pernas viram
-# hélice. Se a passada máxima for curta demais para a velocidade, sobra um
-# resíduo de deslize; é o mal menor.
-const CADENCIA_MAX := 34.0
+# ------------------------------------------------------- RITMO DA MARCHA
+# O personagem tem 1,5 m e anda a 4,2 m/s. Casar o pé com o chão nessa
+# combinação exigia ~9 passos por segundo — quatro vezes o de um humano, e era
+# isso que deixava a animação frenética.
+#
+# Três alavancas, e a ordem importa. A que mais rende é a ALTURA DO QUADRIL:
+# agachar aumenta o alcance do pé (√(alcance² − H²)), o que permite passada mais
+# longa; passada longa cobre a mesma distância em menos passos, e a cadência cai
+# sozinha — sem deslize. O freio (`CADENCIA_ESCALA`) é o último recurso, porque
+# ele reduz a cadência descolando o pé do chão.
+#
+# Resultado medido, perna de 0,60 m: caminhada de 9,0 para 5,7 passos por
+# segundo (ciclo de 13 para 21 quadros), com 8% de deslize.
+#
+# Para acalmar TAMBÉM a corrida não há folga aqui: 7 m/s num corpo de 1,5 m é o
+# equivalente a um humano a 16 m/s. O caminho é reduzir `Player.SPEED`.
+const CADENCIA_ESCALA := 0.92
+const PASSADA_GANHO := 1.45
+# Teto da cadência (rad/s). Serve para as pernas não virarem hélice num pico de
+# velocidade; no sprint normal a conta fica abaixo dele.
+const CADENCIA_MAX := 30.0
 # Altura do quadril como fração da perna esticada. Nunca 1.0: o joelho precisa
 # sobrar dobrado, senão a IK satura e o pé sobe em vez de esticar.
-const H_PARADO := 0.96
-const H_CORRIDA := 0.90
-const H_SPRINT := 0.86   # corrida agacha mais -> o pé alcança mais longe
+const H_PARADO := 0.94
+const H_CORRIDA := 0.80
+const H_SPRINT := 0.76   # corrida agacha mais -> o pé alcança mais longe
 
 var _n: Dictionary = {}     # papel -> Node3D
 var _rest: Dictionary = {}  # papel -> Vector3 (rotação de descanso)
@@ -138,7 +155,7 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	elif parkour == "wall_run":
 		_phase += maxf(planar, 3.5) * delta * (STRIDE_GAIN / leg)   # pernas correndo na parede
 	elif on_floor and planar > 0.15:
-		_phase += minf(PI * planar / passada, CADENCIA_MAX) * delta
+		_phase += cadencia(planar, speed01, is_sprinting) * delta
 
 	# ---- acumula offsets de rotação por junta ----
 	var off: Dictionary = {}
@@ -202,18 +219,39 @@ func _add(off: Dictionary, role: String, v: Vector3) -> void:
 	if _n.has(role):
 		off[role] = off.get(role, Vector3.ZERO) + v
 
+# IDLE — parado, mas PRONTO. Não é repouso neutro: é a postura de quem está
+# esperando briga, que é o que a referência de One Piece pede.
+#
+# Três frequências diferentes de propósito (0,55 / 0,9 / 1,7 Hz). Se respiração,
+# balanço e cabeça compartilham o mesmo período, o corpo pulsa inteiro no mesmo
+# compasso e lê como boneco de mola. Períodos primos entre si nunca repetem o
+# mesmo instante e o parado fica "vivo".
 func _idle(off: Dictionary, w: float) -> void:
 	if w <= 0.001:
 		return
-	var s := sin(_t * 0.9)
-	var s2 := sin(_t * 0.7 + 1.0)
-	_add(off, "Torso", Vector3(0, 0.02 * s2, 0) * w)
-	_add(off, "Head",  Vector3(0.03 * sin(_t * 0.6), 0.05 * s2, 0) * w)
+	var resp := sin(_t * 1.7)               # respiração (mais rápida)
+	var peso := sin(_t * 0.55)              # troca de peso de uma perna p/ outra
+	var giro := sin(_t * 0.9 + 1.0)         # deriva lenta do olhar
+
+	# tronco: peito sobe na inspiração, e o corpo pende p/ o lado que aguenta o peso
+	_add(off, "Torso", Vector3(-0.015 - 0.012 * resp, 0.03 * giro, 0.035 * peso) * w)
+	_add(off, "Neck", Vector3(0.01 * resp, 0, -0.02 * peso) * w)
+	# cabeça contra o giro do tronco (olhar fica firme) e varre devagar
+	_add(off, "Head", Vector3(0.02 * resp, 0.09 * giro - 0.03 * giro, 0) * w)
+
+	# pernas: uma sustenta, a outra relaxa — o joelho de apoio estica um pouco
+	_add(off, "Thigh_L", Vector3(0.02 * peso, 0, 0.02 * peso) * w)
+	_add(off, "Thigh_R", Vector3(-0.02 * peso, 0, 0.02 * peso) * w)
+	_add(off, "Shin_L", Vector3(-0.05 - 0.03 * maxf(peso, 0.0), 0, 0) * w)
+	_add(off, "Shin_R", Vector3(-0.05 - 0.03 * maxf(-peso, 0.0), 0, 0) * w)
+
+	# braços soltos, um pouco à frente e afastados: guarda baixa, não em posição
+	# de sentido. O `_gun_w` tira o balanço quando a pistola está erguida.
 	var arm_w: float = w * (1.0 - _gun_w)
-	_add(off, "UpperArm_L", Vector3(0.06 * s, 0, 0.05) * arm_w)
-	_add(off, "UpperArm_R", Vector3(-0.06 * s, 0, -0.05) * arm_w)
-	_add(off, "ForeArm_L", Vector3(0.10, 0, 0) * arm_w)
-	_add(off, "ForeArm_R", Vector3(0.10, 0, 0) * arm_w)
+	_add(off, "UpperArm_L", Vector3(0.10 + 0.05 * resp, 0, 0.13) * arm_w)
+	_add(off, "UpperArm_R", Vector3(0.10 - 0.05 * resp, 0, -0.13) * arm_w)
+	_add(off, "ForeArm_L", Vector3(0.34 + 0.05 * peso, 0, 0.10) * arm_w)
+	_add(off, "ForeArm_R", Vector3(0.34 - 0.05 * peso, 0, -0.10) * arm_w)
 
 func _locomotion(off: Dictionary, w: float, phase: float, speed01: float, is_sprinting: bool) -> void:
 	if w <= 0.001:
@@ -294,9 +332,23 @@ func _perna_len() -> float:
 
 # Passada = quanto o pé viaja de frente a trás num ciclo. É a MESMA conta usada
 # pela cadência (em update) e pela IK — se as duas discordarem, o pé desliza.
+# Velocidade angular da marcha (rad/s). FONTE ÚNICA — o teste chama esta mesma
+# função. Já teve uma cópia da fórmula no teste, e ela ficou para trás quando o
+# freio de cadência entrou: os números continuavam mostrando o estado antigo.
+func cadencia(planar: float, speed01: float, sprint: bool) -> float:
+	var p: float = _passada(speed01, sprint)
+	return minf(PI * planar / p * CADENCIA_ESCALA, CADENCIA_MAX)
+
+# Deslize do pé no apoio, em fração da velocidade do corpo (0 = cravado).
+func deslize(planar: float, speed01: float, sprint: bool) -> float:
+	if planar < 0.01:
+		return 0.0
+	var v_pe: float = _passada(speed01, sprint) / PI * cadencia(planar, speed01, sprint)
+	return absf(v_pe - planar) / planar
+
 func _passada(speed01: float, sprint: bool) -> float:
 	var perna: float = _perna_len()
-	var p: float = perna * lerpf(0.45, 0.95, clampf(speed01, 0.0, 1.0))
+	var p: float = perna * lerpf(0.45, 0.95, clampf(speed01, 0.0, 1.0)) * PASSADA_GANHO
 	if sprint:
 		p *= 1.25
 	# TETO GEOMÉTRICO: com o quadril a H do chão, o pé só alcança
