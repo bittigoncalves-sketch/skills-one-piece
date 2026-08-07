@@ -88,7 +88,12 @@ func trigger_skill_cooldown(slot: String) -> void:
 var _mesh: MeshInstance3D
 var _crosshair: Control
 
-var character_id: String = "ace"   # personagem inicial = Ace (skinnado Meshy)
+# ELENCO TRANCADO: só o "base" (decisão do usuário) — é nele que a animação está
+# sendo feita. Os outros modelos continuam no projeto, mas não são selecionáveis:
+# ver CHARS_TRANCADOS em src/ui/CharacterMenu.gd.
+const ELENCO_LIBERADO: Array[String] = ["base"]
+
+var character_id: String = "base"
 var _animator: CharacterAnimator
 var _char_model: Node3D
 var _proc_anim: ProceduralAnimator   # animação procedural em tempo real do rig
@@ -197,11 +202,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		_first_person = not _first_person
 		_apply_perspective()
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F6:
-		# Alterna modelo 3D Voxel: Base <-> Buggy <-> Nami <-> Ace
-		var char_list := ["base", "buggy", "nami", "ace"]
-		var idx := char_list.find(character_id)
-		var next_char: String = char_list[(idx + 1) % char_list.size()] if idx != -1 else "buggy"
-		set_character(next_char)
+		# Cicla o modelo — hoje o elenco está trancado no "base", então F6 não
+		# tem para onde ir. Liberar outro personagem é só acrescentar em
+		# ELENCO_LIBERADO.
+		if ELENCO_LIBERADO.size() > 1:
+			var idx := ELENCO_LIBERADO.find(character_id)
+			set_character(ELENCO_LIBERADO[(idx + 1) % ELENCO_LIBERADO.size()])
+		else:
+			print("[Personagem] elenco trancado em: ", ELENCO_LIBERADO[0])
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R:
 		toggle_combat_mode()
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_T:
@@ -725,6 +733,10 @@ func _climbable_wall_normal(move_direction: Vector3) -> Vector3:
 # ----------------------------------------------------------- troca de modelo ---
 # API pública usada pelo menu de Personagens (muda modelo e equipa a Akuma no Mi correta).
 func set_character(cid: String) -> void:
+	# Guarda único da trava de elenco: menu, config salva e rede passam por aqui.
+	if not ELENCO_LIBERADO.has(cid):
+		print("[Personagem] '", cid, "' está trancado — usando ", ELENCO_LIBERADO[0])
+		cid = ELENCO_LIBERADO[0]
 	_setup_character_model(cid)
 	match cid:
 		"ace":

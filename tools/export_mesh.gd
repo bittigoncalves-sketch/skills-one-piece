@@ -14,7 +14,9 @@ extends SceneTree
 
 const SAIDA := "res://tools/anim_editor/meshes/"
 const INBOX := "res://assets/models/inbox/"
-const PERSONAGENS := ["base", "buggy", "nami", "ace", "blackbeard", "crocodile"]
+# ELENCO TRANCADO no "base" — é nele que a animação está sendo feita.
+# Modelo novo entra pela inbox (assets/models/inbox/), não por esta lista.
+const PERSONAGENS := ["base"]
 const ALTURA_GRADE := 30      # células no eixo mais alto — mais que isso trava o tkinter
 const MAX_VOXELS := 2600      # teto de segurança
 

@@ -42,6 +42,11 @@ ou subir o `servidor.sh` numa máquina com IP público.
 
 ## Personagens e rig
 
+> **Elenco trancado no `base`.** Só ele é selecionável hoje — o trabalho de
+> animação está concentrado nesse personagem. Ace, Nami, Barba Negra, Crocodile
+> e Buggy continuam no projeto, mas fora do menu. Para liberar, acrescente o id
+> em `Player.ELENCO_LIBERADO` e em `CHARS` (`src/ui/CharacterMenu.gd`).
+
 Todos os personagens — voxel (`.scn`/`.glb`) e skinnados (`Skeleton3D` dos modelos
 Meshy) — falam **um único rig lógico de 13 papéis**:
 

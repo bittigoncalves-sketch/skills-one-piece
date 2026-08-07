@@ -6,7 +6,9 @@ extends SceneTree
 # Uso: godot --headless --path . -s tools/export_rig.gd
 
 const SAIDA := "res://tools/anim_editor/rigs/"
-const PERSONAGENS := ["base", "buggy", "nami", "ace", "blackbeard", "crocodile"]
+# ELENCO TRANCADO no "base" — é nele que a animação está sendo feita.
+# Modelo novo entra pela inbox (assets/models/inbox/), não por esta lista.
+const PERSONAGENS := ["base"]
 
 func _init() -> void:
 	_run()

@@ -4,6 +4,12 @@ Editor de keyframes para o rig de 13 papéis do jogo. Carrega o personagem,
 mostra o esqueleto em 3D, e grava direto em `assets/animations/<nome>.tres`,
 que o jogo carrega igual a um `.res`.
 
+> **Elenco trancado no `base`.** O editor e o jogo estão restritos ao personagem
+> `base` — é nele que a animação está sendo feita. Os outros modelos continuam
+> no projeto, só não são selecionáveis. Para liberar: `ELENCO_LIBERADO` em
+> `Player.gd`, `CHARS` em `src/ui/CharacterMenu.gd` e `PERSONAGENS` nos dois
+> exportadores.
+
 Python puro, **só biblioteca padrão** (tkinter). Sem instalar nada.
 
 ```bash

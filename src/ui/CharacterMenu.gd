@@ -4,13 +4,19 @@ extends PanelContainer
 # painel glassmorphism cinza/branco). Abre/fecha com a tecla M.
 # Lista os personagens; clicar troca o modelo do jogador.
 
+# ELENCO TRANCADO NO BASE (decisão do usuário). O trabalho de animação está
+# concentrado nele; os demais voltam descomentando as linhas abaixo.
 const CHARS := [
-	{"id": "ace",        "nome": "Ace"},         # skinnado (Meshy) — padrão
+	{"id": "base", "nome": "Base (voxel)"},
+]
+
+# Fora de uso enquanto o elenco está trancado — mantidos para não perder os ids.
+const CHARS_TRANCADOS := [
+	{"id": "ace",        "nome": "Ace"},         # skinnado (Meshy)
 	{"id": "nami",       "nome": "Nami"},        # skinnado (Meshy)
 	{"id": "blackbeard", "nome": "Barba Negra"}, # skinnado (Meshy)
 	{"id": "crocodile",  "nome": "Crocodile"},   # skinnado (Meshy)
-	{"id": "base",  "nome": "Base (voxel)"},     # voxel antigo
-	{"id": "buggy", "nome": "Buggy (voxel)"},    # voxel antigo
+	{"id": "buggy",      "nome": "Buggy (voxel)"},
 ]
 
 const STYLES := [
