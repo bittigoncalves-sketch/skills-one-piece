@@ -61,10 +61,18 @@ var _fov_punch: float = 0.0   # zoom-in momentâneo ao atacar (decai)
 
 # FOV por ESTADO. Degraus, não rampa: o salto de CORRENDO p/ SPRINT é o que faz
 # o Shift dar o "clique" na mão.
-const FOV_PARADO := 68.0
-const FOV_ANDANDO := 72.0
-const FOV_CORRENDO := 80.0
-const FOV_SPRINT := 90.0
+#
+# FOV_INTENSIDADE é o único número a mexer para calibrar a força do efeito.
+# Os ganhos abaixo estão em graus "cheios" e guardam a PROPORÇÃO entre os
+# estados; a intensidade escala todos juntos, então afinar não desmonta os
+# degraus. Em 1.0 a variação era de 22° — forte demais em jogo. Em 0.10 sobra
+# ~2,2°: o FOV respira sem chamar atenção.
+const FOV_INTENSIDADE := 0.10
+const FOV_BASE := 68.0
+const FOV_G_ANDANDO := 4.0
+const FOV_G_CORRENDO := 12.0
+const FOV_G_SPRINT := 22.0
+const FOV_G_AR := 3.0
 
 # Sprint = Shift segurado com direção. Usado pela câmera e pelos efeitos de tela;
 # o movimento tem a própria checagem em _physics_process.
@@ -350,14 +358,14 @@ func _process(delta: float) -> void:
 	# O salto entre correr e sprintar é o que faz o Shift "dar o clique" — numa
 	# rampa linear ele passa despercebido.
 	_fov_punch = maxf(_fov_punch - delta * 22.0, 0.0)
-	var alvo_fov := FOV_PARADO
+	var ganho := 0.0
 	if spd > 0.05:
-		alvo_fov = lerpf(FOV_ANDANDO, FOV_CORRENDO, clampf(spd, 0.0, 1.0))
+		ganho = lerpf(FOV_G_ANDANDO, FOV_G_CORRENDO, clampf(spd, 0.0, 1.0))
 		if _is_sprinting():
-			alvo_fov = lerpf(alvo_fov, FOV_SPRINT, clampf((spd - 0.7) / 0.5, 0.0, 1.0))
+			ganho = lerpf(ganho, FOV_G_SPRINT, clampf((spd - 0.7) / 0.5, 0.0, 1.0))
 	if not on_floor:
-		alvo_fov += 3.0                      # no ar abre um pouco: sensação de queda
-	alvo_fov -= _fov_punch
+		ganho += FOV_G_AR                    # no ar abre um pouco: sensação de queda
+	var alvo_fov: float = FOV_BASE + ganho * FOV_INTENSIDADE - _fov_punch
 	# Abre RÁPIDO e fecha DEVAGAR. Simétrico dá a impressão de a câmera "respirar"
 	# junto com cada tranco do passo.
 	var vel_fov := 9.0 if alvo_fov > _cam.fov else 3.5
