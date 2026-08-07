@@ -7,6 +7,32 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-07 — Trava de elenco vazou: o jogo abria com o Crocodile
+
+**Sintoma:** com o elenco trancado no `base`, o jogo continuava começando com o
+**Crocodile**.
+
+**Causa raiz:** pus o guarda em `Player.set_character()`, que parecia a porta de
+entrada — mas não é. `_setup_character_model()` tem **quatro** chamadores, e o
+que vazava era o `equip_fruit()`: ele troca a aparência conforme a fruta
+(`suna_suna` → `crocodile`) e chama `_setup_character_model()` **direto**. E o
+`Main` equipa `suna_suna` ao nascer ([Main.gd:108](../Main.gd)).
+
+**Evidência:** no log do jogo, `🔄 Troca automática de aparência: comendo a fruta
+[suna_suna] -> transformado em [crocodile]!` logo depois do spawn.
+
+**Correção:** guarda movido para o topo de `_setup_character_model()` — o ponto
+de estrangulamento por onde todos passam. `equip_fruit()` também checa a trava
+**antes de anunciar**, senão o log dizia "transformado em crocodile" e carregava
+o base logo abaixo.
+
+**Como evitar de novo:** antes de pôr um guarda, `grep` por **todos** os
+chamadores do método que de fato carrega — e proteger esse, não o que parece ser
+a entrada. Teste: `tools/dev_tests/test_elenco_trancado.gd` cobre os 12 caminhos
+(inicial, 5 frutas, 5 `set_character`, chamada direta).
+
+---
+
 ## 2026-08-07 — Personagem voxelizado saiu deitado: a malha do Meshy já é Y-up
 
 **Sintoma:** ao exportar a malha para o editor posicionar marcadores, os modelos

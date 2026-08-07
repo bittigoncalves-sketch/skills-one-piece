@@ -733,7 +733,8 @@ func _climbable_wall_normal(move_direction: Vector3) -> Vector3:
 # ----------------------------------------------------------- troca de modelo ---
 # API pública usada pelo menu de Personagens (muda modelo e equipa a Akuma no Mi correta).
 func set_character(cid: String) -> void:
-	# Guarda único da trava de elenco: menu, config salva e rede passam por aqui.
+	# Coage aqui também: abaixo o `match cid` escolhe a fruta inicial, e ele
+	# precisa ver o personagem que de fato foi carregado.
 	if not ELENCO_LIBERADO.has(cid):
 		print("[Personagem] '", cid, "' está trancado — usando ", ELENCO_LIBERADO[0])
 		cid = ELENCO_LIBERADO[0]
@@ -763,6 +764,13 @@ func set_character(cid: String) -> void:
 		hud.update_combat_mode(combat_mode, active_style, current_fruit_id)
 
 func _setup_character_model(cid: String) -> void:
+	# GUARDA DA TRAVA DE ELENCO — aqui, não no set_character.
+	# Este é o ponto por onde TODOS passam: menu, rede, e principalmente a troca
+	# automática de aparência do equip_fruit() (o Main equipa suna_suna ao nascer,
+	# o que virava Crocodile mesmo com o elenco trancado).
+	if not ELENCO_LIBERADO.has(cid):
+		cid = ELENCO_LIBERADO[0]
+
 	if _char_model:
 		_char_model.queue_free()
 	if _animator:
@@ -1324,6 +1332,10 @@ func equip_fruit(fruit_id: String) -> void:
 		"goro_goro": new_cid = "nami"
 		"bara_bara": new_cid = "buggy"
 		"gomu_gomu": new_cid = "base"
+	# Com o elenco trancado a aparência não muda — checa ANTES de anunciar, senão
+	# o log diz "transformado em crocodile" e carrega o base logo abaixo.
+	if new_cid != "" and not ELENCO_LIBERADO.has(new_cid):
+		new_cid = ""
 	if new_cid != "" and character_id != new_cid:
 		print("🔄 Troca automática de aparência: comendo a fruta [", fruit_id, "] -> transformado em [", new_cid, "]!")
 		_setup_character_model(new_cid)
