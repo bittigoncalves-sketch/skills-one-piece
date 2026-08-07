@@ -14,3 +14,6 @@ __pycache__/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# log do lançador do editor de animação
+tools/anim_editor/abrir.log

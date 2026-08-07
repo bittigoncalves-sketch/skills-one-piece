@@ -7,6 +7,30 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-07 — Exportação pela metade: trabalho dentro de pipe morre por SIGPIPE
+
+**Sintoma:** o lançador do editor preparava os dados na primeira execução, mas só
+os **rigs** apareciam. Os 28 clipes não eram gerados — e o log não acusava erro
+nenhum.
+
+**Causa raiz:** coloquei as duas exportações num subshell **canalizado para
+`zenity --progress`**, para mostrar a barra. Quando a janela do zenity fecha (ou
+sequer abre), o pipe quebra e o `echo` seguinte mata o subshell com **SIGPIPE** —
+exatamente entre a primeira exportação e a segunda.
+
+**Evidência:** log terminando em `RIGS EXPORTADOS: 6`, sem nenhuma linha da
+exportação de clipes e sem mensagem de erro. Depois da correção:
+`RIGS EXPORTADOS: 6` **e** `CLIPES EXPORTADOS: 28`.
+
+**Correção:** `tools/anim_editor/abrir.sh` — as exportações rodam fora de
+qualquer pipe; o aviso virou um `notify-send` solto. A verificação passou a
+conferir os **arquivos gerados**, não o código de saída do pipeline.
+
+**Como evitar de novo:** janela de progresso é só aviso. Trabalho nunca depende
+dela, e o sucesso se mede pelo artefato produzido.
+
+---
+
 ## 2026-08-07 — Rig skinnado exportado deitado e espalhado pelo chão
 
 **Sintoma:** no editor de animação em Python, os personagens voxel montavam
