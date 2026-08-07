@@ -101,11 +101,22 @@ func _run() -> void:
 	print("[captura] skinnado=", skinnado, "  papeis=", (prof["nodes"] as Dictionary).size())
 
 	# assenta a pose antes de capturar (o blend leva alguns frames)
-	for i in 30:
+	for i in 90:
 		anim.update(vel, no_chao, false, 1.0 / 60.0, 0.0, correndo)
 
+	# Amostra UM ciclo inteiro em intervalos iguais. Sem isso as capturas caem
+	# espalhadas por vários ciclos e não dá pra ler a marcha como sequência.
+	var passos := PASSOS_ENTRE
+	if estado in ["walk", "run"]:
+		var speed01: float = vel.length() / 4.2
+		var passada: float = anim._passada(speed01, correndo)
+		var omega: float = minf(PI * vel.length() / passada, anim.CADENCIA_MAX)
+		var ciclo_frames: float = TAU / omega * 60.0
+		passos = maxi(int(round(ciclo_frames / N_FRAMES)), 1)
+		print("[captura] ciclo=%.1f quadros -> 1 captura a cada %d" % [ciclo_frames, passos])
+
 	for f in N_FRAMES:
-		for i in PASSOS_ENTRE:
+		for i in passos:
 			anim.update(vel, no_chao, false, 1.0 / 60.0, 0.0, correndo)
 		await process_frame
 		await process_frame

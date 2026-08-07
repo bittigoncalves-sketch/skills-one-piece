@@ -7,6 +7,33 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-07 — Rig skinnado exportado deitado e espalhado pelo chão
+
+**Sintoma:** no editor de animação em Python, os personagens voxel montavam
+certo, mas a Nami (e os outros modelos Meshy) viravam caixas soltas espalhadas
+rente ao chão.
+
+**Causa raiz:** duas coisas erradas de uma vez na exportação. Os proxies criados
+pelo `SkeletonDriver` são **irmãos soltos** sob o `model_root` — o `position`
+deles é **global**, não local ao papel-pai — e vivem no espaço do **esqueleto**,
+que nos modelos Meshy é **Z-up**. Exportei `n.position` cru, como se fosse local
+e Y-up.
+
+**Evidência:** depois da correção, `Torso` y=1,185, `Head` +0,122 acima,
+`Thigh_R` −0,36 abaixo do torso, `Shin_R` −0,36 abaixo da coxa — proporções
+anatômicas. Antes, tudo se acumulava perto de y=0.
+
+**Correção:** `tools/export_rig.gd` — no caminho skinnado, aplicar a basis
+`_axis` do driver e subtrair a posição do papel-pai, usando
+`SkeletonDriver.RIG_PARENT` (não dá para caminhar a árvore de nós, porque não
+existe hierarquia entre os proxies).
+
+**Como detectar de novo:** abrir o editor e olhar. Personagem deitado ou
+espalhado = conversão de espaço, não cinemática. É a **terceira** vez que o Z-up
+dos modelos Meshy morde neste projeto — ver as duas entradas anteriores.
+
+---
+
 ## 2026-08-06 — Tela cinza ao abrir o singleplayer no clone do GitHub
 
 **Sintoma:** o usuário baixou o repositório em outro computador; o menu abre, mas

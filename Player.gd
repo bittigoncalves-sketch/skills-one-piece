@@ -252,9 +252,14 @@ func set_fighting_style(style_id: String) -> void:
 func play_style_anim(anim_name: String) -> void:
 	if _proc_anim == null:
 		return
+	# .res = assado do Mixamo (binário). .tres = autorado no editor de animação
+	# em Python (texto) — o Godot carrega os dois igual.
 	var path := "res://assets/animations/%s.res" % anim_name
 	if not ResourceLoader.exists(path):
-		print("[StyleAnim] falta o bake do rig: ", path, " (baixe o FBX do Mixamo e rode o baker)")
+		path = "res://assets/animations/%s.tres" % anim_name
+	if not ResourceLoader.exists(path):
+		print("[StyleAnim] animação não encontrada: ", anim_name,
+			" (.res vem do baker do Mixamo, .tres do tools/anim_editor)")
 		return
 	var a = load(path)
 	if a is Animation:
@@ -270,7 +275,9 @@ func _scan_style_anims() -> void:
 	var d := DirAccess.open("res://assets/animations/")
 	if d:
 		for f in d.get_files():
-			if f.to_lower().ends_with(".res"):
+			var b := f.to_lower()
+			# .res vem do baker do Mixamo; .tres, do editor em Python
+			if (b.ends_with(".res") or b.ends_with(".tres")) and not _style_anims.has(f.get_basename()):
 				_style_anims.append(f.get_basename())
 	_style_anims.sort()
 
