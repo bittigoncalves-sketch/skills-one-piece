@@ -21,17 +21,54 @@ Quem exporta é o próprio Godot, em dois passos:
 GODOT=/caminho/do/godot
 $GODOT --headless --path . -s tools/export_rig.gd     # personagens -> rigs/*.json
 $GODOT --headless --path . -s tools/export_anims.gd   # 28 clipes   -> clips/*.json
+$GODOT --headless --path . -s tools/export_mesh.gd    # malhas      -> meshes/*.json
 ```
 
-Rode de novo sempre que mexer num personagem ou assar animação nova.
+Rode de novo sempre que mexer num personagem ou assar animação nova. O lançador
+da área de trabalho faz isso sozinho na primeira vez.
+
+---
+
+## Criar rig por marcadores
+
+Método igual ao do Meshy: você marca as juntas **sobre o modelo** e o esqueleto
+sai com os comprimentos **reais** daquele personagem — em vez de proporções
+chutadas.
+
+Botão **Criar rig (marcadores)**. São 7 tipos, 12 pontos:
+
+| Marcador | Pontos | Vira |
+|---|---|---|
+| Queixo | 1 | `Neck` → `Head` |
+| Ombros | A / B | `UpperArm_L/R` |
+| Cotovelos | A / B | `ForeArm_L/R` |
+| Pulsos | A / B | ponta do antebraço |
+| Virilha | 1 | origem do `Torso` (quadril) |
+| Joelhos | A / B | `Shin_L/R` |
+| Tornozelos | A / B | `Foot_L/R` |
+
+- **Botão direito** sobre o modelo marca o ponto ativo; ele avança sozinho para o
+  próximo slot vazio.
+- **Simetria** ligada espelha A em B no plano X — é o que evita ombro torto.
+- **Sugerir posições** parte de um palpite por proporção humana, para você só
+  corrigir em vez de colocar 12 pontos do zero.
+- A espessura de cada osso é **medida na malha** (`Malha.raio_em`), então braço
+  fino e tronco largo saem certos.
+
+Por que importa: o Barba Negra do Meshy veio com a **canela a 54% da coxa** (o
+resto do elenco fica em 74–88%) — é o que faz ele parecer anão. Re-rigado por
+marcadores, sai **99%**.
+
+**Modelo novo:** largue o `.glb`/`.fbx` em `assets/models/inbox/` e rode
+`export_mesh.gd` — ele aparece na lista para ser rigado.
 
 ---
 
 ## Fluxo
 
-1. **Personagem** — escolha na lista. Se ele já tem ossos, eles aparecem.
-   `<rig novo>` ou o botão **Criar ossos** gera os 13 papéis canônicos do zero,
-   para um personagem que ainda não tem rig.
+1. **Personagem** — escolha na lista. Se ele já tem ossos, eles aparecem. Se não
+   tem, use **Criar rig (marcadores)** acima. `<rig canônico>` é a saída de
+   emergência: 13 ossos de proporção fixa, sem precisar do modelo.
 2. **Clipe** — abra um dos 28 do Mixamo para ajustar, ou **Novo** para começar do zero.
 3. **Anime** — clique num osso (na lista ou direto no 3D), gire nos sliders,
    ande na linha do tempo, repita. Mexer num slider **já crava a chave** no
@@ -85,7 +122,15 @@ que falhou — não a cinemática do editor.
 | Arquivo | Papel |
 |---|---|
 | `main.py` | janela, linha do tempo, ligação entre as partes |
-| `rig.py` | os 13 papéis, cinemática direta, criação de rig do zero |
+| `rig.py` | os 13 papéis, cinemática direta, rig canônico |
 | `clip.py` | keyframes, interpolação, exportação `.tres` |
 | `viewport.py` | render 3D no Canvas (algoritmo do pintor, sem GPU) |
-| `rigs/`, `clips/` | dados gerados pelos exportadores do Godot |
+| `rigger.py` | janela de marcadores (o método do Meshy) |
+| `markers.py` | os 7 tipos de marcador e a derivação dos 13 ossos |
+| `mesh.py` | malha voxelizada do personagem |
+| `abrir.sh` | lançador: acha o Python, prepara os dados, abre |
+| `rigs/`, `clips/`, `meshes/` | dados gerados pelos exportadores do Godot |
+
+> A malha vem só como **casca** (voxel de superfície) e é desenhada com **um
+> retângulo por voxel**, não um cubo de 6 faces. Com ~2000 voxels, 6 faces cada
+> daria 12000 itens de canvas e o tkinter engasgaria.

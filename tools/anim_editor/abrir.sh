@@ -39,7 +39,8 @@ echo "python: $PY" >> "$LOG"
 
 # ------------------------------------------------- dados do rig e dos clipes
 # São gerados pelo Godot (o Python não lê .scn/.fbx/.res, que são binários).
-if [ ! -f "$AQUI/rigs/index.json" ] || [ ! -f "$AQUI/clips/index.json" ]; then
+if [ ! -f "$AQUI/rigs/index.json" ] || [ ! -f "$AQUI/clips/index.json" ] \
+   || [ ! -f "$AQUI/meshes/index.json" ]; then
     GODOT="$("$PROJ/find_godot.sh" 2>/dev/null || true)"
     if [ -z "$GODOT" ]; then
         avisar "Editor de Animação" \
@@ -55,10 +56,12 @@ if [ ! -f "$AQUI/rigs/index.json" ] || [ ! -f "$AQUI/clips/index.json" ]; then
     fi
     "$GODOT" --headless --path "$PROJ" -s tools/export_rig.gd >> "$LOG" 2>&1
     "$GODOT" --headless --path "$PROJ" -s tools/export_anims.gd >> "$LOG" 2>&1
+    "$GODOT" --headless --path "$PROJ" -s tools/export_mesh.gd >> "$LOG" 2>&1
 
     faltou=""
-    [ -f "$AQUI/rigs/index.json" ]  || faltou="rigs"
-    [ -f "$AQUI/clips/index.json" ] || faltou="${faltou:+$faltou e }clipes"
+    [ -f "$AQUI/rigs/index.json" ]   || faltou="rigs"
+    [ -f "$AQUI/clips/index.json" ]  || faltou="${faltou:+$faltou, }clipes"
+    [ -f "$AQUI/meshes/index.json" ] || faltou="${faltou:+$faltou, }malhas"
     if [ -n "$faltou" ]; then
         avisar "Editor de Animação" "A exportação de $faltou falhou.\n\nDetalhes em:\n$LOG"
         exit 1

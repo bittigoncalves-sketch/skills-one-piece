@@ -7,6 +7,27 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-07 — Personagem voxelizado saiu deitado: a malha do Meshy já é Y-up
+
+**Sintoma:** ao exportar a malha para o editor posicionar marcadores, os modelos
+Meshy vinham com altura errada — a Nami com **0,55 m** em vez de 1,70.
+
+**Causa raiz:** apliquei o giro de −90° em X da Armature **na malha também**. Mas
+`mesh.get_aabb()` da Nami dá `(0.78, 1.70, 0.55)` — 1,70 na altura, ou seja **a
+malha já está em Y-up**. Aquele giro existe para orientar o **esqueleto**, que é
+Z-up. Aplicando nos dois, a altura vira profundidade e o personagem deita.
+
+**Evidência:** antes 0,55 m; depois da correção, 1,70 m nos quatro modelos Meshy.
+
+**Correção:** `tools/export_mesh.gd` — `_coletar()` guarda também a transformação
+de **antes da Armature** e usa essa para malha skinnada.
+
+**Como evitar de novo:** malha e esqueleto do Meshy vivem em espaços
+**diferentes**. Para a malha, transformação de antes da Armature; para o
+esqueleto, a basis do driver. Esta é a **quarta** aparição do Z-up neste projeto.
+
+---
+
 ## 2026-08-07 — Exportação pela metade: trabalho dentro de pipe morre por SIGPIPE
 
 **Sintoma:** o lançador do editor preparava os dados na primeira execução, mas só

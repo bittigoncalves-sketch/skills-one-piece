@@ -17,3 +17,7 @@ Thumbs.db
 
 # log do lançador do editor de animação
 tools/anim_editor/abrir.log
+
+# modelos largados para rigar (entrada local, não versiona)
+assets/models/inbox/*
+!assets/models/inbox/.gitkeep

@@ -1,0 +1,40 @@
+{
+  "models": [
+    {
+      "height": 3.6,
+      "name": "base",
+      "source": "jogo",
+      "voxels": 1051
+    },
+    {
+      "height": 4.123,
+      "name": "buggy",
+      "source": "jogo",
+      "voxels": 1552
+    },
+    {
+      "height": 1.7,
+      "name": "nami",
+      "source": "jogo",
+      "voxels": 1241
+    },
+    {
+      "height": 1.7,
+      "name": "ace",
+      "source": "jogo",
+      "voxels": 1352
+    },
+    {
+      "height": 1.7,
+      "name": "blackbeard",
+      "source": "jogo",
+      "voxels": 1962
+    },
+    {
+      "height": 1.693,
+      "name": "crocodile",
+      "source": "jogo",
+      "voxels": 2600
+    }
+  ]
+}

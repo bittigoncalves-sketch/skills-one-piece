@@ -29,11 +29,13 @@ sys.path.insert(0, AQUI)
 
 from clip import Clip, listar_clipes           # noqa: E402
 from rig import PAPEIS, Rig, listar_rigs       # noqa: E402
+from rigger import Rigger                      # noqa: E402
 from viewport import Viewport                  # noqa: E402
 
 PROJETO = os.path.abspath(os.path.join(AQUI, "..", ".."))
 DIR_RIGS = os.path.join(AQUI, "rigs")
 DIR_CLIPES = os.path.join(AQUI, "clips")
+DIR_MALHAS = os.path.join(AQUI, "meshes")
 DIR_EXPORT = os.path.join(PROJETO, "assets", "animations")
 
 EIXOS = ("X", "Y", "Z")
@@ -68,7 +70,7 @@ class Editor(tk.Tk):
         self.cb_person.pack(side="left", pady=6)
         self.cb_person.bind("<<ComboboxSelected>>", lambda e: self._troca_personagem())
 
-        tk.Button(b, text="Criar ossos", command=self._criar_ossos,
+        tk.Button(b, text="Criar rig (marcadores)", command=self._abrir_rigger,
                   bg="#2a3140", fg="#dfe4ec", relief="flat").pack(side="left", padx=6)
 
         ttk.Separator(b, orient="vertical").pack(side="left", fill="y", padx=8, pady=4)
@@ -168,7 +170,7 @@ class Editor(tk.Tk):
             nomes = []
         else:
             nomes = listar_rigs(DIR_RIGS)
-        self.cb_person["values"] = nomes + ["<rig novo>"]
+        self.cb_person["values"] = nomes + ["<rig canônico>"]
         if nomes:
             self.cb_person.current(0)
             self._troca_personagem()
@@ -179,8 +181,8 @@ class Editor(tk.Tk):
 
     def _troca_personagem(self):
         nome = self.cb_person.get()
-        if nome == "<rig novo>":
-            self._criar_ossos()
+        if nome == "<rig canônico>":
+            self._criar_ossos_canonico()
             return
         caminho = os.path.join(DIR_RIGS, nome + ".json")
         if not os.path.exists(caminho):
@@ -191,20 +193,37 @@ class Editor(tk.Tk):
         self._preenche_lista()
         self._redesenha()
 
-    def _criar_ossos(self):
-        """Personagem sem ossos: gera o rig canônico de 13 papéis."""
-        if self.rig is not None and self.rig.papeis and self.cb_person.get() != "<rig novo>":
-            if not messagebox.askyesno(
-                    "Criar ossos",
-                    "%s já tem %d ossos.\nCriar um rig novo do zero por cima?"
-                    % (self.rig.personagem, len(self.rig.papeis))):
-                return
-        perna = simpledialog.askfloat("Criar ossos", "Comprimento da perna (m):",
+    def _abrir_rigger(self):
+        """Personagem sem ossos: cria o rig marcando as juntas sobre o modelo.
+
+        Mesmo método do Meshy — 12 marcadores (queixo, ombros, cotovelos,
+        pulsos, virilha, joelhos, tornozelos) e o esqueleto sai com os
+        comprimentos REAIS do personagem, não com proporções chutadas.
+        """
+        if not os.path.isdir(DIR_MALHAS):
+            messagebox.showwarning(
+                "Sem modelos voxelizados",
+                "Rode primeiro no projeto:\n\n"
+                "  godot --headless --path . -s tools/export_mesh.gd\n\n"
+                "Para rigar um modelo NOVO, largue o .glb/.fbx em\n"
+                "  assets/models/inbox/\n"
+                "e rode o comando de novo.")
+            return
+        Rigger(self, DIR_MALHAS, DIR_RIGS, ao_salvar=self._rig_criado)
+
+    def _rig_criado(self, nome):
+        self.cb_person["values"] = listar_rigs(DIR_RIGS) + ["<rig canônico>"]
+        self.cb_person.set(nome)
+        self._troca_personagem()
+
+    def _criar_ossos_canonico(self):
+        """Saída de emergência: rig de proporções fixas, sem precisar do modelo."""
+        perna = simpledialog.askfloat("Rig canônico", "Comprimento da perna (m):",
                                       initialvalue=0.60, minvalue=0.1, maxvalue=3.0)
         if perna is None:
             return
         self.rig = Rig.canonico("novo", perna=perna)
-        self._status("rig novo criado — 13 ossos canônicos")
+        self._status("rig canônico — 13 ossos de proporção fixa")
         self._preenche_lista()
         self._redesenha()
 
