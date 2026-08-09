@@ -6,6 +6,8 @@ config_version=5
 [application]
 
 config/name="SKILLS ONE PIECE"
+config/icon="res://icon.png"
+config/windows_native_icon="res://icon.ico"
 run/main_scene="res://MainMenu.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 

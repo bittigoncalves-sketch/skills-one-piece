@@ -53,6 +53,19 @@ func setup(world: Node, caster: Node, shoulder: Node3D, hidden_arm: Node3D,
 	_knockback_mult = knockback_mult
 	_shake_mult = shake_mult
 
+	if _caster is Node3D and _caster.is_inside_tree():
+		var space = (_caster as Node3D).get_world_3d().direct_space_state
+		var from := _shoulder_pos()
+		var to := from + _aim * _max_len
+		var q := PhysicsRayQueryParameters3D.create(from, to)
+		q.hit_from_inside = false
+		q.collision_mask = 1 | 2 | 4 | 8 # Checa chão, paredes, inimigos, etc.
+		if _caster is CollisionObject3D:
+			q.exclude = [(_caster as CollisionObject3D).get_rid()]
+		var hit = space.intersect_ray(q)
+		if not hit.is_empty():
+			_max_len = from.distance_to(hit["position"])
+
 	if _hidden_arm and is_instance_valid(_hidden_arm):
 		_hidden_arm.visible = false   # o braço real some; o feixe elástico o substitui
 

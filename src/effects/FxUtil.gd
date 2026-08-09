@@ -251,3 +251,89 @@ static func geppo_effect(world: Node, feet_pos: Vector3, move_dir: Vector3 = Vec
 			if is_instance_valid(trail):
 				trail.emitting = false
 				autofree(trail, 0.4))
+
+# ---- ROLL EFFECT (Cópia horizontal do Geppo) ----
+static func roll_effect(world: Node, base_pos: Vector3, move_dir: Vector3) -> void:
+	if world == null or move_dir.length_squared() < 0.01:
+		return
+		
+	var fwd := move_dir.normalized()
+	var up := Vector3.UP if abs(fwd.y) < 0.95 else Vector3.FORWARD
+	var right := fwd.cross(up).normalized()
+	var real_up := right.cross(fwd).normalized()
+	var ring_basis := Basis(right, real_up, -fwd)
+	
+	# 1. Anel Externo de Ar Comprimido (Onda de choque principal)
+	var mi_out := MeshInstance3D.new()
+	var tm_out := TorusMesh.new()
+	tm_out.inner_radius = 0.68
+	tm_out.outer_radius = 0.92
+	mi_out.mesh = tm_out
+	var mat_out := StandardMaterial3D.new()
+	mat_out.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat_out.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat_out.albedo_color = Color(0.85, 0.95, 1.0, 0.85)
+	mat_out.emission_enabled = true
+	mat_out.emission = Color(0.8, 0.95, 1.0)
+	mat_out.emission_energy_multiplier = 3.0
+	mat_out.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mi_out.material_override = mat_out
+	mi_out.scale = Vector3(0.35, 0.25, 0.35)
+	world.add_child(mi_out)
+	mi_out.global_position = base_pos + Vector3(0, 1.0, 0)
+	
+	# Rotaciona para que o anel fique de pé e cresça perpendicular ao fwd
+	mi_out.transform.basis = ring_basis.rotated(right, PI/2.0)
+	
+	var tw1 := mi_out.create_tween()
+	tw1.set_parallel(true)
+	tw1.tween_property(mi_out, "scale", Vector3(3.4, 0.1, 3.4), 0.35).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw1.tween_property(mat_out, "albedo_color:a", 0.0, 0.35)
+	tw1.tween_callback(mi_out.queue_free).set_delay(0.36)
+
+	# 2. Anel Interno de Choque (Núcleo branco de alta pressão)
+	var mi_in := MeshInstance3D.new()
+	var tm_in := TorusMesh.new()
+	tm_in.inner_radius = 0.28
+	tm_in.outer_radius = 0.52
+	mi_in.mesh = tm_in
+	var mat_in := StandardMaterial3D.new()
+	mat_in.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat_in.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat_in.albedo_color = Color(1.0, 1.0, 1.0, 0.95)
+	mat_in.emission_enabled = true
+	mat_in.emission = Color(1.0, 1.0, 1.0)
+	mat_in.emission_energy_multiplier = 4.0
+	mat_in.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mi_in.material_override = mat_in
+	mi_in.scale = Vector3(0.2, 0.35, 0.2)
+	world.add_child(mi_in)
+	mi_in.global_position = base_pos + Vector3(0, 1.0, 0) + fwd * 0.1
+	mi_in.transform.basis = ring_basis.rotated(right, PI/2.0)
+	
+	var tw2 := mi_in.create_tween()
+	tw2.set_parallel(true)
+	tw2.tween_property(mi_in, "scale", Vector3(2.1, 0.08, 2.1), 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw2.tween_property(mat_in, "albedo_color:a", 0.0, 0.25)
+	tw2.tween_callback(mi_in.queue_free).set_delay(0.26)
+
+	# 3. Explosão Voxel de Ar (Cubos atirados na direção CONTRÁRIA ao roll)
+	var pm := ParticleProcessMaterial.new()
+	pm.direction = -fwd
+	pm.spread = 45.0
+	pm.initial_velocity_min = 5.5
+	pm.initial_velocity_max = 13.0
+	pm.gravity = Vector3(0, -6.0, 0)
+	pm.scale_min = 0.5
+	pm.scale_max = 1.2
+	pm.color_ramp = gradient([Color(1, 1, 1, 0.95), Color(0.8, 0.92, 1.0, 0.7), Color(0.7, 0.85, 1.0, 0)])
+	
+	var voxel_mesh := BoxMesh.new()
+	voxel_mesh.size = Vector3(0.22, 0.22, 0.22)
+	var p_mat := particle_material(Color(1, 1, 1, 1), 2.2, true)
+	voxel_mesh.material = p_mat
+	
+	var burst := particles(45, 0.45, true, pm, voxel_mesh, 0.92)
+	world.add_child(burst)
+	burst.global_position = base_pos + Vector3(0, 0.5, 0)
+	autofree(burst, 0.7)

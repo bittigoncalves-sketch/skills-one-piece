@@ -29,8 +29,8 @@ const STRIDE_GAIN := 1.0
 #
 # Para acalmar TAMBÉM a corrida não há folga aqui: 7 m/s num corpo de 1,5 m é o
 # equivalente a um humano a 16 m/s. O caminho é reduzir `Player.SPEED`.
-const CADENCIA_ESCALA := 0.92
-const PASSADA_GANHO := 1.45
+const CADENCIA_ESCALA := 0.55
+const PASSADA_GANHO := 1.6
 # Teto da cadência (rad/s). Serve para as pernas não virarem hélice num pico de
 # velocidade; no sprint normal a conta fica abaixo dele.
 const CADENCIA_MAX := 30.0
@@ -264,15 +264,13 @@ func _locomotion(off: Dictionary, w: float, phase: float, speed01: float, is_spr
 	# Referência: caminhada ~20° de braço; corrida ~45°. As PERNAS não têm amplitude
 	# aqui — elas vêm da IK em _perna_ik(), que resolve a partir do alvo do pé.
 	var t: float = clampf(speed01, 0.0, 1.0)
-	var A_arm   := lerpf(0.12, 0.35, t)   # braço:   7° -> 20°
-	# Inclinação do tronco p/ FRENTE. A spec pede ~10-15° na CORRIDA e postura
-	# firme (não ereta) na caminhada. Não é realismo puro: é leitura — sem ela o
-	# personagem parece deslizar em vez de se impulsionar.
-	var lean    := lerpf(0.05, 0.11, t)   # tronco:  3° -> 6°  (caminhada)
+	var A_arm   := lerpf(0.15, 0.40, t)
+	# Inclinação do tronco p/ FRENTE.
+	var lean    := lerpf(0.02, 0.08, t)
 
 	if is_sprinting:
-		A_arm *= 2.20     # -> 44°
-		lean += 0.13      # -> 14°  (dentro dos 10-15° pedidos p/ corrida)
+		A_arm *= 2.0
+		lean += 0.18
 
 	var sL := sin(phase)
 	var sR := sin(phase + PI)
@@ -300,14 +298,14 @@ func _locomotion(off: Dictionary, w: float, phase: float, speed01: float, is_spr
 	_add(off, "UpperArm_L", Vector3(-A_arm * cL, 0, 0.08 + arm_out) * arm_w)
 	_add(off, "UpperArm_R", Vector3(-A_arm * cR, 0, -0.08 - arm_out) * arm_w)
 	# Cotovelo: dobra um pouco mais quando o braço vem à frente (não fica esticado).
-	var A_elbow: float = lerpf(0.16, 0.34, t) * (1.6 if is_sprinting else 1.0)
+	var A_elbow: float = lerpf(0.10, 0.25, t) * (2.0 if is_sprinting else 1.0)
 	_add(off, "ForeArm_L", Vector3(0.18 + A_elbow * maxf(sL_lag, 0.0), 0, 0.08) * arm_w)
 	_add(off, "ForeArm_R", Vector3(0.18 + A_elbow * maxf(sR_lag, 0.0), 0, -0.08) * arm_w)
 
 	# Torso inclina p/ FRENTE (-Z) + BALANÇO DOS OMBROS: giro no eixo Y (ombros gingam
 	# opostos ao passo) e leve rolamento no Z. rot.x+ joga o topo p/ +Z (trás), logo a
 	# inclinação p/ frente é NEGATIVA. Amplitude do giro sobe com a velocidade.
-	var shoulder: float = lerpf(0.05, 0.11, t) * (1.4 if is_sprinting else 1.0)
+	var shoulder: float = lerpf(0.07, 0.15, t) * (1.6 if is_sprinting else 1.0)
 	_add(off, "Torso", Vector3(-lean, shoulder * sin(phase), 0.05 * sin(phase)) * w)
 	# QUADRIL contra-rotaciona os ombros — é isso que dá sensação de peso e de
 	# impulso. O rig não tem osso de pelve, então o giro entra nas duas coxas,

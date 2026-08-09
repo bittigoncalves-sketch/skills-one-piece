@@ -84,6 +84,10 @@ var _was_on_floor: bool = false   # Parkour: detecção de POUSO (#4)
 var _fall_peak: float = 0.0       # maior velocidade de queda acumulada no ar
 var _precision_armed: bool = false # Espaço no ar armou o pouso de precisão
 var _roll_t: float = 0.0          # janela da animação de rolamento (pós-pouso)
+var _is_aiming_roll: bool = false # Segurando Q para rolar
+var _roll_cooldown: float = 0.0   # Recarga da esquiva
+var _roll_dash_t: float = 0.0     # Duração do movimento (dash) do roll
+var _roll_dir: Vector3 = Vector3.FORWARD # Direção guardada para o roll
 var _bob_t: float = 0.0       # fase do balanço de câmera (head bob) ao andar/correr
 # Mera Mera Z: rajada de balas de fogo (segura pra atirar; para ao soltar ou 16 balas).
 const RAPID_INTERVAL := 0.09
@@ -396,10 +400,10 @@ func _process(delta: float) -> void:
 	#   0.62 -> aberração cromática
 	#   0.70 -> vinheta (por último, e mais fraca que antes)
 	var vel_fx: float = spd * (1.15 if _is_sprinting() else 1.0)
-	ScreenFX.set_borrao(clampf((vel_fx - 0.35) * 1.45, 0.0, 1.0))
-	ScreenFX.set_speed_lines(clampf((vel_fx - 0.50) * 1.60, 0.0, 0.85))
-	ScreenFX.set_aberracao_base(clampf((vel_fx - 0.62) * 1.60, 0.0, 0.7))
-	ScreenFX.set_vignette(clampf((vel_fx - 0.70) * 1.20, 0.0, 0.34))
+	ScreenFX.set_borrao(clampf((vel_fx - 0.35) * 0.7, 0.0, 0.5))
+	ScreenFX.set_speed_lines(clampf((vel_fx - 0.50) * 0.8, 0.0, 0.4))
+	ScreenFX.set_aberracao_base(clampf((vel_fx - 0.62) * 0.8, 0.0, 0.3))
+	ScreenFX.set_vignette(clampf((vel_fx - 0.70) * 0.6, 0.0, 0.2))
 
 func _physics_process(delta: float) -> void:
 	if not _is_authority:
@@ -493,6 +497,26 @@ func _physics_process(delta: float) -> void:
 	if _roll_t > 0.0:
 		_roll_t -= delta
 
+	if _roll_cooldown > 0.0:
+		_roll_cooldown = maxf(_roll_cooldown - delta, 0.0)
+	
+	if _roll_dash_t > 0.0:
+		_roll_dash_t = maxf(_roll_dash_t - delta, 0.0)
+		if _roll_dash_t <= 0.0:
+			set_meta("damage_immune", false) # Finaliza a invencibilidade
+
+	var q_pressed = Input.is_physical_key_pressed(KEY_Q) and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	if q_pressed and _roll_cooldown <= 0.0 and _roll_dash_t <= 0.0 and not _charging and not _rapid_fire and not _yami_pistol_active:
+		_is_aiming_roll = true
+	elif not q_pressed and _is_aiming_roll:
+		_is_aiming_roll = false
+		_roll_dash_t = 0.4
+		_roll_t = 0.4
+		_roll_cooldown = 1.5
+		set_meta("damage_immune", true)
+		_roll_dir = -_cam.global_transform.basis.z.normalized()
+		FxUtil.roll_effect(get_tree().current_scene, global_position, _roll_dir)
+			
 	var effective_speed := SPEED * speed_multiplier * (1.5 if is_sprinting else 1.0)
 	if _long_jump_t > 0.0:
 		effective_speed *= 1.5   # Parkour: impulso horizontal (salto longo / vault)
@@ -576,8 +600,13 @@ func _physics_process(delta: float) -> void:
 			if _proc_anim:
 				_proc_anim.trigger_recovery("Z")
 
-		velocity.x = dir.x * effective_speed
-		velocity.z = dir.z * effective_speed
+		if _roll_dash_t > 0.0:
+			_roll_dir = -_cam.global_transform.basis.z.normalized()
+			var dash_speed = SPEED * speed_multiplier * 1.5
+			velocity = _roll_dir * dash_speed
+		else:
+			velocity.x = dir.x * effective_speed
+			velocity.z = dir.z * effective_speed
 
 	# A FRENTE do personagem se move dinamicamente durante a locomoção.
 	if _char_model:
@@ -587,6 +616,9 @@ func _physics_process(delta: float) -> void:
 			# (wall_normal aponta da parede para o jogador). Daí atan2(wn.x, wn.z).
 			var target_rot := atan2(wall_normal.x, wall_normal.z)
 			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, target_rot, 24.0 * delta)
+		elif _roll_dash_t > 0.0:
+			var move_rot := atan2(-_roll_dir.x, -_roll_dir.z)
+			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, move_rot, 35.0 * delta)
 		elif dir.length_squared() > 0.01:
 			var move_rot := atan2(-dir.x, -dir.z)
 			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, move_rot, 35.0 * delta)

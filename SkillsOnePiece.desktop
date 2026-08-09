@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Skills One Piece
+Comment=Clone da base de jogos 3D
+Exec=/home/administrador/dev/skills-one-piece/jogar.sh
+Icon=/home/administrador/dev/skills-one-piece/icon.png
+Terminal=false
+StartupNotify=true
