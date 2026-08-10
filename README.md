@@ -123,6 +123,7 @@ Detalhes em [`docs/ANIMACOES_MIXAMO.md`](docs/ANIMACOES_MIXAMO.md).
 | [`docs/AGENTES.md`](docs/AGENTES.md) | como o trabalho é dividido entre agentes especializados |
 | [`docs/MUDANCAS_2026-08-06.md`](docs/MUDANCAS_2026-08-06.md) | rig único, conserto do pipeline, Buki Buki |
 | [`docs/MUDANCAS_2026-08-10.md`](docs/MUDANCAS_2026-08-10.md) | arena: buracos, placar, corpo a corpo, armas em .glb |
+| [`docs/MUDANCAS_2026-08-10_PARTE2.md`](docs/MUDANCAS_2026-08-10_PARTE2.md) | rig, rebake dos 28 clipes, personagem novo, multiplayer, LAN |
 | [`disabled/enemies/README.md`](disabled/enemies/README.md) | inimigos desligados do mapa e como religar |
 | [`DOCUMENTACAO.md`](DOCUMENTACAO.md) | visão geral do projeto |
 
