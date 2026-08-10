@@ -7,6 +7,8 @@ extends PanelContainer
 # slots ficam vazios ("—"). Basta preencher SLOTS quando as técnicas existirem.
 
 const SLOTS := ["Z", "X", "C", "V"]
+# Os cooldowns exibidos são os do corpo DESTE peer — ver Player.local_player().
+const PlayerScript := preload("res://Player.gd")
 
 var _skill_labels: Dictionary = {}
 
@@ -104,7 +106,7 @@ func _make_row(tecla: String) -> HBoxContainer:
 func _process(_delta: float) -> void:
 	if get_tree() == null:
 		return
-	var player := get_tree().get_first_node_in_group("player")
+	var player := PlayerScript.local_player(get_tree())
 	if not player or not ("_skill_cooldowns" in player):
 		return
 	for slot in SLOTS:

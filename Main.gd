@@ -103,9 +103,15 @@ func _spawn_player_data(data: Dictionary) -> Node:
 	player.position = Vector3(pos[0], pos[1], pos[2])
 	player.add_child(_make_player_sync())
 	player.set_multiplayer_authority(id)        # recursivo -> inclui o synchronizer
-	# Fruta inicial só p/ o host por enquanto (equip por-player = fase futura).
-	if id == 1:
-		player.call_deferred("equip_fruit", "suna_suna")
+	# TODO jogador nasce com a fruta inicial — não só o host.
+	#
+	# Antes era `if id == 1`, e o cliente nascia SEM fruta: barra de técnicas
+	# vazia e `_fire_skill` caindo no fallback `gomu_gomu`. Isso não era um dos
+	# bugs relatados, mas atrapalhava a leitura de "as skills não funcionam no
+	# cliente" — dava para atribuir ao bug da HUD o que era falta de fruta.
+	# Escolha por-jogador continua sendo fase futura; o ponto aqui é que os dois
+	# lados comecem iguais.
+	player.call_deferred("equip_fruit", "suna_suna")
 	return player
 
 func _make_player_sync() -> MultiplayerSynchronizer:

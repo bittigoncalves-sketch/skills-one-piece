@@ -4,6 +4,11 @@ extends Control
 # máx 4096), indicador da assistência de mira (E) e contador de DANO total causado.
 # Lê vida/energia direto do player a cada frame (sem fio manual).
 
+# As barras mostram o corpo DESTE peer. `get_first_node_in_group("player")` devolve
+# o primeiro da árvore — no cliente, o corpo do HOST (que nunca regenera energia
+# aqui). Ver Player.local_player().
+const PlayerScript := preload("res://Player.gd")
+
 const BAR_W := 340.0
 const BAR_H := 28.0
 
@@ -87,7 +92,7 @@ func _process(_dt: float) -> void:
 		_room_label.visible = show_room
 		if show_room:
 			_room_label.text = "SALA: %s   —   compartilhe este ID" % GameFlow.room_id
-	var p := get_tree().get_first_node_in_group("player")
+	var p := PlayerScript.local_player(get_tree())
 	if p == null:
 		return
 	_set_bar(_hp_fill, _hp_label, p.get("health"), p.get("max_health"), "VIDA")

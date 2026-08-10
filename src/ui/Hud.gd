@@ -4,6 +4,9 @@ extends CanvasLayer
 
 const MainMenuClass := preload("res://src/ui/MainMenu.gd")
 const StatsHudClass := preload("res://src/ui/StatsHud.gd")
+# `Player.local_player(tree)` = o corpo DESTE peer. Ver o comentário lá: no
+# cliente, `get_first_node_in_group("player")` devolve o corpo do HOST.
+const PlayerScript := preload("res://Player.gd")
 
 var _inv: Inventory
 var _skill_bar: SkillBar
@@ -138,7 +141,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if slot == "":
 		return
 
-	var player := get_tree().get_first_node_in_group("player")
+	var player := PlayerScript.local_player(get_tree())   # o MEU corpo, não o 1º da árvore
 	if player == null:
 		return
 	# Segura = carrega/mira; solta = dispara (hold-to-cast).

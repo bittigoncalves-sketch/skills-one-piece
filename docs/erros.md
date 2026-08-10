@@ -7,6 +7,141 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-10 — No cliente, a HUD inteira operava o corpo do HOST
+
+**Sintoma:** relatado jogando. **Só no PC que ENTRA na sala**, nunca no que
+hospeda: a energia não regenerava, nem depois de morrer, e as skills de fruta não
+funcionavam.
+
+**Causa raiz:** `Hud.gd`, `StatsHud.gd`, `SkillBar.gd` e `CharacterMenu.gd`
+achavam o jogador com `get_tree().get_first_node_in_group("player")` — que
+devolve o **primeiro da árvore**, não o **meu**. O servidor replica os players já
+existentes para o peer novo **antes** de emitir `peer_connected`, então no
+cliente o corpo do host entra primeiro e fica no índice 0. No host, o índice 0 é
+o corpo dele mesmo.
+
+**É essa a assimetria inteira:** `get_first_node_in_group` acerta no host e erra
+no cliente, sempre. Por isso nunca apareceu em um-jogador — lá só existe um
+corpo, e ele é o certo.
+
+**Evidência**, medida no cliente com dois processos de verdade:
+
+```
+grupo[0] = '1'          auth=false   <- corpo do HOST
+grupo[1] = '454688302'  auth=true    <- o meu
+get_first_node_in_group('player') -> '1'
+```
+
+- **Energia:** a barra lia o fantasma do host. Aquele corpo não é autoridade, e
+  `_physics_process` desvia para `_remote_process` antes da regen — que fica em
+  `Player.gd:434`. Cada tecla ainda drenava 180 dele: **3916 → 3736 → 3556, sem
+  nenhuma regeneração entre as leituras**. Ao morrer, `net_force_respawn()`
+  repunha a energia do corpo **certo**, que a barra não mostrava.
+- **Skills:** Z/X/C/V iam para o fantasma, e `_request_cast` corta em
+  `not _is_authority` — nenhuma skill saía, cooldowns em 0.00 nos quatro slots.
+
+**Descartado com medição:** `_is_authority` do cliente é **true** (o palpite
+inicial de que estaria falso caiu); a ordem `set_multiplayer_authority` → `_ready`
+está certa; as anotações `@rpc` são todas `any_peer` e não rejeitam nada; metas
+`is_frozen`/`in_vortex`/`in_kurouzu`/`in_black_hole` ficam false; `is_suppressed`
+false; `_movement_locked_timer` expira normalmente.
+
+**Correção:** `Player.local_player(tree)` — devolve o corpo cuja
+`is_multiplayer_authority()` é true, ou `null` (melhor nada que o errado). As 6
+chamadas na UI passaram a usá-lo.
+
+**Como detectar de novo:** `get_first_node_in_group` **não serve** para achar "o
+meu" de nada em jogo em rede. Toda busca de nó de jogador tem que filtrar por
+autoridade. E o teste precisa de **dois processos** — sondas em
+`tools/dev_tests/net_host_probe.gd` e `net_client_probe.gd`.
+
+⚠️ Armadilha da medição: em headless os frames correm muito mais rápido que o
+tempo real, então contar `process_frame` como 1/60 s dá regeneração falsa
+("+314 de 640 esperado" parecia meia-regen, era o relógio da sonda). Use
+`Time.get_ticks_msec()`.
+
+---
+
+## 2026-08-10 — O timer de cast de uma skill apagava o `is_casting` da seguinte
+
+**Sintoma:** encadear duas skills rápido faz a segunda sumir sem erro nenhum. Some
+no cliente, no host e em um-jogador — no cliente é mais frequente.
+
+**Causa raiz:** `_fire_skill` armava `create_timer(0.3)` para apagar
+`is_casting`. Se a skill seguinte começasse dentro dessa janela, o timer da
+**anterior** apagava o `is_casting` da **nova**. `Player.gd:446-447` lê isso como
+"cast interrompido por dano" e zera `_charging`; aí `release_charge` cai no
+`if not _charging: return` e o disparo nunca acontece.
+
+**Evidência**, quadro a quadro em singleplayer:
+
+```
+release X feito.            is_casting=true  _charging=false
+begin_charge('C')        -> _charging=true   is_casting=true
+>>> _charging FOI ZERADO em 248 ms (Player.gd:447), is_casting=false
+cooldown de C depois do release = 0.00   (a skill NÃO saiu)
+```
+
+**Correção:** `_cast_token` — `begin_charge` incrementa um contador, e o timer só
+apaga `is_casting` se o token ainda for o do cast que o armou.
+
+**Diagnóstico anterior corrigido:** eu tratei isto como bug **exclusivo do
+cliente**. Não é — acontece nos três modos. O cliente sofre mais porque o timer
+dele começa um round-trip de RPC depois (`_net_cast` → servidor →
+`_net_play_cast`), o que empurra a janela de 0,3 s justo para cima da tecla
+seguinte.
+
+**Como detectar de novo:** temporizador que escreve em estado compartilhado
+precisa carregar a identidade de quem o armou. O sintoma é sempre o mesmo —
+funciona devagar, falha rápido.
+
+---
+
+## 2026-08-10 — O walk patinava 45% e a documentação afirmava 8%
+
+**Sintoma:** `tools/dev_tests/test_walk_run.gd` reprovava nos 4 casos com deslize
+de 45% (teto 10% no walk, 25% no run). Ninguém tinha rodado esse teste.
+
+**Causa raiz:** identidade algébrica, não bug de conta:
+
+```
+v_pé = passada/π · ω    e    ω = π·v/passada · CADENCIA_ESCALA
+   ⇒  v_pé = v · CADENCIA_ESCALA   ⇒  deslize = 1 − 0,55 = 45%
+```
+
+A **passada cancela**. Logo o deslize não depende do porte do personagem, da
+passada nem da altura do quadril: `CADENCIA_ESCALA` é a única alavanca que existe
+aqui, e o freio de 0,55 fixa 45% de patinação.
+
+**Evidência:** `base` (perna 0,469 m) e `nami` (0,613 m) dão a MESMA velocidade de
+pé, 2,31 m/s — foi essa coincidência impossível que denunciou. Deslize medido
+fora do animador, reconstruindo o pé pelas rotações: 45,4 / 47,1 / 45,2 / 45,9%.
+
+**Descartado:** não é constante comendo medida do corpo — a passada escala certo
+com a perna (0,488 vs 0,655 m, razão 1,34 = 0,613/0,469). E `PASSADA_GANHO` está
+**inerte**: trocar 1,6 por 1,3 não muda um milímetro, porque a passada pedida já
+estoura o teto geométrico e é cortada por ele.
+
+**Correção:** ⚖️ **nenhuma no comportamento, de propósito.** As duas saídas foram
+medidas e as duas são piores: tirar o freio leva a cadência de 4,35 a 7,91
+passos/s e *encolhe* a coxa de 87° para 72° (o walk frenético já rejeitado);
+alongar a passada exigiria 1,83×, com o quadril a 10 cm do chão numa perna de
+47 cm — impossível. Os 45% são preço escolhido. O que mudou foi o **teto do
+teste** e o cabeçalho do `ProceduralAnimator`, que afirmava "8% de deslize" —
+**número inventado**, sem medição por trás.
+
+O conserto real é reduzir `Player.SPEED`: 4,2 m/s num corpo de 1,5 m equivale a
+um humano a ~11 m/s.
+
+**Como detectar de novo:** o teste **pedia a nota ao próprio animador**
+(`anim.deslize()`) em vez de medir a pose que sai. Provado que mascarava: com
+`CADENCIA_ESCALA = 1.0` o animador dizia **0%** enquanto a pose entregava **7%**
+(walk) e **29%** (run, com `CADENCIA_MAX` mordendo sem ninguém ver). Hoje o teste
+mede o pé na pose e tem teto de cadência, para ninguém "consertar" deslize
+acelerando as pernas.
+
+---
+
 ## 2026-08-10 — Proxies do rig se chamam `RoleProxy_<papel>`, e três sistemas procuram `<papel>`
 
 **Sintoma:** ⚠️ **latente — ninguém viu ainda**, porque o elenco está trancado no

@@ -42,6 +42,12 @@ const STYLES_LIST: Array[String] = ["karate_tritao", "pacifista", "mink", "boxe"
 
 var _charging: bool = false
 var _charge_slot: String = ""
+# Nº de série do cast atual. Cada `begin_charge` emite um novo. O temporizador de
+# 0.3 s que apaga `is_casting` no fim do golpe carrega o número do golpe DELE e só
+# apaga se ainda for o mesmo — senão o temporizador do golpe ANTERIOR apagava o
+# `is_casting` do golpe SEGUINTE, e o bloco do _physics_process lia isso como
+# "cast interrompido" e engolia a skill seguinte.
+var _cast_token: int = 0
 var _movement_locked_timer: float = 0.0
 
 var _yaw := 0.0     # rotacao horizontal da camera
@@ -144,6 +150,29 @@ var _head_node: Node3D               # cabeça do modelo atual (âncora do fôle
 # singleplayer o host é a autoridade -> tudo funciona igual. Players remotos só
 # reproduzem a pose a partir do estado replicado (net_velocity/net_facing).
 var _is_authority: bool = true
+
+## QUEM É "O MEU JOGADOR" NESTA TELA.
+##
+## O grupo "player" tem TODOS os corpos (é assim que o Placar, a DamageZone e os
+## FX varrem a partida). Quem quer o corpo DESTE peer — HUD, barras, menus —
+## precisa filtrar pela autoridade: `get_first_node_in_group("player")` devolve o
+## PRIMEIRO da árvore, que no cliente é o corpo do HOST (ele nasceu antes).
+##
+## Era exatamente esse o bug: no cliente a HUD lia energia e mandava as teclas
+## Z/X/C/V no corpo do host — um corpo sem autoridade, que não regenera energia
+## (a regen do `_physics_process` só roda na autoridade) e engole todo pedido de skill
+## (`_request_cast` corta em `not _is_authority`). No host o primeiro da árvore
+## É o corpo dele, e por isso o bug NUNCA apareceu de quem hospeda.
+static func local_player(tree: SceneTree) -> Node:
+	if tree == null:
+		return null
+	var todos := tree.get_nodes_in_group("player")
+	for p in todos:
+		if p.is_multiplayer_authority():
+			return p
+	# Sem autoridade nenhuma (corpo ainda não spawnado): melhor nada que o errado.
+	return null
+
 @export var net_velocity: Vector3 = Vector3.ZERO   # replicado (autoridade -> demais)
 @export var net_facing: float = 0.0
 @export var net_on_floor: bool = true
@@ -1200,6 +1229,7 @@ func begin_charge(slot: String) -> void:
 	_charging = true
 	_charge_slot = slot
 	velocity = Vector3.ZERO
+	_cast_token += 1               # este cast é novo: o timer do anterior não manda nele
 	set_meta("is_casting", true)   # interrompível por dano
 	if _animator and _animator.animation_player:
 		_animator.animation_player.speed_scale = 0.0
@@ -1488,7 +1518,12 @@ func _fire_skill(slot: String, aim: Vector3, origin: Vector3) -> void:
 			"buki_buki": BukiFX.cast(world, origin, aim, variant, dano, self)
 			_: _generic_vfx(cor, aim, origin)
 
-	get_tree().create_timer(0.3).timeout.connect(func(): set_meta("is_casting", false))
+	# Fim da janela de interrupção DESTE golpe. Só apaga se nenhum cast novo tiver
+	# começado nesse meio-tempo (senão engolia a skill seguinte — ver _cast_token).
+	var tok := _cast_token
+	get_tree().create_timer(0.3).timeout.connect(func():
+		if _cast_token == tok:
+			set_meta("is_casting", false))
 
 # VFX genérico para frutas ainda sem efeito dedicado.
 func _generic_vfx(cor: Color, aim: Vector3, origin: Vector3) -> void:

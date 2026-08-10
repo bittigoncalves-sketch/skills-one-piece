@@ -4,6 +4,9 @@ extends PanelContainer
 # painel glassmorphism cinza/branco). Abre/fecha com a tecla M.
 # Lista os personagens; clicar troca o modelo do jogador.
 
+# O menu troca o modelo / estilo do corpo DESTE peer — ver Player.local_player().
+const PlayerScript := preload("res://Player.gd")
+
 # ELENCO TRANCADO NO BASE (decisão do usuário). O trabalho de animação está
 # concentrado nele; os demais voltam descomentando as linhas abaixo.
 const CHARS := [
@@ -185,7 +188,7 @@ func _btn_box(active: bool) -> StyleBoxFlat:
 
 # ------------------------------------------------------------------ ações ---
 func _on_pick(char_id: String) -> void:
-	var player := get_tree().get_first_node_in_group("player")
+	var player := PlayerScript.local_player(get_tree())
 	if player and player.has_method("set_character"):
 		player.set_character(char_id)
 	elif player and player.has_method("_setup_character_model"):
@@ -194,14 +197,14 @@ func _on_pick(char_id: String) -> void:
 	toggle()  # fecha e recaptura o mouse
 
 func _on_pick_style(style_id: String) -> void:
-	var player := get_tree().get_first_node_in_group("player")
+	var player := PlayerScript.local_player(get_tree())
 	if player and player.has_method("set_fighting_style"):
 		player.set_fighting_style(style_id)
 	_refresh_highlight()
 	toggle()
 
 func _refresh_highlight() -> void:
-	var player := get_tree().get_first_node_in_group("player")
+	var player := PlayerScript.local_player(get_tree())
 	var cur_char := ""
 	var cur_style := ""
 	if player:
