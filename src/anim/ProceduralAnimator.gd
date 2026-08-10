@@ -15,20 +15,42 @@ const STIFFNESS := 38.0
 const STRIDE_GAIN := 1.0
 # ------------------------------------------------------- RITMO DA MARCHA
 # O personagem tem 1,5 m e anda a 4,2 m/s. Casar o pé com o chão nessa
-# combinação exigia ~9 passos por segundo — quatro vezes o de um humano, e era
-# isso que deixava a animação frenética.
+# combinação exige ~7,9 passos por segundo (medido) — o dobro de um humano
+# correndo, e era isso que deixava a animação frenética.
 #
-# Três alavancas, e a ordem importa. A que mais rende é a ALTURA DO QUADRIL:
-# agachar aumenta o alcance do pé (√(alcance² − H²)), o que permite passada mais
-# longa; passada longa cobre a mesma distância em menos passos, e a cadência cai
-# sozinha — sem deslize. O freio (`CADENCIA_ESCALA`) é o último recurso, porque
-# ele reduz a cadência descolando o pé do chão.
+# ⚠️ LEIA ANTES DE MEXER (medido em 2026-08-10, os números anteriores aqui
+# estavam errados: falavam em "8% de deslize", e o valor real é 45%):
 #
-# Resultado medido, perna de 0,60 m: caminhada de 9,0 para 5,7 passos por
-# segundo (ciclo de 13 para 21 quadros), com 8% de deslize.
+#   deslize ≡ 1 − CADENCIA_ESCALA
 #
-# Para acalmar TAMBÉM a corrida não há folga aqui: 7 m/s num corpo de 1,5 m é o
-# equivalente a um humano a 16 m/s. O caminho é reduzir `Player.SPEED`.
+# Isso é IDENTIDADE, não coincidência, e vale enquanto `CADENCIA_MAX` não morder:
+# a velocidade do pé no apoio é passada/π·ω, e ω já traz a passada no
+# denominador, então ela CANCELA. Consequências práticas:
+#   • o deslize NÃO depende do porte do personagem (base 0,47 m de perna e nami
+#     0,61 m dão os mesmos 45%), nem da passada, nem da altura do quadril;
+#   • `CADENCIA_ESCALA` é a ÚNICA alavanca de deslize que existe aqui;
+#   • quando `CADENCIA_MAX` morde, o deslize passa de 1 − CADENCIA_ESCALA sem
+#     avisar (o teste tem um item só para pegar isso).
+#
+# As outras duas alavancas mexem no RITMO e na SILHUETA, não no deslize:
+#   • ALTURA DO QUADRIL — agachar alonga o alcance do pé (√(alcance² − H²)), o
+#     que alonga a passada e DERRUBA a cadência na mesma proporção. Como o
+#     deslize não muda sozinho, ela só vira ganho de deslize se `CADENCIA_ESCALA`
+#     subir junto, mantendo a cadência. Medido em base/WALK, cadência fixa:
+#         H=0,80·perna → passada 0,49 m, deslize 45%, coxa  87°  (hoje)
+#         H=0,70·perna → passada 0,59 m, deslize 34%, coxa 108°
+#         H=0,60·perna → passada 0,65 m, deslize 26%, coxa 125°
+#     Ou seja: dá para comprar deslize com agachamento, pagando em silhueta.
+#   • `PASSADA_GANHO` está INERTE no regime de jogo: a passada pedida (1,52·perna
+#     a plena velocidade) estoura o teto geométrico (1,13·perna) e é cortada por
+#     ele. Trocar 1,6 por 1,3 não muda um milímetro na medição; só abaixo de ~1,1
+#     o valor volta a ter efeito.
+#
+# Zerar o deslize mantendo a cadência de hoje exigiria passada 1,83× maior, ou
+# seja, o quadril a 10 cm do chão numa perna de 47 cm: geometricamente
+# impossível. Os 45% são o preço ESCOLHIDO para não virar hélice; o walk que saiu
+# daqui foi aprovado pelo dono do projeto. O conserto de verdade é reduzir
+# `Player.SPEED` — 4,2 m/s num corpo de 1,5 m é um humano a ~11 m/s.
 const CADENCIA_ESCALA := 0.55
 const PASSADA_GANHO := 1.6
 # Teto da cadência (rad/s). Serve para as pernas não virarem hélice num pico de
@@ -341,7 +363,10 @@ func cadencia(planar: float, speed01: float, sprint: bool) -> float:
 	var p: float = _passada(speed01, sprint)
 	return minf(PI * planar / p * CADENCIA_ESCALA, CADENCIA_MAX)
 
-# Deslize do pé no apoio, em fração da velocidade do corpo (0 = cravado).
+# Deslize PREVISTO do pé no apoio, em fração da velocidade do corpo (0 = cravado).
+# É o MODELO, não a medição: ignora o que o filtro de rigidez faz com a amplitude
+# (com ciclo curto ele come passada e o deslize real fica maior). O teste mede o
+# deslize na pose que saiu e usa esta função só para comparar as duas coisas.
 func deslize(planar: float, speed01: float, sprint: bool) -> float:
 	if planar < 0.01:
 		return 0.0

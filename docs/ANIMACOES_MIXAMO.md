@@ -64,16 +64,19 @@ O conversor aceita **um arquivo ou uma pasta**. Ele imprime `fcurves=N` por
 arquivo — se vier `fcurves=0`, o FBX é que está vazio. O baker varre todo `.glb`
 e gera o `.res` em `assets/animations/`. Os dois passos são idempotentes.
 
-Último bake: **28 ok, 0 falhas** (2026-08-06).
+Último bake: **28 ok, 0 falhas** (2026-08-10 — rebake dos 28 com o baker
+consertado; ver "Rebake de 2026-08-10" no fim da seção 5).
 
 ### O que o baker faz por dentro (`tools/bake_mixamo.gd`)
 
 1. Instancia o FBX e acha o `Skeleton3D` + `AnimationPlayer`.
 2. Escolhe o clipe: prioriza `mixamo_com`; senão pega o mais longo que não seja
    `RESET`.
-3. Amostra a **30 FPS** e, para cada osso mapeado, calcula o *delta* em relação
+3. Amostra a **60 FPS** e, para cada osso mapeado, calcula o *delta* em relação
    à pose de repouso (`get_bone_global_rest`), converte para o espaço do pai e
-   grava como Euler.
+   grava como Euler — **destorcendo o euler chave a chave** (`_euler_continuo`),
+   senão a faixa LINEAR faz o caminho longo entre +179° e −179° e o membro dá
+   uma volta completa em 1/30 s.
 4. Aplica um **flip de 180° em Y** (`yflip`) — o Mixamo exporta olhando +Z, a
    convenção do projeto é **frente = −Z**.
 
@@ -82,6 +85,7 @@ e gera o `.res` em `assets/animations/`. Os dois passos são idempotentes.
 | Papel no rig | Osso Mixamo | Pai |
 |---|---|---|
 | `Torso` | `mixamorig_Spine1` | (raiz) |
+| `Neck` | `mixamorig_Neck` | Torso |
 | `Head` | `mixamorig_Head` | Torso |
 | `UpperArm_L` / `_R` | `mixamorig_LeftArm` / `RightArm` | Torso |
 | `ForeArm_L` / `_R` | `mixamorig_LeftForeArm` / `RightForeArm` | UpperArm |
@@ -89,9 +93,11 @@ e gera o `.res` em `assets/animations/`. Os dois passos são idempotentes.
 | `Shin_L` / `_R` | `mixamorig_LeftLeg` / `RightLeg` | Thigh |
 | `Foot_L` / `_R` | `mixamorig_LeftFoot` / `RightFoot` | Shin |
 
-> ⚠️ Só esses 13 papéis são capturados. **Mãos, dedos, ombros (`Shoulder`),
-> pescoço e quadril não entram.** Animação cujo charme está no punho ou no
-> giro de ombro perde parte da leitura.
+> ⚠️ Só esses 13 papéis são capturados. **Mãos, dedos, ombros (`Shoulder`) e
+> quadril não entram.** Animação cujo charme está no punho ou no giro de ombro
+> perde parte da leitura. O rig **voxel não tem nó `Neck`** — a faixa é gravada
+> mesmo assim e o `ProceduralAnimator._apply_baked` a ignora (`if _n.has(role)`);
+> quem usa é o personagem skinnado, via `SkeletonDriver`.
 
 ---
 
@@ -197,6 +203,33 @@ sem mexer em código. Só precisa do `.res`.
   disparado por tempo no código do golpe, não pela animação.
 - **13 papéis apenas.** Ver aviso da seção 1.
 
+### Rebake de 2026-08-10 — o giro parasita saiu
+
+Os 28 `.res` tinham sido assados **antes** do conserto do euler, e 16 deles
+percorriam **~360° entre duas chaves vizinhas** (`running_dive_roll` 367.8°,
+`au_to_role` 361.9°, `dying` 361.3°, `kicking` 357.7°…): o membro dava uma volta
+completa em 1/30 s. Reassados com o baker consertado, **1 dos 30 clipes** ainda
+passa dos 30° de percurso — o `pontera`, com 33.8°, e ali o giro é **real**
+(giro geodésico de 29.9° na canela, não gimbal).
+
+**Como conferir que o rebake não mexeu no movimento** (e não só na
+representação): `tools/dev_tests/medir_amplitude_res.gd` mede (max−min) do euler
+e por isso **não serve** para comparar antes/depois — desdobrar o euler muda o
+número nos dois sentidos sem o membro se mexer (no `armada` a coxa esquerda
+"subiu" de 596° para 1004°; no `dying` a soma "caiu" de 2666° para 1393°). Quem
+compara é o `tools/dev_tests/medir_pose_res.gd`, que mede **rotação**, não euler:
+copie os `.res` antigos para `user://ref_anim/` e rode. No rebake de 2026-08-10
+deu **DIFF_max = 0.000° em todos os papéis dos 30 clipes** — pose idêntica em
+todo instante de chave antiga — e o percurso real caiu onde tinha giro parasita
+(`running_dive_roll` −5239°, `au_to_role` −6268°) e ficou igual (±6°) nos limpos.
+Duração: idêntica nos 30. Amplitude geodésica: igual em 27, +5.8° no `armada`,
++1.1° no `flying_kick`, +0.3° no `au_to_role` — as chaves novas de 60 fps pegam
+um pico que a grade de 30 fps passava por cima.
+
+`tools/dev_tests/medir_impacto_res.gd` mede o **instante do impacto** (alcance
+frontal máximo do membro, por cinemática direta) — é o número que calibra o
+`atraso` da hitbox em `src/combat/Melee.gd`.
+
 ---
 
 ## 6. Arquivos relacionados
@@ -204,6 +237,10 @@ sem mexer em código. Só precisa do `.res`.
 | Arquivo | Papel |
 |---|---|
 | `tools/bake_mixamo.gd` | conversor FBX → `.res` |
+| `tools/dev_tests/medir_amplitude_res.gd` | acha clipe CONGELADO (amplitude euler) |
+| `tools/dev_tests/medir_salto_res.gd` | acha estalo entre chaves (percurso real) |
+| `tools/dev_tests/medir_pose_res.gd` | compara dois bakes em ROTAÇÃO (invariante de representação) |
+| `tools/dev_tests/medir_impacto_res.gd` | instante do impacto (calibra o `atraso` do `Melee`) |
 | `src/anim/ProceduralAnimator.gd` | toca o `.res` (`play_baked`, `_apply_baked`) |
 | `src/anim/BodyScanner.gd` | define os 13 papéis (`ROLES`) e mede o corpo |
 | `VoxelMeshes.gd` (`_build_skeleton`) | monta o rig com os nomes de papel |
