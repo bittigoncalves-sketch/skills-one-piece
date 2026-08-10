@@ -39,10 +39,59 @@ varrendo os 28 GLBs pelo mesmo critério, **27 estão corretos e só este falha*
 Também não é falta de faixa: o `.res` tem as 12 faixas e 57 chaves, com valores
 plausíveis; elas é que são todas iguais entre si.
 
-**Correção:** ⏳ **pendente** — exige rebaixar o `hurricane_kick` do Mixamo e
-repassar por `tools/fbx_to_glb.py` + `tools/bake_mixamo.gd`. Não foi feito nesta
-sessão porque é reposição de asset, não conserto de código. O combate corpo a
-corpo, escrito hoje, **não usa esse clipe** (usa `punching` e `kicking`).
+**Correção:** ❌ **impossível localmente — o FBX de origem também não tem as
+curvas.** A causa foi empurrada um nível para trás: não é o baker, não é o
+`fbx_to_glb.py` e não é a conversão glTF. O **próprio `.fbx` baixado do Mixamo
+já veio sem animação de membro**. Não há o que reconverter: o dado não existe em
+lugar nenhum da cadeia local.
+
+**Evidência da causa final** (medida em 2026-08-10, três leituras independentes):
+
+1. `assets/animations/hurricane_kick.fbx` e
+   `~/Downloads/animações importadas do mixamo/Hurricane Kick.fbx` são **o mesmo
+   arquivo** (md5 `a07713de5041d24f0a33ebd7fa43231d`). Não existe um "original
+   bom" guardado.
+
+2. **Importado no Blender 5.2** (`bpy.ops.wm.fbx_import`), única action
+   `mixamo.com`, 520 fcurves — chaves de rotação por osso:
+
+   | osso | `hurricane_kick.fbx` | `kicking.fbx` |
+   |---|---|---|
+   | LeftArm / LeftForeArm / RightArm / RightForeArm | **1** | 69 |
+   | LeftUpLeg / LeftLeg / RightUpLeg / RightLeg | **1** | 69 |
+   | Spine | **1** | 69 |
+   | Hips | 56 | 69 |
+
+3. **Lido direto do binário FBX**, sem passar por importador nenhum (parser
+   próprio, zlib + Connections), para descartar culpa do Blender. Mesmo
+   resultado. Os dois arquivos têm estrutura idêntica — FBX v7700, 315
+   `AnimationCurve`, 54 `AnimationCurveNode`, 67 `Model`, e **os dois takes**
+   (`Take 001` e `mixamo.com`, layers `Base Layer` e `Layer0`). Histograma de
+   chaves por curva:
+
+   | | curvas com 1 chave | curvas com todas as chaves |
+   |---|---|---|
+   | `hurricane_kick.fbx` | **153** | 162 (56 chaves) |
+   | `kicking.fbx` | 18 | 297 (69 chaves) |
+
+   Checado também o **segundo take**: os 153 curvas órfãs (não referenciadas em
+   nenhuma das 666 conexões) do `hurricane_kick` têm 56 chaves, mas só **3 delas
+   têm amplitude > 1°** — e são as do `Hips`. No `kicking`, 130 das 153 órfãs
+   têm amplitude > 1°. Ou seja: **nem o take escondido salva**. No arquivo
+   inteiro, o `hurricane_kick` tem 8 curvas com movimento real, todas do quadril;
+   o `kicking` tem 269.
+
+**Conserto real:** rebaixar "Hurricane Kick" do mixamo.com (o download anterior
+saiu corrompido) e repassar por `tools/fbx_to_glb.py` + `tools/bake_mixamo.gd`.
+Enquanto isso não acontece, **nada quebra**: o clipe não é referenciado por
+nenhum código de jogo — só por `tools/dev_tests/test_rig_unico.gd`,
+`tools/dev_tests/test_anatomia_rig.gd` e pelo índice do editor de animação. O
+combate corpo a corpo usa `punching` e `kicking`.
+
+**Diagnóstico anterior corrigido:** a entrada dizia "provavelmente foi convertido
+a partir de um FBX já sem as curvas de membro" — confirmado, e o "provavelmente"
+pode cair. Também cai a suspeita sobre o importador FBX do Godot **neste caso
+específico**: aqui ele não tinha nada para perder.
 
 **Como detectar de novo:** contar amostras **POR OSSO** no GLB — nunca por
 número de faixas, de chaves ou de canais. Os três dão "ok" num clipe totalmente
@@ -69,6 +118,25 @@ for p in sorted(glob.glob("assets/animations_glb/*.glb")):
         print("CONGELADO:", os.path.basename(p), "max", max(am), "amostras")
 EOF
 ```
+
+Varredura equivalente no **`.res` assado** (mede amplitude em graus por papel do
+rig, que é o critério que importa de verdade — clipe congelado tem as mesmas 12
+faixas e 57 chaves de um clipe bom):
+
+```bash
+godot --headless --path . --script tools/dev_tests/medir_amplitude_res.gd
+```
+
+Marca `<<< CONGELADO` quando a soma da amplitude dos 8 papéis de membro fica
+abaixo de 10°. Rodado em 2026-08-10 nos 28 clipes: só o `hurricane_kick` acusa
+(0° em todo membro, 380° no `Torso`); o segundo menor é o `gunplay` com 81°, e a
+mediana fica perto de 1.100°.
+
+E para conferir o **FBX** antes de converter (Blender 5.2 — a API nova trocou
+`Action.fcurves` por `layers → strips → channelbags → fcurves`; código antigo
+estoura `AttributeError`): contar `len(fc.keyframe_points)` das fcurves cujo
+`data_path` contém `rotation`, agrupando pelo osso entre `pose.bones["…"]`. Osso
+de membro com **1 chave** = arquivo veio quebrado do Mixamo.
 
 ---
 

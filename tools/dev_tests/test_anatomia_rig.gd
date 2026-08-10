@@ -49,8 +49,11 @@ func _run() -> void:
 		if m.mao_dist < 0.05:
 			print("  ✗ mão dentro do tronco"); falhas += 1
 
-		# Clipe do Mixamo
-		var clip = load("res://assets/animations/hurricane_kick.res")
+		# Clipe do Mixamo. Trocado de `hurricane_kick` para `kicking`: aquele
+		# está com os membros congelados (docs/erros.md, 2026-08-10), então
+		# validar "o clipe não deformou o osso" com ele era vacuamente
+		# verdadeiro — osso parado não deforma nada.
+		var clip = load("res://assets/animations/kicking.res")
 		if clip is Animation:
 			anim.play_baked(clip)
 			for i in 30:
