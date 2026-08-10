@@ -72,15 +72,41 @@ encontrados**, `.res` salvo sem erro. Com aliases Meshy acrescentados
 **Descartado:** não é o `GLTFDocument` nem o `fbx_to_glb.py` — o `.glb` de
 entrada tem as curvas; é o mapeamento de nomes dentro do baker que não casa.
 
-**Correção:** ⏳ pendente. Acrescentar os aliases Meshy ao `MAP`, incluir `Neck`
-(que o `SkeletonDriver` tem e o baker não), e **abortar com erro** quando o
-número de ossos resolvidos for zero — falha silenciosa em passo de asset é o modo
-mais caro de errar neste projeto (ver a entrada do `hurricane_kick` abaixo).
+**Correção:** ✅ feita (2026-08-10). No `MAP` cada papel virou uma LISTA de
+aliases, igual à `SkeletonDriver.BONE_ALIASES`, e o papel `Neck` entrou. O bake
+agora **aborta** (`push_error` + saída 1) se resolver zero ossos ou inserir zero
+chaves. Medido depois: esqueleto Meshy **13/13**, esqueleto `mixamorig_*`
+**13/13**. Reassar o `punching` com o `MAP` novo devolve amplitude idêntica à de
+antes (`SOMA_MEMBROS=533`) — os 28 clipes antigos não regridem.
 
-**Como detectar de novo:** depois de qualquer bake, rodar
-`godot --headless --path . --script tools/dev_tests/medir_amplitude_res.gd`.
-Clipe vazio ou congelado acusa na hora; o tamanho do arquivo e a contagem de
-faixas, não.
+Na mesma passada caíram mais dois defeitos do baker:
+
+- **Um clipe por arquivo.** Ele pegava só o mais longo; um `.glb` de animações
+  mescladas (o Meshy exporta assim, 6 clipes) perdia os outros 5. Agora assa
+  todos: 1 clipe → nome do ARQUIVO (compatível com os 28 atuais, todos de um
+  clipe `mixamo_com`), 2+ → nome do CLIPE em `snake_case`.
+- **Salto de euler.** `Basis.get_euler()` devolve sempre o representante
+  canônico, então duas poses vizinhas saíam como +179° e −179°: a faixa é
+  LINEAR e o membro dava a volta longa. Medido nos 28 clipes antigos, **17 têm
+  intervalos em que o membro percorre ~360° de giro espúrio entre duas chaves**
+  (`armada` 359.8°, `dying` 361.3°, `kicking` 357.7°, `running_dive_roll`
+  367.8°…). O baker agora escolhe, chave a chave, o euler EQUIVALENTE mais perto
+  da chave anterior — as duas famílias da ordem YXZ, `(x,y,z)` e
+  `(π−x, y+π, z+π)`, mais múltiplos de 2π por eixo. E passou a assar a 60 fps,
+  porque a faixa é linear e a densidade de chaves é o único controle sobre o
+  erro de interpolação. Nos clipes Meshy novos o percurso máximo entre chaves
+  caiu para 17.2° (`left_uppercut`) e 12.4° (`right_upper_hook`).
+  ⚠️ **Os 28 `.res` antigos continuam a 30 fps e com os saltos de ~360°** — só
+  somem quando forem reassados (`-s tools/bake_mixamo.gd` sem filtro).
+
+**Como detectar de novo:** depois de qualquer bake, rodar os dois:
+`godot --headless --path . --script tools/dev_tests/medir_amplitude_res.gd`
+(clipe vazio ou congelado acusa na hora; o tamanho do arquivo e a contagem de
+faixas, não) e
+`godot --headless --path . --script tools/dev_tests/medir_salto_res.gd`
+(salto entre chaves vizinhas; a coluna `PERCURSO` é o giro que o membro faz de
+verdade — é ela que denuncia o estalo, não o `EULER_max`, que incha perto do
+gimbal sem que nada se mexa).
 
 ---
 
