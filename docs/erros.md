@@ -319,8 +319,17 @@ lugar nenhum da cadeia local.
    inteiro, o `hurricane_kick` tem 8 curvas com movimento real, todas do quadril;
    o `kicking` tem 269.
 
-**Conserto real:** rebaixar "Hurricane Kick" do mixamo.com (o download anterior
-saiu corrompido) e repassar por `tools/fbx_to_glb.py` + `tools/bake_mixamo.gd`.
+**Desfecho (2026-08-10): o clipe foi ELIMINADO do projeto**, por decisão do dono.
+Nenhum código o carregava — os dois testes que o usavam já tinham sido migrados
+para o `kicking`. Removidos: o `.res`, o `.fbx`, o `.fbx.import`, o `.glb` e a
+cópia do editor de animação (mais a entrada no `index.json` dele). A biblioteca
+foi de 30 para 29 clipes.
+
+**Como trazer de volta, se quiser:** baixar outra vez em mixamo.com e rodar
+`./tools/importar_animacao.sh <arquivo.fbx>` — que reconverte, assa e **recusa**
+o arquivo se ele vier quebrado de novo (foi testado exatamente contra este
+clipe). O antigo continua recuperável pelo histórico do git e pelo backup em
+`~/dev/_backups/skills-one-piece/animations-20260810-200658/`.
 Enquanto isso não acontece, **nada quebra**: o clipe não é referenciado por
 nenhum código de jogo — só por `tools/dev_tests/test_rig_unico.gd`,
 `tools/dev_tests/test_anatomia_rig.gd` e pelo índice do editor de animação. O

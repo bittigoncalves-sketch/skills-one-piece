@@ -124,7 +124,6 @@ consertado; ver "Rebake de 2026-08-10" no fim da seção 5).
 | `roundhouse_kick` | Roundhouse Kick | chute rodado |
 | `roundhouse_kick_2` | Roundhouse Kick (1) | variação |
 | `flying_kick` | Flying Kick | chute voador |
-| `hurricane_kick` | Hurricane Kick | chute giratório |
 | `pontera` | Pontera (chute) | chute de capoeira |
 | `chapa_2` | Chapa 2 | chapa (capoeira) |
 | `chapa_giratoria_2` | Chapa Giratoria 2 | chapa giratória |
@@ -159,10 +158,10 @@ consertado; ver "Rebake de 2026-08-10" no fim da seção 5).
 ### Tocar um clipe
 
 ```gdscript
-player.play_style_anim("hurricane_kick")
+player.play_style_anim("kicking")
 ```
 
-- Carrega `res://assets/animations/hurricane_kick.res`.
+- Carrega `res://assets/animations/kicking.res`.
 - Chama `_proc_anim.play_baked(anim)`.
 - Trava o movimento por `anim.length + 0.1` (`lock_movement`).
 - Se o `.res` não existir, imprime `[StyleAnim] falta o bake do rig: ...` e não
@@ -245,3 +244,15 @@ frontal máximo do membro, por cinemática direta) — é o número que calibra 
 | `src/anim/BodyScanner.gd` | define os 13 papéis (`ROLES`) e mede o corpo |
 | `VoxelMeshes.gd` (`_build_skeleton`) | monta o rig com os nomes de papel |
 | `Player.gd` (`play_style_anim`, `cycle_style_anim`) | ponte jogo ↔ biblioteca |
+
+---
+
+## Clipes removidos
+
+| clipe | quando | por quê |
+|---|---|---|
+| `hurricane_kick` | 2026-08-10 | **veio quebrado do Mixamo**: o `.fbx` de origem não tinha as curvas de rotação dos membros (153 das 315 curvas com 1 chave só), então o clipe tocava com braços e pernas congelados. Não havia conserto local. Ver [`erros.md`](erros.md). |
+
+Para trazer de volta, baixe o clipe outra vez em mixamo.com e rode
+`./tools/importar_animacao.sh <arquivo.fbx>` — ele recusa o arquivo se vier
+quebrado de novo.
