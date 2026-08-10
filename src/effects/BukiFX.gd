@@ -73,12 +73,57 @@ static func _transformar(caster: Node, papel: String, arma: Node3D, dur: float) 
 	if alvo == null:
 		return
 	alvo.add_child(arma)
+	_onda_de_aco(alvo)
 	# Brilho de metal esquentando na saída e no retorno.
 	var tw := arma.create_tween()
 	tw.tween_property(arma, "scale", Vector3.ONE, 0.06).from(Vector3(0.15, 0.15, 0.15))
 	tw.tween_interval(maxf(dur - 0.16, 0.0))
 	tw.tween_property(arma, "scale", Vector3(0.1, 0.1, 0.1), 0.10)
 	tw.tween_callback(arma.queue_free)
+
+# O AÇO SE ESPALHANDO PELA PELE — é isto que faz a fruta ler como "o corpo virou
+# arma" em vez de "apareceu uma arma na mão". Um anel incandescente desce pelo
+# membro no instante da transformação, com fagulhas atrás.
+#
+# Fica preso ao MEMBRO (não ao mundo), então acompanha o braço no meio do golpe.
+static func _onda_de_aco(membro: Node) -> void:
+	if not (membro is Node3D):
+		return
+	var anel := MeshInstance3D.new()
+	var toro := TorusMesh.new()
+	toro.inner_radius = 0.10
+	toro.outer_radius = 0.19
+	toro.rings = 12
+	anel.mesh = toro
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(1.0, 0.78, 0.35, 0.9)
+	m.emission_enabled = true
+	m.emission = ACO_QUENTE
+	m.emission_energy_multiplier = 5.0
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	anel.material_override = m
+	anel.rotation_degrees.x = 90.0        # o anel abraça o membro (eixo do braço)
+	membro.add_child(anel)
+
+	var pm := ParticleProcessMaterial.new()
+	pm.direction = Vector3.ZERO
+	pm.spread = 180.0
+	pm.initial_velocity_min = 0.8
+	pm.initial_velocity_max = 2.6
+	pm.gravity = Vector3(0, -4.0, 0)
+	pm.scale_min = 0.12
+	pm.scale_max = 0.30
+	pm.color_ramp = FxUtil.gradient(FAISCA)
+	anel.add_child(FxUtil.particles(24, 0.30, true, pm, FxUtil.grain(0.05), 0.85))
+
+	# Desce do ombro/quadril até a ponta e some.
+	var tw := anel.create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(anel, "position:y", -0.75, 0.18).from(0.05)
+	tw.tween_property(anel, "scale", Vector3(1.5, 1.5, 1.5), 0.18).from(Vector3(0.4, 0.4, 0.4))
+	tw.tween_property(m, "albedo_color:a", 0.0, 0.20)
+	tw.chain().tween_callback(anel.queue_free)
 
 # ------------------------------------------------------------ ALVO TELEGUIADO
 # Inimigo mais próximo da MIRA (não o mais próximo do corpo) — o V trava nele.
@@ -182,7 +227,7 @@ static func _perseguir(zone: Node3D, alvo: Node3D, velocidade: float) -> void:
 
 # ------------------------------------------------------------------- Z: METRA
 static func _metralhadora(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
-	var cano := _construir_metralhadora()
+	var cano := _arma("metralhadora")
 	_transformar(caster, "ForeArm_R", cano, 0.9)
 	_rajada(world, origin, dir, damage, caster, 6, 0.07, 22.0, 5.0, null)
 	AudioFX.whoosh(world, origin)
@@ -207,11 +252,12 @@ static func _rajada(world: Node, origin: Vector3, dir: Vector3, damage: float,
 			# vira um zumbido só, e o ouvido para de contar os disparos.
 			AudioFX.gunshot(world, o, randf_range(0.92, 1.12))
 			_fogacho(world, o, d, 0.35)
+			_capsulas(world, o, d)
 		)
 
 # ------------------------------------------------------------------- X: LÂMINA
 static func _lamina(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
-	var foice := _construir_lamina()
+	var foice := _arma("lamina")
 	_transformar(caster, "ForeArm_R", foice, 0.5)
 
 	# Golpe em ARCO: zona curta que varre à frente do conjurador.
@@ -243,7 +289,7 @@ static func _lamina(world: Node, origin: Vector3, dir: Vector3, damage: float, c
 
 # --------------------------------------------------------- C: CANHÃO DE PERNA
 static func _canhao_de_perna(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
-	var canhao := _construir_canhao()
+	var canhao := _arma("canhao")
 	_transformar(caster, "Shin_R", canhao, 0.8)
 	_tiro_de_canhao(world, origin, dir, damage, caster, 12.0, null)
 
@@ -284,6 +330,80 @@ static func _fogacho(world: Node, origin: Vector3, dir: Vector3, escala: float) 
 	(flash as Node3D).global_position = origin + fwd * 0.8
 	world.get_tree().create_timer(1.2).timeout.connect(flash.queue_free)
 
+	# LUZ DO DISPARO. É o que mais rende no fogacho: sem ela o clarão não toca no
+	# personagem nem no chão, e o tiro parece um adesivo colado na tela. Vive
+	# 0,07 s — arma de fogo pisca, não ilumina.
+	var luz := OmniLight3D.new()
+	luz.light_color = Color(1.0, 0.80, 0.45)
+	luz.light_energy = 7.0 * escala + 1.5
+	luz.omni_range = 5.0 + 7.0 * escala
+	luz.shadow_enabled = false          # 6 tiros x sombra = tranco de frame
+	world.add_child(luz)
+	(luz as Node3D).global_position = origin + fwd * 0.7
+	var tw := luz.create_tween()
+	tw.tween_property(luz, "light_energy", 0.0, 0.07)
+	tw.tween_callback(luz.queue_free)
+
+	# FUMAÇA — cinza, lenta, subindo. Fica DEPOIS do clarão, senão some junto.
+	var fumaca := GPUParticles3D.new()
+	fumaca.amount = int(10 * escala) + 4
+	fumaca.lifetime = 0.9 + 0.6 * escala
+	fumaca.one_shot = true
+	fumaca.emitting = true
+	var fp := ParticleProcessMaterial.new()
+	fp.direction = fwd + Vector3.UP * 0.5
+	fp.spread = 40.0
+	fp.initial_velocity_min = 0.6 * escala
+	fp.initial_velocity_max = 2.2 * escala
+	fp.gravity = Vector3(0, 0.7, 0)      # fumaça SOBE
+	fp.scale_min = 0.5 * escala
+	fp.scale_max = 1.8 * escala
+	fp.color_ramp = FxUtil.gradient([
+		Color(0.55, 0.55, 0.58, 0.55),
+		Color(0.45, 0.45, 0.48, 0.30),
+		Color(0.40, 0.40, 0.42, 0.0),
+	])
+	fumaca.process_material = fp
+	fumaca.draw_pass_1 = FxUtil.grain(0.5)
+	world.add_child(fumaca)
+	(fumaca as Node3D).global_position = origin + fwd * 0.85
+	world.get_tree().create_timer(2.5).timeout.connect(fumaca.queue_free)
+
+# CÁPSULAS EJETADAS — só na metralhadora. Latão saltando pra direita e caindo.
+# Detalhe pequeno, mas é o que dá CADÊNCIA visível à rajada: sem ele os 6 tiros
+# viram um borrão só.
+static func _capsulas(world: Node, origin: Vector3, dir: Vector3) -> void:
+	if world == null or not world.is_inside_tree():
+		return
+	var lado := dir.normalized().cross(Vector3.UP).normalized()
+	var p := GPUParticles3D.new()
+	p.amount = 2
+	p.lifetime = 1.1
+	p.one_shot = true
+	p.emitting = true
+	var pm := ParticleProcessMaterial.new()
+	pm.direction = lado + Vector3.UP * 0.9
+	pm.spread = 18.0
+	pm.initial_velocity_min = 2.2
+	pm.initial_velocity_max = 3.6
+	pm.gravity = Vector3(0, -9.0, 0)
+	pm.angular_velocity_min = -720.0
+	pm.angular_velocity_max = 720.0
+	pm.scale_min = 0.5
+	pm.scale_max = 0.7
+	pm.color_ramp = FxUtil.gradient([
+		Color(0.86, 0.68, 0.28, 1.0),
+		Color(0.80, 0.62, 0.24, 1.0),
+		Color(0.70, 0.55, 0.20, 0.0),
+	])
+	p.process_material = pm
+	var casq := BoxMesh.new()
+	casq.size = Vector3(0.035, 0.10, 0.035)
+	p.draw_pass_1 = casq
+	world.add_child(p)
+	(p as Node3D).global_position = origin
+	world.get_tree().create_timer(2.0).timeout.connect(p.queue_free)
+
 # ------------------------------------------------------- V: ARSENAL COMPLETO
 # Canhão -> metralhadora, TUDO teleguiado no inimigo mais próximo da mira.
 # O que diferencia dos outros slots é exatamente isto: mira automática, dano e
@@ -292,7 +412,7 @@ static func _arsenal_completo(world: Node, origin: Vector3, dir: Vector3, damage
 	var alvo := alvo_da_mira(caster, origin, dir)
 
 	# 1) canhão pesado
-	var canhao := _construir_canhao()
+	var canhao := _arma("canhao")
 	canhao.scale = Vector3(1.35, 1.35, 1.35)
 	_transformar(caster, "Shin_R", canhao, 0.7)
 	_tiro_de_canhao(world, origin, dir, damage * 1.6, caster, 20.0, alvo)
@@ -308,15 +428,49 @@ static func _arsenal_completo(world: Node, origin: Vector3, dir: Vector3, damage
 		if not is_instance_valid(caster) or not is_instance_valid(world):
 			return
 		for lado in ["ForeArm_L", "ForeArm_R"]:
-			var cano := _construir_metralhadora()
+			var cano := _arma("metralhadora")
 			cano.scale = Vector3(1.2, 1.2, 1.2)
 			_transformar(caster, lado, cano, 1.4)
 		var o: Vector3 = caster.global_position + Vector3.UP * 1.0 if caster is Node3D else origin
 		_rajada(world, o, dir, damage * 0.55, caster, 14, 0.08, 26.0, 7.0, alvo)
 	)
 
+# ============================================================================
+#  ARMAS — agora são ASSETS (.glb), não geometria montada em código.
+#
+#  Modeladas em tools/blender/buki_weapons.py (Blender headless) e exportadas
+#  pra assets/models/weapons/. Mexer na arte deixou de ser mexer em GDScript:
+#  edita o script do Blender, roda, e o jogo pega o arquivo novo.
+#
+#  Os construtores voxel antigos continuam logo abaixo como PLANO B — se o .glb
+#  sumir (clone sem os assets, import ainda não rodou), a fruta continua
+#  jogável em vez de disparar arma invisível.
+# ============================================================================
+const ARMAS := {
+	"metralhadora": "res://assets/models/weapons/buki_metralhadora.glb",
+	"lamina": "res://assets/models/weapons/buki_lamina.glb",
+	"canhao": "res://assets/models/weapons/buki_canhao.glb",
+}
+
+static var _cache_armas: Dictionary = {}
+
+static func _arma(nome: String) -> Node3D:
+	if not _cache_armas.has(nome):
+		var caminho: String = ARMAS.get(nome, "")
+		_cache_armas[nome] = load(caminho) if ResourceLoader.exists(caminho) else null
+	var cena = _cache_armas[nome]
+	if cena is PackedScene:
+		var n := (cena as PackedScene).instantiate() as Node3D
+		n.name = "Buki_" + nome
+		return n
+	# Plano B: a versão voxel montada em código.
+	match nome:
+		"metralhadora": return _voxel_metralhadora()
+		"lamina": return _voxel_lamina()
+		_: return _voxel_canhao()
+
 # --------------------------------------------------------------- CONSTRUTORES
-# Armas em estilo voxel, no mesmo idioma dos modelos do jogo.
+# PLANO B — armas em estilo voxel montadas em código (ver bloco acima).
 static func _caixa(tam: Vector3, pos: Vector3, mat: StandardMaterial3D) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	var b := BoxMesh.new()
@@ -345,7 +499,7 @@ static func _cil(raio: float, alt: float, pos: Vector3, mat: StandardMaterial3D,
 # METRALHADORA — cano, camisa de refrigeração, tambor de munição e alça de mira.
 # O tambor e as ranhuras da camisa são o que fazem ler como "metralhadora" em vez
 # de "cano genérico"; sem eles vira um tubo.
-static func _construir_metralhadora() -> Node3D:
+static func _voxel_metralhadora() -> Node3D:
 	var r := Node3D.new()
 	r.name = "BukiMetralhadora"
 	var aco := _mat_aco()
@@ -364,7 +518,7 @@ static func _construir_metralhadora() -> Node3D:
 	return r
 
 # LÂMINA — gume assimétrico (fio de um lado só), guarda e ricasso.
-static func _construir_lamina() -> Node3D:
+static func _voxel_lamina() -> Node3D:
 	var r := Node3D.new()
 	r.name = "BukiLamina"
 	var aco := _mat_aco()
@@ -384,7 +538,7 @@ static func _construir_lamina() -> Node3D:
 
 # CANHÃO — boca alargada, aros de reforço e câmara. É a peça mais pesada da
 # fruta, então a silhueta tem que ler como grossa mesmo de longe.
-static func _construir_canhao() -> Node3D:
+static func _voxel_canhao() -> Node3D:
 	var r := Node3D.new()
 	r.name = "BukiCanhao"
 	var aco := _mat_aco()

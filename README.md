@@ -61,6 +61,26 @@ nos ossos. Assim a mesma animação serve os dois tipos.
 
 Tamanhos podem variar entre personagens; nomes e hierarquia, não.
 
+## A arena
+
+O chão é uma **grade de lajes de 10 m** com **16 buracos quadrados** (12 de 1×1
+célula e 4 de 2×2, semente fixa). Cair num buraco — ou ser jogado para fora da
+plataforma — mata.
+
+A rodada dura **10 minutos**. Derrubar alguém conta kill; quem cai leva morte, e
+a kill vai para o último que causou dano nele nos últimos **10 s**. No fim da
+rodada aparece um pódio de 8 s, todos respawnam com vida cheia e o placar zera.
+A contagem é **autoridade do servidor** — ver
+[`src/match/Scoreboard.gd`](src/match/Scoreboard.gd).
+
+**Corpo a corpo** no botão esquerdo do mouse: soco direito → soco esquerdo →
+chute, encadeáveis dentro de 2 s. Não gasta energia. Ver
+[`src/combat/Melee.gd`](src/combat/Melee.gd).
+
+> Os **inimigos não nascem mais no mapa** — o foco é luta entre jogadores. O
+> código deles está inteiro em [`disabled/enemies/`](disabled/enemies/), ainda
+> compilando; religar é uma linha. O dummy de treino continua no centro.
+
 ## Animação
 
 Duas camadas que se somam:
@@ -90,6 +110,8 @@ Detalhes em [`docs/ANIMACOES_MIXAMO.md`](docs/ANIMACOES_MIXAMO.md).
 | [`docs/ANIMACOES_MIXAMO.md`](docs/ANIMACOES_MIXAMO.md) | pipeline, catálogo de clipes, limitações |
 | [`docs/erros.md`](docs/erros.md) | registro de bugs com causa raiz e correção |
 | [`docs/MUDANCAS_2026-08-06.md`](docs/MUDANCAS_2026-08-06.md) | rig único, conserto do pipeline, Buki Buki |
+| [`docs/MUDANCAS_2026-08-10.md`](docs/MUDANCAS_2026-08-10.md) | arena: buracos, placar, corpo a corpo, armas em .glb |
+| [`disabled/enemies/README.md`](disabled/enemies/README.md) | inimigos desligados do mapa e como religar |
 | [`DOCUMENTACAO.md`](DOCUMENTACAO.md) | visão geral do projeto |
 
 ## Testes
@@ -100,7 +122,11 @@ Rodam headless, sem abrir o jogo:
 godot --headless --path . -s tools/dev_tests/test_rig_unico.gd     # rig único
 godot --headless --path . -s tools/dev_tests/test_anatomia_rig.gd  # pose sã
 godot --headless --path . -s tools/dev_tests/test_buki_buki.gd     # fruta Buki Buki
+godot --headless --path . -s tools/dev_tests/test_arena.gd         # arena (29 checagens)
 ```
+
+O `test_arena.gd` sobe o jogo de verdade e cobre buracos do mapa, placar da
+rodada, combate corpo a corpo e as armas em `.glb`.
 
 `tools/dev_tests/captura_anim.gd` renderiza frames de um estado de animação para
 inspeção visual, sem precisar jogar.

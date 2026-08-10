@@ -29,6 +29,7 @@ func _init() -> void:
 	_inimigos()
 	await _placar(main)
 	_melee()
+	_buki()
 
 	print("\n===== %s =====" % ("TUDO OK" if _falhas == 0 else "%d FALHA(S)" % _falhas))
 	quit(1 if _falhas > 0 else 0)
@@ -149,6 +150,45 @@ func _melee() -> void:
 	_ok(perna > braco, "o finalizador é de PERNA")
 	_ok(float(Melee.passo(2)["kb"]) > float(Melee.passo(0)["kb"]) * 2.0,
 		"o chute empurra mais que o dobro do soco (é ele que joga no buraco)")
+
+# ------------------------------------------------------------------ buki buki
+# As armas viraram ASSET (.glb do Blender). O risco novo é silencioso: se o
+# arquivo sumir ou o import não rodar, o BukiFX cai no plano B voxel e ninguém
+# percebe — a fruta continua funcionando, só feia. Então o teste confere que o
+# que está em uso é MESMO o .glb.
+func _buki() -> void:
+	print("\n-- 5. armas da Buki Buki em .glb --")
+	for nome in ["metralhadora", "lamina", "canhao"]:
+		var caminho: String = BukiFX.ARMAS[nome]
+		_ok(ResourceLoader.exists(caminho), "%s: asset existe (%s)" % [nome, caminho.get_file()])
+		var arma := BukiFX._arma(nome)
+		_ok(arma != null and str(arma.name).begins_with("Buki_"),
+			"%s: em uso é o .glb, não o plano B voxel" % nome)
+		if arma:
+			var tris := 0
+			var ab := AABB()
+			var primeiro := true
+			for m in _malhas(arma):
+				tris += (m as MeshInstance3D).mesh.get_faces().size() / 3
+				var a: AABB = (m as MeshInstance3D).transform * (m as MeshInstance3D).mesh.get_aabb()
+				ab = a if primeiro else ab.merge(a)
+				primeiro = false
+			print("     %-14s %5d tris  tam=(%.2f, %.2f, %.2f)" % [nome, tris, ab.size.x, ab.size.y, ab.size.z])
+			# A arma aponta pra FRENTE do Godot (−Z). Se o eixo tivesse virado na
+			# exportação, ela sairia apontando pra trás e o jogador atiraria em si.
+			if nome != "lamina":
+				_ok(ab.position.z < -0.5, "%s: o cano aponta pra frente (−Z)" % nome)
+			else:
+				_ok(ab.size.y > 1.0, "lâmina: comprida no eixo do braço (−Y)")
+			arma.queue_free()
+
+func _malhas(n: Node) -> Array:
+	var out: Array = []
+	if n is MeshInstance3D and (n as MeshInstance3D).mesh:
+		out.append(n)
+	for c in n.get_children():
+		out.append_array(_malhas(c))
+	return out
 
 # Amplitude de movimento (max-min) somada dos papéis, em graus.
 func _amplitude(a: Animation, roles: Array) -> float:

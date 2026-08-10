@@ -7,6 +7,71 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-10 — `hurricane_kick` toca com os membros congelados
+
+**Sintoma:** o clipe existe, tem duração e chaves, e é ciclado normalmente no
+"Teste de Animação" — mas em jogo o personagem só balança o tronco. Braços e
+pernas ficam parados na pose de descanso.
+
+**Causa raiz:** o defeito vem do **asset de origem**, não do baker.
+`assets/animations_glb/hurricane_kick.glb` tem só **2 amostras de rotação em
+todo osso de membro** (`LeftArm`, `LeftForeArm`, `LeftLeg`, `LeftUpLeg`,
+`RightArm`, `RightForeArm`, `RightLeg`, `RightUpLeg`, `Spine`) e 56 no `Hips`.
+Duas amostras com o mesmo valor = curva constante. É a **mesma falha de "1 chave
+por osso" do importador FBX** descrita na seção 3 de
+[`MUDANCAS_2026-08-06.md`](MUDANCAS_2026-08-06.md), que se acreditava eliminada
+pela conversão FBX→glTF via Blender: ela **sobreviveu neste arquivo**, que
+provavelmente foi convertido a partir de um FBX já sem as curvas de membro.
+
+**Evidência:** medindo amplitude de movimento (max−min por eixo, somada) nos
+papéis do rig, no `.res` assado:
+
+| clipe | braço D | braço E | perna D | perna E |
+|---|---|---|---|---|
+| `hurricane_kick` | **0°** | **0°** | **0°** | **0°** |
+| `kicking` | 272° | 274° | 757° | 681° |
+
+E no GLB de origem, amostras de rotação por osso: `hurricane_kick` = 2 em todo
+membro / 56 no Hips; `kicking` = 69 em todos.
+
+**Descartado:** não é o baker (`tools/bake_mixamo.gd`) e não é o pipeline —
+varrendo os 28 GLBs pelo mesmo critério, **27 estão corretos e só este falha**.
+Também não é falta de faixa: o `.res` tem as 12 faixas e 57 chaves, com valores
+plausíveis; elas é que são todas iguais entre si.
+
+**Correção:** ⏳ **pendente** — exige rebaixar o `hurricane_kick` do Mixamo e
+repassar por `tools/fbx_to_glb.py` + `tools/bake_mixamo.gd`. Não foi feito nesta
+sessão porque é reposição de asset, não conserto de código. O combate corpo a
+corpo, escrito hoje, **não usa esse clipe** (usa `punching` e `kicking`).
+
+**Como detectar de novo:** contar amostras **POR OSSO** no GLB — nunca por
+número de faixas, de chaves ou de canais. Os três dão "ok" num clipe totalmente
+congelado (este arquivo tem os mesmos 195 canais e 65 nós animados do `kicking`,
+que está perfeito). Varredura dos 28 clipes:
+
+```bash
+python3 - <<'EOF'
+import json, struct, os, glob
+MEMBROS = {"LeftArm","LeftForeArm","RightArm","RightForeArm",
+           "LeftUpLeg","LeftLeg","RightUpLeg","RightLeg"}
+for p in sorted(glob.glob("assets/animations_glb/*.glb")):
+    d = open(p,'rb').read()
+    j = json.loads(d[20:20+struct.unpack('<I', d[12:16])[0]].decode('utf-8'))
+    if not j.get("animations"): print("SEM CLIPE:", p); continue
+    a = j["animations"][0]
+    nomes = {i: n.get("name","") for i, n in enumerate(j["nodes"])}
+    am = [j["accessors"][a["samplers"][c["sampler"]]["output"]]["count"]
+          for c in a["channels"]
+          if c["target"]["path"] == "rotation"
+          and nomes.get(c["target"]["node"],"").replace("mixamorig:","")
+                   .replace("mixamorig_","") in MEMBROS]
+    if am and max(am) <= 2:
+        print("CONGELADO:", os.path.basename(p), "max", max(am), "amostras")
+EOF
+```
+
+---
+
 ## 2026-08-07 — Cópia da fórmula no teste escondeu a mudança no código
 
 **Sintoma:** entrou o freio de cadência no animador, mas o teste de walk/run
