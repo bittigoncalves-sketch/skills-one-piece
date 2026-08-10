@@ -14,14 +14,16 @@ extends Node3D
 const TREE_COUNT := 11         # árvores espalhadas sobre blocos
 const TREE_SEED := 771026       # semente fixa da distribuição das árvores
 
+# INIMIGOS DESLIGADOS — o mapa é só de lutas entre jogadores. O código deles
+# está inteiro em `disabled/enemies/` (Enemy.gd + EnemySpawner.gd + README.md),
+# ainda compilando. Religar = pôr `true` aqui. Ver disabled/enemies/README.md.
+const ENEMIES_ENABLED := false
 const ENEMY_COUNT := 5
 
 var _hud: Hud
 var _players_root: Node3D
 var _spawner: MultiplayerSpawner
-var _enemies_root: Node3D
-var _enemy_spawner: MultiplayerSpawner
-var _enemy_seq := 0
+var _enemies: EnemySpawner
 
 func _ready() -> void:
 	WorldEnv.apply(self)
@@ -40,18 +42,21 @@ func _ready() -> void:
 	_spawner.spawn_path = _players_root.get_path()
 	_spawner.spawn_function = _spawn_player_data
 
+	# Placar da rodada (kills/mortes/cronômetro). Existe nos DOIS lados com o
+	# MESMO nome — é assim que os RPCs de estado resolvem o caminho do nó.
+	var placar := Scoreboard.new()
+	placar.name = "Placar"
+	add_child(placar)
+
 	_hud = Hud.new()
 	add_child(_hud)
 
-	# Inimigos (Fase 7): mesmo padrão — servidor cria/replica, IA roda no servidor.
-	_enemies_root = Node3D.new()
-	_enemies_root.name = "Enemies"
-	add_child(_enemies_root)
-	_enemy_spawner = MultiplayerSpawner.new()
-	_enemy_spawner.name = "EnemySpawner"
-	add_child(_enemy_spawner)
-	_enemy_spawner.spawn_path = _enemies_root.get_path()
-	_enemy_spawner.spawn_function = _spawn_enemy_data
+	# Inimigos (Fase 7): desligados. O nó só entra na árvore com a flag ligada —
+	# e como a flag é const, servidor e clientes montam a MESMA árvore.
+	if ENEMIES_ENABLED:
+		_enemies = EnemySpawner.new()
+		_enemies.name = "EnemyModule"
+		add_child(_enemies)
 
 	if multiplayer.is_server():
 		ServerManager.peer_joined.connect(_spawn_player_for)
@@ -67,13 +72,8 @@ func _ready() -> void:
 func _start_server_content() -> void:
 	if not GameFlow.is_dedicated:
 		_spawn_player_for(multiplayer.get_unique_id())
-	for i in ENEMY_COUNT:
-		_spawn_one_enemy()
-	var t := Timer.new()
-	t.wait_time = 4.0
-	t.autostart = true
-	add_child(t)
-	t.timeout.connect(_maintain_enemies)
+	if ENEMIES_ENABLED and _enemies:
+		_enemies.start(ENEMY_COUNT)
 
 	var dummy := CharacterBody3D.new()
 	dummy.set_script(load("res://src/entities/TrainingDummy.gd"))
@@ -111,42 +111,6 @@ func _spawn_player_data(data: Dictionary) -> Node:
 func _make_player_sync() -> MultiplayerSynchronizer:
 	var cfg := SceneReplicationConfig.new()
 	for p in ["position", "net_velocity", "net_facing", "net_on_floor", "current_fruit_id"]:
-		cfg.add_property(NodePath(".:" + p))
-	var sync := MultiplayerSynchronizer.new()
-	sync.name = "Sync"
-	sync.replication_config = cfg
-	return sync
-
-# ---- inimigos (Fase 7): spawn/replicação (servidor-autoridade) ----
-func _maintain_enemies() -> void:
-	if not multiplayer.is_server():
-		return
-	while _enemies_root.get_child_count() < ENEMY_COUNT:
-		_spawn_one_enemy()
-
-func _spawn_one_enemy() -> void:
-	var ang := randf() * TAU
-	var r := randf_range(8.0, 20.0)
-	_enemy_seq += 1
-	var data := {"id": _enemy_seq, "pos": [cos(ang) * r, 4.0, sin(ang) * r]}
-	if multiplayer.has_multiplayer_peer():
-		_enemy_spawner.spawn(data)
-	else:
-		_enemies_root.add_child(_spawn_enemy_data(data))
-
-func _spawn_enemy_data(data: Dictionary) -> Node:
-	var e := CharacterBody3D.new()
-	e.set_script(load("res://src/entities/Enemy.gd"))
-	e.name = "E%d" % int(data.get("id", 0))
-	var pos: Array = data.get("pos", [0, 4, 0])
-	e.position = Vector3(pos[0], pos[1], pos[2])
-	e.add_child(_make_enemy_sync())
-	e.set_multiplayer_authority(1)   # servidor é a autoridade (IA + sync)
-	return e
-
-func _make_enemy_sync() -> MultiplayerSynchronizer:
-	var cfg := SceneReplicationConfig.new()
-	for p in ["position", "health", "net_facing", "net_tamed", "net_owner"]:
 		cfg.add_property(NodePath(".:" + p))
 	var sync := MultiplayerSynchronizer.new()
 	sync.name = "Sync"

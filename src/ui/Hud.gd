@@ -10,6 +10,7 @@ var _skill_bar: SkillBar
 var _char_menu: CharacterMenu
 var _main_menu: Node
 var _stats: Node
+var _match: MatchHud
 
 func _ready() -> void:
 	add_to_group("hud")   # o Player encontra a HUD por este grupo ao equipar fruta
@@ -33,6 +34,10 @@ func _ready() -> void:
 	_stats = StatsHudClass.new()
 	_stats.name = "StatsHud"
 	add_child(_stats)
+
+	_match = MatchHud.new()
+	_match.name = "MatchHud"
+	add_child(_match)
 
 	# Itens iniciais de exemplo.
 	_inv.add_item({"nome": "Suna Suna no Mi", "tipo": "Logia", "cor": Color(0.95, 0.8, 0.45)})

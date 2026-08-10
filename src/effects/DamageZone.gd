@@ -46,6 +46,11 @@ func _on_body(body: Node3D) -> void:
 		var kb: Vector3 = dir * knockback + Vector3.UP * knockback * 0.35
 		# Dano BAIXO de propósito: o foco é o KNOCKBACK jogar o alvo pra fora do mapa.
 		body.take_damage(damage * DAMAGE_SCALE, global_position, kb)
+		# Crédito de kill: registra quem bateu por último em quem. Se o alvo cair
+		# do mapa nos próximos segundos, a kill é de quem empurrou.
+		var placar := get_tree().get_first_node_in_group("scoreboard")
+		if placar and placar.has_method("register_hit"):
+			placar.register_hit(body, caster)
 		# Camera Feel no impacto: micro-pausa + flash quente + aberração cromática.
 		var gf := get_node_or_null("/root/GameFlow")
 		if gf and gf.has_method("hit_stop"):

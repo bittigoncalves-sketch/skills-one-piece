@@ -64,6 +64,7 @@ var _t := 0.0
 # animação procedural enquanto toca. Cada faixa tem path "<Role>:rotation".
 var _baked: Animation = null
 var _baked_t := 0.0
+var _baked_speed := 1.0
 
 # Presente só em personagens SKINNADOS: espelha os proxies nos ossos.
 var _driver: SkeletonDriver = null
@@ -71,15 +72,18 @@ var _driver: SkeletonDriver = null
 const REC_DUR := 0.35       # duração da recepção (recovery)
 
 # Toca um clipe retargetado (Animation com faixas <Role>:rotation) por cima do rig.
-func play_baked(anim: Animation) -> void:
+# `speed` acelera o clipe sem reassá-lo: os golpes do Mixamo são autorados em
+# ~2 s, tempo demais para um combo de corpo a corpo encadeado em 2 s.
+func play_baked(anim: Animation, speed: float = 1.0) -> void:
 	_baked = anim
 	_baked_t = 0.0
+	_baked_speed = maxf(speed, 0.01)
 
 func is_playing_baked() -> bool:
 	return _baked != null
 
 func _apply_baked(delta: float) -> void:
-	_baked_t += delta
+	_baked_t += delta * _baked_speed
 	for i in _baked.get_track_count():
 		var role := String(_baked.track_get_path(i)).get_slice(":", 0)
 		if _n.has(role):

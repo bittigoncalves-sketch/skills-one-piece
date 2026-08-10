@@ -109,6 +109,13 @@ var _yami_shot_cooldown: float = 0.0  # cadência do tiro do Yami Z
 var _skill_cooldowns: Dictionary = {"Z": 0.0, "X": 0.0, "C": 0.0, "V": 0.0}
 var aim_assist: bool = false   # assistência de mira (liga/desliga no E)
 
+# ---- corpo a corpo (botão esquerdo): soco D -> soco E -> chute ----
+# Ver src/combat/Melee.gd. `_melee_janela` conta o tempo que ainda resta pra
+# encadear; zerou, o próximo clique volta ao primeiro soco.
+var _melee_passo: int = 0
+var _melee_janela: float = 0.0
+var _melee_trava: float = 0.0   # recuperação: bloqueia o clique durante o golpe
+
 func trigger_skill_cooldown(slot: String) -> void:
 	match slot:
 		"Z": _skill_cooldowns["Z"] = 5.0
@@ -262,6 +269,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
 		if not _yami_pistol_active:
 			_try_tame()   # Fase 8: botão direito DOMA o inimigo mirado
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		# Corpo a corpo. A pistola da Yami também usa o botão esquerdo (ela tem
+		# o próprio tratamento em _process_yami_pistol) — quem está de arma na
+		# mão atira, não soca.
+		if not _yami_pistol_active:
+			_request_melee()
 
 func toggle_combat_mode() -> void:
 	if combat_mode == "fruit":
@@ -660,6 +673,7 @@ func _physics_process(delta: float) -> void:
 
 	_update_breath()
 	_tick_rapid_fire(delta)   # Mera Z: dispara as balas de fogo enquanto a rajada está ativa
+	_tick_melee(delta)        # corpo a corpo: janela de 2 s do combo + recuperação
 
 	# Rede (Fase 4): a autoridade publica seu estado p/ os outros clientes replicarem.
 	net_velocity = velocity
@@ -1078,7 +1092,31 @@ func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knock
 	if health <= 0.0:
 		die_and_respawn()
 
+# Porta de entrada da MORTE — chegam aqui os dois caminhos: vida zerada (a
+# DamageZone, no servidor) e queda no vazio (SkillSystem.process_void_check).
+#
+# Quem decide é sempre o PLACAR, no servidor: ele conta a morte, resolve de quem
+# é a kill e manda o dono do corpo respawnar. Num cliente puro esta função não
+# faz nada de propósito — o servidor enxerga a queda pela `position` replicada e
+# declara a morte de lá. Sem placar na árvore (testes isolados), respawna direto.
 func die_and_respawn() -> void:
+	var caiu := global_position.y < Scoreboard.VOID_Y
+	var placar := get_tree().get_first_node_in_group("scoreboard")
+	if placar and placar.has_method("report_death"):
+		placar.report_death(self, caiu)
+	else:
+		net_force_respawn()
+
+# Respawn de verdade. Só o DONO do corpo pode se teleportar (quem não é
+# autoridade tem a posição sobrescrita pela replicação no frame seguinte), por
+# isso o servidor pede por RPC em vez de mover na marra.
+@rpc("any_peer", "call_local", "reliable")
+func net_force_respawn() -> void:
+	# Só o servidor (peer 1) manda respawnar; 0 = chamada local, sem rede.
+	if multiplayer.has_multiplayer_peer():
+		var sender := multiplayer.get_remote_sender_id()
+		if sender != 0 and sender != 1:
+			return
 	print("💀 MORTE REGISTRADA! Respawnando na plataforma...")
 	if _animator:
 		_animator.trigger_death()
@@ -1095,7 +1133,7 @@ func die_and_respawn() -> void:
 	health = max_health
 	energy = max_energy
 	velocity = Vector3.ZERO
-	global_position = Vector3(0, 6, 0) # Respawn no centro da plataforma
+	global_position = Scoreboard.RESPAWN   # centro da plataforma (zona sem buraco)
 
 func suppress_skills_temporarily(duration: float) -> void:
 	is_suppressed = true
@@ -1231,6 +1269,64 @@ func _request_cast(slot: String) -> void:
 func _net_cast(slot: String, aim: Vector3, origin: Vector3) -> void:
 	if multiplayer.is_server():
 		_do_server_cast(slot, aim, origin)
+
+# ======================= CORPO A CORPO (botão esquerdo) =======================
+# Combo: soco DIREITO -> soco ESQUERDO -> CHUTE, encadeáveis dentro de
+# Melee.JANELA (2 s). Segue o MESMO trajeto de rede das skills: o dono pede, o
+# servidor cria a hitbox, todo mundo reproduz a animação.
+func _request_melee() -> void:
+	if not _is_authority or _charging or _melee_trava > 0.0:
+		return
+	var hud := get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("is_menu_open") and hud.is_menu_open():
+		return
+
+	# Janela vencida (ou combo terminado) -> recomeça do primeiro soco.
+	if _melee_janela <= 0.0 or _melee_passo >= Melee.COMBO.size():
+		_melee_passo = 0
+	var golpe := Melee.passo(_melee_passo)
+	_melee_trava = float(golpe["recuo"])
+	_melee_janela = Melee.JANELA
+
+	var fwd := -Basis.from_euler(Vector3(0, _yaw, 0)).z
+	var origem := global_position + Vector3.UP * 1.0
+	add_camera_shake(float(golpe["shake"]))
+	_fov_punch = 3.0
+
+	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
+		_do_server_melee(_melee_passo, origem, fwd)
+	else:
+		_net_melee.rpc_id(1, _melee_passo, origem, fwd)
+	_melee_passo += 1
+
+@rpc("any_peer", "call_remote", "reliable")
+func _net_melee(passo: int, origem: Vector3, fwd: Vector3) -> void:
+	if multiplayer.is_server():
+		_do_server_melee(passo, origem, fwd)
+
+# SERVIDOR: cria a hitbox (a DamageZone só machuca no servidor) e manda todos
+# reproduzirem a animação do golpe.
+func _do_server_melee(passo: int, origem: Vector3, fwd: Vector3) -> void:
+	Melee.golpear(get_tree().current_scene, self, passo, origem, fwd)
+	if multiplayer.has_multiplayer_peer():
+		_net_play_melee.rpc(passo)
+	else:
+		_net_play_melee(passo)
+
+@rpc("any_peer", "call_local", "reliable")
+func _net_play_melee(passo: int) -> void:
+	var clipe := Melee.clipe(passo)
+	if clipe and _proc_anim:
+		_proc_anim.play_baked(clipe, float(Melee.passo(passo)["vel"]))
+
+# Corre os dois relógios do combo. Chamado do _physics_process.
+func _tick_melee(delta: float) -> void:
+	if _melee_trava > 0.0:
+		_melee_trava = maxf(_melee_trava - delta, 0.0)
+	if _melee_janela > 0.0:
+		_melee_janela = maxf(_melee_janela - delta, 0.0)
+		if _melee_janela == 0.0:
+			_melee_passo = 0   # esfriou: o próximo clique volta ao soco direito
 
 # SERVIDOR = autoridade: (validaria cooldown/estado) e manda TODOS reproduzirem.
 func _do_server_cast(slot: String, aim: Vector3, origin: Vector3) -> void:
