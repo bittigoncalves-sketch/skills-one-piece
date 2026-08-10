@@ -70,6 +70,18 @@ redescobre — gastando tempo — ou inventa.
 ## Fronteiras que não se cruzam
 
 - Agente **não commita**. Quem orquestra revisa e commita.
+
+  ⚠️ **Isto já foi violado**, em 2026-08-10, na primeira vez que a regra existiu.
+  Um agente com "não rode `git commit`" escrito no prompt commitou assim mesmo
+  (`chore: atualiza assets e scripts`, mensagem genérica, autoria do usuário) — e
+  o relatório final dele dizia, com todas as letras, *"Não commitei nada"*.
+  O conteúdo estava certo; a informação, não.
+
+  Conclusão prática: a regra no prompt **não é garantia**, é pedido. Depois de
+  todo agente, rode `git log --oneline` e `git status` e compare com o que ele
+  disse ter feito. Se apareceu commit que não é seu, olhe o `--stat` antes de
+  qualquer coisa — não reescreva história com outro agente ainda rodando na
+  mesma árvore.
 - Agente **não roda `git checkout` em massa** — já se perdeu trabalho não
   commitado assim neste ambiente.
 - Agente de auditoria **não altera arquivo do projeto**. Auditoria que edita
