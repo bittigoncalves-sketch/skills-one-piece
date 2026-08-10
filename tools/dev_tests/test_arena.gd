@@ -136,7 +136,9 @@ func _melee() -> void:
 		nomes.append(g["nome"])
 		_ok(c != null, "passo %d (%s) tem clipe" % [i, g["nome"]])
 	print("     ", nomes)
-	# O soco 1 é o clipe espelhado do soco 2: os lados têm que estar trocados.
+	# Os dois socos são clipes AUTORAIS de lados opostos (não mais o mesmo clipe
+	# espelhado). O que o teste garante é o que importa em tela: o primeiro golpe
+	# é de braço direito e o segundo de esquerdo, com folga clara.
 	var d0 := _amplitude(Melee.clipe(0), ["UpperArm_R", "ForeArm_R"])
 	var e0 := _amplitude(Melee.clipe(0), ["UpperArm_L", "ForeArm_L"])
 	var d1 := _amplitude(Melee.clipe(1), ["UpperArm_R", "ForeArm_R"])
@@ -144,6 +146,16 @@ func _melee() -> void:
 	print("     amplitude braço D/E — soco 1: %.0f/%.0f | soco 2: %.0f/%.0f" % [d0, e0, d1, e1])
 	_ok(d0 > e0 * 1.5, "o primeiro soco usa o braço DIREITO")
 	_ok(e1 > d1 * 1.5, "o segundo soco usa o braço ESQUERDO")
+	_ok(Melee.passo(0)["anim"] != Melee.passo(1)["anim"],
+		"os dois socos são clipes DIFERENTES (não o mesmo espelhado)")
+	# A hitbox tem que nascer no frame do impacto. Se o `atraso` for maior que a
+	# duração tocada, o golpe termina antes de machucar alguém.
+	for i in Melee.COMBO.size():
+		var g := Melee.passo(i)
+		var tocada: float = Melee.clipe(i).length / float(g["vel"])
+		_ok(float(g["atraso"]) < tocada,
+			"passo %d (%s): hitbox em %.2fs cabe na animação de %.2fs"
+				% [i, g["nome"], float(g["atraso"]), tocada])
 	var perna := _amplitude(Melee.clipe(2), ["Thigh_R", "Shin_R", "Thigh_L", "Shin_L"])
 	var braco := _amplitude(Melee.clipe(2), ["UpperArm_R", "ForeArm_R", "UpperArm_L", "ForeArm_L"])
 	print("     chute: pernas %.0f vs braços %.0f" % [perna, braco])

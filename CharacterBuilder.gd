@@ -15,6 +15,12 @@ const SKINNED_MODELS := {
 	"nami": "res://assets/models/meshy_nami/meshy_nami.fbx",
 	"blackbeard": "res://assets/models/meshy_blackbeard/meshy_blackbeard.fbx",
 	"crocodile": "res://assets/models/meshy_crocodile/meshy_crocodile.fbx",
+	# Único em GLB (os outros são FBX). Dois detalhes que custaram para descobrir:
+	# o esqueleto dele é Y-up, não Z-up como os FBX do Meshy, e a Armature carrega
+	# `scale 0.01`. Os dois são tratados em runtime pelo SkeletonDriver — o eixo
+	# porque ele é calculado subindo a árvore, e a escala porque o repouso do osso
+	# passa pela cadeia completa até o holder (ver docs/erros.md, 2026-08-10).
+	"bluebuddy": "res://assets/models/meshy_bluebuddy/bluebuddy.glb",
 }
 # Walk NATIVO de cada modelo (bind-pose própria — NÃO reusar entre modelos, senão distorce).
 const SKINNED_WALKS := {

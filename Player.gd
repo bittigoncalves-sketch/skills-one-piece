@@ -128,7 +128,7 @@ var _crosshair: Control
 # ELENCO TRANCADO: só o "base" (decisão do usuário) — é nele que a animação está
 # sendo feita. Os outros modelos continuam no projeto, mas não são selecionáveis:
 # ver CHARS_TRANCADOS em src/ui/CharacterMenu.gd.
-const ELENCO_LIBERADO: Array[String] = ["base"]
+const ELENCO_LIBERADO: Array[String] = ["base", "bluebuddy"]
 
 var character_id: String = "base"
 var _animator: CharacterAnimator

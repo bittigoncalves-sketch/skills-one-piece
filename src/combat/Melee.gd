@@ -13,36 +13,57 @@ extends RefCounted
 #  acaba. Dano baixo e knockback crescente — quem mata é o buraco, não o dano
 #  (mesma filosofia da DamageZone, ver DAMAGE_SCALE lá).
 #
-#  ESPELHAMENTO: a biblioteca do Mixamo só tem soco de braço ESQUERDO
-#  (`punching` — medido: 159° de amplitude no braço E contra 56° no D). Em vez
-#  de arrumar um segundo clipe, o soco direito é o MESMO clipe espelhado em
-#  tempo de carga por `espelhar()`. A conta é exata para o euler YXZ do Godot:
-#  refletir no plano x=0 conjuga a rotação por diag(-1,1,1), o que deixa Rx
-#  intacto e inverte Ry e Rz — ou seja (x, y, z) -> (x, -y, -z) — e troca os
-#  papéis _L <-> _R do rig.
+#  OS DOIS SOCOS SÃO CLIPES DE VERDADE, um de cada lado. Vieram do pacote
+#  Meshy "Blue Block Buddy" e foram medidos (soma UpperArm + ForeArm):
+#
+#    right_upper_hook_from_guard   braço D 477°  x  braço E 144°   (3,3x)
+#    left_uppercut_from_guard      braço E 276°  x  braço D  56°   (4,9x)
+#
+#  Antes disso o combo usava UM clipe só (`punching`, de braço esquerdo — 210°
+#  contra 84°) e produzia o soco direito ESPELHANDO-o. `espelhar()` continua
+#  aqui embaixo, e continua correta, mas o combo não depende mais dela: clipe
+#  autoral lê melhor que reflexão, porque a reflexão também espelha o passo, o
+#  ombro e a guarda.
+#
+#  ⏱️ TEMPO DO IMPACTO — medido, não estimado. `atraso` é o instante, JÁ na
+#  velocidade tocada, em que o membro atinge a extensão máxima:
+#
+#    | clipe                       | duração | impacto | vel  | impacto tocado |
+#    | right_upper_hook_from_guard | 1,77 s  | 0,67 s  | 1,9x | 0,35 s |
+#    | left_uppercut_from_guard    | 1,37 s  | 0,37 s  | 1,25x| 0,30 s |
+#    | kicking                     | 2,30 s  | 1,38 s  | 2,4x | 0,58 s |
+#
+#  (O `kicking` gasta 60% do clipe em preparação — por isso a velocidade dele é
+#  a mais alta das três; sem isso o finalizador demoraria quase 1 s para tocar
+#  no alvo.)
 # ============================================================================
 
 const JANELA := 2.0        # tempo pra encadear o próximo golpe (pedido do usuário)
 
-# Cada passo do combo. `atraso` = quando a hitbox nasce dentro da animação
-# (o golpe tem que CONECTAR no frame do impacto, não no frame do clique).
+# Cada passo do combo.
+#
+# `atraso` = quando a hitbox nasce dentro da animação. O golpe tem que CONECTAR
+# no frame do impacto, não no frame do clique — e esses valores agora saem da
+# MEDIÇÃO acima. Os anteriores eram estimados no olho e erravam para menos: o
+# `punching` conecta em 0,43 s na velocidade tocada, e a hitbox nascia em 0,22 s,
+# ou seja o dano saía antes do punho estender.
 const COMBO := [
 	{
-		"nome": "Soco Direito", "anim": "punching", "espelhar": true, "vel": 1.4,
+		"nome": "Soco Direito", "anim": "right_upper_hook_from_guard", "espelhar": false, "vel": 1.9,
 		"dano": 30.0, "kb": 11.0, "alcance": 1.5, "raio": 1.5,
-		"atraso": 0.22, "vida": 0.18, "recuo": 0.34, "shake": 0.25,
+		"atraso": 0.35, "vida": 0.18, "recuo": 0.40, "shake": 0.25,
 	},
 	{
-		"nome": "Soco Esquerdo", "anim": "punching", "espelhar": false, "vel": 1.4,
+		"nome": "Soco Esquerdo", "anim": "left_uppercut_from_guard", "espelhar": false, "vel": 1.25,
 		"dano": 34.0, "kb": 13.0, "alcance": 1.5, "raio": 1.5,
-		"atraso": 0.22, "vida": 0.18, "recuo": 0.34, "shake": 0.30,
+		"atraso": 0.30, "vida": 0.18, "recuo": 0.36, "shake": 0.30,
 	},
 	{
 		# O finalizador é o que joga pra fora do mapa: mais alcance e o dobro
 		# de knockback dos socos.
-		"nome": "Chute", "anim": "kicking", "espelhar": false, "vel": 1.6,
+		"nome": "Chute", "anim": "kicking", "espelhar": false, "vel": 2.4,
 		"dano": 70.0, "kb": 26.0, "alcance": 2.0, "raio": 1.9,
-		"atraso": 0.42, "vida": 0.22, "recuo": 0.62, "shake": 0.6,
+		"atraso": 0.58, "vida": 0.22, "recuo": 0.62, "shake": 0.6,
 	},
 ]
 
@@ -70,6 +91,12 @@ static func clipe(i: int) -> Animation:
 	return a
 
 # Espelha um clipe do rig de papéis (esquerda <-> direita).
+#
+# NÃO é usada pelo combo desde que entraram os dois socos autorais — fica porque
+# a biblioteca do Mixamo é quase toda de um lado só, e o dia que um golpe novo
+# precisar do lado oposto, isto resolve sem reexportar nada. Validada: no
+# `punching`, 56°/159° vira 159°/56°.
+# Gatilho para apagar: se daqui a alguns golpes nenhum tiver usado, é dívida.
 static func espelhar(orig: Animation) -> Animation:
 	var out: Animation = orig.duplicate(true)
 	for i in out.get_track_count():

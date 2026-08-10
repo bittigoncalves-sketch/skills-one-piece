@@ -42,7 +42,9 @@ ou subir o `servidor.sh` numa máquina com IP público.
 
 ## Personagens e rig
 
-> **Elenco trancado no `base`.** Só ele é selecionável hoje — o trabalho de
+> **Elenco: `base` e `bluebuddy`.** O `bluebuddy` (Meshy, skinnado, GLB) entrou
+> em 2026-08-10 como personagem adicional — o `base` continua sendo o padrão e o
+> rollback. Os demais seguem fora do menu — o trabalho de
 > animação está concentrado nesse personagem. Ace, Nami, Barba Negra, Crocodile
 > e Buggy continuam no projeto, mas fora do menu. Para liberar, acrescente o id
 > em `Player.ELENCO_LIBERADO` e em `CHARS` (`src/ui/CharacterMenu.gd`).
@@ -74,8 +76,9 @@ A contagem é **autoridade do servidor** — ver
 [`src/match/Scoreboard.gd`](src/match/Scoreboard.gd).
 
 **Corpo a corpo** no botão esquerdo do mouse: soco direito → soco esquerdo →
-chute, encadeáveis dentro de 2 s. Não gasta energia. Ver
-[`src/combat/Melee.gd`](src/combat/Melee.gd).
+chute, encadeáveis dentro de 2 s. Não gasta energia. Cada golpe usa um clipe
+autoral de lado próprio, e a hitbox nasce no **frame do impacto** (medido, não
+estimado). Ver [`src/combat/Melee.gd`](src/combat/Melee.gd).
 
 > Os **inimigos não nascem mais no mapa** — o foco é luta entre jogadores. O
 > código deles está inteiro em [`disabled/enemies/`](disabled/enemies/), ainda

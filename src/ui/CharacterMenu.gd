@@ -8,6 +8,7 @@ extends PanelContainer
 # concentrado nele; os demais voltam descomentando as linhas abaixo.
 const CHARS := [
 	{"id": "base", "nome": "Base (voxel)"},
+	{"id": "bluebuddy", "nome": "Blue Buddy (skinnado)"},
 ]
 
 # Fora de uso enquanto o elenco está trancado — mantidos para não perder os ids.
