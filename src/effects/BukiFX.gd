@@ -53,6 +53,13 @@ static func _mat_aco(emissivo: bool = false) -> StandardMaterial3D:
 # Acha o membro no rig e pendura a arma nele. Funciona nos dois tipos de
 # personagem: no voxel os papéis são nós; no skinnado o BodyScanner criou
 # proxies com os mesmos nomes (ver src/anim/SkeletonDriver.gd).
+#
+# ⚠️ No skinnado o proxy GIRA com a animação mas não TRANSLADA: ele fica parado
+# na posição de repouso do osso, e quem se move de verdade é o osso dentro do
+# Skeleton3D. Então a arma nasce no lugar certo do corpo e acompanha a rotação
+# do membro, mas não segue o osso quando o pai o desloca. Se um dia isso
+# incomodar, o caminho é um BoneAttachment3D — e aí cuidado: ele herda a escala
+# e o espaço Z-up do esqueleto, o que não vale pros proxies.
 static func _membro(caster: Node, papel: String) -> Node3D:
 	if caster == null:
 		return null

@@ -921,6 +921,19 @@ func _setup_character_model(cid: String) -> void:
 			model_ap.active = false
 		_setup_procedural_anim(cid)
 		_head_node = _char_model.find_child("Head", true, false) as Node3D
+		# A pistola TAMBÉM vale no skinnado. Ela ficava de fora por acidente: o
+		# `return` logo abaixo pulava a chamada que está depois deste bloco, então
+		# nenhum personagem skinnado nunca teve pistola no golpe Z.
+		#
+		# Isso só passou a funcionar agora porque o `_attach_pistol` acha o membro
+		# por `find_child("ForeArm_R")`, e até hoje os proxies do rig se chamavam
+		# `RoleProxy_ForeArm_R` (ver docs/erros.md, 2026-08-10). Consertar um sem
+		# o outro não adiantaria nada.
+		#
+		# ⚠️ O proxy GIRA com a animação mas não TRANSLADA — a pistola nasce na
+		# posição de repouso da mão e acompanha a rotação, não o deslocamento do
+		# osso. Mesma limitação das armas da Buki Buki.
+		_attach_pistol(_char_model)
 		return
 
 	_attach_pistol(_char_model)   # pistola na mão direita (oculta até a rajada Z)

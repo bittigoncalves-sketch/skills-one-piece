@@ -38,6 +38,36 @@ func _run() -> void:
 			model.queue_free()
 			continue
 
+		# --- os 13 papéis têm que ser acháveis pelo NOME PURO ---
+		# `Player._attach_pistol`, a âncora da cabeça do fôlego e `BukiFX._membro`
+		# acham o membro por `find_child("<papel>")`. Enquanto os proxies se
+		# chamavam `RoleProxy_<papel>` os três recebiam null em todo skinnado, e
+		# nenhum teste pegava: o `test_buki_buki` roda só no `base`, que é voxel e
+		# tem os nós de verdade (docs/erros.md, 2026-08-10).
+		var sem_nome: Array = []
+		for r in BodyScanner.ROLES:
+			if model.find_child(r, true, false) == null:
+				sem_nome.append(r)
+		if sem_nome.is_empty():
+			print("  find_child(<papel>): 13/13 ok")
+		else:
+			print("  ✗ find_child não acha pelo nome puro: ", sem_nome)
+			falhas += 1
+
+		# --- as métricas têm que estar em METROS do jogo ---
+		# O repouso dos ossos vem em unidades CRUAS do esqueleto; num GLB
+		# exportado pelo Blender a Armature carrega scale 0.01, então sem
+		# converter pro espaço do holder a perna media ~60 em vez de ~0.6 — e a
+		# cadência da marcha caía 100×, com o personagem deslizando de perna
+		# parada. Faixa medida nos 4 Meshy: coxa 0.18–0.39, perna 0.51–0.68.
+		var met: Dictionary = prof["metrics"]
+		var perna: float = met.get("leg_len", 0.0)
+		print("  métricas: coxa %.3f | canela %.3f | perna %.3f" % [
+			met.get("thigh_len", 0.0), met.get("shin_len", 0.0), perna])
+		if perna < 0.2 or perna > 2.0:
+			print("  ✗ leg_len fora da escala do jogo (esperado 0.2–2.0 m) — escala do esqueleto não convertida?")
+			falhas += 1
+
 		var skel: Skeleton3D = _find_skel(model)
 		var b_arm := skel.find_bone("LeftArm")
 		var b_leg := skel.find_bone("RightUpLeg")

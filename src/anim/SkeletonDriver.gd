@@ -89,6 +89,33 @@ var _pos_scale := 1.0              # escala do esqueleto vs. rig voxel de refer�
 # Devolve o dicionário {papel -> Node3D} pro BodyScanner.
 func setup(skel: Skeleton3D, holder: Node3D) -> Dictionary:
 	_skel = skel
+
+	# Cadeia de transformações do ESQUELETO até o holder, percorrida UMA vez.
+	# Ela rende duas coisas diferentes, e confundir as duas já custou caro:
+	#
+	#  - `to_holder`: a transformação COMPLETA (com escala). Converte o repouso
+	#    dos ossos, que vem em unidades CRUAS do esqueleto, para o espaço do
+	#    holder — que é onde os proxies vivem e onde o BodyScanner mede o corpo.
+	#    Num FBX a cadeia é rotação pura (escala 1) e isto não muda nada; num GLB
+	#    exportado pelo Blender a Armature carrega `scale 0.01`, e sem a
+	#    conversão TODA métrica (thigh_len, shin_len, leg_len…) sai 100× maior —
+	#    o que joga a cadência da marcha para ~1/100 e o personagem desliza com
+	#    as pernas quase paradas.
+	#
+	#  - `_axis`: a MESMA cadeia, mas ortonormalizada (só rotação). É a basis que
+	#    leva do espaço do esqueleto pro espaço do personagem, usada na
+	#    conjugação dos deltas em `push()`. Nos modelos Meshy a Armature está
+	#    girada −90° em X (o esqueleto é Z-up).
+	var to_holder := Transform3D()
+	var b := Basis()
+	var n: Node3D = skel
+	while n != null and n != holder:
+		to_holder = n.transform * to_holder
+		b = n.transform.basis.orthonormalized() * b
+		n = n.get_parent() as Node3D
+	_axis = b
+	_axis_inv = b.inverse()
+
 	for role in BONE_ALIASES:
 		var idx := -1
 		for alias in BONE_ALIASES[role]:
@@ -102,9 +129,21 @@ func setup(skel: Skeleton3D, holder: Node3D) -> Dictionary:
 
 		# Proxy posicionado onde o osso descansa, para o BodyScanner medir o
 		# corpo (passada, balanço, IK) com os números reais deste modelo.
+		#
+		# NOME = o papel PURO, sem prefixo. Não é cosmético: `Player._attach_pistol`,
+		# a âncora da cabeça do fôlego (`Player.gd`) e `BukiFX._membro` acham o
+		# membro por `find_child("<papel>")`. Com o antigo `RoleProxy_<papel>` os
+		# três recebiam `null` em TODO personagem skinnado (ver docs/erros.md,
+		# 2026-08-10) — a arma da Buki Buki chegava a nascer na origem do mundo.
+		#
+		# Colisão de nome é impossível por construção: o BodyScanner só cria o
+		# driver quando NENHUM nó do modelo se chama como um papel (`_collect`
+		# varre a árvore inteira e, se achar algum, usa os nós direto e nem
+		# instancia o driver). Medido nos 4 Meshy + no GLB novo: `find_child` dos
+		# 13 papéis → null antes de criar os proxies.
 		var p := Node3D.new()
-		p.name = "RoleProxy_" + role
-		p.position = skel.get_bone_global_rest(idx).origin
+		p.name = role
+		p.position = to_holder * skel.get_bone_global_rest(idx).origin
 		holder.add_child(p)
 		_proxy[role] = p
 
@@ -113,15 +152,7 @@ func setup(skel: Skeleton3D, holder: Node3D) -> Dictionary:
 	for i in skel.get_bone_count():
 		_rest_global[i] = skel.get_bone_global_rest(i).basis.orthonormalized()
 
-	# Basis que leva do espaço do ESQUELETO pro espaço do personagem. Nos modelos
-	# Meshy a Armature está girada −90° em X (o esqueleto é Z-up).
-	var b := Basis()
-	var n: Node3D = skel
-	while n != null and n != holder:
-		b = n.transform.basis.orthonormalized() * b
-		n = n.get_parent() as Node3D
-	_axis = b
-	_axis_inv = b.inverse()
+	# (`_axis`/`_axis_inv` já saíram da mesma cadeia percorrida no topo do setup.)
 
 	# Osso raiz (sem pai): é ele que sobe/desce no bob do torso.
 	for i in skel.get_bone_count():
@@ -131,6 +162,13 @@ func setup(skel: Skeleton3D, holder: Node3D) -> Dictionary:
 			break
 
 	# Normaliza deslocamentos: o bob é autorado pro rig voxel (perna 0.60).
+	#
+	# ⚠️ Esta perna fica de propósito em unidades CRUAS do esqueleto — NÃO passe
+	# por `to_holder`. O bob sai daqui em unidades de osso e é escrito com
+	# `set_bone_pose_position`, que o `Armature` reaplica com a própria escala
+	# (0.01 no GLB do Blender): o mesmo fator se cancela nas duas pontas. Dividir
+	# aqui deixaria o bob 100× pequeno. Só as MÉTRICAS do BodyScanner (acima)
+	# precisam do espaço do holder, porque são consumidas em metros do jogo.
 	if _bone.has("Thigh_L") and _bone.has("Foot_L"):
 		var hip: Vector3 = skel.get_bone_global_rest(_bone["Thigh_L"]).origin
 		var foot: Vector3 = skel.get_bone_global_rest(_bone["Foot_L"]).origin
