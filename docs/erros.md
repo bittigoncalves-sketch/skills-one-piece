@@ -7,6 +7,83 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-10 — Proxies do rig se chamam `RoleProxy_<papel>`, e três sistemas procuram `<papel>`
+
+**Sintoma:** ⚠️ **latente — ninguém viu ainda**, porque o elenco está trancado no
+`base`, que é voxel. Passa a acontecer no instante em que um personagem
+**skinnado** virar jogável: a pistola do Z (mera/hie) não aparece, o fôlego perde
+a âncora da cabeça, e as armas da Buki Buki **flutuam na origem do mundo** em vez
+de nascer no braço.
+
+**Causa raiz:** no personagem voxel os papéis do rig são **nós com o nome do
+papel** (`ForeArm_R`, `Head`). No skinnado não existem esses nós — o
+`SkeletonDriver` cria proxies e os nomeia com prefixo:
+
+```gdscript
+# src/anim/SkeletonDriver.gd:106
+p.name = "RoleProxy_" + role
+```
+
+Só que três lugares procuram o nome **puro**:
+
+| lugar | busca | resultado no skinnado |
+|---|---|---|
+| `Player._attach_pistol()` | `find_child("ForeArm_L/R")` | `null` → pistola nunca aparece |
+| `Player.gd:923` e `:973` | `find_child("Head")` | `null` → `_head_node` vazio |
+| `BukiFX._membro()` | `find_child(papel)` | `null` → cai no fallback e pendura a arma em `current_scene` |
+
+**Evidência:** medido nos 4 modelos Meshy — `find_child("ForeArm_R")` → `null`;
+`find_child("RoleProxy_ForeArm_R")` → `Node3D`. O comentário no topo de
+`BukiFX._membro()` afirma que "no skinnado o BodyScanner criou proxies com os
+mesmos nomes" — **está errado**, e foi essa afirmação que escondeu o problema.
+
+**Descartado:** não é o `SkeletonDriver` falhando em resolver papéis — ele
+resolve **13/13** em todos os Meshy. O rig está certo; o que não bate é o nome
+pelo qual os outros sistemas o procuram.
+
+**Correção:** ⏳ pendente. O conserto barato é fazer o driver nomear o proxy com
+o papel puro (`p.name = role`), o que conserta os três de uma vez. A alternativa
+é os três aceitarem os dois nomes.
+
+**Como detectar de novo:** teste que, para cada personagem **skinnado**, exija
+`_membro(caster, "ForeArm_R") != null` e `_attach_pistol` produzir nó visível.
+Hoje `tools/dev_tests/test_buki_buki.gd` roda só no `base` (voxel), onde os nós
+existem de verdade — por isso passa verde com o bug presente.
+
+---
+
+## 2026-08-10 — Baker do Mixamo salva `.res` vazio e retorna sucesso
+
+**Sintoma:** ⚠️ **latente.** Ao assar um `.glb` cujo esqueleto não use os nomes
+`mixamorig_*` (por exemplo, um modelo Meshy exportado pelo Blender), o baker
+grava o arquivo, **não emite erro nenhum** e reporta sucesso — mas o `.res` sai
+com faixas sem uma única chave.
+
+**Causa raiz:** o `MAP` em `tools/bake_mixamo.gd` (linhas 18-22) mapeia papel →
+osso usando **só** nomes `mixamorig_*`. Quando nenhum casa, `rest` fica vazio e
+os `continue` do laço pulam todas as inserções de chave. Não há checagem de
+"quantos ossos eu encontrei?" antes de salvar.
+
+**Evidência:** no modelo Meshy novo — `MAP` original: **0 de 12 ossos
+encontrados**, `.res` salvo sem erro. Com aliases Meshy acrescentados
+(`Spine`, `LeftArm`, `LeftForeArm`, …): **13/13**, e os 6 clipes assam com
+121/42/53/19/27/31 chaves reais.
+
+**Descartado:** não é o `GLTFDocument` nem o `fbx_to_glb.py` — o `.glb` de
+entrada tem as curvas; é o mapeamento de nomes dentro do baker que não casa.
+
+**Correção:** ⏳ pendente. Acrescentar os aliases Meshy ao `MAP`, incluir `Neck`
+(que o `SkeletonDriver` tem e o baker não), e **abortar com erro** quando o
+número de ossos resolvidos for zero — falha silenciosa em passo de asset é o modo
+mais caro de errar neste projeto (ver a entrada do `hurricane_kick` abaixo).
+
+**Como detectar de novo:** depois de qualquer bake, rodar
+`godot --headless --path . --script tools/dev_tests/medir_amplitude_res.gd`.
+Clipe vazio ou congelado acusa na hora; o tamanho do arquivo e a contagem de
+faixas, não.
+
+---
+
 ## 2026-08-10 — `hurricane_kick` toca com os membros congelados
 
 **Sintoma:** o clipe existe, tem duração e chaves, e é ciclado normalmente no
