@@ -252,17 +252,23 @@ static func geppo_effect(world: Node, feet_pos: Vector3, move_dir: Vector3 = Vec
 				trail.emitting = false
 				autofree(trail, 0.4))
 
-# ---- ROLL EFFECT (Cópia horizontal do Geppo) ----
-static func roll_effect(world: Node, base_pos: Vector3, move_dir: Vector3) -> void:
+# ---- DASH EFFECT (Cópia horizontal do Geppo) ----
+# `move_dir` é para onde o jogador ARRANCA. Todo o efeito nasce do lado CONTRÁRIO
+# — é o ar deixado para trás no arranque, então ele fica visível atrás do corpo em
+# vez de ser atropelado por ele.
+const DASH_FX_RECUO := 0.6   # metros atrás do jogador onde o efeito nasce
+
+static func dash_effect(world: Node, base_pos: Vector3, move_dir: Vector3) -> void:
 	if world == null or move_dir.length_squared() < 0.01:
 		return
-		
+
 	var fwd := move_dir.normalized()
 	var up := Vector3.UP if abs(fwd.y) < 0.95 else Vector3.FORWARD
 	var right := fwd.cross(up).normalized()
 	var real_up := right.cross(fwd).normalized()
 	var ring_basis := Basis(right, real_up, -fwd)
-	
+	var recuo := -fwd * DASH_FX_RECUO   # deslocamento p/ TRÁS do movimento
+
 	# 1. Anel Externo de Ar Comprimido (Onda de choque principal)
 	var mi_out := MeshInstance3D.new()
 	var tm_out := TorusMesh.new()
@@ -280,8 +286,8 @@ static func roll_effect(world: Node, base_pos: Vector3, move_dir: Vector3) -> vo
 	mi_out.material_override = mat_out
 	mi_out.scale = Vector3(0.35, 0.25, 0.35)
 	world.add_child(mi_out)
-	mi_out.global_position = base_pos + Vector3(0, 1.0, 0)
-	
+	mi_out.global_position = base_pos + Vector3(0, 1.0, 0) + recuo
+
 	# Rotaciona para que o anel fique de pé e cresça perpendicular ao fwd
 	mi_out.transform.basis = ring_basis.rotated(right, PI/2.0)
 	
@@ -308,7 +314,7 @@ static func roll_effect(world: Node, base_pos: Vector3, move_dir: Vector3) -> vo
 	mi_in.material_override = mat_in
 	mi_in.scale = Vector3(0.2, 0.35, 0.2)
 	world.add_child(mi_in)
-	mi_in.global_position = base_pos + Vector3(0, 1.0, 0) + fwd * 0.1
+	mi_in.global_position = base_pos + Vector3(0, 1.0, 0) + recuo - fwd * 0.1
 	mi_in.transform.basis = ring_basis.rotated(right, PI/2.0)
 	
 	var tw2 := mi_in.create_tween()
@@ -317,7 +323,7 @@ static func roll_effect(world: Node, base_pos: Vector3, move_dir: Vector3) -> vo
 	tw2.tween_property(mat_in, "albedo_color:a", 0.0, 0.25)
 	tw2.tween_callback(mi_in.queue_free).set_delay(0.26)
 
-	# 3. Explosão Voxel de Ar (Cubos atirados na direção CONTRÁRIA ao roll)
+	# 3. Explosão Voxel de Ar (Cubos atirados na direção CONTRÁRIA ao dash)
 	var pm := ParticleProcessMaterial.new()
 	pm.direction = -fwd
 	pm.spread = 45.0
@@ -335,5 +341,5 @@ static func roll_effect(world: Node, base_pos: Vector3, move_dir: Vector3) -> vo
 	
 	var burst := particles(45, 0.45, true, pm, voxel_mesh, 0.92)
 	world.add_child(burst)
-	burst.global_position = base_pos + Vector3(0, 0.5, 0)
+	burst.global_position = base_pos + Vector3(0, 0.5, 0) + recuo
 	autofree(burst, 0.7)

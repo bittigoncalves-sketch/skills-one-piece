@@ -83,11 +83,17 @@ var _space_was: bool = false  # borda do Espaço (salto longo só na batida, nã
 var _was_on_floor: bool = false   # Parkour: detecção de POUSO (#4)
 var _fall_peak: float = 0.0       # maior velocidade de queda acumulada no ar
 var _precision_armed: bool = false # Espaço no ar armou o pouso de precisão
-var _roll_t: float = 0.0          # janela da animação de rolamento (pós-pouso)
-var _is_aiming_roll: bool = false # Segurando Q para rolar
-var _roll_cooldown: float = 0.0   # Recarga da esquiva
-var _roll_dash_t: float = 0.0     # Duração do movimento (dash) do roll
-var _roll_dir: Vector3 = Vector3.FORWARD # Direção guardada para o roll
+var _roll_t: float = 0.0          # janela da animação de ROLAMENTO (pós-pouso e dash)
+# DASH (Q): esquiva curta e invencível. A DISTÂNCIA é o parâmetro de design; a
+# velocidade sai dela. Assim mudar o alcance não obriga a recalcular nada, e o
+# alcance fica escrito em metros no código em vez de escondido num multiplicador.
+const DASH_DISTANCE := 4.0        # metros percorridos por dash
+const DASH_TIME := 0.4            # segundos de deslocamento
+const DASH_COOLDOWN := 1.5        # recarga entre dashes
+var _is_aiming_dash: bool = false # Segurando Q para dar o dash
+var _dash_cooldown: float = 0.0   # Recarga da esquiva
+var _dash_t: float = 0.0          # Tempo restante do movimento (dash)
+var _dash_dir: Vector3 = Vector3.FORWARD # Direção TRAVADA no disparo do dash
 var _bob_t: float = 0.0       # fase do balanço de câmera (head bob) ao andar/correr
 # Mera Mera Z: rajada de balas de fogo (segura pra atirar; para ao soltar ou 16 balas).
 const RAPID_INTERVAL := 0.09
@@ -497,26 +503,38 @@ func _physics_process(delta: float) -> void:
 	if _roll_t > 0.0:
 		_roll_t -= delta
 
-	if _roll_cooldown > 0.0:
-		_roll_cooldown = maxf(_roll_cooldown - delta, 0.0)
-	
-	if _roll_dash_t > 0.0:
-		_roll_dash_t = maxf(_roll_dash_t - delta, 0.0)
-		if _roll_dash_t <= 0.0:
+	if _dash_cooldown > 0.0:
+		_dash_cooldown = maxf(_dash_cooldown - delta, 0.0)
+
+	var q_pressed := Input.is_physical_key_pressed(KEY_Q) and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	if q_pressed and _dash_cooldown <= 0.0 and _dash_t <= 0.0 and not _charging and not _rapid_fire and not _yami_pistol_active:
+		_is_aiming_dash = true
+	elif not q_pressed and _is_aiming_dash:
+		_is_aiming_dash = false
+		_dash_t = DASH_TIME
+		_roll_t = DASH_TIME               # dispara a animação de rolamento
+		_dash_cooldown = DASH_COOLDOWN
+		set_meta("damage_immune", true)
+		# Direção = TECLA segurada (W frente, D lado, S ré...). Sem tecla nenhuma,
+		# usa a frente da câmera. Os dois já vêm do yaw puro, sem pitch: o dash é
+		# sempre horizontal, e a suspensão da gravidade não vira empuxo.
+		# Travada aqui: a esquiva vai aonde o jogador apontou ao disparar, e girar
+		# a câmera no meio do dash não a curva.
+		_dash_dir = dir.normalized() if dir.length_squared() > 0.01 else forward
+		FxUtil.dash_effect(get_tree().current_scene, global_position, _dash_dir)
+
+	# Consome o tempo de dash DEPOIS do gatilho, para o disparo já andar neste frame.
+	# `dash_step` é quanto do dash cabe no frame: no último ele é MENOR que o delta.
+	# Sem isso o dash anda um frame inteiro a mais (o `_dash_t` não zera exato — 1/60
+	# não tem representação binária finita) e passa ~4% da distância pedida.
+	var dash_step := 0.0
+	if _dash_t > 0.0:
+		dash_step = minf(_dash_t, delta)
+		_dash_t = maxf(_dash_t - delta, 0.0)
+		if _dash_t <= 0.0:
 			set_meta("damage_immune", false) # Finaliza a invencibilidade
 
-	var q_pressed = Input.is_physical_key_pressed(KEY_Q) and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
-	if q_pressed and _roll_cooldown <= 0.0 and _roll_dash_t <= 0.0 and not _charging and not _rapid_fire and not _yami_pistol_active:
-		_is_aiming_roll = true
-	elif not q_pressed and _is_aiming_roll:
-		_is_aiming_roll = false
-		_roll_dash_t = 0.4
-		_roll_t = 0.4
-		_roll_cooldown = 1.5
-		set_meta("damage_immune", true)
-		_roll_dir = -_cam.global_transform.basis.z.normalized()
-		FxUtil.roll_effect(get_tree().current_scene, global_position, _roll_dir)
-			
+
 	var effective_speed := SPEED * speed_multiplier * (1.5 if is_sprinting else 1.0)
 	if _long_jump_t > 0.0:
 		effective_speed *= 1.5   # Parkour: impulso horizontal (salto longo / vault)
@@ -600,10 +618,12 @@ func _physics_process(delta: float) -> void:
 			if _proc_anim:
 				_proc_anim.trigger_recovery("Z")
 
-		if _roll_dash_t > 0.0:
-			_roll_dir = -_cam.global_transform.basis.z.normalized()
-			var dash_speed = SPEED * speed_multiplier * 1.5
-			velocity = _roll_dir * dash_speed
+		if dash_step > 0.0:
+			# Velocidade constante na direção travada, derivada da distância alvo.
+			# O fator dash_step/delta encurta SÓ o último frame (nos demais é 1.0).
+			# Sobrescrever o `velocity` inteiro zera o Y de propósito: durante o
+			# dash NÃO há gravidade (nem queda, nem subida — só o plano).
+			velocity = _dash_dir * (DASH_DISTANCE / DASH_TIME) * (dash_step / delta)
 		else:
 			velocity.x = dir.x * effective_speed
 			velocity.z = dir.z * effective_speed
@@ -616,8 +636,8 @@ func _physics_process(delta: float) -> void:
 			# (wall_normal aponta da parede para o jogador). Daí atan2(wn.x, wn.z).
 			var target_rot := atan2(wall_normal.x, wall_normal.z)
 			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, target_rot, 24.0 * delta)
-		elif _roll_dash_t > 0.0:
-			var move_rot := atan2(-_roll_dir.x, -_roll_dir.z)
+		elif _dash_t > 0.0:
+			var move_rot := atan2(-_dash_dir.x, -_dash_dir.z)
 			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, move_rot, 35.0 * delta)
 		elif dir.length_squared() > 0.01:
 			var move_rot := atan2(-dir.x, -dir.z)
