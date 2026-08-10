@@ -18,6 +18,7 @@ const COLOR_CARD_HOVER := Color(0.95, 0.96, 0.98, 1.0)
 
 var _device_options: Array = []
 var _online_input: LineEdit
+var _lan_status: Label
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -151,6 +152,33 @@ func _build_ui() -> void:
 	btn_create.add_theme_font_size_override("font_size", 15)
 	btn_create.pressed.connect(_on_create_server_pressed)
 	online_vbox.add_child(btn_create)
+
+	# --- CONECTAR POR LAN ---
+	# Caminho SEM digitação: o host anuncia por UDP e este botão acha sozinho.
+	# Fica logo abaixo do CRIAR SERVIDOR porque é o par natural dele — um abre a
+	# sala, o outro entra nela. O campo de ID continua abaixo, para internet.
+	var btn_lan := Button.new()
+	btn_lan.text = "🔍  CONECTAR POR LAN"
+	btn_lan.custom_minimum_size = Vector2(0, 40)
+	btn_lan.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var lan_style := in_style.duplicate()
+	lan_style.bg_color = Color(0.13, 0.55, 0.35, 1.0)
+	lan_style.border_color = Color(0.08, 0.40, 0.25, 1.0)
+	btn_lan.add_theme_stylebox_override("normal", lan_style)
+	btn_lan.add_theme_stylebox_override("hover", _hover_style(lan_style))
+	btn_lan.add_theme_stylebox_override("pressed", lan_style)
+	btn_lan.add_theme_color_override("font_color", Color(1, 1, 1))
+	btn_lan.add_theme_font_size_override("font_size", 15)
+	btn_lan.pressed.connect(_on_lan_pressed.bind(btn_lan))
+	online_vbox.add_child(btn_lan)
+
+	_lan_status = Label.new()
+	_lan_status.add_theme_font_size_override("font_size", 12)
+	_lan_status.add_theme_color_override("font_color", COLOR_TEXT_DARK)
+	_lan_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_lan_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_lan_status.visible = false
+	online_vbox.add_child(_lan_status)
 
 	# --- ENTRAR POR ID ---
 	var online_hbox := HBoxContainer.new()
@@ -431,6 +459,30 @@ func _on_singleplayer_pressed() -> void:
 func _on_create_server_pressed() -> void:
 	# Cria a sala (host). O ID gerado (codifica o IP do host) aparece no HUD do jogo.
 	GameFlow.create_room()
+
+# Procura uma sala aberta na rede local e entra. Sem digitar nada.
+# É corrotina porque a busca escuta o farol por alguns segundos — o botão fica
+# desabilitado e com texto de progresso, senão parece que o clique não pegou.
+func _on_lan_pressed(btn: Button) -> void:
+	btn.disabled = true
+	var texto_original := btn.text
+	btn.text = "🔍  PROCURANDO..."
+	_lan_status.visible = true
+	_lan_status.text = "ouvindo a rede local…"
+	_lan_status.add_theme_color_override("font_color", COLOR_TEXT_DARK)
+
+	var r: Dictionary = await GameFlow.join_lan()
+
+	# Se deu certo, a cena já trocou e este nó pode nem existir mais.
+	if not is_instance_valid(btn):
+		return
+	btn.disabled = false
+	btn.text = texto_original
+	if bool(r.get("ok", false)):
+		_lan_status.text = "conectado em %s" % str(r.get("ip", ""))
+		return
+	_lan_status.text = "%s.\nUse o ID da sala abaixo se o host estiver em outra rede." % str(r.get("motivo", "falhou"))
+	_lan_status.add_theme_color_override("font_color", Color(0.75, 0.25, 0.2))
 
 func _on_join_pressed() -> void:
 	var id := _online_input.text.strip_edges()

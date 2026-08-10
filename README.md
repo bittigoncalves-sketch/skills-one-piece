@@ -33,8 +33,16 @@ sozinho.
 Cliente-servidor com **ENet**, servidor-autoritário. O modo um-jogador roda o
 mesmo código, com um servidor local.
 
-O **ID da sala** (7 caracteres) codifica o IP do host em base32. Quem hospeda vê
-o ID no HUD; quem entra digita o ID — ou um IP direto.
+**Na mesma rede local, ninguém precisa digitar nada:** quem hospeda vira um
+farol (anúncio UDP em difusão a cada segundo) e quem entra clica em **CONECTAR
+POR LAN**, que escuta a rede e conecta no primeiro host que responder. O IP vem
+do próprio pacote, então máquina com várias placas (Wi-Fi, cabo, Docker, VPN) não
+confunde. Medido: host achado em ~0,5 s. Ver
+[`network/LanDiscovery.gd`](network/LanDiscovery.gd).
+
+Para fora da LAN continua valendo o **ID da sala**: 7 caracteres que codificam o
+IP do host em base32. Quem hospeda vê o ID no HUD; quem entra digita o ID — ou um
+IP direto. (Difusão UDP não atravessa roteador.)
 
 ⚠️ O ID carrega um IP **privado**, então funciona na **mesma rede local**. Para
 jogar pela internet é preciso port-forward da porta `24565` no roteador do host,

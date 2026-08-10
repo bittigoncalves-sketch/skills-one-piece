@@ -16,6 +16,9 @@ var mode: int = Mode.NONE
 var room_id: String = ""
 var device: String = "pc"          # "celular" | "tablet" | "pc"
 var is_dedicated: bool = false     # servidor dedicado (headless, sem player local)
+# Farol da LAN: anuncia esta máquina por UDP enquanto ela hospeda, para quem
+# entrar não precisar digitar ID nem IP. Ver network/LanDiscovery.gd.
+var _farol: LanDiscovery = null
 
 func _ready() -> void:
 	print("[GameFlow] Display Server (Driver): ", DisplayServer.get_name())
@@ -38,6 +41,7 @@ func start_dedicated(port: int = NetConf.DEFAULT_PORT) -> void:
 		push_error("[GameFlow] servidor dedicado falhou na porta %d" % port)
 		return
 	print("[GameFlow] SERVIDOR DEDICADO no ar (porta %d, sala %s)" % [port, room_id])
+	_ligar_farol_lan(port)   # dedicado também se anuncia: é o caso onde ninguém tem o ID
 	_enter_world()
 
 # ---- 3 MODOS (a mesma "entrada no mundo" p/ não duplicar lógica) ----
@@ -58,7 +62,36 @@ func create_room() -> void:
 		push_error("[GameFlow] falha ao criar sala")
 		return
 	print("[GameFlow] Sala criada -> ID ", room_id)
+	_ligar_farol_lan(NetConf.DEFAULT_PORT)
 	_enter_world()
+
+# ---- CONECTAR POR LAN: entrar sem digitar nada ----
+# O host anuncia por UDP em difusão; aqui a gente escuta e conecta no primeiro
+# que responder. Ver network/LanDiscovery.gd.
+#
+# É corrotina (precisa esperar o farol) — quem chama usa `await`.
+func join_lan(espera: float = LanDiscovery.ESPERA_PADRAO) -> Dictionary:
+	var achado: Dictionary = await LanDiscovery.procurar(self, espera)
+	if achado.is_empty():
+		return {"ok": false, "motivo": "nenhuma sala aberta encontrada na rede local"}
+	var ip: String = str(achado.get("ip", ""))
+	mode = Mode.CLIENT
+	room_id = str(achado.get("sala", ""))
+	if not ClientManager.join(ip):
+		push_error("[GameFlow] achei o host em %s mas a conexão falhou" % ip)
+		return {"ok": false, "motivo": "achei o host em %s, mas a conexão falhou" % ip}
+	_enter_world()
+	return {"ok": true, "ip": ip, "sala": room_id}
+
+# O farol vive no próprio GameFlow (autoload), então sobrevive à troca de cena
+# para o mundo — se morresse junto com o menu, o anúncio parava justamente
+# quando a sala fica disponível.
+func _ligar_farol_lan(porta: int) -> void:
+	if _farol == null:
+		_farol = LanDiscovery.new()
+		_farol.name = "LanDiscovery"
+		add_child(_farol)
+	_farol.iniciar_farol(porta, room_id)
 
 func join_room(id: String) -> bool:
 	var code := id.strip_edges()
