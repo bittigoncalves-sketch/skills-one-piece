@@ -170,7 +170,7 @@ func _melee() -> void:
 # que está em uso é MESMO o .glb.
 func _buki() -> void:
 	print("\n-- 5. armas da Buki Buki em .glb --")
-	for nome in ["metralhadora", "lamina", "canhao"]:
+	for nome in ["metralhadora", "sniper", "canhao"]:
 		var caminho: String = BukiFX.ARMAS[nome]
 		_ok(ResourceLoader.exists(caminho), "%s: asset existe (%s)" % [nome, caminho.get_file()])
 		var arma := BukiFX._arma(nome)
@@ -188,10 +188,9 @@ func _buki() -> void:
 			print("     %-14s %5d tris  tam=(%.2f, %.2f, %.2f)" % [nome, tris, ab.size.x, ab.size.y, ab.size.z])
 			# A arma aponta pra FRENTE do Godot (−Z). Se o eixo tivesse virado na
 			# exportação, ela sairia apontando pra trás e o jogador atiraria em si.
-			if nome != "lamina":
-				_ok(ab.position.z < -0.5, "%s: o cano aponta pra frente (−Z)" % nome)
-			else:
-				_ok(ab.size.y > 1.0, "lâmina: comprida no eixo do braço (−Y)")
+			# Regra única desde que a lâmina saiu: as três são armas de cano, e a
+			# lâmina era a exceção que exigia o `if` aqui.
+			_ok(ab.position.z < -0.5, "%s: o cano aponta pra frente (−Z)" % nome)
 			arma.queue_free()
 
 func _malhas(n: Node) -> Array:

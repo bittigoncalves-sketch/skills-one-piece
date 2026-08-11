@@ -9,7 +9,7 @@ ASSET: modeladas, com bisel, e exportadas pro jogo apenas instanciar.
 Rodar:
     blender --background --python tools/blender/buki_weapons.py
 
-Saída: assets/models/weapons/buki_{metralhadora,lamina,canhao}.glb
+Saída: assets/models/weapons/buki_{metralhadora,sniper,canhao}.glb
 
 --------------------------------------------------------------------- EIXOS
 O Godot usa Y para cima e −Z para frente. O exportador glTF converte do Blender
@@ -200,35 +200,59 @@ def metralhadora():
     return exportar("buki_metralhadora")
 
 
-# ------------------------------------------------------------------------ LÂMINA
-def lamina():
-    """Braço-lâmina (slot X). A lâmina desce em −Z (o braço aponta pra baixo)."""
+# ------------------------------------------------------------------------ SNIPER
+def sniper():
+    """Braço-sniper (slot C). Cano longo em +Y, luneta em cima (+Z).
+
+    Substituiu a LÂMINA, que ficou sem uso quando a fruta virou kit de FPS.
+
+    A silhueta é o que diferencia a sniper da metralhadora à distância, e ela
+    vive de três coisas: cano MUITO mais longo e mais fino, luneta alta com dois
+    anéis, e bipé aberto. Sem o bipé ela ainda lê como "rifle", mas não como
+    "arma de precisão apoiada".
+    """
     limpar()
     aco = material("BukiAco", ACO)
-    gume = material("BukiQuente", ACO, emissivo=QUENTE)
     escuro = material("BukiEscuro", ESCURO, metallic=0.85, roughness=0.45)
+    lente = material("BukiQuente", ACO, emissivo=QUENTE)
+    z = -0.34                                    # ponta do antebraço, igual às outras
 
-    # ATENÇÃO ao sinal: o Y do Blender vira −Z no Godot. Os valores abaixo são
-    # os antigos do BukiFX com o sinal INVERTIDO — sem isso o fio da lâmina
-    # aponta pra trás (a arma sai espelhada frente-fundo).
-    # A LÂMINA (tudo que é gume) gira junto, em torno do mesmo pivô. O punho
-    # (ricasso + guarda) fica de pé, porque é ele que encaixa no antebraço.
-    folha = [
-        caixa("corpo", (0.055, 0.17, 0.98), (0, 0.06, -0.78), aco, bisel=0.008),
-        caixa("fio", (0.020, 0.05, 0.96), (0, 0.150, -0.78), gume, bisel=0.006),
-        # Canaleta (fuller): o sulco central que toda lâmina de verdade tem.
-        # Impossível no builder antigo sem empilhar mais três caixas.
-        caixa("canaleta", (0.024, 0.060, 0.78), (0, -0.010, -0.80), escuro, bisel=0.003),
-        caixa("ponta", (0.050, 0.13, 0.20), (0, 0.075, -1.30), aco, bisel=0.010),
+    partes = [
+        # --- corpo ---
+        caixa("acao", (0.16, 0.42, 0.16), (0, 0.10, z), escuro, bisel=0.006),
+        caixa("coronha", (0.13, 0.34, 0.19), (0, -0.22, z - 0.02), escuro, bisel=0.010),
+        caixa("punho", (0.10, 0.11, 0.17), (0, -0.04, z - 0.15), escuro, bisel=0.010),
+        # --- cano: LONGO e FINO, o que faz ler como precisão ---
+        cilindro("cano", 0.045, 1.15, (0, 0.90, z), aco, lados=14),
+        # Freio de boca: os dois anéis na ponta. É o detalhe que impede o cano de
+        # parecer um cabo de vassoura.
+        cilindro("freio", 0.075, 0.13, (0, 1.44, z), escuro, lados=14),
+        cilindro("freio_anel", 0.082, 0.030, (0, 1.40, z), aco, lados=14, bisel=0.004),
+        cilindro("boca", 0.038, 0.05, (0, 1.50, z), lente, lados=12, bisel=0.003),
+        # --- luneta, alta o bastante para se ver de fora ---
+        cilindro("luneta", 0.062, 0.52, (0, 0.30, z + 0.20), escuro, lados=14),
+        cilindro("luneta_ocular", 0.082, 0.10, (0, 0.07, z + 0.20), escuro, lados=14),
+        cilindro("luneta_objetiva", 0.088, 0.11, (0, 0.55, z + 0.20), escuro, lados=14),
+        cilindro("lente", 0.072, 0.03, (0, 0.605, z + 0.20), lente, lados=14, bisel=0.003),
+        caixa("suporte_tras", (0.05, 0.05, 0.10), (0, 0.14, z + 0.11), escuro, bisel=0.004),
+        caixa("suporte_frente", (0.05, 0.05, 0.10), (0, 0.46, z + 0.11), escuro, bisel=0.004),
+        # --- ferrolho, para o lado direito ---
+        cilindro("ferrolho", 0.022, 0.16, (0.13, 0.06, z + 0.03), aco, eixo="x", lados=10),
+        caixa("ferrolho_base", (0.06, 0.09, 0.06), (0.08, 0.06, z + 0.03), escuro, bisel=0.005),
+        # --- guarda-mão e trilho ---
+        # O bipé que estava aqui SAIU: em render ele lia como um arame solto
+        # pendurado no cano, e bipé num braço que virou arma não faz sentido nem
+        # em função nem em silhueta — não há onde apoiar. O guarda-mão faz o
+        # trabalho que o bipé fazia na leitura (engrossa a metade da frente e
+        # impede o cano de parecer um cabo de vassoura) sem a peça sem sentido.
+        caixa("guarda_mao", (0.115, 0.46, 0.115), (0, 0.72, z), escuro, bisel=0.008),
+        *[caixa("respiro%d" % i, (0.125, 0.035, 0.125), (0, 0.56 + i * 0.14, z), aco, bisel=0.003)
+          for i in range(4)],
+        caixa("trilho", (0.055, 0.62, 0.035), (0, 0.34, z + 0.10), aco, bisel=0.003),
     ]
-    inclinar(folha, -0.30, -6)                   # curvatura de sabre, a partir do punho
 
-    punho = [
-        caixa("ricasso", (0.10, 0.10, 0.16), (0, 0.02, -0.30), escuro, bisel=0.008),
-        caixa("guarda", (0.24, 0.10, 0.035), (0, 0.04, -0.37), escuro, bisel=0.006),
-    ]
-    juntar("BukiLamina", folha + punho)
-    return exportar("buki_lamina")
+    juntar("BukiSniper", partes)
+    return exportar("buki_sniper")
 
 
 # ------------------------------------------------------------------------ CANHÃO
@@ -261,6 +285,6 @@ def canhao():
 if __name__ == "__main__":
     print("=== armas da Buki Buki no Mi ===")
     metralhadora()
-    lamina()
+    sniper()
     canhao()
     print("=== pronto ===")

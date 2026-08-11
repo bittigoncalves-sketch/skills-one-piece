@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://bffxa1l1cq7lm"
-path="res://.godot/imported/buki_lamina.glb-1a68df557044b6419d91cdfc62d746a7.scn"
+uid="uid://b5lbb6k6pci6s"
+path="res://.godot/imported/buki_sniper.glb-ca6ddcb1d505bb011348ff2e95898380.scn"
 
 [deps]
 
-source_file="res://assets/models/weapons/buki_lamina.glb"
-dest_files=["res://.godot/imported/buki_lamina.glb-1a68df557044b6419d91cdfc62d746a7.scn"]
+source_file="res://assets/models/weapons/buki_sniper.glb"
+dest_files=["res://.godot/imported/buki_sniper.glb-ca6ddcb1d505bb011348ff2e95898380.scn"]
 
 [params]
 

@@ -159,24 +159,21 @@ static func _montar_pistola() -> Node3D:
 
 # C — SNIPER. ⚠️ NÃO EXISTE .glb de sniper (ver relatório): esticamos a
 # metralhadora no eixo do cano e pregamos uma luneta em cima. É um remendo
-# honesto — assim que existir `buki_sniper.glb`, trocar aqui e só aqui.
+# C — SNIPER: modelo próprio (`buki_sniper.glb`), feito no Blender em
+# `tools/blender/buki_weapons.py`. Antes era a metralhadora esticada 1,75× com
+# uma luneta colada por cima — funcionava, mas de longe lia como "a mesma arma
+# de sempre, só maior", que é justamente o que uma sniper não pode ser.
+#
+# O que o modelo próprio dá e o esticão não dava: cano longo E FINO (é a
+# proporção que diz "precisão"), luneta com os dois corpos de lente, freio de
+# boca e guarda-mão com respiros.
 static func _montar_sniper() -> Node3D:
-	var r := Node3D.new()
+	var r := _arma("sniper")
 	r.name = "BukiArma_C"
-	var corpo := _arma("metralhadora")
-	corpo.scale = Vector3(0.72, 0.72, 1.75)     # fina e COMPRIDA: silhueta de fuzil
-	r.add_child(corpo)
-	var escuro := _mat_escuro()
-	var luneta := _cil(0.05, 0.34, Vector3(0, 0.16, -0.30), escuro)
-	r.add_child(luneta)
-	var lente := _cil(0.045, 0.03, Vector3(0, 0.16, -0.47), _mat_aco(true))
-	r.add_child(lente)
-	r.add_child(_caixa(Vector3(0.04, 0.06, 0.10), Vector3(0, 0.10, -0.13), escuro))  # suporte
 	r.rotation_degrees.x = -90.0
 	r.position = Vector3(0, -0.30, 0)
 	return r
 
-# V — MINIGUN: a metralhadora, maior e mais gorda.
 static func _montar_minigun() -> Node3D:
 	var r := Node3D.new()
 	r.name = "BukiArma_V"
@@ -450,16 +447,14 @@ static func _capsulas(world: Node, origin: Vector3, dir: Vector3) -> void:
 #  sumir (clone sem os assets, import ainda não rodou), a fruta continua
 #  jogável em vez de disparar arma invisível.
 #
-#  ⚠️ DUAS PENDÊNCIAS DE ARTE, desde a virada pra munição (2026-08-11):
-#   • FALTA `buki_sniper.glb`. O C usa a metralhadora esticada + luneta colada
-#     (ver `_montar_sniper`). Quando o modelo existir, é trocar lá.
-#   • A LÂMINA ficou ÓRFÃ: nenhuma arma do arsenal novo usa `buki_lamina.glb`.
-#     O arquivo, a entrada aqui e o plano B ficam — o test_arena confere os três
-#     assets, e uma fruta/golpe de corte futuro reaproveita a peça de graça.
+#  As quatro armas do arsenal têm modelo próprio. A LÂMINA foi APAGADA em
+#  2026-08-11: com a fruta virando kit de FPS não sobrou golpe de corte, e
+#  manter asset que nada instancia é peso morto que dá falsa impressão de
+#  cobertura. Está no histórico do git se um golpe de corte voltar.
 # ============================================================================
 const ARMAS := {
 	"metralhadora": "res://assets/models/weapons/buki_metralhadora.glb",
-	"lamina": "res://assets/models/weapons/buki_lamina.glb",
+	"sniper": "res://assets/models/weapons/buki_sniper.glb",
 	"canhao": "res://assets/models/weapons/buki_canhao.glb",
 }
 
@@ -477,7 +472,7 @@ static func _arma(nome: String) -> Node3D:
 	# Plano B: a versão voxel montada em código.
 	match nome:
 		"metralhadora": return _voxel_metralhadora()
-		"lamina": return _voxel_lamina()
+		"sniper": return _voxel_metralhadora()   # plano B: a metralhadora serve de fuzil
 		_: return _voxel_canhao()
 
 # --------------------------------------------------------------- CONSTRUTORES
@@ -528,27 +523,6 @@ static func _voxel_metralhadora() -> Node3D:
 	r.add_child(_caixa(Vector3(0.02, 0.05, 0.02), Vector3(0, y + 0.12, -0.62), escuro))   # massa
 	return r
 
-# LÂMINA — gume assimétrico (fio de um lado só), guarda e ricasso.
-static func _voxel_lamina() -> Node3D:
-	var r := Node3D.new()
-	r.name = "BukiLamina"
-	var aco := _mat_aco()
-	var gume := _mat_aco(true)
-	var escuro := _mat_escuro()
-
-	var corpo := _caixa(Vector3(0.055, 0.98, 0.17), Vector3(0, -0.78, -0.06), aco)
-	corpo.rotation_degrees.x = -6.0          # leve curvatura de sabre
-	r.add_child(corpo)
-	var fio := _caixa(Vector3(0.018, 0.96, 0.05), Vector3(0, -0.78, -0.155), gume)
-	fio.rotation_degrees.x = -6.0
-	r.add_child(fio)
-	r.add_child(_caixa(Vector3(0.10, 0.16, 0.10), Vector3(0, -0.30, -0.02), escuro))   # ricasso
-	r.add_child(_caixa(Vector3(0.24, 0.035, 0.10), Vector3(0, -0.37, -0.04), escuro))  # guarda
-	r.add_child(_caixa(Vector3(0.06, 0.16, 0.09), Vector3(0, -1.24, -0.12), gume))     # ponta
-	return r
-
-# CANHÃO — boca alargada, aros de reforço e câmara. É a peça mais pesada da
-# fruta, então a silhueta tem que ler como grossa mesmo de longe.
 static func _voxel_canhao() -> Node3D:
 	var r := Node3D.new()
 	r.name = "BukiCanhao"
