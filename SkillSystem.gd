@@ -62,11 +62,16 @@ static func get_fruit_skills() -> Dictionary:
 			"C": {"nome": "Desert Girasole (Movediça)", "cor": Color(0.85, 0.65, 0.25), "dano": 65, "cooldown": 10.0},
 			"V": {"nome": "Suna no Sabaku (Deserto Vivo)", "cor": Color(0.98, 0.82, 0.4), "dano": 85, "cooldown": 60.0}
 		},
+		# BUKI BUKI — arsenal de FPS (regra nova do dono, 2026-08-11): a tecla
+		# EMPUNHA a arma, o botão esquerdo atira, e a munição é a penalidade.
+		# ⚠️ `dano` aqui é POR BALA, não por golpe — por isso o minigun vale 9 e o
+		# canhão 90. O nº de balas e a cadência ficam em BukiFX.ARSENAL, e a
+		# recarga do slot só corre depois que a arma é largada.
 		"buki_buki": {
-			"Z": {"nome": "Braço-Metralhadora", "cor": Color(0.78, 0.82, 0.88), "dano": 24, "cooldown": 5.0},
-			"X": {"nome": "Braço-Lâmina", "cor": Color(0.88, 0.92, 1.0), "dano": 42, "cooldown": 7.0},
-			"C": {"nome": "Canhão de Perna", "cor": Color(0.70, 0.74, 0.80), "dano": 60, "cooldown": 10.0},
-			"V": {"nome": "Arsenal Completo (teleguiado)", "cor": Color(0.95, 0.97, 1.0), "dano": 95, "cooldown": 60.0}
+			"Z": {"nome": "Pistola (12 balas)", "cor": Color(0.78, 0.82, 0.88), "dano": 24, "cooldown": 5.0},
+			"X": {"nome": "Canhão — corpo inteiro (3 tiros)", "cor": Color(0.88, 0.92, 1.0), "dano": 90, "cooldown": 7.0},
+			"C": {"nome": "Sniper (5 tiros, luneta no Bt Dir)", "cor": Color(0.70, 0.74, 0.80), "dano": 72, "cooldown": 10.0},
+			"V": {"nome": "Minigun (100 balas)", "cor": Color(0.95, 0.97, 1.0), "dano": 9, "cooldown": 60.0}
 		},
 		"hie_hie": {
 			"Z": {"nome": "Disparo de Gelo", "cor": Color(0.5, 0.8, 1.0), "dano": 28, "cooldown": 5.0},

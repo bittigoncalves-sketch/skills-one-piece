@@ -124,6 +124,8 @@ Detalhes em [`docs/ANIMACOES_MIXAMO.md`](docs/ANIMACOES_MIXAMO.md).
 | [`docs/MUDANCAS_2026-08-06.md`](docs/MUDANCAS_2026-08-06.md) | rig único, conserto do pipeline, Buki Buki |
 | [`docs/MUDANCAS_2026-08-10.md`](docs/MUDANCAS_2026-08-10.md) | arena: buracos, placar, corpo a corpo, armas em .glb |
 | [`docs/MUDANCAS_2026-08-10_PARTE2.md`](docs/MUDANCAS_2026-08-10_PARTE2.md) | rig, rebake dos 28 clipes, personagem novo, multiplayer, LAN |
+| [`docs/MUDANCAS_2026-08-11.md`](docs/MUDANCAS_2026-08-11.md) | dash mais rápido; Buki Buki virou kit de FPS com munição |
+| [`docs/PLANO_FRUTAS.md`](docs/PLANO_FRUTAS.md) · [`docs/AUDITORIA_FRUTAS.md`](docs/AUDITORIA_FRUTAS.md) | critérios de fruta funcional e o placar medido |
 | [`disabled/enemies/README.md`](disabled/enemies/README.md) | inimigos desligados do mapa e como religar |
 | [`DOCUMENTACAO.md`](DOCUMENTACAO.md) | visão geral do projeto |
 

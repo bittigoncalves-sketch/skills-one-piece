@@ -15,6 +15,7 @@ var _main_menu: Node
 var _stats: Node
 var _match: MatchHud
 var _status: StatusEffectsHud
+var _ammo: AmmoHud
 
 func _ready() -> void:
 	add_to_group("hud")   # o Player encontra a HUD por este grupo ao equipar fruta
@@ -46,6 +47,11 @@ func _ready() -> void:
 	_status = StatusEffectsHud.new()
 	_status.name = "StatusEffectsHud"
 	add_child(_status)
+
+	# Munição da Buki Buki (canto inferior direito). Só aparece com arma na mão.
+	_ammo = AmmoHud.new()
+	_ammo.name = "AmmoHud"
+	add_child(_ammo)
 
 	# Itens iniciais de exemplo.
 	_inv.add_item({"nome": "Suna Suna no Mi", "tipo": "Logia", "cor": Color(0.95, 0.8, 0.45)})

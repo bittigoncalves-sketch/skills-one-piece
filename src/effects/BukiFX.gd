@@ -3,20 +3,56 @@ extends RefCounted
 # ============================================================================
 #  BUKI FX — Buki Buki no Mi (fruta da Baby 5). Paramecia: o corpo vira arma.
 #
-#  REGRA DA FRUTA (definida pelo usuário): a transformação é INSTANTÂNEA NO
-#  GOLPE — o membro vira arma, dispara, e volta ao normal. Nada fica ativo
-#  entre golpes. Isso encaixa na tríade do Gomu Pistol (padrão-ouro do projeto):
-#  a arma nasce no wind-up, cospe no release, e some no recovery.
+#  ⚠️ REGRA DA FRUTA — TROCADA PELO DONO DO PROJETO (2026-08-11).
 #
-#  SKILLS:
-#   Z: Metralhadora — antebraço vira cano, rajada curta pra frente.
-#   X: Lâmina — antebraço vira foice, golpe em arco corpo-a-corpo.
-#   C: Canhão de Perna — joelho vira canhão; tiro pesado + RECUO que empurra
-#      o conjurador pra trás (vira mobilidade).
-#   V: Arsenal Completo — canhão primeiro, metralhadora depois, e TODOS os
-#      disparos são TELEGUIADOS no inimigo mais próximo da mira. Dano e
-#      knockback maiores. É isso que separa o V dos outros slots.
+#  ANTES: transformação INSTANTÂNEA no golpe (a arma nascia, disparava e sumia;
+#  nada ficava ativo entre golpes). Essa regra MORREU — se você achar doc que
+#  ainda a descreva, ela está velha.
+#
+#  AGORA a fruta é um JOGO DE FPS:
+#    • a tecla do slot EMPUNHA a arma, e ela FICA na mão (com o tiro do saque);
+#    • o botão ESQUERDO atira enquanto houver bala;
+#    • MUNIÇÃO é a penalidade da fruta — cada arma tem um número fixo de balas;
+#    • acabou a bala (ou trocou de slot) -> a arma some e AQUELE slot entra em
+#      recarga. É isso que empurra o jogador pro rodízio de armas.
+#    • botão DIREITO = auxílio de mira (habilidade ativa da fruta), MENOS na
+#      sniper, onde ele vira luneta e o auxílio fica desligado.
+#
+#  ARSENAL:
+#   Z: Pistola  —  12 balas, mão direita.
+#   X: Canhão   —   3 tiros, o jogador vira o canhão INTEIRO (corpo some).
+#   C: Sniper   —   5 tiros, braço vira fuzil de precisão (+ luneta no Bt Dir).
+#   V: Minigun  — 100 balas, cadência absurda, dano por bala ridículo.
+#
+#  A máquina de estado (empunhar / trocar / acabar munição), a munição e a rede
+#  vivem no Player.gd — aqui só mora a APARÊNCIA e o disparo. Ver:
+#  `Player._buki_empunhar`, `_process_buki_arma`, `_do_server_bullet`.
 # ============================================================================
+
+# ---------------------------------------------------------------- O ARSENAL
+# Uma linha por slot. `balas` é a penalidade da fruta; `cadencia` é o intervalo
+# mínimo entre disparos (segundos); `dano_mult` multiplica o dano que vem do
+# SkillSystem, porque lá o número é POR BALA e o minigun precisa de bala fraca.
+const ARSENAL := {
+	"Z": {"nome": "Pistola", "balas": 12,  "cadencia": 0.20, "raio": 0.18, "vel": 42.0, "kb": 4.0,  "shake": 0.12, "recuo": 0.0,  "papel": "ForeArm_R"},
+	"X": {"nome": "Canhão",  "balas": 3,   "cadencia": 0.95, "raio": 0.55, "vel": 22.0, "kb": 24.0, "shake": 0.90, "recuo": 11.0, "papel": ""},
+	"C": {"nome": "Sniper",  "balas": 5,   "cadencia": 1.05, "raio": 0.16, "vel": 95.0, "kb": 10.0, "shake": 0.45, "recuo": 0.0,  "papel": "ForeArm_R"},
+	"V": {"nome": "Minigun", "balas": 100, "cadencia": 0.06, "raio": 0.14, "vel": 46.0, "kb": 1.6,  "shake": 0.05, "recuo": 0.0,  "papel": "ForeArm_R"},
+}
+const SLOTS := ["Z", "X", "C", "V"]
+
+static func municao(slot: String) -> int:
+	return int(ARSENAL[slot]["balas"]) if ARSENAL.has(slot) else 0
+
+static func cadencia(slot: String) -> float:
+	return float(ARSENAL[slot]["cadencia"]) if ARSENAL.has(slot) else 0.5
+
+static func nome_da_arma(slot: String) -> String:
+	return str(ARSENAL[slot]["nome"]) if ARSENAL.has(slot) else ""
+
+# Onde a arma se pendura: "" = no CORPO INTEIRO (o X vira canhão).
+static func papel_do_slot(slot: String) -> String:
+	return str(ARSENAL[slot]["papel"]) if ARSENAL.has(slot) else ""
 
 const ACO := Color(0.74, 0.78, 0.84)
 const ACO_QUENTE := Color(1.0, 0.72, 0.30)
@@ -30,12 +66,30 @@ const FAISCA := [
 const ALCANCE_MIRA := 60.0     # alcance da busca de alvo teleguiado
 const CONE_MIRA := 0.82        # cos do cone de aquisição (~35°)
 
+# Entrada do `Player._fire_skill`: EMPUNHAR = sacar a arma e dar o primeiro tiro.
+# Quem faz a arma aparecer é o Player (nós pré-construídos, ver `_buki_mostrar_arma`);
+# aqui sai só o disparo do saque. É por isso que os 4 slots continuam produzindo
+# DamageZone na auditoria (tools/dev_tests/test_frutas.gd).
 static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float, caster: Node) -> void:
-	match variant:
-		0: _metralhadora(world, origin, dir, damage, caster)
-		1: _lamina(world, origin, dir, damage, caster)
-		2: _canhao_de_perna(world, origin, dir, damage, caster)
-		_: _arsenal_completo(world, origin, dir, damage, caster)
+	var slot: String = SLOTS[variant] if variant >= 0 and variant < SLOTS.size() else "Z"
+	disparo(world, origin, dir, slot, damage, caster)
+
+# UM TIRO da arma empunhada. Chamado no saque (via `cast`) e a cada clique do
+# botão esquerdo (via `Player._net_bullet_play`, que nasce no SERVIDOR).
+static func disparo(world: Node, origin: Vector3, dir: Vector3, slot: String,
+		damage: float, caster: Node, alvo: Node3D = null) -> void:
+	if world == null or not (world is Node) or not world.is_inside_tree():
+		return
+	var d: Dictionary = ARSENAL.get(slot, ARSENAL["Z"])
+	var raio := float(d["raio"])
+	_projetil(world, origin, dir, damage, caster, raio, float(d["vel"]), float(d["kb"]), alvo)
+	_fogacho(world, origin, dir, 1.0 if slot == "X" else (0.5 if slot == "C" else 0.35))
+	if slot == "X":
+		AudioFX.cannon(world, origin, randf_range(0.94, 1.04))
+	else:
+		AudioFX.gunshot(world, origin, randf_range(0.92, 1.12))
+	if slot != "X":
+		_capsulas(world, origin, dir)   # latão saltando: dá cadência VISÍVEL à rajada
 
 # ----------------------------------------------------------------- MATERIAIS
 static func _mat_aco(emissivo: bool = false) -> StandardMaterial3D:
@@ -73,27 +127,82 @@ static func _membro(caster: Node, papel: String) -> Node3D:
 	var d = caster.find_child(papel, true, false)
 	return d as Node3D if d is Node3D else null
 
-# Cria a arma no membro, deixa viva por `dur` e some (transformação instantânea).
-static func _transformar(caster: Node, papel: String, arma: Node3D, dur: float) -> void:
-	var membro := _membro(caster, papel)
-	var alvo: Node = membro if membro else (caster.get_tree().current_scene if caster else null)
-	if alvo == null:
-		return
-	alvo.add_child(arma)
-	_onda_de_aco(alvo)
-	# Brilho de metal esquentando na saída e no retorno.
-	var tw := arma.create_tween()
-	tw.tween_property(arma, "scale", Vector3.ONE, 0.06).from(Vector3(0.15, 0.15, 0.15))
-	tw.tween_interval(maxf(dur - 0.16, 0.0))
-	tw.tween_property(arma, "scale", Vector3(0.1, 0.1, 0.1), 0.10)
-	tw.tween_callback(arma.queue_free)
+# ============================================================================
+#  AS ARMAS EMPUNHADAS
+#
+#  ⚠️ Elas são construídas UMA VEZ (junto com o personagem, em
+#  `Player._attach_buki_arsenal`) e depois só ligam/desligam a visibilidade —
+#  como já era a pistola da rajada Z. Fazer nascer/morrer nó a cada saque
+#  transformava arma empunhada em "vazamento de nó" na auditoria e enchia a
+#  cena de lixo a cada troca.
+#
+#  Convenção de eixo: os .glb do Blender apontam pra −Z; a MÃO do rig usa −Y
+#  (é o eixo do antebraço, e é onde a pistola do jogo já mira). Por isso as
+#  armas de braço nascem com rotation.x = −90°, que leva −Z em −Y. Sem isso a
+#  arma aponta pro lado enquanto a pose de mira aponta pra frente.
+# ============================================================================
+static func arma_do_slot(slot: String) -> Node3D:
+	match slot:
+		"Z": return _montar_pistola()
+		"X": return _montar_canhao_corpo()
+		"C": return _montar_sniper()
+		"V": return _montar_minigun()
+	return null
+
+# Z — a MÃO vira pistola. Reusa a mesma peça da pistola do jogo (PlayerModelKit),
+# que já nasce com o cano em −Y: nada a girar aqui.
+static func _montar_pistola() -> Node3D:
+	var g := PlayerModelKit.build_pistol()
+	g.name = "BukiArma_Z"
+	g.position = Vector3(0, -0.36, 0.02)
+	return g
+
+# C — SNIPER. ⚠️ NÃO EXISTE .glb de sniper (ver relatório): esticamos a
+# metralhadora no eixo do cano e pregamos uma luneta em cima. É um remendo
+# honesto — assim que existir `buki_sniper.glb`, trocar aqui e só aqui.
+static func _montar_sniper() -> Node3D:
+	var r := Node3D.new()
+	r.name = "BukiArma_C"
+	var corpo := _arma("metralhadora")
+	corpo.scale = Vector3(0.72, 0.72, 1.75)     # fina e COMPRIDA: silhueta de fuzil
+	r.add_child(corpo)
+	var escuro := _mat_escuro()
+	var luneta := _cil(0.05, 0.34, Vector3(0, 0.16, -0.30), escuro)
+	r.add_child(luneta)
+	var lente := _cil(0.045, 0.03, Vector3(0, 0.16, -0.47), _mat_aco(true))
+	r.add_child(lente)
+	r.add_child(_caixa(Vector3(0.04, 0.06, 0.10), Vector3(0, 0.10, -0.13), escuro))  # suporte
+	r.rotation_degrees.x = -90.0
+	r.position = Vector3(0, -0.30, 0)
+	return r
+
+# V — MINIGUN: a metralhadora, maior e mais gorda.
+static func _montar_minigun() -> Node3D:
+	var r := Node3D.new()
+	r.name = "BukiArma_V"
+	var corpo := _arma("metralhadora")
+	corpo.scale = Vector3(1.35, 1.35, 1.15)
+	r.add_child(corpo)
+	r.rotation_degrees.x = -90.0
+	r.position = Vector3(0, -0.30, 0)
+	return r
+
+# X — o jogador vira o CANHÃO INTEIRO. Este nó não mora no braço: mora num pivô
+# preso ao corpo (o Player esconde o modelo enquanto o canhão está empunhado).
+static func _montar_canhao_corpo() -> Node3D:
+	var r := Node3D.new()
+	r.name = "BukiArma_X"
+	var corpo := _arma("canhao")
+	corpo.scale = Vector3(1.6, 1.6, 2.0)     # ~0.67 x 0.74 x 2.0 m: lê como canhão de gente
+	r.add_child(corpo)
+	return r
 
 # O AÇO SE ESPALHANDO PELA PELE — é isto que faz a fruta ler como "o corpo virou
 # arma" em vez de "apareceu uma arma na mão". Um anel incandescente desce pelo
 # membro no instante da transformação, com fagulhas atrás.
 #
 # Fica preso ao MEMBRO (não ao mundo), então acompanha o braço no meio do golpe.
-static func _onda_de_aco(membro: Node) -> void:
+static func onda_de_aco(membro: Node) -> void:
 	if not (membro is Node3D):
 		return
 	var anel := MeshInstance3D.new()
@@ -232,87 +341,6 @@ static func _perseguir(zone: Node3D, alvo: Node3D, velocidade: float) -> void:
 		zone.look_at(zone.global_position + novo, Vector3.UP)
 	)
 
-# ------------------------------------------------------------------- Z: METRA
-static func _metralhadora(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
-	var cano := _arma("metralhadora")
-	_transformar(caster, "ForeArm_R", cano, 0.9)
-	_rajada(world, origin, dir, damage, caster, 6, 0.07, 22.0, 5.0, null)
-	AudioFX.whoosh(world, origin)
-
-# Dispara `n` tiros espaçados no tempo, com dispersão.
-static func _rajada(world: Node, origin: Vector3, dir: Vector3, damage: float,
-		caster: Node, n: int, intervalo: float, velocidade: float, kb: float,
-		alvo: Node3D) -> void:
-	if not (world is Node) or not world.is_inside_tree():
-		return
-	for i in n:
-		var atraso := i * intervalo
-		world.get_tree().create_timer(atraso).timeout.connect(func():
-			if not is_instance_valid(caster) or not is_instance_valid(world):
-				return
-			var o: Vector3 = caster.global_position + Vector3.UP * 1.0 if caster is Node3D else origin
-			# dispersão pequena; teleguiado corrige depois
-			var d := dir.normalized()
-			d += Vector3(randf_range(-0.05, 0.05), randf_range(-0.04, 0.04), randf_range(-0.05, 0.05))
-			_projetil(world, o, d, damage, caster, 0.22, velocidade, kb, alvo)
-			# Tiro a tiro, com o pitch variando um pouco: rajada com pitch fixo
-			# vira um zumbido só, e o ouvido para de contar os disparos.
-			AudioFX.gunshot(world, o, randf_range(0.92, 1.12))
-			_fogacho(world, o, d, 0.35)
-			_capsulas(world, o, d)
-		)
-
-# ------------------------------------------------------------------- X: LÂMINA
-static func _lamina(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
-	var foice := _arma("lamina")
-	_transformar(caster, "ForeArm_R", foice, 0.5)
-
-	# Golpe em ARCO: zona curta que varre à frente do conjurador.
-	var fwd := dir.normalized()
-	var zone := DamageZone.new()
-	world.add_child(zone)
-	zone.global_position = origin + fwd * 1.4
-	zone.setup(damage, 9.0, fwd * 3.0, 0.28, caster, 1.9)
-
-	# Rastro do corte: um leque fino que abre e some.
-	var corte := MeshInstance3D.new()
-	var plano := PlaneMesh.new()
-	plano.size = Vector2(3.4, 1.5)
-	corte.mesh = plano
-	var m := StandardMaterial3D.new()
-	m.albedo_color = Color(0.95, 0.97, 1.0, 0.75)
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	m.emission_enabled = true
-	m.emission = Color(0.8, 0.9, 1.0)
-	m.emission_energy_multiplier = 3.5
-	m.cull_mode = BaseMaterial3D.CULL_DISABLED
-	corte.material_override = m
-	corte.rotation_degrees = Vector3(90, 0, 25)
-	zone.add_child(corte)
-	var tw := corte.create_tween()
-	tw.tween_property(corte, "rotation_degrees:z", -35.0, 0.22)
-	tw.parallel().tween_property(m, "albedo_color:a", 0.0, 0.26)
-	AudioFX.whoosh(world, origin)
-
-# --------------------------------------------------------- C: CANHÃO DE PERNA
-static func _canhao_de_perna(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
-	var canhao := _arma("canhao")
-	_transformar(caster, "Shin_R", canhao, 0.8)
-	_tiro_de_canhao(world, origin, dir, damage, caster, 12.0, null)
-
-	# RECUO: o tranco empurra o conjurador pra trás — o tiro vira mobilidade.
-	if caster is CharacterBody3D:
-		var recuo: Vector3 = -dir.normalized() * 11.0 + Vector3.UP * 3.5
-		(caster as CharacterBody3D).velocity += recuo
-	if caster and caster.has_method("add_camera_shake"):
-		caster.add_camera_shake(0.55)
-
-static func _tiro_de_canhao(world: Node, origin: Vector3, dir: Vector3, damage: float,
-		caster: Node, kb: float, alvo: Node3D) -> void:
-	_projetil(world, origin, dir, damage, caster, 0.55, 16.0, kb, alvo)
-	_fogacho(world, origin, dir, 1.0)
-	AudioFX.cannon(world, origin, randf_range(0.94, 1.04))
-
 # Fogacho na boca do cano. `escala` 1.0 = canhão, 0.35 = metralhadora.
 static func _fogacho(world: Node, origin: Vector3, dir: Vector3, escala: float) -> void:
 	if world == null or not world.is_inside_tree():
@@ -411,37 +439,6 @@ static func _capsulas(world: Node, origin: Vector3, dir: Vector3) -> void:
 	(p as Node3D).global_position = origin
 	world.get_tree().create_timer(2.0).timeout.connect(p.queue_free)
 
-# ------------------------------------------------------- V: ARSENAL COMPLETO
-# Canhão -> metralhadora, TUDO teleguiado no inimigo mais próximo da mira.
-# O que diferencia dos outros slots é exatamente isto: mira automática, dano e
-# knockback maiores.
-static func _arsenal_completo(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
-	var alvo := alvo_da_mira(caster, origin, dir)
-
-	# 1) canhão pesado
-	var canhao := _arma("canhao")
-	canhao.scale = Vector3(1.35, 1.35, 1.35)
-	_transformar(caster, "Shin_R", canhao, 0.7)
-	_tiro_de_canhao(world, origin, dir, damage * 1.6, caster, 20.0, alvo)
-	if caster is CharacterBody3D:
-		(caster as CharacterBody3D).velocity += -dir.normalized() * 8.0 + Vector3.UP * 2.5
-	if caster and caster.has_method("add_camera_shake"):
-		caster.add_camera_shake(0.9)
-
-	# 2) metralhadora logo depois, nas DUAS mãos
-	if not world.is_inside_tree():
-		return
-	world.get_tree().create_timer(0.55).timeout.connect(func():
-		if not is_instance_valid(caster) or not is_instance_valid(world):
-			return
-		for lado in ["ForeArm_L", "ForeArm_R"]:
-			var cano := _arma("metralhadora")
-			cano.scale = Vector3(1.2, 1.2, 1.2)
-			_transformar(caster, lado, cano, 1.4)
-		var o: Vector3 = caster.global_position + Vector3.UP * 1.0 if caster is Node3D else origin
-		_rajada(world, o, dir, damage * 0.55, caster, 14, 0.08, 26.0, 7.0, alvo)
-	)
-
 # ============================================================================
 #  ARMAS — agora são ASSETS (.glb), não geometria montada em código.
 #
@@ -452,6 +449,13 @@ static func _arsenal_completo(world: Node, origin: Vector3, dir: Vector3, damage
 #  Os construtores voxel antigos continuam logo abaixo como PLANO B — se o .glb
 #  sumir (clone sem os assets, import ainda não rodou), a fruta continua
 #  jogável em vez de disparar arma invisível.
+#
+#  ⚠️ DUAS PENDÊNCIAS DE ARTE, desde a virada pra munição (2026-08-11):
+#   • FALTA `buki_sniper.glb`. O C usa a metralhadora esticada + luneta colada
+#     (ver `_montar_sniper`). Quando o modelo existir, é trocar lá.
+#   • A LÂMINA ficou ÓRFÃ: nenhuma arma do arsenal novo usa `buki_lamina.glb`.
+#     O arquivo, a entrada aqui e o plano B ficam — o test_arena confere os três
+#     assets, e uma fruta/golpe de corte futuro reaproveita a peça de graça.
 # ============================================================================
 const ARMAS := {
 	"metralhadora": "res://assets/models/weapons/buki_metralhadora.glb",
