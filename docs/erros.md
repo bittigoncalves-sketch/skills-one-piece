@@ -7,6 +7,145 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-10 — Knockback não empurrava ninguém, nem em rede nem em um-jogador
+
+**Sintoma:** relatado jogando — "jogador cliente e servidor não tomando knockback".
+
+**Causa raiz — são DUAS, empilhadas:**
+
+1. **A locomoção sobrescrevia o empurrão.** O bloco de movimento faz
+   `velocity.x = dir.x * effective_speed` — **atribuição**, não soma. O
+   `take_damage` somava o knockback em `velocity`, e no quadro seguinte a
+   locomoção reescrevia X e Z do zero. Isso vale **inclusive em um-jogador**, e é
+   por isso que os DOIS jogadores foram reportados sem knockback.
+2. **Em rede, o servidor empurrava a cópia errada.** A `DamageZone` roda no
+   servidor, então `take_damage` mexia na cópia que o servidor tem da vítima. Se
+   a vítima é de outro peer, `velocity` ali não vale nada — a replicação traz a
+   posição do dono no quadro seguinte e sobrescreve.
+
+**Evidência:** teste com dois processos, servidor mandando empurrão de
+`(0, 6, −40)` no cliente. Deslocamento medido: **0,00 m antes, 6,00 m depois**.
+
+**Descartado:** não é força insuficiente nem `DamageZone` sem alcance — o log
+`🚀 Knockback Final Aplicado` saía normalmente. O empurrão era calculado e
+aplicado; só não sobrevivia ao quadro.
+
+**Correção:**
+- `_kb_impulso` — o componente horizontal do knockback virou um impulso próprio,
+  que decai sozinho e é **somado depois** da locomoção escrever `velocity`, logo
+  antes do `move_and_slide()`. O vertical continua indo direto em `velocity.y`,
+  que a locomoção não reatribui.
+- `net_apply_knockback` — o servidor manda o knockback **cru** para o DONO do
+  corpo, e é lá que ele é escalado. Mandar o valor já calculado seria errado: as
+  duas regras que o modelam (dobrar no ar, resistir andando contra) dependem de
+  `is_on_floor()` e do **teclado da vítima** — e no servidor `Input.is_key_pressed`
+  lê o teclado do host, não o de quem apanhou.
+
+**Como detectar de novo:** teste de knockback tem que medir **deslocamento em
+metros**, não a existência do log. E a regra geral: qualquer efeito que escreva
+em `velocity` de fora do bloco de locomoção precisa ser um impulso separado —
+`velocity` pertence à locomoção, que a reescreve todo quadro.
+
+---
+
+## 2026-08-10 — Fruta sem skills virava Gomu Gomu em silêncio
+
+**Sintoma:** relatado jogando — "frutas equipadas diferente das que foram
+adquiridas, por exemplo ope ope resulta em gomu gomu". E: "após a morte do
+jogador cliente a fruta do jogador do servidor voltou a ser a gomu gomu".
+
+**Causa raiz:** `Player._fire_skill` tinha
+
+```gdscript
+var fid := current_fruit_id if fruit_skills.has(current_fruit_id) else "gomu_gomu"
+```
+
+Um fallback **mudo**. Ele disparava em dois casos:
+
+- **fruta sem skills:** o mapa planta 11 árvores, mas o `SkillSystem` só conhece
+  9 frutas. `ope_ope`, `hito_hito_nika` e `tori_tori_phoenix` — **3 de 11** —
+  entravam no inventário com o nome certo e davam os golpes da Gomu Gomu;
+- **sem fruta nenhuma:** ao morrer o jogador larga a fruta
+  (`current_fruit_id = ""`), e a partir daí os golpes saíam como Gomu Gomu, como
+  se ele tivesse ganhado uma fruta ao morrer.
+
+**Evidência:** cruzando o pool de árvores com o `SkillSystem` — 11 árvores, 9
+frutas com poder, 3 órfãs. E `gura_gura` tem poderes mas **nenhuma árvore**, ou
+seja, é impossível de obter jogando.
+
+**Correção:**
+- O pool de árvores passou a ser **derivado** de quem tem skills
+  (`get_tree_definitions` filtra por `SkillSystem`), com log do que ficou de
+  fora. As definições de arte continuam no arquivo — falta só dar poderes a elas.
+- O fallback morreu. Sem fruta ou com fruta sem poderes, **o golpe não sai** e o
+  jogo diz por quê.
+
+**O que NÃO foi verificado:** o relato diz que a fruta do jogador do **servidor**
+mudou quando o **cliente** morreu. Medido em dois processos, cada jogador larga
+a **própria** fruta ao morrer, como esperado — não reproduzi o efeito cruzado. O
+que o conserto garante é que "sem fruta" deixou de **parecer** Gomu Gomu. Se
+ainda acontecer de uma fruta trocar de dono, o sintoma agora é visível em vez de
+disfarçado.
+
+**Como detectar de novo:** fallback silencioso em despacho de dados é armadilha —
+ele transforma "faltou registrar" em "comportamento errado plausível". Se um id
+não existe, falhe alto.
+
+---
+
+## 2026-08-10 — Pistola da Yami: o tiro do cliente não feria ninguém
+
+**Sintoma:** relatado jogando — "Yami Yami: o jogador do servidor não toma dano
+da pistola (Z) do cliente". No host funcionava.
+
+**Causa raiz:** `_process_yami_pistol` chamava `YamiFX.bullet()` **direto**, sem
+passar pelo servidor — ao contrário do `_request_bullet` da rajada Z, que já
+fazia o trajeto certo. Como a `DamageZone` só aplica dano no servidor, a bala
+disparada de um cliente existia **só na tela dele**.
+
+No host o mesmo código funciona porque lá o local **é** o servidor — a mesma
+classe de erro do bug da HUD no corpo errado.
+
+**Correção:** o tiro passou a usar o trajeto que já existia —
+`_do_server_bullet` no host, `_net_bullet_req.rpc_id(1, …)` no cliente. O
+`_net_bullet_play` já despachava por fruta e trata `yami_yami`.
+
+**Como detectar de novo:** todo efeito que causa dano precisa nascer no servidor.
+Procure por `FX.*(get_tree().current_scene, …)` chamado de dentro de tratamento
+de input local — é a assinatura do bug.
+
+---
+
+## 2026-08-10 — VFX do Gomu V ficava aceso no mapa para sempre
+
+**Sintoma:** relatado jogando — "Gomu gomu está deixando um rastro luminoso
+permanente no mapa quando o v é ativado".
+
+**Causa raiz:** em `GomuRedHawk._spawn_explosion` o tween que apaga a luz era
+criado com `create_tween()` — ou seja, **no próprio `GomuRedHawk`**. Só que esse
+nó chama `queue_free()` no fim de `_impact()`. O nó morre, o tween morre junto,
+o `tween_callback(light.queue_free)` nunca roda, e a `OmniLight3D` fica acesa.
+**Uma luz órfã por uso do V.**
+
+**Evidência:** contagem de nós da cena, 5 disparos seguidos: **+5 nós, todos
+`OmniLight3D`** — exatamente 1,0 por disparo. Depois do conserto: **delta 0**.
+
+**Correção:** o tween nasce na própria luz (`light.create_tween()`), que
+sobrevive ao criador, mais um `FxUtil.autofree(light, 0.6)` como rede de
+segurança. Na mesma passada saiu um segundo defeito: `global_position` era
+escrito **antes** do `add_child`, e num nó fora da árvore isso devolve
+`Transform3D()` com erro — o efeito nascia no centro do mapa em vez de na ponta
+do braço. Corrigido no `GomuRedHawk` e no `GomuFX`; varredura confirmou 0
+ocorrências restantes do padrão em `src/effects/` e `src/combat/`.
+
+**Como detectar de novo:**
+`godot --headless --path . --script tools/dev_tests/test_gomu_leak.gd -- V`
+conta os nós antes e depois. Vazamento cresce **linear** com as repetições;
+"ainda não terminou" não cresce. E a regra: tween que libera um nó tem que nascer
+**no nó que ele libera**, nunca em quem o criou.
+
+---
+
 ## 2026-08-10 — No cliente, a HUD inteira operava o corpo do HOST
 
 **Sintoma:** relatado jogando. **Só no PC que ENTRA na sala**, nunca no que

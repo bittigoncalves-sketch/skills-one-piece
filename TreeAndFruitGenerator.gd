@@ -6,8 +6,35 @@ extends Node
 #  As árvores são posicionadas sobre os cubos (obstáculos) da plataforma.
 # ============================================================================
 
-# Definição dos 11 Tipos de Árvores, Cores e Frutas
+# Árvores que o mapa REALMENTE planta.
+#
+# ⚠️ Só entram as frutas que têm poderes no `SkillSystem`. Antes o mapa plantava
+# as 11 definições abaixo, e 3 delas (`ope_ope`, `hito_hito_nika`,
+# `tori_tori_phoenix`) davam frutas sem skill nenhuma — pegar uma delas virava
+# Gomu Gomu **em silêncio**, por causa do fallback no `Player._fire_skill`. Era
+# impossível perceber jogando: a fruta entrava no inventário com o nome certo e
+# os golpes saíam errados.
+#
+# Filtrar aqui, e não remover as definições, é de propósito: a arte da árvore
+# (cores, formato da copa) já está autorada e serve na hora que a fruta ganhar
+# poderes. Dar skills a ela é o único passo que falta — e a regra do dono do
+# projeto é não criar fruta nova antes de terminar as que existem.
 static func get_tree_definitions() -> Array[Dictionary]:
+	var com_poder := SkillSystem.get_fruit_skills()
+	var out: Array[Dictionary] = []
+	var fora: Array[String] = []
+	for d in _todas_as_definicoes():
+		if com_poder.has(str(d.get("id", ""))):
+			out.append(d)
+		else:
+			fora.append(str(d.get("id", "")))
+	if not fora.is_empty():
+		print("🌳 [Árvores] fora do mapa por não terem skills: ", ", ".join(fora))
+	return out
+
+# O catálogo completo, inclusive o que ainda não é plantável. Não apague nada
+# daqui — é o inventário do que existe desenhado.
+static func _todas_as_definicoes() -> Array[Dictionary]:
 	return [
 		{
 			"id": "mera_mera",

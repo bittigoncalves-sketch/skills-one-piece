@@ -49,6 +49,13 @@ var _charge_slot: String = ""
 # "cast interrompido" e engolia a skill seguinte.
 var _cast_token: int = 0
 var _movement_locked_timer: float = 0.0
+# IMPULSO EXTERNO (knockback). NÃO pode viver dentro de `velocity`: o bloco de
+# locomoção faz `velocity.x = dir.x * speed` — ATRIBUIÇÃO, não soma — e apagaria
+# o empurrão no quadro seguinte. Foi exatamente isso que fez ninguém tomar
+# knockback, nem em rede nem em um-jogador. Vive aqui, decai sozinho, e é somado
+# à velocidade logo antes do move_and_slide.
+var _kb_impulso: Vector3 = Vector3.ZERO
+const KB_DECAIMENTO := 4.0   # 1/s — quanto o empurrão perde força por segundo
 
 var _yaw := 0.0     # rotacao horizontal da camera
 var _pitch := -0.25 # rotacao vertical da camera
@@ -121,6 +128,26 @@ var aim_assist: bool = false   # assistência de mira (liga/desliga no E)
 var _melee_passo: int = 0
 var _melee_janela: float = 0.0
 var _melee_trava: float = 0.0   # recuperação: bloqueia o clique durante o golpe
+
+# Qual slot está EM USO agora — "" se nenhum. Usado para congelar a recarga das
+# outras técnicas (ver o laço de cooldown no _physics_process).
+#
+# Cobre as quatro formas de "habilidade em andamento" que o jogo tem:
+# segurar para mirar (`_charging`), a rajada Z, o cast já solto mas ainda
+# rodando (`is_casting`), e os golpes que travam o movimento por tempo
+# (Gatling, Red Hawk, Kurouzu, Black Hole — todos gravam `active_skill`).
+func _slot_em_uso() -> String:
+	if _charging and _charge_slot != "":
+		return _charge_slot
+	if _rapid_fire:
+		return "Z"
+	if has_meta("is_casting") and get_meta("is_casting"):
+		var s := str(get_meta("active_skill", ""))
+		if s != "":
+			return s
+	if _movement_locked_timer > 0.0:
+		return str(get_meta("active_skill", ""))
+	return ""
 
 func trigger_skill_cooldown(slot: String) -> void:
 	match slot:
@@ -463,9 +490,18 @@ func _physics_process(delta: float) -> void:
 	energy = minf(energy + ENERGY_REGEN * delta, max_energy)   # regen contínua de energia
 	if _yami_shot_cooldown > 0.0:
 		_yami_shot_cooldown = maxf(_yami_shot_cooldown - delta, 0.0)
+	# RECARGA CONGELA DURANTE UMA HABILIDADE (regra do dono do projeto).
+	# Enquanto um golpe está em andamento, a recarga das OUTRAS técnicas para de
+	# correr — só a do próprio golpe em uso continua. Sem isso dava para segurar
+	# um golpe longo (Black Hole, 7 s de trava) e sair dele com a barra inteira
+	# recarregada de graça: o tempo de um golpe pagava o tempo de todos.
+	var em_uso := _slot_em_uso()
 	for slot_k in _skill_cooldowns.keys():
-		if _skill_cooldowns[slot_k] > 0.0:
-			_skill_cooldowns[slot_k] = maxf(_skill_cooldowns[slot_k] - delta, 0.0)
+		if _skill_cooldowns[slot_k] <= 0.0:
+			continue
+		if em_uso != "" and slot_k != em_uso:
+			continue                       # congelado: outra habilidade está ativa
+		_skill_cooldowns[slot_k] = maxf(_skill_cooldowns[slot_k] - delta, 0.0)
 	if _yami_pistol_active:
 		_process_yami_pistol(delta)
 	# HOLD-TO-CAST / RAJADA Z: enquanto a tecla está SEGURADA (ou a rajada Z ativa), o
@@ -721,6 +757,14 @@ func _physics_process(delta: float) -> void:
 	if SkillSystem.process_void_check(self):
 		return
 
+	# Empurrão externo: somado DEPOIS da locomoção ter escrito velocity, e antes
+	# de mover. Decai sozinho, então o controle volta ao jogador em ~1 s.
+	if _kb_impulso.length_squared() > 0.01:
+		velocity.x += _kb_impulso.x
+		velocity.z += _kb_impulso.z
+		_kb_impulso = _kb_impulso.move_toward(Vector3.ZERO, KB_DECAIMENTO * delta * _kb_impulso.length())
+	else:
+		_kb_impulso = Vector3.ZERO
 	move_and_slide()
 
 ## Posiciona o VFX de fôlego na frente da boca (segue cabeça + facing -Z) e regula
@@ -1106,33 +1150,71 @@ func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knock
 
 	# 2. KNOCKBACK ESCALADO E MODIFICADO POR AR E MOVIMENTO
 	if base_knockback.length() > 0.1:
-		var final_knockback := SkillSystem.calculate_knockback(base_knockback, health, max_health)
-		# Regra 1: Quando alguém é atingido no ar o knockback DOBRA.
-		if not is_on_floor():
-			final_knockback *= 2.0
-			print("✈️ Atingido no AR! Knockback dobrado!")
-		# Regra 2: O knockback pode ser reduzido em até 70% se tentar se mover para outra direção (nunca 100%).
-		var f_kb := 0.0; var r_kb := 0.0
-		if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):    f_kb += 1.0
-		if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN):  f_kb -= 1.0
-		if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT): r_kb += 1.0
-		if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):  r_kb -= 1.0
-		var move_attempt := ((-Basis.from_euler(Vector3(0, _yaw, 0)).z) * f_kb + (Basis.from_euler(Vector3(0, _yaw, 0)).x) * r_kb)
-		if move_attempt.length_squared() > 0.01:
-			move_attempt = move_attempt.normalized()
-			var kb_dir := final_knockback.normalized()
-			var dot := move_attempt.dot(kb_dir)
-			if dot < 0.85: # Tentativa de mover para outra direção / resistir
-				var reduction_pct := remap(clampf(dot, -1.0, 0.5), 0.5, -1.0, 0.0, 0.70)
-				var mult := clampf(1.0 - reduction_pct, 0.30, 1.0) # Nunca menos que 30% (nunca reduzido completamente)
-				final_knockback *= mult
-				print("🛡️ Knockback Reduzido por Movimento (", int(reduction_pct * 100), "% resistido)!")
-		velocity += final_knockback
-		print("🚀 Knockback Final Aplicado: ", final_knockback)
+		# ⚠️ QUEM EMPURRA É O DONO DO CORPO, não quem calculou o dano.
+		#
+		# A `DamageZone` roda no SERVIDOR, então este `take_damage` roda na cópia
+		# que o servidor tem da vítima. Se a vítima for de outro peer, mexer em
+		# `velocity` aqui não vale nada: no quadro seguinte a replicação traz a
+		# posição do dono e sobrescreve. Era por isso que ninguém tomava empurrão
+		# em partida com dois PCs — e em um-jogador funcionava, porque lá o
+		# servidor É o dono.
+		#
+		# Mando o knockback CRU, não o calculado: as duas regras que o modelam —
+		# dobrar no ar e resistir andando contra — dependem de `is_on_floor()` e
+		# do TECLADO da vítima. No servidor, `Input.is_key_pressed` lê o teclado
+		# do HOST, não o do jogador que apanhou. Quem tem esses dados é o dono.
+		if multiplayer.has_multiplayer_peer() and not is_multiplayer_authority():
+			var dono := get_multiplayer_authority()
+			if multiplayer.get_peers().has(dono):
+				net_apply_knockback.rpc_id(dono, base_knockback)
+			return
+		_aplicar_knockback(base_knockback)
 
-	# 3. VERIFICAÇÃO DE MORTE
 	if health <= 0.0:
 		die_and_respawn()
+
+# Pedido do servidor para o DONO do corpo se empurrar. Só o servidor manda.
+@rpc("any_peer", "call_local", "reliable")
+func net_apply_knockback(base_knockback: Vector3) -> void:
+	if multiplayer.has_multiplayer_peer():
+		var sender := multiplayer.get_remote_sender_id()
+		if sender != 0 and sender != 1:
+			return
+	_aplicar_knockback(base_knockback)
+
+# Escala o empurrão pelas regras do jogo e aplica na própria velocidade.
+# SEMPRE roda no dono do corpo — ver o comentário em take_damage.
+func _aplicar_knockback(base_knockback: Vector3) -> void:
+	if base_knockback.length() <= 0.1:
+		return
+	var final_knockback := SkillSystem.calculate_knockback(base_knockback, health, max_health)
+	# Regra 1: Quando alguém é atingido no ar o knockback DOBRA.
+	if not is_on_floor():
+		final_knockback *= 2.0
+		print("✈️ Atingido no AR! Knockback dobrado!")
+	# Regra 2: O knockback pode ser reduzido em até 70% se tentar se mover para outra direção (nunca 100%).
+	var f_kb := 0.0; var r_kb := 0.0
+	if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):    f_kb += 1.0
+	if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN):  f_kb -= 1.0
+	if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT): r_kb += 1.0
+	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):  r_kb -= 1.0
+	var move_attempt := ((-Basis.from_euler(Vector3(0, _yaw, 0)).z) * f_kb + (Basis.from_euler(Vector3(0, _yaw, 0)).x) * r_kb)
+	if move_attempt.length_squared() > 0.01:
+		move_attempt = move_attempt.normalized()
+		var kb_dir := final_knockback.normalized()
+		var dot := move_attempt.dot(kb_dir)
+		if dot < 0.85: # Tentativa de mover para outra direção / resistir
+			var reduction_pct := remap(clampf(dot, -1.0, 0.5), 0.5, -1.0, 0.0, 0.70)
+			var mult := clampf(1.0 - reduction_pct, 0.30, 1.0) # Nunca menos que 30% (nunca reduzido completamente)
+			final_knockback *= mult
+			print("🛡️ Knockback Reduzido por Movimento (", int(reduction_pct * 100), "% resistido)!")
+	# O componente HORIZONTAL vira impulso (senão a locomoção o sobrescreve no
+	# próximo quadro); o VERTICAL entra direto na velocidade, porque o eixo Y não
+	# é reatribuído pela locomoção — só pela gravidade.
+	_kb_impulso += Vector3(final_knockback.x, 0.0, final_knockback.z)
+	velocity.y += final_knockback.y
+	print("🚀 Knockback Final Aplicado: ", final_knockback)
+
 
 # Porta de entrada da MORTE — chegam aqui os dois caminhos: vida zerada (a
 # DamageZone, no servidor) e queda no vazio (SkillSystem.process_void_check).
@@ -1500,7 +1582,21 @@ func _fire_skill(slot: String, aim: Vector3, origin: Vector3) -> void:
 		FightingStyles.cast(world, active_style, variant, origin, aim, dano, self)
 	else:
 		var fruit_skills := SkillSystem.get_fruit_skills()
-		var fid := current_fruit_id if fruit_skills.has(current_fruit_id) else "gomu_gomu"
+		# ⚠️ Aqui existia `else "gomu_gomu"` — um fallback MUDO, e ele era a causa
+		# de dois bugs relatados jogando:
+		#   • pegar uma fruta sem skills (ope_ope, hito_hito_nika, tori_tori_phoenix)
+		#     dava os golpes da Gomu Gomu com o nome da outra fruta na HUD;
+		#   • depois de MORRER o jogador larga a fruta (`current_fruit_id = ""`) e
+		#     passava a sair Gomu Gomu do nada, como se tivesse ganhado uma fruta.
+		# Sem fruta não há poder de fruta. O golpe não sai, e diz por quê.
+		if not fruit_skills.has(current_fruit_id):
+			if current_fruit_id == "":
+				print("🚫 Sem Akuma no Mi — pegue uma fruta numa árvore para usar poderes.")
+			else:
+				push_warning("[Fruta] '%s' não tem skills no SkillSystem" % current_fruit_id)
+				print("🚫 A fruta '%s' ainda não tem poderes implementados." % current_fruit_id)
+			return
+		var fid := current_fruit_id
 		var sdata: Dictionary = fruit_skills[fid][slot]
 		var cor: Color = sdata.get("cor", Color.WHITE)
 		var dano: float = float(sdata.get("dano", 20))
@@ -1616,8 +1712,17 @@ func _process_yami_pistol(delta: float) -> void:
 		var origin := global_position + Vector3.UP * 1.2 + cam_dir * 0.8
 		var aim := _aim_target_point()
 		var shoot_dir := (aim - origin).normalized()
-		if get_tree() and get_tree().current_scene:
-			YamiFX.bullet(get_tree().current_scene, origin, shoot_dir, 25.0, self)
+		# ⚠️ Aqui a bala era criada DIRETO, sem passar pelo servidor — e a
+		# `DamageZone` só machuca no servidor. Resultado relatado jogando: o tiro
+		# da pistola da Yami saindo do CLIENTE não feria o jogador do servidor
+		# (no host funcionava, porque lá o local JÁ é o servidor).
+		#
+		# Agora segue o mesmo trajeto da rajada Z: o dono pede, o servidor cria a
+		# zona de dano, e todo mundo reproduz o visual.
+		if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
+			_do_server_bullet(shoot_dir, origin)
+		else:
+			_net_bullet_req.rpc_id(1, shoot_dir, origin)
 
 func _find_closest_enemy_yami(max_dist: float) -> Node3D:
 	var best: Node3D = null

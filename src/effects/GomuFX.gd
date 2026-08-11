@@ -109,8 +109,12 @@ static func _bazooka(world: Node, body_pos: Vector3, fwd: Vector3, damage: float
 
 			var blast := FxUtil.particles(280, 0.6, true, pm, FxUtil.grain(0.8))
 			var tip := arm_r.global_position + fwd * length
-			blast.global_position = tip
+			# add_child ANTES de posicionar: `global_position` num nó fora da árvore
+			# não tem espaço global para resolver, e o Godot devolve Transform3D()
+			# com erro. O efeito nascia em (0,0,0) — no CENTRO DO MAPA, não na ponta
+			# do braço. Mesmo padrão corrigido em GomuRedHawk.gd.
 			world.add_child(blast)
+			blast.global_position = tip
 			FxUtil.autofree(blast, 0.8)
 		)
 		return
