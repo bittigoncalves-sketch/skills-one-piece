@@ -1252,7 +1252,12 @@ func _fit_model_to_body() -> void:
 
 # ---------------------------------------------------------------- combate ---
 func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knockback: Vector3 = Vector3.ZERO) -> void:
-	if get_meta("damage_immune", false) or get_meta("custom_pose", "") == "hibashira":
+	# `in_black_hole` entrou aqui em 2026-08-11: o Black Hole da Yami é CONTROLE
+	# PURO — puxa, afunda e silencia, e quem mata é o buraco do mapa depois.
+	# `TrainingDummy.gd:64` e `disabled/enemies/Enemy.gd` já recusavam dano de
+	# quem está preso; só o jogador não recusava, e a mesma habilidade tinha
+	# regra diferente dependendo de quem caía nela.
+	if get_meta("damage_immune", false) or get_meta("custom_pose", "") == "hibashira" or get_meta("in_black_hole", false):
 		print("🛡️ DANO E KNOCKBACK BLOQUEADOS! O usuário está IMUNE a danos durante a habilidade!")
 		return
 

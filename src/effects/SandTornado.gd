@@ -93,4 +93,14 @@ func _physics_process(delta: float) -> void:
 			b.velocity.z = lerpf(b.velocity.z, pull_v.z, 0.35)
 			b.velocity.y = _lift                        # levanta
 		if do_damage and body.has_method("take_damage"):
-			body.take_damage(_dps * _tick, center, Vector3.ZERO)
+			# ⚠️ PASSA PELO DAMAGE_SCALE, como todas as outras fontes de dano.
+			#
+			# Sem ele o tornado batia 142,4 num alvo — 14x o segundo colocado do
+			# jogo inteiro (o chute do corpo a corpo dá 8,4; o ultimate da Yami,
+			# 46,8). O número não estava errado por si: ele estava numa ESCALA
+			# diferente do resto, porque esta linha chamava `take_damage` direto
+			# enquanto todo mundo passa pela DamageZone, que multiplica por 0.12.
+			#
+			# O desequilíbrio ficou visível só em 2026-08-11: antes o tornado
+			# varria apenas o grupo "enemy" e nunca alcançava um jogador.
+			body.take_damage(_dps * _tick * DamageZone.DAMAGE_SCALE, center, Vector3.ZERO)

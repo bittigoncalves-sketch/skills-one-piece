@@ -756,9 +756,15 @@ class YamiBlock extends Node3D:
 		position += velocity * delta
 		rotation += rot_spd * delta
 
-		# Dano e knockback enquanto voa/cai
+		# Dano e knockback enquanto voa/cai.
+		#
+		# ⚠️ Varre "enemy" E "player". Antes era só "enemy", e numa arena PvP
+		# isso significava que os escombros ATRAVESSAVAM os outros jogadores: o
+		# ultimate da Yami acertava a onda de repelão e os blocos passavam
+		# direto. Os inimigos estão em `disabled/` desde 2026-08-10, então na
+		# prática o laço não pegava ninguém além do boneco de treino.
 		if get_tree():
-			for e in get_tree().get_nodes_in_group("enemy"):
+			for e in get_tree().get_nodes_in_group("enemy") + get_tree().get_nodes_in_group("player"):
 				if not (e is Node3D) or e in hit_targets or e == caster:
 					continue
 				if global_position.distance_to(e.global_position + Vector3.UP * 0.8) < 1.8:

@@ -8,7 +8,21 @@ lista vira palpite.
 
 ---
 
+## ✅ Resolvidos em 2026-08-11
+
+| # | o que era | conserto | medido |
+|---|---|---|---|
+| 1 | tornado da Suna a 142,4 (14× o resto) | passou pelo `DAMAGE_SCALE`, como todas as outras fontes | 142,4 → **4,8** no disparo medido (teto ~17) |
+| 2 | jogador tomava dano preso no Black Hole; inimigo e dummy não | guarda `in_black_hole` acrescentada ao `Player` — o golpe é **controle puro** | preso: 2048 intacto · solto: 2048 → 1548 |
+| 3 | escombros do V da Yami só feriam `"enemy"` | o laço varre `"enemy"` **e** `"player"` | outro jogador 2048 → **2037** |
+
+---
+
 ## 🔴 Alta — afeta o jogo hoje
+
+*(vazio — os três foram resolvidos acima)*
+
+## 🔴 ~~Alta~~ — histórico
 
 ### 1. `suna_suna` X causa 142,4 de dano; todo o resto causa 3–10
 `SandTornado` chama `take_damage(_dps * _tick)` **direto**, pulando o
