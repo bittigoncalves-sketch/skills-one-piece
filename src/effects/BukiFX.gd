@@ -151,7 +151,7 @@ static func _membro(caster: Node, papel: String) -> Node3D:
 #  AS ARMAS EMPUNHADAS
 #
 #  ⚠️ Elas são construídas UMA VEZ (junto com o personagem, em
-#  `Player._attach_buki_arsenal`) e depois só ligam/desligam a visibilidade —
+#  `PlayerRig._attach_buki_arsenal`) e depois só ligam/desligam a visibilidade —
 #  como já era a pistola da rajada Z. Fazer nascer/morrer nó a cada saque
 #  transformava arma empunhada em "vazamento de nó" na auditoria e enchia a
 #  cena de lixo a cada troca.

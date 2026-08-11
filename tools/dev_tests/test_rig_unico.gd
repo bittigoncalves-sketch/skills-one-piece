@@ -39,7 +39,7 @@ func _run() -> void:
 			continue
 
 		# --- os 13 papéis têm que ser acháveis pelo NOME PURO ---
-		# `Player._attach_pistol`, a âncora da cabeça do fôlego e `BukiFX._membro`
+		# `PlayerRig._attach_pistol`, a âncora da cabeça do fôlego e `BukiFX._membro`
 		# acham o membro por `find_child("<papel>")`. Enquanto os proxies se
 		# chamavam `RoleProxy_<papel>` os três recebiam null em todo skinnado, e
 		# nenhum teste pegava: o `test_buki_buki` roda só no `base`, que é voxel e

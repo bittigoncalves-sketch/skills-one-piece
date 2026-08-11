@@ -130,7 +130,7 @@ func setup(skel: Skeleton3D, holder: Node3D) -> Dictionary:
 		# Proxy posicionado onde o osso descansa, para o BodyScanner medir o
 		# corpo (passada, balanço, IK) com os números reais deste modelo.
 		#
-		# NOME = o papel PURO, sem prefixo. Não é cosmético: `Player._attach_pistol`,
+		# NOME = o papel PURO, sem prefixo. Não é cosmético: `PlayerRig._attach_pistol`,
 		# a âncora da cabeça do fôlego (`Player.gd`) e `BukiFX._membro` acham o
 		# membro por `find_child("<papel>")`. Com o antigo `RoleProxy_<papel>` os
 		# três recebiam `null` em TODO personagem skinnado (ver docs/erros.md,

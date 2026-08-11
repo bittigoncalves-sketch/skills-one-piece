@@ -90,10 +90,10 @@ imunidade, em ciclo) é o comportamento desejado numa rodada de 10 minutos.
 
 ## 🟢 Baixa — armadilhas conhecidas, documentadas
 
-### 8. `Player.gd` com 2.128 linhas, 2,4× o limite
+### 8. `Player.gd` com 1.959 linhas, 2,2× o limite
 **Em tratamento.** A partição está em curso, em fases, por
 [`ARQUITETURA_PLAYER.md`](ARQUITETURA_PLAYER.md): fase 1 (etapas nomeadas) e
-fase 2 (`CameraRig`, 2.167 → 2.128) feitas. Ver também
+fase 2 (`CameraRig`, 2.167 → 2.128) e fase 3 (`PlayerRig`, → 1.959) feitas. Ver também
 [`RELATORIO_PLAYER.md`](RELATORIO_PLAYER.md) e
 [`LIMITE_DE_TAMANHO.md`](LIMITE_DE_TAMANHO.md). **Gatilho:** o arquivo não pode
 crescer mais — qualquer tarefa que precise adicionar código nele deve primeiro
@@ -108,7 +108,19 @@ No personagem skinnado, a arma nasce na pose de repouso do membro e acompanha a
 `BoneAttachment3D` — que herda escala e espaço Z-up do esqueleto, então não é
 troca trivial.
 
-### 11. `Melee.espelhar()` está sem uso
+### 11. `IceFX` nunca levanta a mão do conjurador (condição impossível)
+`src/effects/IceFX.gd:166` faz `caster.has_node("_char_model")`. `_char_model`
+é **campo**, não nome de nó — `has_node` procura um filho chamado
+`"_char_model"`, que não existe. A condição é sempre falsa, então o bloco
+inteiro (o tween que levanta o braço direito no gelo) **nunca roda**.
+
+O jeito certo, que o `BukiFX.gd:140` já usa, é `caster.get("_char_model")`.
+
+*Detectado:* ao mapear quem lê o modelo de fora, antes da Fase 3 da partição.
+**Não corrigido** — é mudança de comportamento visual (o golpe passaria a ter
+uma animação que hoje não tem), então é decisão sua.
+
+### 12. `Melee.espelhar()` está sem uso
 Ficou quando os socos viraram clipes autorais. Continua correta e validada.
 **Gatilho para apagar:** se daqui a alguns golpes nenhum tiver usado, é dívida.
 

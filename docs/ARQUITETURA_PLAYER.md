@@ -195,7 +195,7 @@ que parou de responder ao clique. Depois de cada fase de risco, vale abrir o jog
 |---|---|---|
 | 1 — etapas no `_physics_process` | ✅ **feita** — 291 → 32 linhas | ver abaixo |
 | 2 — `CameraRig` | ✅ **feita** — componente de 201 linhas; Player 2.167 → 2.128 | ver abaixo |
-| 3 — `PlayerRig` | ⏳ | — |
+| 3 — `PlayerRig` | ✅ **feita** — componente com 291; Player 2.128 → 1.959 | ver abaixo |
 | 4 — Movement / Parkour / Dash | ⏳ | — |
 | 5 — `BukiController` | ⏳ | — |
 | 6 — `SkillController` | ⏳ | — |
@@ -308,3 +308,95 @@ Suíte: compila **0**, arena **53**, buki **24**, `walk_run`, `rig_unico`,
 comandos; não provam que a câmera *parece* certa jogando. Esta fase mexeu em
 câmera e input — exatamente o ponto cego — então vale abrir o jogo antes da
 Fase 3.
+
+---
+
+## Fase 3 — `PlayerRig`, feita em 2026-08-11
+
+`src/player/player_rig.gd`, **291 linhas**. O `Player.gd` foi de 2.128 para
+**1.959** — a maior queda até agora (169 linhas).
+
+### A medição que decidiu o desenho
+
+Antes de mover qualquer coisa, procurei **onde esses campos são escritos**:
+
+```
+grep -nE "^\s*(_char_model|_proc_anim|_animator|...)\s*=" Player.gd
+```
+
+Todas as 17 escritas estavam **dentro do bloco de construção** (linhas
+977–1149). Nenhuma fora. O domínio já era "um construtor e muitos leitores" —
+só não tinha nome. Daí a fronteira:
+
+> **O rig CONSTRÓI. O Player USA.**
+
+O componente é dono do ciclo de vida do corpo visível: criar o modelo, medir e
+assentar no chão, pendurar as pistolas e o arsenal da Buki, ligar o animador
+procedural, soltar tudo na troca de personagem. Quem usa por quadro (facing,
+pose, visibilidade, mira) continua no Player.
+
+### Vistas em vez de cópias
+
+O `_char_model` é lido em **~42 pontos** do Player, e o `BukiFX.gd` o pega de
+fora **por nome** (`caster.get("_char_model")`). Copiar a referência para o
+Player criaria dois donos — exatamente o que esta refatoração combate. Em vez
+disso, os campos viraram **propriedades só-leitura que encaminham**:
+
+```gdscript
+var _char_model: Node3D:
+	get: return _rig.modelo() if _rig else null
+```
+
+Um dono só, zero estado duplicado, e nenhum dos 42 pontos precisou mudar. E
+escrever nesses campos passou a ser **impossível**: eles não têm setter.
+
+### Por que o rig NÃO é o pai dos nós
+
+Ele é um `Node` puro e adiciona os filhos ao **Player**, deixando a árvore
+idêntica à de antes. Foi decisão de risco:
+
+- `_char_model.rotation.y` / `.position.y` são escritos direto pelo facing e
+  pelo fit — um nó intermediário entraria na conta das transformações;
+- `_animator.animation_player.root_node = NodePath("..")` resolve pelo **pai**;
+  com o rig no meio, `".."` deixaria de ser o Player.
+
+> **Gatilho para revisitar:** se o rig algum dia precisar de transformação
+> própria (inclinar o corpo inteiro sem mexer no facing), aí vale virar `Node3D`
+> e reapontar o `root_node`.
+
+### O conflito que isto resolveu
+
+`_buki_armas` / `_buki_visual` tinham **dois donos** (Rig e Buki) — era o
+conflito que o relatório mandava resolver antes deste corte. Ficou: o rig
+**monta** as armas (elas nascem e morrem com o modelo), o combate decide **qual
+aparece** (`_buki_visual`). **Restam 19 campos compartilhados** (eram 21).
+
+### O que ficou no Player, e por quê
+
+- **A trava de elenco.** `ELENCO_LIBERADO` e a guarda continuam no
+  `_setup_character_model`, que virou política + delegação. Quem *pode* ser
+  carregado é regra de **jogo**; o rig monta o que mandarem. O ponto de
+  estrangulamento único (por onde menu, rede e `equip_fruit` passam) foi
+  preservado — é o que o `test_elenco_trancado` prova.
+- **O fôlego (`_breath`).** Sobrevive à troca de personagem e é reaproveitado;
+  não pertence ao modelo. A condição "só voxel" foi preservada exatamente (no
+  código antigo o `return` do ramo skinnado a pulava).
+
+### Validação
+
+`tools/dev_tests/test_player_rig.gd` (novo, **20 checagens**): o rig é dono do
+corpo (modelo, procedural, cabeça, 2 pistolas, 4 armas da Buki, pivô), as vistas
+do Player entregam **o mesmo objeto**, `get("_char_model")` ainda funciona (o
+caminho do BukiFX), a árvore não mudou de forma, as regras do fit valem, e a
+troca de personagem reconstrói tudo.
+
+**A/B contra o commit anterior:** o fit do modelo saiu **idêntico bit a bit** —
+escala `(0.416667, 0.416667, 0.770833)` e `pos.y = -0.8000` antes e depois.
+
+Suíte: compila 0, arena 53, buki 24, frutas 0, walk_run, rig_unico,
+anatomia_rig, elenco_trancado, camera 13.
+
+✅ **Visto na tela** (ao contrário da Fase 2): o jogo foi aberto com renderizador
+real, o clique em JOGAR levou ao mundo, e a foto mostra o personagem montado —
+membros, marcador dourado das costas, HUD e fruta. Foi assim que o bug do
+`class_name` apareceu; a lição pegou.

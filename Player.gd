@@ -107,7 +107,8 @@ var _rapid_fire: bool = false
 var _rapid_count: int = 0
 var _rapid_t: float = 0.0
 var _gun_recoil: float = 0.0   # coice da rajada Z (1->0 por tiro) p/ a pose de mira
-var _pistols: Array = []       # pistolas nas DUAS mãos (visíveis só na rajada Z)
+var _pistols: Array:           # pistolas nas DUAS mãos (visíveis só na rajada Z)
+	get: return _rig.pistolas() if _rig else []
 var _bullet_side: int = 0      # alterna a mão a cada tiro (0=esq, 1=dir)
 var _yami_pistol_active: bool = false # Yami Z: pistola ativa por toggle
 var _yami_shot_cooldown: float = 0.0  # cadência do tiro do Yami Z
@@ -133,8 +134,13 @@ var _buki_scope: bool = false       # luneta da sniper (C) ativa
 var _srv_buki_arma: String = ""     # SERVIDOR: qual arma este corpo empunha
 var _srv_buki_municao: int = 0      # SERVIDOR: balas que ele ainda autoriza
 var _buki_visual: String = ""       # arma VISÍVEL (roda em todos os peers)
-var _buki_armas: Dictionary = {}    # slot -> Node3D pré-construído (oculto)
-var _buki_pivot: Node3D = null      # pivô do canhão-corpo (X): gira com a mira
+# As armas e o pivô são MONTADOS pelo rig (nascem e morrem com o modelo); quem
+# decide qual aparece é o combate, aqui. Era o conflito de dois donos que o
+# relatório apontou.
+var _buki_armas: Dictionary:        # slot -> Node3D pré-construído (oculto)
+	get: return _rig.armas_buki() if _rig else {}
+var _buki_pivot: Node3D:            # pivô do canhão-corpo (X): gira com a mira
+	get: return _rig.pivo_buki() if _rig else null
 var _skill_cooldowns: Dictionary = {"Z": 0.0, "X": 0.0, "C": 0.0, "V": 0.0}
 var aim_assist: bool = false   # assistência de mira (liga/desliga no E)
 
@@ -187,14 +193,33 @@ var _crosshair: Control
 # ver CHARS_TRANCADOS em src/ui/CharacterMenu.gd.
 const ELENCO_LIBERADO: Array[String] = ["base", "bluebuddy"]
 
-var character_id: String = "base"
-var _animator: CharacterAnimator
-var _char_model: Node3D
-var _proc_anim: ProceduralAnimator   # animação procedural em tempo real do rig
-var _skel_anim: SkeletalAnimator = null   # animador ESQUELETAL (personagens skinnados)
-var _is_skinned: bool = false             # o personagem atual é skinnado (Skeleton3D)?
+# ---- RIG E MODELO -> src/player/player_rig.gd (Fase 3) ----
+# O componente é dono do CICLO DE VIDA do corpo visível (criar, medir, vestir,
+# soltar). O que segue abaixo são VISTAS: propriedades só-leitura que encaminham
+# para o rig.
+#
+# Por que vistas e não simplesmente `_rig.modelo()` em todo canto: `_char_model`
+# é lido em ~42 pontos aqui dentro, e o `BukiFX.gd` o pega de fora por nome
+# (`caster.get("_char_model")`). Getter mantém UM dono (o rig) e zero estado
+# duplicado, sem precisar reescrever nada disso. Escrever nesses campos era o
+# que o relatório chamava de conflito — e agora é impossível: não têm setter.
+var _rig: PlayerRig = null
+
+var character_id: String:
+	get: return _rig.character_id if _rig else "base"
+var _animator: CharacterAnimator:
+	get: return _rig.animador() if _rig else null
+var _char_model: Node3D:
+	get: return _rig.modelo() if _rig else null
+var _proc_anim: ProceduralAnimator:   # animação procedural em tempo real do rig
+	get: return _rig.procedural() if _rig else null
+var _skel_anim: SkeletalAnimator:     # animador ESQUELETAL (personagens skinnados)
+	get: return _rig.esqueletal() if _rig else null
+var _is_skinned: bool:                # o personagem atual é skinnado (Skeleton3D)?
+	get: return _rig.skinnado() if _rig else false
+var _head_node: Node3D:               # cabeça do modelo atual (âncora do fôlego)
+	get: return _rig.cabeca() if _rig else null
 var _breath = null                   # VFX de fôlego (instância de VFX/BreathVFX.tscn; sem tipo p/ não depender do cache de class_name)
-var _head_node: Node3D               # cabeça do modelo atual (âncora do fôlego)
 
 # ---- Rede (Fase 4) ----
 # _is_authority = este player é controlado por ESTE cliente (input+câmera). No
@@ -231,6 +256,13 @@ static func local_player(tree: SceneTree) -> Node:
 func _ready() -> void:
 	add_to_group("player")   # o HUD encontra o jogador por este grupo
 	_is_authority = is_multiplayer_authority()   # SP: host=autoridade -> true
+
+	# RIG E MODELO — componente próprio desde a Fase 3. Precisa existir ANTES do
+	# set_character, que é justamente quem manda o rig montar o corpo.
+	_rig = PlayerRig.new()
+	_rig.name = "PlayerRig"
+	add_child(_rig)
+	_rig.montar_em(self)
 
 	# Substitui o quadrado cinza pelo modelo 3D Voxel e equipa a Akuma no Mi correspondente
 	set_character(character_id)
@@ -961,208 +993,26 @@ func set_character(cid: String) -> void:
 	if hud and hud.has_method("update_combat_mode"):
 		hud.update_combat_mode(combat_mode, active_style, current_fruit_id)
 
+# TROCA DE PERSONAGEM — política aqui, montagem no rig.
+#
+# A GUARDA DA TRAVA DE ELENCO fica NESTE ponto, e não no `set_character`, porque
+# aqui é por onde TODOS passam: menu, rede, e principalmente a troca automática
+# de aparência do `equip_fruit()` (o Main equipa suna_suna ao nascer, o que
+# virava Crocodile mesmo com o elenco trancado). Quem pode ser carregado é regra
+# de JOGO — por isso não desceu para o componente, que monta o que mandarem.
 func _setup_character_model(cid: String) -> void:
-	# GUARDA DA TRAVA DE ELENCO — aqui, não no set_character.
-	# Este é o ponto por onde TODOS passam: menu, rede, e principalmente a troca
-	# automática de aparência do equip_fruit() (o Main equipa suna_suna ao nascer,
-	# o que virava Crocodile mesmo com o elenco trancado).
 	if not ELENCO_LIBERADO.has(cid):
 		cid = ELENCO_LIBERADO[0]
 
-	if _char_model:
-		_char_model.queue_free()
-	if _animator:
-		_animator.queue_free()
+	_buki_visual = ""   # o modelo antigo levou as armas embora
+	_rig.montar(cid)
 
-	character_id = cid
-	# limpa estado do modelo anterior
-	if _skel_anim:
-		_skel_anim.queue_free()
-		_skel_anim = null
-	if _proc_anim:
-		_proc_anim.queue_free()
-		_proc_anim = null
-	_pistols = []
-	_buki_armas = {}          # morrem junto com o _char_model; o pivô do X é solto abaixo
-	_buki_visual = ""
-	_is_skinned = false
-
-	var char_data := CharacterBuilder.build_character(cid)
-	_char_model = char_data["node"]
-	_is_skinned = char_data.get("skinned", false)   # antes do fit (afeta a escala)
-	add_child(_char_model)
-	_fit_model_to_body()   # normaliza tamanho e assenta os pés no chão
-
-	# --- PERSONAGEM SKINNADO (Skeleton3D, ex.: Meshy AI) ---
-	# RIG ÚNICO: o esqueleto do Meshy é mapeado nos 13 papéis do rig A pelo
-	# SkeletonDriver (via BodyScanner), então ele usa o MESMO ProceduralAnimator
-	# e os MESMOS clipes do Mixamo que os personagens voxel. O SkeletalAnimator
-	# e os walks nativos por modelo ficaram obsoletos.
-	if _is_skinned:
-		_animator = null   # skinnado não usa CharacterAnimator (rig por-nós)
-		# DIREÇÃO: modelos Meshy nascem olhando +Z (pra câmera); a convenção do jogo é
-		# FRENTE = -Z. Giro a Armature 180° pra alinhar (o facing gira o _char_model).
-		var arm := _char_model.find_child("Armature", true, false)
-		if arm is Node3D:
-			(arm as Node3D).rotation.y += PI
-		# O AnimationPlayer do próprio modelo brigaria com o driver pelos ossos.
-		var model_ap: AnimationPlayer = char_data.get("anim_player")
-		if model_ap:
-			model_ap.active = false
-		_setup_procedural_anim(cid)
-		_head_node = _char_model.find_child("Head", true, false) as Node3D
-		# A pistola TAMBÉM vale no skinnado. Ela ficava de fora por acidente: o
-		# `return` logo abaixo pulava a chamada que está depois deste bloco, então
-		# nenhum personagem skinnado nunca teve pistola no golpe Z.
-		#
-		# Isso só passou a funcionar agora porque o `_attach_pistol` acha o membro
-		# por `find_child("ForeArm_R")`, e até hoje os proxies do rig se chamavam
-		# `RoleProxy_ForeArm_R` (ver docs/erros.md, 2026-08-10). Consertar um sem
-		# o outro não adiantaria nada.
-		#
-		# ⚠️ O proxy GIRA com a animação mas não TRANSLADA — a pistola nasce na
-		# posição de repouso da mão e acompanha a rotação, não o deslocamento do
-		# osso. Mesma limitação das armas da Buki Buki.
-		_attach_pistol(_char_model)
-		_attach_buki_arsenal(_char_model)   # arsenal da Buki (oculto até empunhar)
-		return
-
-	_attach_pistol(_char_model)   # pistola na mão direita (oculta até a rajada Z)
-	_attach_buki_arsenal(_char_model)   # arsenal da Buki (oculto até empunhar)
-
-	# Marcador Visual de COSTAS: Mochila Dourada Emissiva em z = -0.35
-	var back_marker := MeshInstance3D.new()
-	back_marker.name = "BackMarkerVisual"
-	var marker_mesh := BoxMesh.new()
-	marker_mesh.size = Vector3(0.42, 0.52, 0.18)
-	back_marker.mesh = marker_mesh
-	var marker_mat := StandardMaterial3D.new()
-	marker_mat.albedo_color = Color(1.0, 0.8, 0.1)
-	marker_mat.emission_enabled = true
-	marker_mat.emission = Color(1.0, 0.75, 0.1)
-	marker_mat.emission_energy_multiplier = 2.5
-	back_marker.material_override = marker_mat
-	back_marker.position = Vector3(0, 0.1, 0.35)
-	_char_model.add_child(back_marker)
-
-	# Marcador Visual de FRENTE (PEITO): Insígnia Vermelha no Peito em z = -0.35
-	var chest_marker := MeshInstance3D.new()
-	chest_marker.name = "ChestMarkerFront"
-	var chest_mesh := BoxMesh.new()
-	chest_mesh.size = Vector3(0.35, 0.35, 0.15)
-	chest_marker.mesh = chest_mesh
-	var chest_mat := StandardMaterial3D.new()
-	chest_mat.albedo_color = Color(1.0, 0.15, 0.15)
-	chest_mat.emission_enabled = true
-	chest_mat.emission = Color(1.0, 0.2, 0.1)
-	chest_mat.emission_energy_multiplier = 3.0
-	chest_marker.material_override = chest_mat
-	chest_marker.position = Vector3(0, 0.15, -0.35)
-	_char_model.add_child(chest_marker)
-
-	_animator = CharacterAnimator.new()
-	_animator.character_id = cid
-	_animator.animation_player = char_data["anim_player"]
-	add_child(_animator)
-	# Os paths procedurais das animações são relativos ao CharacterRoot.
-	# Deixamos isso explícito para não depender do valor padrão do Godot.
-	if _animator.animation_player:
-		_animator.animation_player.root_node = NodePath("..")
-		# Desliga o AnimationPlayer antigo: ele mira nomes de nós antigos e
-		# brigaria com a animação procedural que dirige o rig novo diretamente.
-		_animator.animation_player.active = false
-
-	_setup_procedural_anim(cid)
-
-	# Fôlego (VFX): cacheia a cabeça (âncora da boca) e garante o componente.
-	_head_node = _char_model.find_child("Head", true, false) as Node3D
-	if _breath == null:
+	# Fôlego (VFX): é do PLAYER, não do rig — sobrevive à troca de personagem e é
+	# reaproveitado. Só o voxel tem (o skinnado saía pelo `return` antes deste
+	# ponto no código antigo; a condição abaixo preserva isso exatamente).
+	if not _rig.skinnado() and _breath == null:
 		_breath = load("res://VFX/BreathVFX.tscn").instantiate()
 		add_child(_breath)   # filho do Player (sem a escala do rig)
-
-	print("🎭 Modelo 3D Voxel Carregado: ", cid.capitalize())
-
-# Animação PROCEDURAL: mede o corpo (BodyScanner) e dirige o rig em runtime.
-# Serve os DOIS tipos de personagem — o BodyScanner resolve os 13 papéis em nós
-# (voxel) ou em ossos via SkeletonDriver (skinnado), e devolve o mesmo perfil.
-func _setup_procedural_anim(cid: String) -> void:
-	if _proc_anim:
-		_proc_anim.queue_free()
-	_proc_anim = ProceduralAnimator.new()
-	add_child(_proc_anim)
-	_proc_anim.setup(BodyScanner.scan(_char_model))
-	# Corpo girado 180° em Y: os offsets são autorados p/ FRENTE = -Z e precisam
-	# ser espelhados. Vale só pro SkinPivot do Buggy — no SKINNADO a basis do
-	# SkeletonDriver já inclui o giro da Armature, então marcar aqui aplicaria a
-	# correção DUAS vezes e os membros balançariam ao contrário.
-	if not _is_skinned and cid == "buggy" and _char_model.has_node("SkinPivot"):
-		_proc_anim.is_backwards = true
-
-# Normaliza o modelo importado (que vem grande) para a altura do jogador e
-# assenta os PÉS no fundo da colisão (senão o boneco fica gigante e flutuando).
-# Altura ÚNICA de TODOS os personagens jogáveis (voxel + skinnado) -> todos do mesmo
-# tamanho. Basta mudar este número p/ deixar todos maiores/menores.
-const CHAR_TARGET_H := 1.5
-const MODEL_TARGET_H := CHAR_TARGET_H    # voxel
-const SKINNED_TARGET_H := CHAR_TARGET_H  # skinnado (Meshy)
-const FEET_Y := -0.8           # fundo da colisão = chão
-
-# Cria a PISTOLA (oculta) na ponta do antebraço direito. Fica invisível até a rajada
-# Z (mera/hie), quando `_pistol.visible` é ligado. Cano ao longo de -Y = aponta pra
-# frente quando o braço estende na pose de mira (_finger_gun).
-func _attach_pistol(model: Node3D) -> void:
-	_pistols = []
-	if model == null:
-		return
-	for side in ["ForeArm_L", "ForeArm_R"]:
-		var arm := model.find_child(side, true, false)
-		if not (arm is Node3D):
-			continue
-		var gun := PlayerModelKit.build_pistol()
-		gun.position = Vector3(0, -0.36, 0.02)   # ponta do antebraço (mão)
-		gun.visible = false
-		(arm as Node3D).add_child(gun)
-		_pistols.append(gun)
-
-# ---------------------------------------------------------------- BUKI BUKI ---
-# Constrói as QUATRO armas da fruta UMA VEZ, ocultas, junto com o personagem —
-# exatamente como a pistola acima. Empunhar depois é só ligar a visibilidade.
-#
-# ⚠️ Por que não criar a arma na hora do saque: nó criado no golpe e mantido
-# vivo entre golpes é indistinguível de VAZAMENTO para a auditoria
-# (tools/dev_tests/test_frutas.gd conta nós antes/depois) — e, pior, cada troca
-# de arma deixaria lixo na cena se um `queue_free` escapasse. Pré-construir
-# custa 3 instâncias de .glb por personagem e elimina a classe de bug inteira.
-func _attach_buki_arsenal(model: Node3D) -> void:
-	for n in _buki_armas.values():
-		if is_instance_valid(n):
-			(n as Node).queue_free()
-	_buki_armas = {}
-	if is_instance_valid(_buki_pivot):
-		_buki_pivot.queue_free()
-	_buki_pivot = null
-	_buki_visual = ""
-	if model == null:
-		return
-	# O canhão do X não mora no braço: mora num pivô do CORPO, que gira com a
-	# mira (o jogador inteiro virou o canhão).
-	_buki_pivot = Node3D.new()
-	_buki_pivot.name = "BukiPivot"
-	_buki_pivot.position = Vector3(0, -0.15, 0)
-	add_child(_buki_pivot)
-	var braco := model.find_child("ForeArm_R", true, false) as Node3D
-	for slot in BukiFX.SLOTS:
-		var arma := BukiFX.arma_do_slot(slot)
-		if arma == null:
-			continue
-		var papel := BukiFX.papel_do_slot(slot)
-		var pai: Node3D = _buki_pivot if papel == "" else braco
-		if pai == null:
-			arma.free()          # rig sem ForeArm_R: essa arma simplesmente não existe
-			continue
-		arma.visible = false
-		pai.add_child(arma)
-		_buki_armas[slot] = arma
 
 # PRESENTATION da arma empunhada — roda em TODOS os peers (chamada de dentro de
 # `_fire_skill` e do `_net_buki_guardar`), então o adversário vê a arma na mão
@@ -1186,25 +1036,6 @@ func _atualizar_visibilidade_corpo() -> void:
 	if _char_model == null:
 		return
 	_char_model.visible = (_camera == null or not _camera.em_primeira_pessoa()) and _buki_visual != "X"
-
-# Pistola, AABB e bake de profundidade -> PlayerModelKit (src/utils/).
-func _fit_model_to_body() -> void:
-	if _char_model == null:
-		return
-	var ab := PlayerModelKit.skeleton_aabb(_char_model) if _is_skinned else PlayerModelKit.model_aabb(_char_model)
-	# Altura-alvo: skinnado (Meshy) é mais encorpado -> um pouco menor p/ casar com o mundo.
-	var target_h := SKINNED_TARGET_H if _is_skinned else MODEL_TARGET_H
-	if character_id == "blackbeard":
-		target_h *= 1.5   # Barba Negra tem 1.5 de tamanho em comparação aos demais
-	var ky := 1.0
-	if ab.size.y > 0.01:
-		ky = target_h / ab.size.y
-	# Voxel: engrossa o eixo Z (1.85x). SKINNADO (Skeleton3D): escala UNIFORME —
-	# escala não-uniforme num skeleton corrompe o skinning (transform NaN -> tela cinza).
-	var zscale := ky if _is_skinned else ky * 1.85
-	_char_model.scale = Vector3(ky, ky, zscale)
-	# pés (base da AABB) no fundo da colisão
-	_char_model.position.y = FEET_Y - ky * ab.position.y
 
 # ---------------------------------------------------------------- combate ---
 func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knockback: Vector3 = Vector3.ZERO) -> void:
