@@ -1,5 +1,6 @@
 class_name IceFX
 extends RefCounted
+
 # ============================================================================
 #  ICE FX — Geração de GELO procedural e detalhada (Hie Hie no Mi).
 #
@@ -10,6 +11,9 @@ extends RefCounted
 #   V: Ice Age — Congela o chão por 50 segundos. Qualquer um que pise
 #      (menos o conjurador) é congelado por 5s, ganha 2s de imunidade e recongela.
 # ============================================================================
+
+# Dano por SEGUNDO do campo da Ice Age (o V). Ver o tique em `_ice_age`.
+const AGE_DPS := 30.0
 
 const FROST := [
 	Color(0.85, 0.95, 1.0, 0.95), # azul gelo brilhante
@@ -317,12 +321,28 @@ static func _ice_age(world: Node, center_pos: Vector3, damage: float, caster: No
 	timer.autostart = true
 	age_zone.add_child(timer)
 
+	# DANO DO CAMPO (pedido do dono do projeto).
+	#
+	# O campo era controle puro: congelava, dava 2 s de imunidade, recongelava, e
+	# não tirava vida nenhuma. Agora ele MORDE — gelo que não fere não pressiona
+	# ninguém a sair de cima dele.
+	#
+	# `AGE_DPS` é dano por SEGUNDO; o tique roda a cada 0.2 s, então cada
+	# passagem cobra um quinto. Passa pelo mesmo `DAMAGE_SCALE` das outras
+	# fontes (a `DamageZone` multiplica por 0.12), para o número aqui ficar na
+	# mesma escala do resto do jogo em vez de virar um valor mágico solto.
+	#
+	# Deliberadamente BAIXO: quem está congelado não pode se mexer, e dano alto
+	# em alvo imóvel vira execução, não pressão. Gatilho para revisar: se em
+	# jogo der para morrer sem conseguir sair do campo, baixar mais.
 	timer.timeout.connect(func():
 		for body in area.get_overlapping_bodies():
 			if body == caster:
 				continue
 			if not (body is CharacterBody3D):
 				continue
+			if body.has_method("take_damage"):
+				body.take_damage(AGE_DPS * DamageZone.DAMAGE_SCALE * 0.2, floor_pos, Vector3.ZERO)
 			_congelar_alvo(world, body, 5.0, 2.0)
 	)
 
@@ -351,6 +371,7 @@ static func _congelar_alvo(world: Node, target: Node3D, freeze_duration: float, 
 
 	# Marca como congelado
 	target.set_meta("is_frozen", true)
+	StatusFX.aplicar(target, StatusFX.CONGELADO, freeze_duration)
 	print("❄️ ALVO CONGELADO! Bloco de Gelo gerado por ", freeze_duration, "s em: ", target.name)
 
 	# Bloco de gelo 3D ao redor do alvo

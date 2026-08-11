@@ -14,6 +14,7 @@ var _char_menu: CharacterMenu
 var _main_menu: Node
 var _stats: Node
 var _match: MatchHud
+var _status: StatusEffectsHud
 
 func _ready() -> void:
 	add_to_group("hud")   # o Player encontra a HUD por este grupo ao equipar fruta
@@ -41,6 +42,10 @@ func _ready() -> void:
 	_match = MatchHud.new()
 	_match.name = "MatchHud"
 	add_child(_match)
+
+	_status = StatusEffectsHud.new()
+	_status.name = "StatusEffectsHud"
+	add_child(_status)
 
 	# Itens iniciais de exemplo.
 	_inv.add_item({"nome": "Suna Suna no Mi", "tipo": "Logia", "cor": Color(0.95, 0.8, 0.45)})

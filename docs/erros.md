@@ -7,6 +7,47 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-10 — `--editor --quit` não detecta script que não compila
+
+**Sintoma:** uma edição minha quebrou o `IceFX.gd` inteiro (usei a variável
+`duration` num escopo onde ela não existe). A Ice Age parou de fazer **qualquer
+coisa** — sem campo, sem congelamento, sem dano. E a checagem que eu vinha
+usando a sessão toda, `godot --headless --path . --editor --quit`, reportou
+**"0 erros"**.
+
+Passei três rodadas de investigação achando que o problema era alcance da área
+de efeito, posição do alvo e camada de colisão. Não era nada disso: a classe
+não existia em tempo de execução.
+
+**Causa raiz:** `--editor --quit` **reimporta assets e atualiza o cache de
+`class_name`** — ele não *carrega* os scripts. Erro de sintaxe ou de
+identificador não aparece nessa passada; só quando alguém tenta usar a classe,
+em execução, e aí o sintoma é "o golpe não faz nada", que se confunde com bug de
+gameplay.
+
+**Evidência:** com o `IceFX` quebrado, `--editor --quit` → `0 erros`; o mesmo
+projeto rodando o carregamento de verdade → `Parse Error: Identifier "duration"
+not declared in the current scope`.
+
+**Descartado:** não era alcance da área (o campo cresce de 0,35 a 11,0), não era
+camada de colisão (dummy e player estão os dois na 1), não era posição do alvo.
+Os três foram medidos antes de eu olhar para a compilação.
+
+**Correção:** `tools/dev_tests/test_compila.gd` — carrega **todo** `.gd` do
+projeto com `load()` e falha se algum voltar `null`.
+
+```bash
+godot --headless --path . --script tools/dev_tests/test_compila.gd
+```
+
+**Como detectar de novo:** rodar esse script depois de qualquer edição, e
+**principalmente depois de edição automatizada** (`sed`, script de inserção) —
+que é onde nasce o erro de variável fora de escopo, porque quem edita não está
+lendo o entorno. `--editor --quit` continua útil para `class_name` novo e import
+de asset; ele só não serve como prova de que o código compila.
+
+---
+
 ## 2026-08-10 — Knockback não empurrava ninguém, nem em rede nem em um-jogador
 
 **Sintoma:** relatado jogando — "jogador cliente e servidor não tomando knockback".

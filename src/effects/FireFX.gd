@@ -545,6 +545,7 @@ static func _hibashira_legado(world: Node, pos: Vector3, damage: float, caster: 
 			# Marca a vítima no dicionário e aplica CC (imobiliza e impede ataques)
 			trapped_victims[body] = true
 			body.set_meta("in_vortex", true)
+			StatusFX.aplicar(body, StatusFX.SUGADO, 3.0)
 			body.set_meta("is_suppressed", true)
 			if body.has_method("suppress_skills_temporarily"):
 				body.suppress_skills_temporarily(0.25)

@@ -1262,6 +1262,7 @@ func net_force_respawn() -> void:
 func suppress_skills_temporarily(duration: float) -> void:
 	is_suppressed = true
 	suppression_timer = duration
+	StatusFX.aplicar(self, StatusFX.SILENCIADO, duration)   # aparece no canto da tela
 	print("🚫 PODERES DESATIVADOS POR YAMI YAMI! Tempo restante: ", duration, "s")
 
 func lock_movement(duration: float, skill_id: String = "") -> void:

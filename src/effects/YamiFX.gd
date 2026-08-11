@@ -202,6 +202,7 @@ static func _kurouzu(world: Node, origin: Vector3, dir: Vector3, damage: float, 
 	if target:
 		print("🌑 ESPIRAL NEGRA (Kurouzu)! ", target.name, " atraído para a mão do usuário e com poderes/ataques negados!")
 		target.set_meta("in_kurouzu", true)
+		StatusFX.aplicar(target, StatusFX.SUGADO, 3.2)
 		target.set_meta("yami_silenced", true)
 		if target.has_method("suppress_skills_temporarily"):
 			target.suppress_skills_temporarily(4.0)
@@ -661,6 +662,7 @@ class BlackHoleController extends Node:
 					continue
 				if center.distance_to(e.global_position) <= RADIUS + 0.5:
 					e.set_meta("in_black_hole", true)
+					StatusFX.aplicar(e, StatusFX.BURACO_NEGRO, 7.0)
 					e.set_meta("yami_silenced", true)
 					if e.has_method("suppress_skills_temporarily"):
 						e.suppress_skills_temporarily(10.0)

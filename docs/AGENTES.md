@@ -98,6 +98,11 @@ redescobre — gastando tempo — ou inventa.
   não compila. Use `get_root().get_node("GameFlow")`.
 - **`class_name` novo** só entra no cache com `--headless --editor --quit`. Antes
   disso, qualquer script que o use falha com "Identifier not declared".
+- ⚠️ **`--editor --quit` NÃO prova que o código compila.** Ele reimporta assets e
+  atualiza o cache de `class_name`; não carrega os scripts. Um erro de
+  identificador passa como "0 erros" e o sintoma vira "o golpe não faz nada".
+  Prova de verdade: `godot --headless --path . --script tools/dev_tests/test_compila.gd`,
+  que carrega todo `.gd`. Rodar sempre depois de edição por script.
 - **Validar animação por contagem não funciona.** Número de faixas, de chaves ou
   de canais dá "ok" num clipe totalmente congelado. Meça **amplitude por papel**
   ou **amostras por osso**. Foi assim que o `hurricane_kick` passou meses
