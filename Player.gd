@@ -537,9 +537,38 @@ func _process(delta: float) -> void:
 	ScreenFX.set_vignette(clampf((vel_fx - 0.70) * 0.6, 0.0, 0.2))
 
 func _physics_process(delta: float) -> void:
+	# ETAPAS NOMEADAS (Fase 1 da arquitetura, 2026-08-11).
+	#
+	# Este método tinha 291 linhas e misturava movimento, parkour, dash,
+	# habilidades, energia, animação, rede, Buki, câmera e melee. Era por causa
+	# dele que a contagem por domínio dizia "MOVIMENTO: 45 linhas" — a
+	# movimentação de verdade morava aqui dentro, sem nome.
+	#
+	# ⚠️ NADA saiu do arquivo nesta fase, de propósito. O objetivo é enxergar as
+	# dependências e a ORDEM antes de mover código: cada etapa abaixo já é uma
+	# fronteira candidata a virar componente (ver docs/ARQUITETURA_PLAYER.md).
+	#
+	# A ordem NÃO é arbitrária, e duas etapas cortam o quadro:
+	#   • sem autoridade, o corpo só reproduz o estado replicado e nada mais roda;
+	#   • travado (cast, rajada, congelado, vórtice, buraco negro) o personagem
+	#     fica parado e o quadro termina ali;
+	#   • morto no vazio, o respawn acontece e o resto do quadro é descartado.
 	if not _is_authority:
 		_remote_process(delta)   # player de outro cliente: só reproduz o estado replicado
 		return
+	_etapa_estado_de_combate(delta)
+	if _etapa_travamento(delta):
+		return
+	_etapa_locomocao(delta)
+	_etapa_ticks_de_combate(delta)
+	_etapa_publicar_rede()
+	if _etapa_vida(delta):
+		return
+	_etapa_mover(delta)
+
+# Energia, recargas e o laço das armas na mão. Roda SEMPRE que há autoridade —
+# inclusive travado, senão a recarga congelaria junto com o personagem.
+func _etapa_estado_de_combate(delta: float) -> void:
 	for g in _pistols:
 		if is_instance_valid(g):
 			g.visible = _rapid_fire or _yami_pistol_active
@@ -562,6 +591,10 @@ func _physics_process(delta: float) -> void:
 		_process_yami_pistol(delta)
 	if _buki_weapon != "":
 		_process_buki_arma(delta)   # arma na mão: mira, cadência e munição
+
+# O personagem está preso a alguma coisa? Devolve `true` quando consumiu o
+# quadro — quem chama tem que devolver na hora, sem seguir para a locomoção.
+func _etapa_travamento(delta: float) -> bool:
 	# HOLD-TO-CAST / RAJADA Z: enquanto a tecla está SEGURADA (ou a rajada Z ativa), o
 	# personagem fica PARADO — inclusive NO AR, sem gravidade — até soltar a tecla ou
 	# as balas acabarem. Só a câmera continua livre (mira). A rajada dispara aqui.
@@ -588,8 +621,21 @@ func _physics_process(delta: float) -> void:
 			if _movement_locked_timer > 0.0:
 				_movement_locked_timer -= delta
 				
-			return
+				return true
+	return false
 
+# ENTRADA + PARKOUR + DASH + LOCOMOÇÃO + facing + animação.
+#
+# ⚠️ Estes cinco assuntos ficaram numa etapa só, e isso é uma CONCLUSÃO, não
+# preguiça: eles compartilham os mesmos locais de quadro — `dir`, `f`/`r`,
+# `is_sprinting`, `on_floor_now`, `wall_normal`, `side_wall`, `wall_running`,
+# `dash_step`, `effective_speed`. Separá-los agora obrigaria a passar tudo isso
+# de mão em mão, o que troca acoplamento por cerimônia sem ganhar clareza.
+#
+# Os locais compartilhados SÃO a medida do acoplamento: enquanto forem tantos,
+# MovementController / ParkourController / DashController são o mesmo componente.
+# Quebrar aqui dentro é a Fase 4, e vem depois de reduzir essa lista.
+func _etapa_locomocao(delta: float) -> void:
 	# Direcao relativa a ORIENTACAO REAL da camera (nada de adivinhar o yaw).
 	var f := 0.0  # frente(+)/tras(-)
 	var r := 0.0  # direita(+)/esquerda(-)
@@ -794,15 +840,23 @@ func _physics_process(delta: float) -> void:
 			parkour = "long_jump"
 		_proc_anim.update(velocity, is_on_floor(), _is_climbing, delta, _pitch, is_sprinting, false, "", parkour, _pose_de_arma(), _gun_recoil)
 
+# Fôlego, rajada Z e a janela do combo de corpo a corpo.
+func _etapa_ticks_de_combate(delta: float) -> void:
 	_update_breath()
 	_tick_rapid_fire(delta)   # Mera Z: dispara as balas de fogo enquanto a rajada está ativa
 	_tick_melee(delta)        # corpo a corpo: janela de 2 s do combo + recuperação
+
+# A autoridade publica seu estado para os outros clientes replicarem.
+func _etapa_publicar_rede() -> void:
 
 	# Rede (Fase 4): a autoridade publica seu estado p/ os outros clientes replicarem.
 	net_velocity = velocity
 	net_on_floor = is_on_floor()
 	if _char_model:
 		net_facing = _char_model.rotation.y
+
+# Supressão de poderes e morte por queda. Devolve `true` se o quadro acabou aqui.
+func _etapa_vida(delta: float) -> bool:
 
 	# Processamento de Supressão da Passiva Yami Yami
 	if is_suppressed:
@@ -813,7 +867,13 @@ func _physics_process(delta: float) -> void:
 
 	# Verificação de Void (Morte ao cair no Void)
 	if SkillSystem.process_void_check(self):
-		return
+		return true
+	return false
+
+# Aplica o empurrão externo e move de fato. É o ÚLTIMO passo do quadro: o
+# knockback tem que entrar DEPOIS de a locomoção escrever `velocity`, senão ela
+# o sobrescreve (foi exatamente esse o bug do empurrão que não funcionava).
+func _etapa_mover(delta: float) -> void:
 
 	# Empurrão externo: somado DEPOIS da locomoção ter escrito velocity, e antes
 	# de mover. Decai sozinho, então o controle volta ao jogador em ~1 s.

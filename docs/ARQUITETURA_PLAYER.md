@@ -193,7 +193,7 @@ que parou de responder ao clique. Depois de cada fase de risco, vale abrir o jog
 
 | fase | estado | commit |
 |---|---|---|
-| 1 — etapas no `_physics_process` | ⏳ não iniciada | — |
+| 1 — etapas no `_physics_process` | ✅ **feita** — 291 → 32 linhas | ver abaixo |
 | 2 — `CameraRig` | ⏳ | — |
 | 3 — `PlayerRig` | ⏳ | — |
 | 4 — Movement / Parkour / Dash | ⏳ | — |
@@ -202,3 +202,45 @@ que parou de responder ao clique. Depois de cada fase de risco, vale abrir o jog
 | 7 — `MeleeController` | ⏳ | — |
 | 8 — `HealthController` | ⏳ | — |
 | 9 — redução final | ⏳ | — |
+
+---
+
+## Fase 1 — feita em 2026-08-11
+
+`_physics_process` foi de **291 para 32 linhas**, quebrado em 7 etapas nomeadas.
+**Nada saiu do arquivo**, como planejado.
+
+| etapa | linhas | corta o quadro? |
+|---|---|---|
+| `_etapa_estado_de_combate` | 26 | não |
+| `_etapa_travamento` | 41 | **sim** — devolve `true` e o quadro acaba |
+| `_etapa_locomocao` | 206 | não |
+| `_etapa_ticks_de_combate` | 6 | não |
+| `_etapa_publicar_rede` | 9 | não |
+| `_etapa_vida` | 17 | **sim** — morte no vazio |
+| `_etapa_mover` | 14 | não (é o último) |
+
+**Prova de que o comportamento não mudou:** comparando o corpo antes e depois,
+**205 das 206 linhas de código são idênticas** — a única diferença é a própria
+assinatura `func _physics_process(...)`. Reempacotamento puro. Suíte: compila 0,
+arena 53, buki 24, walk_run, rig_unico, anatomia_rig.
+
+### O que a Fase 1 revelou, e que muda a Fase 4
+
+Entrada, parkour, dash, locomoção, facing e animação **ficaram numa etapa só**
+(`_etapa_locomocao`, 206 linhas). Isso é conclusão medida, não preguiça: os seis
+compartilham os mesmos locais de quadro —
+
+`dir` · `f`/`r` · `is_sprinting` · `on_floor_now` · `wall_normal` · `side_wall` ·
+`wall_running` · `dash_step` · `effective_speed`
+
+Separá-los agora obrigaria a passar tudo isso de mão em mão, trocando
+acoplamento por cerimônia sem ganhar clareza.
+
+> **Os locais compartilhados são a métrica do acoplamento.** Enquanto forem
+> tantos, `MovementController`, `ParkourController` e `DashController` são **o
+> mesmo componente**. A Fase 4 começa reduzindo essa lista, não criando três
+> arquivos.
+
+Isso refina o plano: a Fase 4 ganha um passo zero — **encolher os locais
+compartilhados** — antes de qualquer separação.
