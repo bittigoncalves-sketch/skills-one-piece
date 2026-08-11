@@ -159,6 +159,13 @@ exige a decisão sobre virar nó com filhos-componentes.
 
 ## 5. Veredito honesto
 
+> ✅ **Decidido.** O dono leu este relatório e definiu a arquitetura em
+> [`ARQUITETURA_PLAYER.md`](ARQUITETURA_PLAYER.md) — componentes por domínio,
+> 9 fases, começando por quebrar o `_physics_process` sem mover arquivo.
+> Uma correção veio junto: **RPC em nó filho funciona** (ver a seção de
+> correções técnicas de lá); eu fui pessimista demais abaixo.
+
+
 **Particionar só movendo funções não chega ao limite de 900.** O `Player.gd` não
 é grande por acúmulo de funções soltas — ele é grande porque concentra três
 coisas que só ele pode fazer hoje: **ser o corpo físico**, **ser o dono do
