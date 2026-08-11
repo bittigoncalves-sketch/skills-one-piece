@@ -122,6 +122,8 @@ Detalhes em [`docs/ANIMACOES_MIXAMO.md`](docs/ANIMACOES_MIXAMO.md).
 | [`docs/erros.md`](docs/erros.md) | registro de bugs com causa raiz e correção |
 | [`docs/AGENTES.md`](docs/AGENTES.md) | como o trabalho é dividido entre agentes especializados |
 | [`docs/LIMITE_DE_TAMANHO.md`](docs/LIMITE_DE_TAMANHO.md) | limite de 900 linhas por script, o que já foi dividido e o plano do `Player.gd` |
+| [`docs/RELATORIO_PLAYER.md`](docs/RELATORIO_PLAYER.md) | mapa do `Player.gd` por domínio, estado compartilhado e proposta de corte |
+| [`docs/LISTA_DE_CORRECOES.md`](docs/LISTA_DE_CORRECOES.md) | bugs achados e **não** corrigidos, esperando decisão |
 | [`docs/MUDANCAS_2026-08-06.md`](docs/MUDANCAS_2026-08-06.md) | rig único, conserto do pipeline, Buki Buki |
 | [`docs/MUDANCAS_2026-08-10.md`](docs/MUDANCAS_2026-08-10.md) | arena: buracos, placar, corpo a corpo, armas em .glb |
 | [`docs/MUDANCAS_2026-08-10_PARTE2.md`](docs/MUDANCAS_2026-08-10_PARTE2.md) | rig, rebake dos 28 clipes, personagem novo, multiplayer, LAN |
