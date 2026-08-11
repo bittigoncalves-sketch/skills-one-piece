@@ -13,9 +13,8 @@ if [ -z "$GODOT" ]; then
     exit 1
 fi
 
-if [ ! -f "$PROJ/.godot/global_script_class_cache.cfg" ]; then
-    echo "Primeira execução — preparando o projeto..."
-    GODOT="$GODOT" "$PROJ/setup.sh"
-fi
+# Mesma checagem do jogar.sh: cache de class_name ausente OU defasado derruba a
+# compilação do mundo inteiro. Ver checar_cache.sh.
+GODOT="$GODOT" "$PROJ/checar_cache.sh"
 
 exec "$GODOT" --headless --path "$PROJ" -- --server

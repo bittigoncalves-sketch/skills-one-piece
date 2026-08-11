@@ -15,11 +15,10 @@ if [ -z "$GODOT" ]; then
     exit 1
 fi
 
-# CLONE NOVO: sem o cache de class_name o Main.gd não compila e o jogo abre em
-# TELA CINZA permanente. Preparar sozinho evita o tropeço.
-if [ ! -f "$PROJ/.godot/global_script_class_cache.cfg" ]; then
-    echo "Primeira execução — preparando o projeto (demora alguns minutos)..."
-    GODOT="$GODOT" "$PROJ/setup.sh"
-fi
+# Sem o cache de class_name COMPLETO o Player.gd não compila e o jogo abre em
+# TELA CINZA — o clique em JOGAR parece não funcionar. Vale para o clone novo
+# (cache ausente) e para o cache defasado, quando uma classe nova foi criada
+# desde o último preparo. Ver checar_cache.sh.
+GODOT="$GODOT" "$PROJ/checar_cache.sh"
 
 exec "$GODOT" --display-driver wayland --path "$PROJ"

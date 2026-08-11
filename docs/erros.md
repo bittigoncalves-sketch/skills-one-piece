@@ -1061,3 +1061,39 @@ qualquer medição.
 **Correção:** helper que tenta `act.fcurves` e cai para a travessia de
 layers/strips/channelbags (`contar_fcurves` em `tools/fbx_to_glb.py`).
 **Como detectar:** o `AttributeError` — e vale checar a versão antes de assumir a API.
+
+### `class_name` novo derruba o jogo inteiro em TELA CINZA
+**Sintoma:** clicar em JOGAR SINGLEPLAYER "não faz nada". O menu some, e fica uma
+tela cinza. Parece bug do botão — não é.
+
+**Causa raiz:** um `class_name` só existe se estiver no
+`.godot/global_script_class_cache.cfg`, e esse cache **só é regenerado por
+reimportação** (`--editor --quit`). Quando a Fase 2 da partição do Player criou
+`class_name CameraRig`, o cache seguiu velho. Aí:
+
+```
+Parse Error: Could not find type "CameraRig" in the current scope.
+Compile Error: Failed to compile depended scripts.
+Invalid call. Nonexistent function 'local_player' in base 'GDScript'.
+```
+
+O `Player.gd` não compila; a cena do mundo depende dele; ninguém spawna; não há
+câmera. **O clique funcionou o tempo todo** — o que quebrou foi a cena de
+destino.
+
+**Por que passou por todos os testes:** minha rotina roda `--editor --quit`
+antes da suíte, o que regenera o cache. Ou seja, eu testava sempre no único
+estado em que o bug não existe. O `jogar.sh` não roda isso.
+
+**Correção:** `checar_cache.sh` (novo), chamado por `jogar.sh` e `servidor.sh`.
+A checagem antiga era `[ ! -f cache ]` — pegava cache **ausente** (clone novo) e
+nunca cache **defasado**. A nova compara os `class_name` do fonte com os do
+cache e regenera quando falta algum.
+
+**Como detectar:** rodar o jogo e procurar `Could not find type` /
+`Failed to compile depended scripts` no console. Um `grep -c "NomeDaClasse"
+.godot/global_script_class_cache.cfg` valendo 0 confirma.
+
+**Lição de método:** *toda* fase seguinte da partição do Player cria classe
+nova. Um bug que só aparece fora do ambiente de teste continua sendo um bug —
+e preparar o ambiente antes de testar é justamente o que o esconde.
