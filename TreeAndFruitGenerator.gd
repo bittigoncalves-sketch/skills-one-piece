@@ -237,9 +237,9 @@ static func pickup_fruit(body: Node, fruit_id: String) -> void:
 
 	# Devolve a fruta anterior (em TODOS os clientes) e esconde+equipa a nova (em TODOS).
 	if current_equipped != "" and current_equipped != fruit_id:
-		FruitNet.respawn(current_equipped)
+		_fruit_net(body).respawn(current_equipped)
 	var peer_id: int = str(body.name).to_int()   # nome do player = peer id
-	FruitNet.pickup(fruit_id, peer_id)
+	_fruit_net(body).pickup(fruit_id, peer_id)
 	print("🍎 Fruta [", fruit_id, "] coletada (peer ", peer_id, ")! Refletindo em todos.")
 
 # Criar Modelo 3D da Fruta do Diabo (Akuma no Mi) — ESTRITAMENTE CÚBICO E DETALHADO VOXEL
@@ -387,3 +387,24 @@ static func create_fruit_3d(def: Dictionary) -> Node3D:
 	fruit_root.set_script(anim_script)
 
 	return fruit_root
+
+# O autoload pego por CAMINHO, não por identificador.
+#
+# `FruitNet.x` escrito direto faz esta classe inteira falhar ao compilar em
+# script `godot -s` ("Identifier not found: FruitNet"), porque ali os autoloads
+# existem na árvore mas não viram identificador de compilação. O efeito é
+# traiçoeiro: a classe some das ferramentas e devolve lista vazia sem avisar —
+# foi assim que a auditoria de frutas reportou "0 árvores no mapa" e marcou as 9
+# frutas como impossíveis de obter (ver docs/erros.md, 2026-08-10).
+static func _fruit_net(ctx: Node) -> Node:
+	if ctx and ctx.is_inside_tree():
+		var n := ctx.get_node_or_null("/root/FruitNet")
+		if n:
+			return n
+	return _FruitNetMudo.new()
+
+# Dublê para quando não há autoload (ferramentas headless): engole a chamada em
+# vez de derrubar quem está medindo.
+class _FruitNetMudo extends Node:
+	func pickup(_fruit_id: String, _peer_id: int) -> void: pass
+	func respawn(_fruit_id: String) -> void: pass
