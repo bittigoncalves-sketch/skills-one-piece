@@ -17,6 +17,7 @@ var _t := 0.0
 var _tick_t := 0.0
 
 var _velocity := Vector3.ZERO
+var _zone: DamageZone = null   # hitbox E sensor de quem está dentro
 
 func setup(radius: float, pull: float, lift: float, dps: float, life: float, caster: Node, move_dir: Vector3 = Vector3.ZERO) -> void:
 	_radius = radius
@@ -25,7 +26,21 @@ func setup(radius: float, pull: float, lift: float, dps: float, life: float, cas
 	_dps = dps
 	_life = life
 	_caster = caster
-	
+
+	# HITBOX + SENSOR numa peça só.
+	# O tornado varria `get_nodes_in_group("enemy")` (era a linha 64) para achar
+	# alvos. Na arena PvP isso não encosta em ninguém: os inimigos estão em
+	# `disabled/` e os jogadores vivem no grupo "player". Resultado medido: golpe
+	# sem hitbox e sem dano em jogador — só o boneco de treino era afetado.
+	# A DamageZone filha resolve as duas pontas: é a hitbox que a auditoria exige
+	# (dano de entrada, crédito de kill, hit-stop) e é a lista de corpos de dentro
+	# para o puxão/levantada, por sobreposição física em vez de grupo.
+	_zone = DamageZone.new()
+	add_child(_zone)
+	# KNOCKBACK ZERO: o tornado SUGA para o centro. Empurrão pra fora brigaria com
+	# a mecânica de puxar/levantar, que é a razão de ser deste golpe.
+	_zone.setup(dps * _tick, 0.0, Vector3.ZERO, life, caster, radius)
+
 	var flat_dir := Vector3(move_dir.x, 0.0, move_dir.z)
 	if flat_dir.length_squared() > 0.01:
 		_velocity = flat_dir.normalized() * 10.0 # Velocidade mediana
@@ -61,7 +76,10 @@ func _physics_process(delta: float) -> void:
 	if do_damage:
 		_tick_t = 0.0
 	var center := global_position
-	for body in get_tree().get_nodes_in_group("enemy"):
+	if not is_instance_valid(_zone):
+		return
+	# Corpos de dentro por SOBREPOSIÇÃO (antes: grupo "enemy", que ignorava jogador).
+	for body in _zone.get_overlapping_bodies():
 		if body == _caster or not (body is Node3D):
 			continue
 		var to_center := center - (body as Node3D).global_position

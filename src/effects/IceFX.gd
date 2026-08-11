@@ -216,41 +216,47 @@ static func _investida_de_gelo(world: Node, origin: Vector3, dir: Vector3, damag
 	if caster and caster is CharacterBody3D:
 		(caster as CharacterBody3D).velocity = fwd * 28.0 + Vector3.UP * 4.0
 
-	var area := Area3D.new()
-	world.add_child(area)
-	area.global_position = origin
+	# HITBOX: a investida é uma DamageZone que avança com o dash.
+	# Antes era um Area3D CRU chamando take_damage() na mão (o `if body.has_method`
+	# da lambda). Machucava, mas ficava fora de todo o pipeline de combate — sem
+	# knockback, sem crédito de kill no placar, sem hit-stop — e a auditoria lia o
+	# golpe como "só visual", porque neste projeto hitbox É `DamageZone`.
+	var zone := DamageZone.new()
+	world.add_child(zone)
+	zone.global_position = origin
 
-	var col := CollisionShape3D.new()
-	var sphere := SphereShape3D.new()
-	sphere.radius = 2.2
-	col.shape = sphere
-	area.add_child(col)
+	# Aura gélida acompanhando a investida
+	zone.add_child(FxUtil.particles(100, 0.8, false, _frost_proc(1.8, 2.0), FxUtil.grain(0.3)))
 
-	# Aura gélida no caster durante a investida
-	var aura := FxUtil.particles(100, 0.8, false, _frost_proc(1.8, 2.0), FxUtil.grain(0.3))
-	area.add_child(aura)
-
-	var hit_targets: Dictionary = {}
-
-	area.body_entered.connect(func(body: Node3D):
-		if body == caster or hit_targets.has(body):
+	# CONGELAR continua sendo a mecânica do golpe. Conectado ANTES do `setup` para
+	# rodar antes do `_on_body` da própria DamageZone.
+	zone.body_entered.connect(func(body: Node3D):
+		if body == caster:
 			return
-		hit_targets[body] = true
-
-		if body.has_method("take_damage"):
-			body.take_damage(damage, area.global_position, Vector3.ZERO)
-
 		_congelar_alvo(world, body, 5.0, 2.0)
 	)
 
-	# Move a área de investida junto com o avanço
-	var tw := area.create_tween()
-	tw.tween_property(area, "global_position", origin + fwd * 12.0, 0.45)
-	tw.tween_callback(area.queue_free)
+	# KNOCKBACK ZERO de propósito: a investida PRENDE o alvo num bloco de gelo.
+	# Empurrão mandaria o bloco pra longe e desmancharia o controle, que é o ponto
+	# do golpe. Movimento: os mesmos 12 m em 0,45 s do tween antigo -> 26,7 m/s.
+	zone.setup(damage, 0.0, fwd * 26.7, 0.45, caster, 2.2)
 
 # ---------- V: Ice Age (Congela o Chão por 50 segundos) ----------
 static func _ice_age(world: Node, center_pos: Vector3, damage: float, caster: Node) -> void:
 	var floor_pos := Vector3(center_pos.x, 0.05, center_pos.z)
+
+	# HITBOX: a ERUPÇÃO inicial, quando a placa rompe o chão.
+	# O parâmetro `damage` chegava aqui e morria — não era usado em lugar nenhum do
+	# Ice Age. Era caminho morto, não decisão de design (a doc do golpe nunca disse
+	# "não fere"). Quem está em cima quando o gelo sobe leva o impacto uma vez.
+	# O CAMPO de 50 s que fica depois continua sendo CONTROLE PURO: congela e
+	# recongela, não tira vida. Essa parte é de propósito — ver relatório.
+	var burst := DamageZone.new()
+	world.add_child(burst)
+	burst.global_position = floor_pos + Vector3.UP * 1.0
+	# Raio 5 = o raio BASE da placa (antes de crescer). Vida 1 s: é o impacto da
+	# subida, não uma zona de dano permanente.
+	burst.setup(damage, 8.0, Vector3.ZERO, 1.0, caster, 5.0)
 
 	var age_zone := Node3D.new()
 	world.add_child(age_zone)
@@ -326,6 +332,13 @@ static func _ice_age(world: Node, center_pos: Vector3, damage: float, caster: No
 # ---------- Helper: Congela Alvo com Bloco de Gelo 3D e Imunidade ----------
 static func _congelar_alvo(world: Node, target: Node3D, freeze_duration: float, immunity_duration: float) -> void:
 	if not target:
+		return
+
+	# Só congela COMBATENTE. Sem esta guarda a investida congelava o cenário: a
+	# auditoria imprimia "ALVO CONGELADO ... em: Plataforma" e em "@StaticBody3D@56",
+	# pendurando um bloco de gelo de 1,6×2,4 m no meio do mapa por 5 s. `take_damage`
+	# é o que define combatente neste projeto (mesmo critério da DamageZone).
+	if not target.has_method("take_damage"):
 		return
 
 	# Checa se o alvo está imune ao congelamento

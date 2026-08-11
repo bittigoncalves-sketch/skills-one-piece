@@ -127,6 +127,19 @@ static func _todas_as_definicoes() -> Array[Dictionary]:
 			"leaf_shape": "crystal"
 		},
 		{
+			# A Gura Gura tinha os 4 golpes prontos e passiva, e NENHUMA árvore —
+			# ou seja, era impossível de obter jogando. Achado pela auditoria de
+			# 2026-08-10 (docs/AUDITORIA_FRUTAS.md). Paleta de terremoto: rachadura
+			# e ar deslocado.
+			"id": "gura_gura",
+			"nome": "Árvore do Abalo (Gura Gura)",
+			"foliage_color": Color(0.35, 0.55, 0.75),     # Azul Tempestade
+			"trunk_color": Color(0.30, 0.28, 0.30),       # Rocha Rachada
+			"fruit_color": Color(0.55, 0.70, 0.90),       # Cristal de Choque
+			"fruit_glow": Color(0.70, 0.85, 1.0),
+			"leaf_shape": "split"
+		},
+		{
 			"id": "buki_buki",
 			"nome": "Árvore Arsenal (Buki Buki)",
 			"foliage_color": Color(0.62, 0.66, 0.72),     # Aço Escovado

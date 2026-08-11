@@ -9,7 +9,30 @@ godot --headless --path . --script tools/dev_tests/test_frutas.gd
 
 ---
 
-## Placar
+## Placar FINAL (depois dos consertos)
+
+| fruta | obtível | equipa | golpes com hitbox | vazamento real |
+|---|---|---|---|---|
+| `bara_bara` | sim | sim | **4/4** | — |
+| `buki_buki` | sim | sim | **4/4** | — |
+| `gomu_gomu` | sim | sim | **4/4** | — |
+| `goro_goro` | sim | sim | **4/4** | — |
+| `gura_gura` | **sim** ✅ | sim | **4/4** | — |
+| `mera_mera` | sim | sim | **4/4** | — |
+| `suna_suna` | sim | sim | **4/4** ✅ | — |
+| `hie_hie` | sim | sim | **4/4** ✅ | — |
+| `yami_yami` | sim | sim | **4/4** ✅ | — |
+
+**9 de 9 frutas funcionais. Zero vazamento real no jogo inteiro.**
+
+Mudou desde a primeira medição: `yami_yami` 1/4→4/4, `hie_hie` 2/4→4/4,
+`suna_suna` 3/4→4/4, e a `gura_gura` ganhou árvore (tinha os 4 golpes prontos e
+era impossível de obter). Detalhe do que era cada defeito em
+[`erros.md`](erros.md).
+
+---
+
+## Placar da PRIMEIRA medição (o que estava quebrado)
 
 | fruta | obtível | equipa | golpes com hitbox | vazamento |
 |---|---|---|---|---|
@@ -112,11 +135,36 @@ ajuste de sensação:
 
 Registrado porque medir errado com confiança é pior que não medir.
 
-**A coluna de vazamento é indicativa, não exata.** Os testes de slot rodam em
-sequência e os efeitos se sobrepõem: aparecem valores **negativos** (`suna_suna`
-Z = −44, `yami_yami` X = −14), o que só é possível se efeitos do slot anterior
-ainda estavam morrendo. Os números grandes (34, 40) são grandes demais para ser
-ruído; os pequenos (1, 9) precisam de confirmação isolada antes de virar tarefa.
+### 🔴 A coluna "vazamento" estava medindo DURAÇÃO, não vazamento
+
+Erro meu, corrigido depois que os dois agentes mediram de forma isolada. É a
+ressalva mais importante deste documento.
+
+O teste espera **8,9 s** depois do golpe e chama de "vazado" o que ainda estiver
+de pé. Só que vários efeitos **duram muito mais que isso, de propósito**:
+
+| o que eu marquei como vazamento | o que era de fato |
+|---|---|
+| `hie_hie` V — 34 nós | o campo da Ice Age, `autofree(age_zone, 50.0)`. Cai a **zero em t+55 s** — a doc do golpe diz "congela o chão por 50 segundos" |
+| `suna_suna` V — 14 nós | o deserto, `autofree(desert_mmi, 20.0)`. Zero em **t+20 s** |
+| `yami_yami` V — 44 nós | **30 eram entulho com vida de 20 s** (janela do combo V→C) e **14 eram vazamento de verdade** — poeira dos escombros nunca liberada |
+
+Ou seja: **de todos os números da tabela, só 14 nós do `yami_yami` eram
+vazamento real.** O resto era o teste sendo impaciente.
+
+Os valores **negativos** na medição (`suna_suna` Z = −44, `yami_yami` X = −14)
+eram o mesmo fenômeno visto de outro ângulo: efeitos do slot anterior ainda
+morrendo durante o slot seguinte.
+
+**Como distinguir, e é o único jeito confiável:** disparar **um slot só**, 5
+vezes seguidas, e acompanhar a contagem até ela voltar à base. Vazamento cresce
+**linear** com as repetições e nunca volta; duração longa volta a zero sozinha,
+na hora que o `autofree` marca.
+
+**Consequência prática:** nenhuma duração foi encurtada para "passar no teste" —
+seria deformar o design para agradar o cronômetro. A única exceção foi o entulho
+do `yami_yami`, de 20 s para 6 s, e está marcada como mudança de sensação
+reversível numa constante.
 
 **Dois bugs da própria ferramenta foram corrigidos no meio do caminho**, e a
 primeira passada estava errada:
@@ -138,6 +186,13 @@ primeira passada estava errada:
 funciona em rede (roda em um-jogador — a pistola da Yami já falhou só no cliente);
 se o efeito nasce no lugar certo na tela; e se a `DamageZone` de fato encosta em
 alguém. Ela prova que a hitbox **existe**, não que ela **acerta**.
+
+**A auditoria não roda em paralelo consigo mesma.** `start_singleplayer()` hospeda
+um servidor local na porta fixa `24565`, então uma segunda instância morre com
+`Couldn't create an ENet host` e o teste reporta "a cena não subiu" — o que se
+confunde facilmente com defeito do jogo. Acontece na prática quando um agente
+está medindo e outro tenta medir junto. Conserto (pendente): porta aleatória, ou
+uma flag de teste que suba a cena sem hospedar.
 
 **Uma armadilha estática que não funcionou:** procurar `create_tween()` sem
 prefixo como sinal de vazamento deu **falso positivo** em `FireFX` e `YamiFX` —

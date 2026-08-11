@@ -16,6 +16,12 @@ const MAX_ABSORBED_BLOCKS := 30 # Máximo de blocos armazenados na escuridão
 const MAX_SPAWN_PER_CAST := 25  # Limite máximo de blocos gerados por conjuração no Liberation
 const MAX_SCENE_BLOCKS    := 35 # Limite máximo simultâneo de blocos na cena inteira (evita queda de FPS)
 
+# ---- Calibragem das hitboxes (raio/vida casados com o que aparece na tela) ----
+const KUROUZU_DURATION  := 3.2   # trava do conjurador == vida da hitbox do vórtice
+const KUROUZU_RADIUS    := 1.9   # esfera do vórtice (0.9) + anéis de acréscimo (até 1.8)
+const LIBERATION_RADIUS := 25.0  # alcance do repelão — o mesmo da varredura manual antiga
+const DEBRIS_LIFETIME   := 6.0   # escombro caído some sozinho se o Black Hole não absorver
+
 static var _shared_block_mesh: BoxMesh = null
 static var _shared_block_mat: StandardMaterial3D = null
 
@@ -178,6 +184,19 @@ static func _kurouzu(world: Node, origin: Vector3, dir: Vector3, damage: float, 
 
 	AudioFX.whoosh(world, palm_pos, 0.6)
 
+	# HITBOX — a espiral tritura quem ENCOSTA nela, não só quem ela agarra.
+	# Antes deste ponto o golpe não criava DamageZone nenhuma: todo o dano do
+	# Kurouzu era `target.take_damage()` direto, lá no fim do KurouzuController,
+	# e só saía se `_find_closest_entity` tivesse achado alguém. Sem alvo o golpe
+	# era 100% enfeite, e mesmo com alvo ninguém MAIS podia ser atingido.
+	# A zona é filha do vortex_root: o controlador move o vórtice para a palma da
+	# mão a cada frame e a hitbox acompanha de graça.
+	# Knockback baixo de propósito (6.0): este golpe PUXA. Quem arremessa é o
+	# clique de release, com knockback 45.
+	var vortex_zone := DamageZone.new()
+	vortex_root.add_child(vortex_zone)
+	vortex_zone.setup(damage, 6.0, Vector3.ZERO, KUROUZU_DURATION, caster, KUROUZU_RADIUS)
+
 	# Procura jogador / inimigo mais próximo no alcance (~28m)
 	var target := _find_closest_entity(world, caster, origin, 28.0)
 	if target:
@@ -231,7 +250,8 @@ static func _black_hole(world: Node, origin: Vector3, damage: float, caster: Nod
 
 # ---------- V: Liberation (Ribereshon - Repelão & Destruição em Círculo) ----------
 static func _liberation(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
-	var fwd := dir.normalized()
+	# `dir` não é usado: o Liberation é OMNIDIRECIONAL, nasce aos pés e empurra
+	# para todos os lados. A direção do olhar não muda nada aqui.
 	# Posição no chão aos pés do usuário para expansão da onda no plano horizontal sem obstruir a visão!
 	var spawn_center := origin
 	spawn_center.y = 0.2
@@ -346,24 +366,26 @@ static func _liberation(world: Node, origin: Vector3, dir: Vector3, damage: floa
 		var throw_dir := Vector3(cos(angle), randf_range(0.15, 0.35), sin(angle)).normalized()
 		blk.velocity = throw_dir * randf_range(25.0, 45.0)
 
-	# Aplica Repelão (Extremo Knockback) nos inimigos ao redor do Liberation
-	var all_entities := world.get_tree().get_nodes_in_group("enemy")
-	for e in all_entities:
-		if is_instance_valid(e) and e is Node3D and e != caster:
-			var dist_e := spawn_center.distance_to(e.global_position)
-			if dist_e <= 25.0:
-				var repulse_dir: Vector3 = (e as Node3D).global_position - spawn_center
-				repulse_dir.y = 0
-				repulse_dir = repulse_dir.normalized() if repulse_dir.length_squared() > 0.01 else fwd
-				var kb: Vector3 = repulse_dir * 38.0 + Vector3.UP * 7.0
-				if e.has_method("take_damage"):
-					e.take_damage(damage * 1.5, spawn_center, kb)
-				elif "velocity" in e:
-					e.velocity = kb
+	# HITBOX do Repelão — onda radial do tamanho do alcance do golpe.
+	# Antes daqui o Liberation não criava DamageZone nenhuma: o repelão era uma
+	# varredura manual sobre o grupo "enemy" APENAS. Numa arena PvP isso deixava
+	# todos os OUTROS JOGADORES imunes ao ultimate da Yami — o golpe passava por
+	# eles sem tocar. A DamageZone pega qualquer corpo com take_damage() e já
+	# empurra na direção radial (centro -> alvo), que é exatamente o repelão que a
+	# varredura fazia à mão. Vida curta (0.45s): é um estouro instantâneo, não uma
+	# armadilha que fica no chão.
+	var wave := DamageZone.new()
+	world.add_child(wave)
+	wave.global_position = spawn_center + Vector3.UP * 1.0
+	wave.setup(damage * 1.5, 38.0, Vector3.ZERO, 0.45, caster, LIBERATION_RADIUS)
 
-	var tw := world.create_tween()
+	# O tween nasce no PRÓPRIO burst_root, não em `world`: é o nó que ele libera
+	# (mesma correção do GomuRedHawk._spawn_explosion). A autofree é a rede de
+	# segurança caso o tween seja interrompido — 2.0 > 1.8, não corta o efeito.
+	var tw := burst_root.create_tween()
 	tw.tween_interval(1.8)
 	tw.tween_callback(burst_root.queue_free)
+	FxUtil.autofree(burst_root, 2.0)
 
 static func _find_closest_entity(world: Node, ignore_caster: Node, center: Vector3, max_dist: float) -> Node3D:
 	var best_target: Node3D = null
@@ -477,6 +499,9 @@ class KurouzuController extends Node:
 				root_fx.position = target.global_position
 				root_fx.add_child(burst)
 				get_tree().current_scene.add_child(root_fx)
+				# Mesmo vazamento da poeira do YamiBlock: nó de VFX solto na cena e
+				# nunca liberado. Um por arremesso do Kurouzu.
+				FxUtil.autofree(root_fx, 0.8)   # o burst one_shot dura 0.5s
 			
 			print("💥 KURUOZU RELEASE: Inimigo arremessado com MEGA KNOCKBACK e jogador liberado para mover!")
 			if is_instance_valid(vortex_root):
@@ -572,6 +597,35 @@ class BlackHoleController extends Node:
 		var smoke := FxUtil.particles(140, 1.5, false, pm, FxUtil.grain(0.8))
 		add_child(smoke)
 		smoke.global_position = center + Vector3.UP * 0.1
+
+		# HITBOX — o ENGOLIR. Uma mordida só, no momento em que o poço abre.
+		#
+		# O `damage` recebido no _init NUNCA era lido: o Black Hole puxava, afundava
+		# e silenciava, mas não tirava um ponto de vida de ninguém — por isso o slot
+		# C aparecia sem hitbox na auditoria.
+		#
+		# E ele NÃO vira dano contínuo, por decisão que já está escrita nas
+		# entidades, não aqui: TrainingDummy.take_damage e Enemy.take_damage
+		# RECUSAM dano enquanto `in_black_hole` for verdadeiro. Ou seja, o projeto
+		# já declara que o prisioneiro é imune — o Black Hole é controle (puxa,
+		# afunda, silencia), não moedor. Medido: um tique de esmagamento a cada
+		# segundo não tirava nada do dummy. Quem quiser o poço causando dano por
+		# segundo tem que mexer PRIMEIRO nessa imunidade, e isso é decisão de dono
+		# de projeto — não deste efeito.
+		# O que sobra e é legítimo: a mordida da entrada, aplicada antes de a
+		# imunidade ligar. Medido: 6.0 de dano no dummy.
+		#
+		# Raio = RADIUS, o mesmo do pântano e da sucção.
+		# Knockback ZERO de propósito: este golpe SUGA. Empurrar para fora mataria
+		# a própria mecânica do vórtice.
+		# É filha do controlador (não da cena): a varredura de anulação lá embaixo
+		# só apaga DamageZone que seja filha DIRETA de current_scene, então o buraco
+		# negro não engole a própria hitbox.
+		var zone := DamageZone.new()
+		add_child(zone)
+		zone.global_position = center
+		zone.setup(damage, 0.0, Vector3.ZERO, MAX_DURATION, caster, RADIUS)
+
 		AudioFX.whoosh(get_tree().current_scene, center, 0.45)
 
 	func _process(delta: float) -> void:
@@ -594,6 +648,9 @@ class BlackHoleController extends Node:
 		if elapsed >= MAX_DURATION or not holding:
 			_terminate()
 			return
+
+		# NÃO existe dano contínuo aqui, e isso é DELIBERADO — ver o comentário sobre
+		# `damage` no _ready(). Quem está preso é imune por decisão das entidades.
 
 		# A cada 0.05s (20Hz) processa sucção, afundo e bloqueio de poderes
 		if tick >= 0.05 and get_tree():
@@ -721,8 +778,15 @@ class YamiBlock extends Node3D:
 			# OTIMIZAÇÃO CRÍTICA: Desativa processamento de física quando atinge o chão!
 			set_physics_process(false)
 			if get_tree():
-				# Auto-despawn suave caso não seja absorvido pelo Black Hole após 20 segundos
-				get_tree().create_timer(20.0).timeout.connect(func(): if is_instance_valid(self): despawn())
+				# Auto-despawn suave caso não seja absorvido pelo Black Hole.
+				# Era 20s — tempo em que 15 escombros (30 nós) ficavam parados no
+				# mapa por conjuração. A janela existe para o combo V -> C (o Black
+				# Hole absorve o entulho e engorda o próximo V); DEBRIS_LIFETIME
+				# ainda cobre o tempo de reagir e conjurar o C, que dura 7s.
+				# GATILHO para revisitar: se o combo V -> C começar a falhar por
+				# falta de tempo jogando, subir DEBRIS_LIFETIME e aceitar que o
+				# test_frutas volte a acusar entulho na janela de 8s dele.
+				get_tree().create_timer(YamiFX.DEBRIS_LIFETIME).timeout.connect(func(): if is_instance_valid(self): despawn())
 
 			# Otimização de áudio e poeira: aciona efeitos de queda em apenas ~35% dos blocos para evitar sobrecarga de som/partícula
 			if get_tree() and get_tree().current_scene and randf() < 0.35:
@@ -740,3 +804,6 @@ class YamiBlock extends Node3D:
 				d_root.position = global_position
 				d_root.add_child(dust)
 				get_tree().current_scene.add_child(d_root)
+				# VAZAMENTO REAL: este nó NUNCA era liberado. Um por bloco que cai
+				# (~35% dos 15 escombros), 2 nós cada, para sempre, a cada V.
+				FxUtil.autofree(d_root, 0.6)   # poeira one_shot dura 0.2s
