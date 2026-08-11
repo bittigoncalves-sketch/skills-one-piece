@@ -194,7 +194,7 @@ que parou de responder ao clique. Depois de cada fase de risco, vale abrir o jog
 | fase | estado | commit |
 |---|---|---|
 | 1 — etapas no `_physics_process` | ✅ **feita** — 291 → 32 linhas | ver abaixo |
-| 2 — `CameraRig` | ⏳ | — |
+| 2 — `CameraRig` | ✅ **feita** — componente de 201 linhas; Player 2.167 → 2.128 | ver abaixo |
 | 3 — `PlayerRig` | ⏳ | — |
 | 4 — Movement / Parkour / Dash | ⏳ | — |
 | 5 — `BukiController` | ⏳ | — |
@@ -244,3 +244,67 @@ acoplamento por cerimônia sem ganhar clareza.
 
 Isso refina o plano: a Fase 4 ganha um passo zero — **encolher os locais
 compartilhados** — antes de qualquer separação.
+
+---
+
+## Fase 2 — `CameraRig`, feita em 2026-08-11
+
+`src/player/camera_rig.gd`, **201 linhas**. O `Player.gd` foi de 2.167 para
+**2.128**. Primeiro componente de verdade extraído: ele **é** o pivô da câmera,
+e a cadeia inteira nasce dentro dele —
+`CameraRig → Ombro → SpringArm → Camera3D`.
+
+### O conflito que esta fase existia para resolver
+
+`_fov_punch` era um dos 22 campos compartilhados, e um dos piores: **três
+domínios escrevendo direto** (corpo a corpo, habilidades e o ciclo). Virou
+**pedido**:
+
+```gdscript
+_fov_punch = 8.0            # antes: qualquer um escrevia no campo
+_camera.pedir_fov_punch(8.0)  # agora: pede, e o dono decide como decai
+```
+
+Mesmo padrão do `pedir_shake`, que já existia. **Restam 21 campos
+compartilhados.**
+
+### Fronteira: o que o rig é dono, e o que ele só lê
+
+| é dono | só lê, por parâmetro |
+|---|---|
+| `_shake`, `_fov_punch`, `_bob_t`, perspectiva, `distancia`, os nós da cadeia | velocidade, chão, sprint, `yaw`, luneta |
+
+### O que **não** saiu do Player, e por quê
+
+Três decisões conscientes — vale registrar, porque "não mover" também é escolha:
+
+- **`_yaw` / `_pitch` ficam.** Quem os escreve é o **input** e a mira assistida
+  das armas. O rig só **aponta** (`apontar(yaw, pitch)`). Movê-los agora trocaria
+  o dono do problema, não resolveria.
+- **`_cam` continua no Player**, como atalho para `_camera.camera()`. A mira o
+  consulta em **26 lugares**; mantê-lo evitou 26 edições de risco com ganho zero.
+- **`add_camera_shake` continua no Player.** Muita coisa de fora chama (efeitos
+  das frutas, corpo a corpo, pouso). Ele **repassa** ao rig — melhor do que
+  espalhar o componente pelo código todo.
+
+### Validação
+
+`tools/dev_tests/test_camera.gd` (novo, **13 checagens**) ataca exatamente o
+ponto cego declarado acima: mede o que a tela mostraria.
+
+| prova | número medido |
+|---|---|
+| cadeia montada e câmera local ativa | `current == true` |
+| `apontar(1.2, -0.3)` gira o rig | `y=1.20  x=-0.30` |
+| tremor decai sozinho | `1.00 → 0.00` |
+| soco de FOV decai | `8.0 → 0.0` |
+| luneta da sniper fecha o FOV e volta | `68 → 23 → 68` |
+| perspectiva move o pivô e volta | `2.20 → 0.60 → 2.20` |
+
+Suíte: compila **0**, arena **53**, buki **24**, `walk_run`, `rig_unico`,
+`frutas`. Zero referências órfãs aos campos removidos.
+
+⚠️ **Ainda não visto na tela.** Os números provam que o rig responde aos
+comandos; não provam que a câmera *parece* certa jogando. Esta fase mexeu em
+câmera e input — exatamente o ponto cego — então vale abrir o jogo antes da
+Fase 3.

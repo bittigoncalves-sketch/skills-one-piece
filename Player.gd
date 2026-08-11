@@ -14,10 +14,9 @@ const CLIMB_SPEED := 4.5
 const CLIMB_STICK_SPEED := 1.0
 const CLIMB_WALL_NORMAL_MAX_Y := 0.2
 
-var cam_distance: float = 6.0 # afastamento da camera em 3a pessoa (ajustável com scroll)
-const CAM_HEIGHT_TPS := 2.2  # altura do pivo em 3a pessoa
-const CAM_HEIGHT_FPS := 0.6  # altura do "olho" em 1a pessoa
-const SHOULDER_RIGHT := 1.1  # deslocamento p/ o ombro direito (over-the-shoulder)
+# A câmera virou COMPONENTE (Fase 2 — ver docs/ARQUITETURA_PLAYER.md). O rig é
+# dono do tremor, do soco de FOV, do balanço, da perspectiva e da distância;
+# aqui só sobra a referência a ele e o `_cam` de conveniência para a mira.
 
 var current_fruit_id: String = ""
 var speed_multiplier: float = 1.0
@@ -59,33 +58,13 @@ const KB_DECAIMENTO := 4.0   # 1/s — quanto o empurrão perde força por segun
 
 var _yaw := 0.0     # rotacao horizontal da camera
 var _pitch := -0.25 # rotacao vertical da camera
-var _first_person := false
 var _is_climbing := false
 var max_geppo: int = 1      # número de pulos duplos aéreos (Geppo / Técnica do CP9)
 var _geppo_count: int = 0   # contador atual de geppo desde o último toque no chão
 
-var _pivot: Node3D
-var _shoulder: Node3D
-var _spring: SpringArm3D
-var _cam: Camera3D
-var _shake: float = 0.0   # Camera Feel: tremor de tela (screen-shake) que decai
-var _was_floor: bool = true   # p/ detectar aterrissagem
-var _fov_punch: float = 0.0   # zoom-in momentâneo ao atacar (decai)
+var _camera: CameraRig        # componente: câmera, tremor, FOV, balanço, tela
+var _cam: Camera3D            # atalho para `_camera.camera()` — a mira usa muito
 
-# FOV por ESTADO. Degraus, não rampa: o salto de CORRENDO p/ SPRINT é o que faz
-# o Shift dar o "clique" na mão.
-#
-# FOV_INTENSIDADE é o único número a mexer para calibrar a força do efeito.
-# Os ganhos abaixo estão em graus "cheios" e guardam a PROPORÇÃO entre os
-# estados; a intensidade escala todos juntos, então afinar não desmonta os
-# degraus. Em 1.0 a variação era de 22° — forte demais em jogo. Em 0.10 sobra
-# ~2,2°: o FOV respira sem chamar atenção.
-const FOV_INTENSIDADE := 0.10
-const FOV_BASE := 68.0
-const FOV_G_ANDANDO := 4.0
-const FOV_G_CORRENDO := 12.0
-const FOV_G_SPRINT := 22.0
-const FOV_G_AR := 3.0
 
 # Sprint = Shift segurado com direção. Usado pela câmera e pelos efeitos de tela;
 # o movimento tem a própria checagem em _physics_process.
@@ -121,7 +100,6 @@ var _is_aiming_dash: bool = false # Segurando Q para dar o dash
 var _dash_cooldown: float = 0.0   # Recarga da esquiva
 var _dash_t: float = 0.0          # Tempo restante do movimento (dash)
 var _dash_dir: Vector3 = Vector3.FORWARD # Direção TRAVADA no disparo do dash
-var _bob_t: float = 0.0       # fase do balanço de câmera (head bob) ao andar/correr
 # Mera Mera Z: rajada de balas de fogo (segura pra atirar; para ao soltar ou 16 balas).
 const RAPID_INTERVAL := 0.09
 const RAPID_MAX := 16
@@ -264,29 +242,14 @@ func _ready() -> void:
 	col.shape = shape
 	add_child(col)
 
-	# Cadeia da camera:
-	#   _pivot (yaw/pitch)  ->  _shoulder (offset lateral)  ->  _spring  ->  _cam
-	# O _shoulder empurra a camera pro ombro direito (over-the-shoulder),
-	# deixando o corpo a esquerda e a mira um pouco a direita dele.
-	_pivot = Node3D.new()
-	add_child(_pivot)
-
-	_shoulder = Node3D.new()
-	_pivot.add_child(_shoulder)
-
-	# SpringArm evita a camera atravessar paredes/blocos.
-	_spring = SpringArm3D.new()
-	_spring.margin = 0.15
-	var sphere := SphereShape3D.new()
-	sphere.radius = 0.15
-	_spring.shape = sphere
-	_shoulder.add_child(_spring)
-	_spring.add_excluded_object(get_rid())  # nunca colidir com o próprio corpo do player
-
-	_cam = Camera3D.new()
-	_cam.near = 0.05
-	_cam.current = _is_authority   # só a câmera do MEU player fica ativa
-	_spring.add_child(_cam)
+	# CÂMERA — componente próprio desde a Fase 2. Ele monta a cadeia
+	# (pivô → ombro → SpringArm → Camera3D) e é dono de tremor, FOV e balanço.
+	# O `_cam` fica guardado aqui só porque a mira o consulta em 26 lugares.
+	_camera = CameraRig.new()
+	_camera.name = "CameraRig"
+	add_child(_camera)
+	_camera.montar(self, _is_authority)
+	_cam = _camera.camera()
 
 	# Mira + captura de mouse SÓ para o player local (players remotos não têm HUD/mira).
 	if _is_authority:
@@ -307,14 +270,8 @@ func _ready() -> void:
 	_update_pivot()
 
 func _apply_perspective() -> void:
-	if _first_person:
-		_pivot.position.y = CAM_HEIGHT_FPS
-		_shoulder.position.x = 0.0
-		_spring.spring_length = 0.0
-	else:
-		_pivot.position.y = CAM_HEIGHT_TPS
-		_shoulder.position.x = SHOULDER_RIGHT
-		_spring.spring_length = cam_distance
+	if _camera:
+		_camera.aplicar_perspectiva()
 	_atualizar_visibilidade_corpo()   # some o corpo na 1ª pessoa (e no canhão da Buki)
 
 func _input(event: InputEvent) -> void:
@@ -328,18 +285,19 @@ func _input(event: InputEvent) -> void:
 		_yaw -= event.relative.x * sens
 		_pitch = clamp(_pitch - event.relative.y * sens, -1.2, 0.5)
 		_update_pivot()
-	elif event is InputEventMouseButton and not _first_person:
+	elif event is InputEventMouseButton and _camera and not _camera.em_primeira_pessoa():
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
-			cam_distance = clampf(cam_distance - 0.5, 2.0, 15.0)
+			_camera.ajustar_distancia(-0.5)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
-			cam_distance = clampf(cam_distance + 0.5, 2.0, 15.0)
+			_camera.ajustar_distancia(0.5)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not _is_authority:
 		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F5:
 		# Alterna 1a <-> 3a pessoa.
-		_first_person = not _first_person
+		if _camera:
+			_camera.alternar_perspectiva()
 		_apply_perspective()
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F6:
 		# Cicla o modelo — hoje o elenco está trancado no "base", então F6 não
@@ -456,85 +414,23 @@ func cycle_style_anim(dir: int) -> void:
 		hud.show_anim_name("%d/%d  %s" % [_style_anim_idx + 1, _style_anims.size(), nm])
 
 func _update_pivot() -> void:
-	_pivot.rotation = Vector3(_pitch, _yaw, 0)
+	if _camera:
+		_camera.apontar(_yaw, _pitch)
 
 # ---- Camera Feel: screen-shake (h_offset/v_offset NÃO afetam a mira) ----
+# Tremor de tela. Continua aqui porque MUITA gente de fora chama (efeitos das
+# frutas, corpo a corpo, pouso) — o Player repassa ao rig em vez de expor o
+# componente inteiro.
 func add_camera_shake(amount: float) -> void:
-	if _is_authority:
-		_shake = clampf(maxf(_shake, amount), 0.0, 1.0)
+	if _is_authority and _camera:
+		_camera.pedir_shake(amount)
 
 func _process(delta: float) -> void:
-	if not _is_authority or _cam == null:
+	if not _is_authority or _camera == null:
 		return
-	var planar := Vector2(velocity.x, velocity.z).length()
-	var spd := clampf(planar / SPEED, 0.0, 1.2)
-	var on_floor := is_on_floor()
-
-	# --- offsets da câmera = SHAKE + BOB (balanço ao andar/correr) ---
-	var sh := _shake * 0.09
-	if _shake > 0.0:
-		_shake = maxf(_shake - delta * 3.5, 0.0)
-	var sx := randf_range(-sh, sh)
-	var sy := randf_range(-sh, sh)
-	# Head bob: frequência e amplitude crescem com a velocidade (só andando no chão).
-	var moving := spd > 0.05 and on_floor
-	_bob_t += delta * (4.0 + spd * 9.0)
-	var amp := (spd * 0.024) if moving else 0.0
-	_cam.h_offset = lerpf(_cam.h_offset, sx + cos(_bob_t) * amp, 0.5)
-	_cam.v_offset = lerpf(_cam.v_offset, sy + absf(sin(_bob_t)) * amp, 0.5)
-
-	# ---------------------------------------------------------------- FOV
-	# Degraus por ESTADO, não uma rampa só: parado / andando / correndo / sprint.
-	# O salto entre correr e sprintar é o que faz o Shift "dar o clique" — numa
-	# rampa linear ele passa despercebido.
-	_fov_punch = maxf(_fov_punch - delta * 22.0, 0.0)
-	var ganho := 0.0
-	if spd > 0.05:
-		ganho = lerpf(FOV_G_ANDANDO, FOV_G_CORRENDO, clampf(spd, 0.0, 1.0))
-		if _is_sprinting():
-			ganho = lerpf(ganho, FOV_G_SPRINT, clampf((spd - 0.7) / 0.5, 0.0, 1.0))
-	if not on_floor:
-		ganho += FOV_G_AR                    # no ar abre um pouco: sensação de queda
-	var alvo_fov: float = FOV_BASE + ganho * FOV_INTENSIDADE - _fov_punch
-	# LUNETA DA SNIPER (Buki C, botão direito): o FOV desaba pra 22° — ~3x de
-	# aumento. Sobrescreve o FOV de velocidade de propósito: mirar tem prioridade
-	# sobre "respirar".
-	if _buki_scope:
-		alvo_fov = 22.0
-	# Abre RÁPIDO e fecha DEVAGAR. Simétrico dá a impressão de a câmera "respirar"
-	# junto com cada tranco do passo.
-	var vel_fov := 9.0 if alvo_fov > _cam.fov else 3.5
-	_cam.fov = lerpf(_cam.fov, alvo_fov, vel_fov * delta)
-
-	# Camera tilt: rolagem ao andar de lado + leve gingado no ritmo do passo.
-	var right := Basis(Vector3.UP, _yaw) * Vector3(1, 0, 0)
-	var strafe := clampf(velocity.dot(right) / SPEED, -1.0, 1.0)
-	var tilt := -strafe * 3.5 + (sin(_bob_t) * spd * 1.2 if moving else 0.0)
-	_cam.rotation.z = lerpf(_cam.rotation.z, deg_to_rad(tilt), 6.0 * delta)
-
-	# Recuo da câmera ao correr (só 3a pessoa)
-	if not _first_person and _spring:
-		_spring.spring_length = lerpf(_spring.spring_length, cam_distance + spd * 0.9, 4.0 * delta)
-
-	# Shake ao aterrissar
-	if on_floor and not _was_floor:
-		add_camera_shake(0.3)
-	_was_floor = on_floor
-
-	# ------------------------------------------- EFEITOS DE VELOCIDADE
-	# Antes só a vinheta era visível: ela entrava em spd 0.4 e as linhas só em
-	# 0.85, que quase nunca se alcança — o resultado prático era "a tela escurece".
-	# Agora quatro efeitos entram em faixas DIFERENTES, então a sensação cresce
-	# por camadas em vez de só escurecer:
-	#   0.35 -> arrasto radial (o mundo escorre nas bordas)
-	#   0.50 -> linhas de velocidade
-	#   0.62 -> aberração cromática
-	#   0.70 -> vinheta (por último, e mais fraca que antes)
-	var vel_fx: float = spd * (1.15 if _is_sprinting() else 1.0)
-	ScreenFX.set_borrao(clampf((vel_fx - 0.35) * 0.7, 0.0, 0.5))
-	ScreenFX.set_speed_lines(clampf((vel_fx - 0.50) * 0.8, 0.0, 0.4))
-	ScreenFX.set_aberracao_base(clampf((vel_fx - 0.62) * 0.8, 0.0, 0.3))
-	ScreenFX.set_vignette(clampf((vel_fx - 0.70) * 0.6, 0.0, 0.2))
+	# O rig recebe o estado de que precisa em vez de ir buscá-lo no Player —
+	# é o que mantém a fronteira honesta e permite testá-lo sozinho.
+	_camera.atualizar(delta, velocity, SPEED, is_on_floor(), _is_sprinting(), _yaw, _buki_scope)
 
 func _physics_process(delta: float) -> void:
 	# ETAPAS NOMEADAS (Fase 1 da arquitetura, 2026-08-11).
@@ -1289,7 +1185,7 @@ func _buki_mostrar_arma(slot: String) -> void:
 func _atualizar_visibilidade_corpo() -> void:
 	if _char_model == null:
 		return
-	_char_model.visible = (not _first_person) and _buki_visual != "X"
+	_char_model.visible = (_camera == null or not _camera.em_primeira_pessoa()) and _buki_visual != "X"
 
 # Pistola, AABB e bake de profundidade -> PlayerModelKit (src/utils/).
 func _fit_model_to_body() -> void:
@@ -1588,7 +1484,7 @@ func _request_cast(slot: String) -> void:
 	# Camera Feel ao usar skill (V = ultimate: mais forte + slow-mo + flash).
 	var ult := slot == "V"
 	add_camera_shake(0.85 if ult else 0.6)
-	_fov_punch = 8.0 if ult else 5.0
+	if _camera: _camera.pedir_fov_punch(8.0 if ult else 5.0)
 	ScreenFX.chromatic_pulse(0.7 if ult else 0.35)
 	if ult:
 		GameFlow.slow_mo()
@@ -1641,7 +1537,7 @@ func _request_melee() -> void:
 	var forca: float = float(golpe["shake"])
 	t_impacto.timeout.connect(func():
 		add_camera_shake(forca)
-		_fov_punch = 3.0)
+		if _camera: _camera.pedir_fov_punch(3.0))
 
 	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
 		_do_server_melee(_melee_passo, origem, fwd)

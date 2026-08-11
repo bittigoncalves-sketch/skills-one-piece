@@ -90,8 +90,11 @@ imunidade, em ciclo) é o comportamento desejado numa rodada de 10 minutos.
 
 ## 🟢 Baixa — armadilhas conhecidas, documentadas
 
-### 8. `Player.gd` com 2.167 linhas, 2,4× o limite
-Ver [`RELATORIO_PLAYER.md`](RELATORIO_PLAYER.md) e
+### 8. `Player.gd` com 2.128 linhas, 2,4× o limite
+**Em tratamento.** A partição está em curso, em fases, por
+[`ARQUITETURA_PLAYER.md`](ARQUITETURA_PLAYER.md): fase 1 (etapas nomeadas) e
+fase 2 (`CameraRig`, 2.167 → 2.128) feitas. Ver também
+[`RELATORIO_PLAYER.md`](RELATORIO_PLAYER.md) e
 [`LIMITE_DE_TAMANHO.md`](LIMITE_DE_TAMANHO.md). **Gatilho:** o arquivo não pode
 crescer mais — qualquer tarefa que precise adicionar código nele deve primeiro
 extrair um componente.
