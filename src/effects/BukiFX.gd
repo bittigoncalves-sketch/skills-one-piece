@@ -10,7 +10,9 @@ extends RefCounted
 #  ainda a descreva, ela está velha.
 #
 #  AGORA a fruta é um JOGO DE FPS:
-#    • a tecla do slot EMPUNHA a arma, e ela FICA na mão (com o tiro do saque);
+#    • a tecla do slot EMPUNHA a arma, e ela FICA na mão. SACAR NÃO ATIRA
+#      (regra do dono, 2026-08-11): a arma sai com a munição CHEIA e o primeiro
+#      tiro é decisão do jogador, no botão esquerdo;
 #    • o botão ESQUERDO atira enquanto houver bala;
 #    • MUNIÇÃO é a penalidade da fruta — cada arma tem um número fixo de balas;
 #    • acabou a bala (ou trocou de slot) -> a arma some e AQUELE slot entra em
@@ -33,11 +35,17 @@ extends RefCounted
 # Uma linha por slot. `balas` é a penalidade da fruta; `cadencia` é o intervalo
 # mínimo entre disparos (segundos); `dano_mult` multiplica o dano que vem do
 # SkillSystem, porque lá o número é POR BALA e o minigun precisa de bala fraca.
+#
+# `som` e `fogacho` entraram em 2026-08-11, junto com a munição com cara própria
+# (ver src/effects/BukiProjeteis.gd). Antes o slot escolhia o som e o tamanho do
+# clarão num `if slot == "X" ... else` espalhado pelo `disparo`; com quatro armas
+# distintas isso vira escada de exceção. Aqui é uma linha por arma, do calibre ao
+# som — mudar a identidade de uma arma é editar uma linha.
 const ARSENAL := {
-	"Z": {"nome": "Pistola", "balas": 12,  "cadencia": 0.20, "raio": 0.18, "vel": 42.0, "kb": 4.0,  "shake": 0.12, "recuo": 0.0,  "papel": "ForeArm_R"},
-	"X": {"nome": "Canhão",  "balas": 3,   "cadencia": 0.95, "raio": 0.55, "vel": 22.0, "kb": 24.0, "shake": 0.90, "recuo": 11.0, "papel": ""},
-	"C": {"nome": "Sniper",  "balas": 5,   "cadencia": 1.05, "raio": 0.16, "vel": 95.0, "kb": 10.0, "shake": 0.45, "recuo": 0.0,  "papel": "ForeArm_R"},
-	"V": {"nome": "Minigun", "balas": 100, "cadencia": 0.06, "raio": 0.14, "vel": 46.0, "kb": 1.6,  "shake": 0.05, "recuo": 0.0,  "papel": "ForeArm_R"},
+	"Z": {"nome": "Pistola", "balas": 12,  "cadencia": 0.20, "raio": 0.18, "vel": 42.0, "kb": 4.0,  "shake": 0.12, "recuo": 0.0,  "papel": "ForeArm_R", "som": "pistol",  "fogacho": 0.34},
+	"X": {"nome": "Canhão",  "balas": 3,   "cadencia": 0.95, "raio": 0.55, "vel": 22.0, "kb": 24.0, "shake": 0.90, "recuo": 11.0, "papel": "",          "som": "cannon",  "fogacho": 1.00},
+	"C": {"nome": "Sniper",  "balas": 5,   "cadencia": 1.05, "raio": 0.16, "vel": 95.0, "kb": 10.0, "shake": 0.45, "recuo": 0.0,  "papel": "ForeArm_R", "som": "sniper",  "fogacho": 0.55},
+	"V": {"nome": "Minigun", "balas": 100, "cadencia": 0.06, "raio": 0.14, "vel": 46.0, "kb": 1.6,  "shake": 0.05, "recuo": 0.0,  "papel": "ForeArm_R", "som": "minigun", "fogacho": 0.18},
 }
 const SLOTS := ["Z", "X", "C", "V"]
 
@@ -66,10 +74,15 @@ const FAISCA := [
 const ALCANCE_MIRA := 60.0     # alcance da busca de alvo teleguiado
 const CONE_MIRA := 0.82        # cos do cone de aquisição (~35°)
 
-# Entrada do `Player._fire_skill`: EMPUNHAR = sacar a arma e dar o primeiro tiro.
-# Quem faz a arma aparecer é o Player (nós pré-construídos, ver `_buki_mostrar_arma`);
-# aqui sai só o disparo do saque. É por isso que os 4 slots continuam produzindo
-# DamageZone na auditoria (tools/dev_tests/test_frutas.gd).
+# Entrada do `Player._fire_skill` — UM disparo do slot.
+#
+# ⚠️ Em JOGO ninguém passa por aqui: com a fruta equipada, `begin_charge` e
+# `cast_skill_slot` desviam para `_buki_empunhar` e voltam antes do
+# `_request_cast`. Quem chega neste `cast` é a AUDITORIA
+# (tools/dev_tests/test_frutas.gd), que chama `_fire_skill` direto — e é por isso
+# que os 4 slots continuam contando "hitbox: SIM" lá.
+# Mantido de propósito: é a única prova automática de que os quatro slots ainda
+# produzem DamageZone de verdade, munição à parte.
 static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float, caster: Node) -> void:
 	var slot: String = SLOTS[variant] if variant >= 0 and variant < SLOTS.size() else "Z"
 	disparo(world, origin, dir, slot, damage, caster)
@@ -81,15 +94,22 @@ static func disparo(world: Node, origin: Vector3, dir: Vector3, slot: String,
 	if world == null or not (world is Node) or not world.is_inside_tree():
 		return
 	var d: Dictionary = ARSENAL.get(slot, ARSENAL["Z"])
-	var raio := float(d["raio"])
-	_projetil(world, origin, dir, damage, caster, raio, float(d["vel"]), float(d["kb"]), alvo)
-	_fogacho(world, origin, dir, 1.0 if slot == "X" else (0.5 if slot == "C" else 0.35))
-	if slot == "X":
-		AudioFX.cannon(world, origin, randf_range(0.94, 1.04))
-	else:
-		AudioFX.gunshot(world, origin, randf_range(0.92, 1.12))
+	_projetil(world, origin, dir, damage, caster, slot, alvo)
+	_fogacho(world, origin, dir, float(d.get("fogacho", 0.35)))
+	_som(world, origin, str(d.get("som", "pistol")))
 	if slot != "X":
 		_capsulas(world, origin, dir)   # latão saltando: dá cadência VISÍVEL à rajada
+
+# O som é da ARMA, não "tiro genérico" (2026-08-11). A janela de pitch também
+# muda por arma: o canhão quase não varia (±4%) porque calibre grande soa igual
+# toda vez; o minigun varia ±14%, que é o que impede 17 tiros por segundo de
+# virarem um bipe único.
+static func _som(world: Node, origin: Vector3, som: String) -> void:
+	match som:
+		"cannon":  AudioFX.cannon(world, origin, randf_range(0.96, 1.04))
+		"sniper":  AudioFX.sniper(world, origin, randf_range(0.97, 1.03))
+		"minigun": AudioFX.minigun(world, origin, randf_range(0.86, 1.14))
+		_:         AudioFX.pistol(world, origin, randf_range(0.94, 1.08))
 
 # ----------------------------------------------------------------- MATERIAIS
 static func _mat_aco(emissivo: bool = false) -> StandardMaterial3D:
@@ -261,61 +281,30 @@ static func alvo_da_mira(caster: Node, origin: Vector3, dir: Vector3) -> Node3D:
 
 # ------------------------------------------------------------------ PROJÉTIL
 # `alvo` != null -> teleguiado: corrige o rumo por frame até acertar.
+#
+# O MODELO da bala mora em `BukiProjeteis` — um por arma (2026-08-11). Aqui só
+# fica o que é MECÂNICA: a zona de dano, a velocidade e a perseguição.
+#
+# ⚠️ A zona nasce OLHANDO pro rumo do tiro. Antes ela nascia sem rotação e a
+# cápsula era deitada com um `rotation.x = 90` fixo — ou seja, a bala só ficava
+# alinhada com a trajetória quando o jogador atirava na direção do Z do MUNDO.
+# Em qualquer outra direção ela voava de lado. Só não gritava porque era uma
+# cápsula quase simétrica; com obus e dardo, gritaria.
 static func _projetil(world: Node, origin: Vector3, dir: Vector3, damage: float,
-		caster: Node, raio: float, velocidade: float, kb: float, alvo: Node3D) -> void:
+		caster: Node, slot: String, alvo: Node3D) -> void:
+	var d: Dictionary = ARSENAL.get(slot, ARSENAL["Z"])
+	var raio := float(d["raio"])
+	var velocidade := float(d["vel"])
 	var fwd := dir.normalized()
 	var zone := DamageZone.new()
 	world.add_child(zone)
 	zone.global_position = origin
-	zone.setup(damage, kb, fwd * velocidade, 3.0, caster, raio)
-
-	# PROJÉTIL: bala de latão (metralhadora) ou bola de ferro (canhão). O raio
-	# decide qual — o canhão usa 0.55, a metralhadora 0.22.
-	var bola := raio > 0.4
-	var corpo := MeshInstance3D.new()
-	if bola:
-		var esf := SphereMesh.new()
-		esf.radius = raio * 0.62
-		esf.height = raio * 1.24
-		esf.radial_segments = 10
-		esf.rings = 6
-		corpo.mesh = esf
-		var mf := StandardMaterial3D.new()
-		mf.albedo_color = Color(0.13, 0.13, 0.15)     # ferro fosco
-		mf.metallic = 0.9
-		mf.roughness = 0.55
-		corpo.material_override = mf
-	else:
-		var cap := CapsuleMesh.new()
-		cap.radius = raio * 0.42
-		cap.height = raio * 2.6
-		cap.radial_segments = 8
-		corpo.mesh = cap
-		corpo.rotation_degrees.x = 90.0               # deitada no rumo do tiro
-		var ml := StandardMaterial3D.new()
-		ml.albedo_color = Color(0.86, 0.68, 0.28)     # latão
-		ml.metallic = 1.0
-		ml.roughness = 0.25
-		ml.emission_enabled = true
-		ml.emission = Color(1.0, 0.72, 0.30)
-		ml.emission_energy_multiplier = 1.4
-		corpo.material_override = ml
-	zone.add_child(corpo)
-
-	var rastro := GPUParticles3D.new()
-	rastro.amount = 18
-	rastro.lifetime = 0.35
-	var pm := ParticleProcessMaterial.new()
-	pm.direction = Vector3.ZERO
-	pm.initial_velocity_min = 0.2
-	pm.initial_velocity_max = 1.2
-	pm.gravity = Vector3(0, -1.5, 0)
-	pm.scale_min = 0.25
-	pm.scale_max = 0.7
-	pm.color_ramp = FxUtil.gradient(FAISCA)
-	rastro.process_material = pm
-	rastro.draw_pass_1 = SphereMesh.new()
-	zone.add_child(rastro)
+	# `look_at` explode se o rumo for paralelo ao "up"; tiro pra cima é normal
+	# (canhão como mobilidade), então o up vira lateral nesse caso.
+	var cima := Vector3.UP if absf(fwd.dot(Vector3.UP)) < 0.98 else Vector3.RIGHT
+	zone.look_at(origin + fwd, cima)
+	zone.setup(damage, float(d["kb"]), fwd * velocidade, 3.0, caster, raio)
+	zone.add_child(BukiProjeteis.montar(slot, raio, velocidade))
 
 	if alvo != null and is_instance_valid(alvo):
 		_perseguir(zone, alvo, velocidade)
@@ -401,9 +390,9 @@ static func _fogacho(world: Node, origin: Vector3, dir: Vector3, escala: float) 
 	(fumaca as Node3D).global_position = origin + fwd * 0.85
 	world.get_tree().create_timer(2.5).timeout.connect(fumaca.queue_free)
 
-# CÁPSULAS EJETADAS — só na metralhadora. Latão saltando pra direita e caindo.
-# Detalhe pequeno, mas é o que dá CADÊNCIA visível à rajada: sem ele os 6 tiros
-# viram um borrão só.
+# CÁPSULAS EJETADAS — em todas as armas de braço (o canhão fica de fora: obus não
+# ejeta estojo). Latão saltando pra direita e caindo. Detalhe pequeno, mas é o
+# que dá CADÊNCIA visível à rajada do minigun: sem ele os tiros viram um borrão.
 static func _capsulas(world: Node, origin: Vector3, dir: Vector3) -> void:
 	if world == null or not world.is_inside_tree():
 		return

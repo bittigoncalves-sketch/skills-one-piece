@@ -166,6 +166,8 @@ var aim_assist: bool = false   # assistência de mira (liga/desliga no E)
 var _melee_passo: int = 0
 var _melee_janela: float = 0.0
 var _melee_trava: float = 0.0   # recuperação: bloqueia o clique durante o golpe
+var _melee_buffer: float = 0.0  # clique que chegou na recuperação, esperando a vez
+const BUFFER_MELEE := 0.18      # até quanto antes da trava abrir o clique é guardado
 
 # Qual slot está EM USO agora — "" se nenhum. Usado para congelar a recarga das
 # outras técnicas (ver o laço de cooldown no _physics_process).
@@ -1543,10 +1545,19 @@ func _net_cast(slot: String, aim: Vector3, origin: Vector3) -> void:
 # Melee.JANELA (2 s). Segue o MESMO trajeto de rede das skills: o dono pede, o
 # servidor cria a hitbox, todo mundo reproduz a animação.
 func _request_melee() -> void:
-	if not _is_authority or _charging or _melee_trava > 0.0:
+	if not _is_authority or _charging:
 		return
 	var hud := get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("is_menu_open") and hud.is_menu_open():
+		return
+	# Clique durante a recuperação: em vez de sumir, fica GUARDADO e sai sozinho
+	# quando a trava abrir (ver _tick_melee). Sem isso o combo pune quem clica no
+	# ritmo — e os `recuo` cresceram (0,40->0,58 s) para o soco caber em tela, o
+	# que só piora a janela em que o clique se perdia. Buffer curto de propósito:
+	# clique de 1 s atrás não é intenção de agora.
+	if _melee_trava > 0.0:
+		if _melee_trava <= BUFFER_MELEE:
+			_melee_buffer = BUFFER_MELEE
 		return
 
 	# Janela vencida (ou combo terminado) -> recomeça do primeiro soco.
@@ -1558,8 +1569,14 @@ func _request_melee() -> void:
 
 	var fwd := -Basis.from_euler(Vector3(0, _yaw, 0)).z
 	var origem := global_position + Vector3.UP * 1.0
-	add_camera_shake(float(golpe["shake"]))
-	_fov_punch = 3.0
+	# Tranco de câmera NO SOCO, não no clique. Eram disparados aqui, ou seja até
+	# 0,5 s antes de a hitbox nascer: a tela sacudia na preparação e ficava parada
+	# no impacto — exatamente o "o impacto não sai no momento do soco".
+	var t_impacto := get_tree().create_timer(float(golpe["atraso"]))
+	var forca: float = float(golpe["shake"])
+	t_impacto.timeout.connect(func():
+		add_camera_shake(forca)
+		_fov_punch = 3.0)
 
 	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
 		_do_server_melee(_melee_passo, origem, fwd)
@@ -1585,12 +1602,18 @@ func _do_server_melee(passo: int, origem: Vector3, fwd: Vector3) -> void:
 func _net_play_melee(passo: int) -> void:
 	var clipe := Melee.clipe(passo)
 	if clipe and _proc_anim:
-		_proc_anim.play_baked(clipe, float(Melee.passo(passo)["vel"]))
+		var g := Melee.passo(passo)
+		_proc_anim.play_baked(clipe, float(g["vel"]), float(g.get("inicio", 0.0)))
 
 # Corre os dois relógios do combo. Chamado do _physics_process.
 func _tick_melee(delta: float) -> void:
 	if _melee_trava > 0.0:
 		_melee_trava = maxf(_melee_trava - delta, 0.0)
+		if _melee_trava == 0.0 and _melee_buffer > 0.0:
+			_melee_buffer = 0.0
+			_request_melee()      # clique guardado sai agora que a trava abriu
+	if _melee_buffer > 0.0:
+		_melee_buffer = maxf(_melee_buffer - delta, 0.0)
 	if _melee_janela > 0.0:
 		_melee_janela = maxf(_melee_janela - delta, 0.0)
 		if _melee_janela == 0.0:
@@ -1603,7 +1626,7 @@ func _do_server_cast(slot: String, aim: Vector3, origin: Vector3) -> void:
 	# Já sai com uma a menos porque o próprio saque dispara o primeiro tiro.
 	if _buki_ativa() and BukiFX.ARSENAL.has(slot):
 		_srv_buki_arma = slot
-		_srv_buki_municao = BukiFX.municao(slot) - 1
+		_srv_buki_municao = BukiFX.municao(slot)
 	if multiplayer.has_multiplayer_peer():
 		_net_play_cast.rpc(slot, aim, origin)            # broadcast + call_local
 	else:
@@ -1960,16 +1983,59 @@ func _buki_empunhar(slot: String) -> void:
 	if _skill_cooldowns.get(slot, 0.0) > 0.0:
 		print("⏳ Buki: %s em recarga (%.1fs)." % [BukiFX.nome_da_arma(slot), _skill_cooldowns[slot]])
 		return
-	# A 1ª bala sai no SAQUE (é ela que vira a DamageZone do `_fire_skill`), então
-	# a conta já começa descontada. 12 balas = 1 no saque + 11 no botão esquerdo.
+	# SACAR NÃO ATIRA (pedido do dono, 2026-08-11).
+	#
+	# Antes a 1ª bala saía no próprio saque: apertar a tecla já disparava, e a
+	# munição começava descontada (12 = 1 no saque + 11 no clique). Em jogo isso
+	# vira tiro que o jogador não pediu — ele saca para MIRAR, e o disparo tem
+	# que ser decisão dele. Agora a tecla só empunha; quem atira é o botão
+	# esquerdo, sempre. A arma sai com a munição CHEIA.
 	_buki_weapon = slot
-	_buki_municao = BukiFX.municao(slot) - 1
-	_buki_shot_cd = BukiFX.cadencia(slot)
+	_buki_municao = BukiFX.municao(slot)
+	_buki_shot_cd = 0.0                 # pronta pra atirar assim que o dedo mandar
 	_buki_scope = false
 	print("🔫 Buki: %s EMPUNHADA — %d balas (Bt Esq = atirar%s)." % [
-		BukiFX.nome_da_arma(slot), _buki_municao + 1,
+		BukiFX.nome_da_arma(slot), _buki_municao,
 		" / Bt Dir = luneta" if slot == "C" else " / Bt Dir = mira assistida"])
-	_request_cast(slot)   # trajeto normal: dono pede -> servidor -> todos reproduzem
+
+	# ⚠️ SACAR TEM QUE AVISAR O SERVIDOR — e isso quase se perdeu.
+	#
+	# Quando tirei o tiro do saque, saiu junto a linha `_request_cast(slot)`. Eu a
+	# li como "isto atira", mas ela carregava outras DUAS coisas de carona:
+	#   • `_do_server_cast` gravava `_srv_buki_arma`/`_srv_buki_municao` — sem
+	#     isso o servidor não sabe qual arma está na mão e RECUSA TODO TIRO
+	#     (medido: sniper cheia, 5 balas, 0 DamageZone criada);
+	#   • `_fire_skill` chamava `_buki_mostrar_arma` — sem isso a arma nunca
+	#     aparece no rig, e no canhão o corpo nem some.
+	#
+	# Agora o saque tem caminho PRÓPRIO, que arma o estado e mostra a arma sem
+	# disparar nada. Lição: remover chamada é tão perigoso quanto adicionar,
+	# quando ela tem efeito colateral.
+	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
+		_do_server_buki_sacar(slot)
+	else:
+		_net_buki_sacar_req.rpc_id(1, slot)
+
+@rpc("any_peer", "reliable")
+func _net_buki_sacar_req(slot: String) -> void:
+	if multiplayer.is_server():
+		_do_server_buki_sacar(slot)
+
+# SERVIDOR: guarda qual arma este corpo empunha e com quanta munição, e manda
+# todos os peers mostrarem a arma. O servidor é quem valida cada tiro depois.
+func _do_server_buki_sacar(slot: String) -> void:
+	if not (_buki_ativa() and BukiFX.ARSENAL.has(slot)):
+		return
+	_srv_buki_arma = slot
+	_srv_buki_municao = BukiFX.municao(slot)   # CHEIA: o saque não gasta bala
+	if multiplayer.has_multiplayer_peer():
+		_net_buki_sacar.rpc(slot)
+	else:
+		_net_buki_sacar(slot)
+
+@rpc("any_peer", "call_local", "reliable")
+func _net_buki_sacar(slot: String) -> void:
+	_buki_mostrar_arma(slot)
 
 # GUARDAR: a arma some e o slot largado entra em recarga. Chamado na troca, no
 # fim da munição, ao trocar de fruta e ao morrer.

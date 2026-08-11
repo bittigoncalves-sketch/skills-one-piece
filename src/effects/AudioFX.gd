@@ -24,6 +24,25 @@ static func gunshot(world: Node, pos: Vector3, pitch := 1.0) -> void:
 static func cannon(world: Node, pos: Vector3, pitch := 1.0) -> void:
 	_play(world, pos, _cannon_stream(), pitch, 1.0)
 
+# ---- ARSENAL DA BUKI BUKI (2026-08-11) ----------------------------------
+# As quatro armas tocavam o MESMO `gunshot` (só o canhão era exceção). Som é o
+# que separa minigun de sniper sem olhar pra tela: numa troca de arma o jogador
+# ouve antes de ver. Cada um ataca uma faixa diferente do espectro e uma duração
+# diferente — é o par (brilho, cauda) que identifica a arma, não o volume.
+#
+#   pistola  0,16 s  estalo curto e AGUDO, cauda quase nenhuma
+#   sniper   0,70 s  estalo seco + eco de verdade (duas repetições atrasadas)
+#   minigun  0,08 s  poc seco e BAIXO — toca 17×/s, forte vira serra elétrica
+#   canhão   0,95 s  (já existia) estouro grave que escorrega de 110 pra 38 Hz
+static func pistol(world: Node, pos: Vector3, pitch := 1.0) -> void:
+	_play(world, pos, _pool("pistol"), pitch, 0.85)
+
+static func sniper(world: Node, pos: Vector3, pitch := 1.0) -> void:
+	_play(world, pos, _pool("sniper"), pitch, 1.0)
+
+static func minigun(world: Node, pos: Vector3, pitch := 1.0) -> void:
+	_play(world, pos, _pool("minigun"), pitch, 0.42)
+
 # ---- infra ----
 static func _play(world: Node, pos: Vector3, stream: AudioStream, pitch: float, vol_lin: float) -> void:
 	if world == null:
@@ -38,6 +57,31 @@ static func _play(world: Node, pos: Vector3, stream: AudioStream, pitch: float, 
 	p.global_position = pos
 	p.play()
 	p.finished.connect(p.queue_free)
+
+# POOL DE VARIANTES. Os sons antigos são sintetizados a CADA disparo — tudo bem
+# quando o gatilho é lento, mas o minigun toca 17 vezes por segundo e ficar
+# gerando ~1.700 amostras por tiro é trabalho jogado fora. Guardamos 3 versões
+# de cada som (o ruído de cada uma é diferente) e sorteamos: repetição sem custo
+# e sem virar o mesmo clique metrônomo. Só os sons novos passam por aqui; mexer
+# no `gunshot` mexeria também na pistola da Yami, que não é deste trabalho.
+const VARIANTES := 3
+static var _cache: Dictionary = {}
+
+static func _pool(nome: String) -> AudioStreamWAV:
+	if not _cache.has(nome):
+		var arr: Array = []
+		for _i in VARIANTES:
+			arr.append(_gerar(nome))
+		_cache[nome] = arr
+	var arr2: Array = _cache[nome]
+	return arr2[randi() % arr2.size()]
+
+static func _gerar(nome: String) -> AudioStreamWAV:
+	match nome:
+		"pistol": return _pistol_stream()
+		"sniper": return _sniper_stream()
+		"minigun": return _minigun_stream()
+	return _gunshot_stream()
 
 static func _wav(samples: PackedFloat32Array) -> AudioStreamWAV:
 	var bytes := PackedByteArray()
@@ -119,6 +163,69 @@ static func _gunshot_stream() -> AudioStreamWAV:
 		var rumble := sin(TAU * 75.0 * (float(i) / RATE)) * 0.3 * trail_env
 		var sample: float = (noise * 0.95 + tone) * blast_env + (noise * 0.2 + rumble) * trail_env * 0.4
 		s[i] = clampf(sample * 1.25, -1.0, 1.0)
+	return _wav(s)
+
+# PISTOLA (Z) — 0,16 s. O oposto do canhão: quase só ATAQUE. O brilho vem de um
+# ruído passa-ALTA (amostra menos a média móvel), que é o que dá o "tec" seco;
+# ruído cru soa abafado, e a pistola tem que cortar por cima da rajada.
+static func _pistol_stream() -> AudioStreamWAV:
+	var n := int(RATE * 0.16)
+	var s := PackedFloat32Array()
+	s.resize(n)
+	var media := 0.0
+	for i in n:
+		var t := float(i) / n
+		var estalo := pow(1.0 - minf(t * 7.0, 1.0), 3.0)     # ~23 ms de tapa
+		var cauda := pow(1.0 - t, 3.5)
+		var ruido := randf() * 2.0 - 1.0
+		media = lerpf(media, ruido, 0.45)
+		var agudo := ruido - media                            # passa-alta pobre
+		var f := lerpf(880.0, 190.0, minf(t * 5.0, 1.0))
+		var corpo := sin(TAU * f * (float(i) / RATE)) * 0.45 * estalo
+		s[i] = clampf((agudo * 1.5 + corpo) * estalo + agudo * 0.18 * cauda, -1.0, 1.0)
+	return _wav(s)
+
+# SNIPER (C) — 0,70 s. Tiro SECO com CAUDA: o estalo é ainda mais curto que o da
+# pistola (~13 ms), e o que sobra é o ambiente devolvendo o som. O eco é eco de
+# verdade — as amostras já calculadas voltam atrasadas 130 ms e 290 ms —, não um
+# tremolo fingido; é a diferença entre "longe" e "com reverb ligado".
+static func _sniper_stream() -> AudioStreamWAV:
+	var n := int(RATE * 0.70)
+	var s := PackedFloat32Array()
+	s.resize(n)
+	var fase := 0.0
+	for i in n:
+		var t := float(i) / n
+		var estalo := pow(1.0 - minf(t * 54.0, 1.0), 2.0)     # ~13 ms
+		var corpo := pow(1.0 - minf(t * 4.5, 1.0), 2.0)
+		var ruido := randf() * 2.0 - 1.0
+		var f := lerpf(300.0, 62.0, minf(t * 6.0, 1.0))
+		fase += TAU * f / RATE
+		s[i] = clampf(ruido * 0.95 * estalo + sin(fase) * 0.75 * corpo, -1.0, 1.0)
+	var d1 := int(RATE * 0.130)
+	var d2 := int(RATE * 0.290)
+	for i in range(d1, n):
+		var eco: float = s[i - d1] * 0.30
+		if i >= d2:
+			eco += s[i - d2] * 0.15
+		s[i] = clampf(s[i] + eco * pow(1.0 - float(i) / n, 0.8), -1.0, 1.0)
+	return _wav(s)
+
+# MINIGUN (V) — 0,08 s. Curto porque a cadência é 0,06 s: som mais longo que o
+# intervalo empilha em drone contínuo e some a sensação de tiro-a-tiro. Baixo
+# (0,42 de volume) pelo mesmo motivo — são ~17 por segundo, e a soma é que dá o
+# volume da rajada.
+static func _minigun_stream() -> AudioStreamWAV:
+	var n := int(RATE * 0.08)
+	var s := PackedFloat32Array()
+	s.resize(n)
+	for i in n:
+		var t := float(i) / n
+		var env: float = pow(1.0 - t, 4.0)
+		var ruido := randf() * 2.0 - 1.0
+		var f := lerpf(700.0, 240.0, minf(t * 3.0, 1.0))
+		var corpo := sin(TAU * f * (float(i) / RATE)) * 0.40
+		s[i] = clampf((ruido * 0.70 + corpo) * env, -1.0, 1.0)
 	return _wav(s)
 
 # CANHÃO — mais longo e mais grave que o tiro de pistola, com três camadas:

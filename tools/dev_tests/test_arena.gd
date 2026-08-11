@@ -29,6 +29,7 @@ func _init() -> void:
 	_inimigos()
 	await _placar(main)
 	_melee()
+	await _melee_dano()
 	_buki()
 
 	print("\n===== %s =====" % ("TUDO OK" if _falhas == 0 else "%d FALHA(S)" % _falhas))
@@ -148,20 +149,157 @@ func _melee() -> void:
 	_ok(e1 > d1 * 1.5, "o segundo soco usa o braço ESQUERDO")
 	_ok(Melee.passo(0)["anim"] != Melee.passo(1)["anim"],
 		"os dois socos são clipes DIFERENTES (não o mesmo espelhado)")
-	# A hitbox tem que nascer no frame do impacto. Se o `atraso` for maior que a
-	# duração tocada, o golpe termina antes de machucar alguém.
+	# ---- o IMPACTO cai no frame do soco, e o soco cabe em tela ----------------
+	# `atraso` é uma FRAÇÃO do clipe: (pico − inicio)/vel. Mexer em `vel` ou
+	# `inicio` sem recalcular o atraso é o erro que este bloco existe pra pegar —
+	# ele não confere o número escrito, confere o número contra a ANIMAÇÃO.
+	#
+	# Membro que golpeia em cada passo (a tabela do Melee não diz, e é o que
+	# define onde está o impacto).
+	var membro := [["UpperArm_R", "ForeArm_R"], ["UpperArm_L", "ForeArm_L"], ["Thigh_R", "Shin_R", "Foot_R"]]
 	for i in Melee.COMBO.size():
 		var g := Melee.passo(i)
-		var tocada: float = Melee.clipe(i).length / float(g["vel"])
-		_ok(float(g["atraso"]) < tocada,
-			"passo %d (%s): hitbox em %.2fs cabe na animação de %.2fs"
-				% [i, g["nome"], float(g["atraso"]), tocada])
+		var a := Melee.clipe(i)
+		var tocada: float = Melee.duracao_tocada(i)
+		var t_imp: float = Melee.impacto_no_clipe(i)          # em tempo de CLIPE
+		var j: Array = _janela_acao(a, membro[i], t_imp)      # [t0, t1, t_pico, frac_no_impacto]
+		print("     passo %d (%s): vel %.2fx inicio %.2fs -> %.2fs em tela | impacto t_clipe=%.3f, ação [%.3f..%.3f] pico %.3f (%.0f%% no impacto)"
+			% [i, g["nome"], float(g["vel"]), float(g.get("inicio", 0.0)), tocada,
+				t_imp, j[0], j[1], j[2], 100.0 * j[3]])
+		_ok(float(g["atraso"]) + float(g["vida"]) <= tocada,
+			"passo %d (%s): hitbox (%.2f+%.2f s) cabe na animação de %.2f s"
+				% [i, g["nome"], float(g["atraso"]), float(g["vida"]), tocada])
+		_ok(t_imp >= j[0] and t_imp <= j[1],
+			"passo %d (%s): a hitbox nasce DENTRO do golpe do membro, não na guarda" % [i, g["nome"]])
+		_ok(j[3] >= 0.9,
+			"passo %d (%s): no instante da hitbox o membro está a %.0f%% da extensão máxima"
+				% [i, g["nome"], 100.0 * j[3]])
+		# Depois do impacto o golpe precisa FICAR em tela. Com `recuo` colado no
+		# `atraso` o clique seguinte troca o clipe 2 quadros depois do soco, e os
+		# dois socos viram a mesma coisa: só a pose de guarda, que é idêntica nos
+		# dois clipes. 0,15 s = 9 quadros a 60 fps.
+		_ok(float(g["recuo"]) >= float(g["atraso"]) + 0.15,
+			"passo %d (%s): %.0f ms de golpe em tela DEPOIS do impacto (recuo %.2f, impacto %.2f)"
+				% [i, g["nome"], 1000.0 * (float(g["recuo"]) - float(g["atraso"])),
+					float(g["recuo"]), float(g["atraso"])])
+	# Ritmo: os dois socos não podem ter a mesma cadência, senão leem igual mesmo
+	# sendo braços opostos (foi o relato do dono em 2026-08-11).
+	_ok(absf(float(Melee.passo(0)["atraso"]) - float(Melee.passo(1)["atraso"])) >= 0.05,
+		"os dois socos conectam em tempos DIFERENTES (%.2f s x %.2f s)"
+			% [float(Melee.passo(0)["atraso"]), float(Melee.passo(1)["atraso"])])
 	var perna := _amplitude(Melee.clipe(2), ["Thigh_R", "Shin_R", "Thigh_L", "Shin_L"])
 	var braco := _amplitude(Melee.clipe(2), ["UpperArm_R", "ForeArm_R", "UpperArm_L", "ForeArm_L"])
 	print("     chute: pernas %.0f vs braços %.0f" % [perna, braco])
 	_ok(perna > braco, "o finalizador é de PERNA")
 	_ok(float(Melee.passo(2)["kb"]) > float(Melee.passo(0)["kb"]) * 2.0,
 		"o chute empurra mais que o dobro do soco (é ele que joga no buraco)")
+
+# Janela de AÇÃO de um membro dentro do clipe, MEDIDA — não declarada.
+#
+# Sinal = deslocamento do efetor (punho / pé) em relação à posição dele em t=0,
+# por cinemática direta com segmentos de comprimento 1 no referencial do tronco
+# (as faixas do .res só guardam rotação, então só o ângulo importa; o tamanho real
+# do membro escala a curva inteira e não move o instante do máximo).
+#
+# Foi preciso testar três sinais para achar um que servisse aos três golpes:
+#   • desvio ANGULAR das juntas — erra o chute em 0,22 s (a perna continua girando
+#     na retração, e o pico cai depois do pé já ter voltado);
+#   • alcance FRONTAL (−Z) — erra o uppercut, que sobe em vez de ir pra frente, e
+#     no hook pega a mão da GUARDA (o outro braço) em vez da que soca;
+#   • deslocamento do efetor — acerta os três (0,633 / 0,367 / 1,233).
+#
+# Devolve [inicio, fim, t_do_pico, fração_do_pico_no_instante_da_hitbox].
+# "Ação" = trecho em que o sinal passa de 25% do pico; fora dele o membro está
+# parado na guarda, e uma hitbox nascendo ali é dano sem golpe.
+func _janela_acao(a: Animation, papeis: Array, t_hit: float) -> Array:
+	if a == null:
+		return [0.0, 0.0, 0.0, 0.0]
+	var tis: Array = []
+	for p in papeis:
+		tis.append(a.find_track(NodePath(String(p) + ":rotation"), Animation.TYPE_VALUE))
+	var passo_t := 1.0 / 120.0
+	var pos: Array = []
+	var t := 0.0
+	while t <= a.length + 0.0001:
+		var acc := Basis()
+		var pt := Vector3.ZERO
+		for k in tis.size():
+			if tis[k] < 0:
+				continue
+			var v = a.value_track_interpolate(tis[k], minf(t, a.length))
+			if v is Vector3:
+				acc = acc * Basis.from_euler(v)
+				pt += acc * Vector3(0, -1, 0)
+		pos.append(pt)
+		t += passo_t
+	if pos.size() < 2:
+		return [0.0, 0.0, 0.0, 0.0]
+	var p0: Vector3 = pos[0]
+	var sinal: Array = []
+	for pt in pos:
+		sinal.append((pt - p0).length())
+	var pico := 0.0
+	var t_pico := 0.0
+	for i in sinal.size():
+		if sinal[i] > pico:
+			pico = sinal[i]
+			t_pico = float(i) * passo_t
+	if pico <= 0.0:
+		return [0.0, 0.0, 0.0, 0.0]
+	var t0 := -1.0
+	var t1 := 0.0
+	for i in sinal.size():
+		if sinal[i] >= pico * 0.25:
+			if t0 < 0.0:
+				t0 = float(i) * passo_t
+			t1 = float(i) * passo_t
+	var idx: int = clampi(int(round(t_hit / passo_t)), 0, sinal.size() - 1)
+	return [maxf(t0, 0.0), t1, t_pico, float(sinal[idx]) / pico]
+
+# ------------------------------------------- corpo a corpo: dano UMA vez só
+# A DamageZone já tem o dicionário `_hit` que impede repetir alvo na MESMA zona.
+# O que este teste cobre é o que aquele dicionário NÃO cobre: um clique criando
+# mais de uma zona, ou o combo andando dois passos de uma vez. Mede no boneco de
+# treino, contando queda de vida — não confia em contador interno nenhum.
+func _melee_dano() -> void:
+	print("\n-- 4b. um clique = UMA aplicação de dano --")
+	var p = get_root().get_tree().get_first_node_in_group("player")
+	var d = get_root().get_tree().get_first_node_in_group("dummy")
+	_ok(p != null and d != null, "jogador e boneco de treino na árvore")
+	if p == null or d == null:
+		return
+	for i in Melee.COMBO.size():
+		var g := Melee.passo(i)
+		# Boneco à frente do jogador, dentro do alcance (alcance + raio = 3,0 m).
+		d.global_position = Vector3(0, 1.0, -8.0)
+		d.velocity = Vector3.ZERO
+		d.health = 1000.0
+		p.global_position = Vector3(0, 1.0, -6.2)
+		p._yaw = 0.0                     # olhando pro −Z, onde está o boneco
+		p._melee_passo = i
+		p._melee_janela = Melee.JANELA
+		p._melee_trava = 0.0
+		p._melee_buffer = 0.0
+		await process_frame
+		var hp: float = d.health
+		var aplicacoes := 0
+		p._request_melee()
+		# Espera em tempo REAL: o `atraso` da hitbox roda num SceneTreeTimer, e no
+		# headless o número de quadros por segundo não é 60.
+		var limite: int = Time.get_ticks_msec() + int(1000.0 * (float(g["atraso"]) + float(g["vida"]) + 0.9))
+		while Time.get_ticks_msec() < limite:
+			await process_frame
+			if d.health < hp - 0.0001:
+				aplicacoes += 1
+				hp = d.health
+			# O knockback tiraria o boneco do alcance e mascararia um 2º acerto.
+			d.velocity = Vector3.ZERO
+			d.global_position = Vector3(0, 1.0, -8.0)
+		_ok(aplicacoes == 1, "passo %d (%s): %d aplicação(ões) de dano no clique (esperado 1)"
+			% [i, g["nome"], aplicacoes])
+	d.health = 1000.0
+	p._melee_passo = 0
+	p._melee_trava = 0.0
 
 # ------------------------------------------------------------------ buki buki
 # As armas viraram ASSET (.glb do Blender). O risco novo é silencioso: se o

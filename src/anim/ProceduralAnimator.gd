@@ -96,9 +96,15 @@ const REC_DUR := 0.35       # duração da recepção (recovery)
 # Toca um clipe retargetado (Animation com faixas <Role>:rotation) por cima do rig.
 # `speed` acelera o clipe sem reassá-lo: os golpes do Mixamo são autorados em
 # ~2 s, tempo demais para um combo de corpo a corpo encadeado em 2 s.
-func play_baked(anim: Animation, speed: float = 1.0) -> void:
+#
+# `start` PULA o começo do clipe. Os golpes do Mixamo abrem com uma guarda parada
+# (medido: o `right_upper_hook_from_guard` só mexe o braço aos 0,392 s de 1,77 s —
+# 22% do clipe é pose de espera). Sem isso a única forma de o soco CONECTAR rápido
+# é acelerar o clipe inteiro, e é a aceleração que borra qual braço saiu. Cortar a
+# espera e tocar o golpe MAIS DEVAGAR dá as duas coisas: resposta e leitura.
+func play_baked(anim: Animation, speed: float = 1.0, start: float = 0.0) -> void:
 	_baked = anim
-	_baked_t = 0.0
+	_baked_t = 0.0 if anim == null else clampf(start, 0.0, maxf(anim.length - 0.01, 0.0))
 	_baked_speed = maxf(speed, 0.01)
 
 func is_playing_baked() -> bool:

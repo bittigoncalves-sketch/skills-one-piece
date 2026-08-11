@@ -25,45 +25,82 @@ extends RefCounted
 #  autoral lê melhor que reflexão, porque a reflexão também espelha o passo, o
 #  ombro e a guarda.
 #
-#  ⏱️ TEMPO DO IMPACTO — medido, não estimado. `atraso` é o instante, JÁ na
-#  velocidade tocada, em que o membro atinge a extensão máxima:
+#  ⏱️ ANATOMIA MEDIDA DOS CLIPES (2026-08-11). O sinal é o DESLOCAMENTO DO EFETOR
+#  (punho / pé) em relação à posição dele em t=0, por cinemática direta no
+#  referencial do tronco — o mesmo número para soco reto, hook e chute, e o único
+#  dos três candidatos testados que acerta os três (o desvio ANGULAR erra o chute
+#  em 0,22 s, porque a perna continua girando na retração; o alcance FRONTAL erra
+#  o uppercut, que sobe em vez de ir pra frente). Tudo em TEMPO DE CLIPE, antes de
+#  aplicar `inicio`/`vel`:
 #
-#    | clipe                       | duração | impacto | vel  | impacto tocado |
-#    | right_upper_hook_from_guard | 1,77 s  | 0,67 s  | 1,9x | 0,35 s |
-#    | left_uppercut_from_guard    | 1,37 s  | 0,37 s  | 1,25x| 0,30 s |
-#    | kicking                     | 2,30 s  | 1,38 s  | 2,4x | 0,58 s |
+#    | clipe                       | dur   | membro  | começa | PICO=impacto | acaba |
+#    | right_upper_hook_from_guard | 1,77s | braço D | 0,217  | 0,633        | 0,933 |
+#    | left_uppercut_from_guard    | 1,37s | braço E | 0,217  | 0,367        | 0,783 |
+#    | kicking                     | 2,30s | perna D | 0,450  | 1,233        | 1,775 |
 #
-#  (O `kicking` gasta 60% do clipe em preparação — por isso a velocidade dele é
-#  a mais alta das três; sem isso o finalizador demoraria quase 1 s para tocar
-#  no alvo.)
+#  ⚠️ POR QUE OS DOIS SOCOS LIAM IGUAL (relato do dono, medido em 2026-08-11).
+#  Não era clipe errado — o contraste entre os braços é enorme nos dois casos
+#  (hook: 234° no D contra 52° no E; uppercut: 157° no E contra 30° no D). Eram
+#  duas outras coisas, ambas de TEMPO:
+#
+#   1. VELOCIDADE. A 1,9x, o golpe inteiro do braço direito (0,716 s de clipe)
+#      passava em 0,377 s — 23 quadros a 60 fps para 234° de braço. Nesse borrão o
+#      olho vê "um braço", não "o braço DIREITO". O esquerdo, a 1,25x, tinha
+#      0,453 s. Hoje são 0,597 s e 0,539 s.
+#   2. INTERRUPÇÃO. `recuo` era 0,40 s e o impacto do hook caía em 0,368 s (na
+#      medição antiga): sobravam **32 ms — 2 quadros** com o braço estendido antes
+#      de o clique seguinte TROCAR o clipe. E os dois clipes partem da MESMA pose
+#      de guarda (medido: UpperArm_R (50,26,-45)°, ForeArm_L (16,-106,-15)° em
+#      ambos, idênticos ao grau). Se o instante que os distingue dura 2 quadros,
+#      o que sobra em tela é a guarda — que é comum aos dois.
+#
+#  A correção tem três partes, e as três dependem uma da outra:
+#   • `inicio` corta a guarda parada da abertura (o hook gastava 0,217 s e o chute
+#     0,450 s sem mexer o membro) — é isso que paga a desaceleração sem atrasar o
+#     soco;
+#   • `vel` cai (1,9→1,2 / 1,25→1,05 / 2,4→1,7);
+#   • `recuo` passa a ser >= atraso + 0,15 s, garantindo pelo menos 9 quadros de
+#     membro estendido antes de o clique seguinte poder cortar (hoje 13, 15 e 14).
 # ============================================================================
 
 const JANELA := 2.0        # tempo pra encadear o próximo golpe (pedido do usuário)
 
 # Cada passo do combo.
 #
-# `atraso` = quando a hitbox nasce dentro da animação. O golpe tem que CONECTAR
-# no frame do impacto, não no frame do clique — e esses valores agora saem da
-# MEDIÇÃO acima. Os anteriores eram estimados no olho e erravam para menos: o
-# `punching` conecta em 0,43 s na velocidade tocada, e a hitbox nascia em 0,22 s,
-# ou seja o dano saía antes do punho estender.
+# `inicio` = de onde o clipe começa a tocar (corta a guarda parada da abertura).
+# `atraso` = quando a hitbox nasce, contado do CLIQUE. É (pico − inicio) / vel, ou
+#            seja uma FRAÇÃO do clipe — mexeu em `vel` ou `inicio`, recalcule.
+#            O teste `test_arena.gd` (seção 4) confere essa conta.
+# `recuo`  = trava do próximo clique. Também é o tempo mínimo que o golpe fica em
+#            tela: enquanto ele corre, nenhum clique troca o clipe.
 const COMBO := [
 	{
-		"nome": "Soco Direito", "anim": "right_upper_hook_from_guard", "espelhar": false, "vel": 1.9,
+		# Hook de direita. Impacto em 0,633 s de clipe -> (0,633−0,20)/1,2 = 0,361 s.
+		"nome": "Soco Direito", "anim": "right_upper_hook_from_guard", "espelhar": false,
+		"vel": 1.2, "inicio": 0.20,
 		"dano": 30.0, "kb": 11.0, "alcance": 1.5, "raio": 1.5,
-		"atraso": 0.35, "vida": 0.18, "recuo": 0.40, "shake": 0.25,
+		"atraso": 0.36, "vida": 0.18, "recuo": 0.58, "shake": 0.25,
 	},
 	{
-		"nome": "Soco Esquerdo", "anim": "left_uppercut_from_guard", "espelhar": false, "vel": 1.25,
+		# Uppercut de esquerda. Impacto em 0,367 -> (0,367−0,10)/1,05 = 0,254 s.
+		# Mais rápido a responder que o hook DE PROPÓSITO: o contraste de ritmo
+		# entre os dois é metade da leitura de "trocou de braço".
+		"nome": "Soco Esquerdo", "anim": "left_uppercut_from_guard", "espelhar": false,
+		"vel": 1.05, "inicio": 0.10,
 		"dano": 34.0, "kb": 13.0, "alcance": 1.5, "raio": 1.5,
-		"atraso": 0.30, "vida": 0.18, "recuo": 0.36, "shake": 0.30,
+		"atraso": 0.25, "vida": 0.18, "recuo": 0.50, "shake": 0.30,
 	},
 	{
 		# O finalizador é o que joga pra fora do mapa: mais alcance e o dobro
 		# de knockback dos socos.
-		"nome": "Chute", "anim": "kicking", "espelhar": false, "vel": 2.4,
+		# O `kicking` gasta 0,450 s de clipe só armando — daí o `inicio` alto.
+		# Impacto em 1,233 -> (1,233−0,40)/1,7 = 0,490 s.
+		# O valor antigo (0,58 a 2,4x = 1,392 s de clipe) nascia 0,16 s DEPOIS de o
+		# pé chegar: a hitbox saía na retração, não no chute.
+		"nome": "Chute", "anim": "kicking", "espelhar": false,
+		"vel": 1.7, "inicio": 0.40,
 		"dano": 70.0, "kb": 26.0, "alcance": 2.0, "raio": 1.9,
-		"atraso": 0.58, "vida": 0.22, "recuo": 0.62, "shake": 0.6,
+		"atraso": 0.49, "vida": 0.22, "recuo": 0.72, "shake": 0.6,
 	},
 ]
 
@@ -71,6 +108,23 @@ static var _cache: Dictionary = {}   # "anim|espelhado" -> Animation
 
 static func passo(i: int) -> Dictionary:
 	return COMBO[clampi(i, 0, COMBO.size() - 1)]
+
+# Quanto tempo o clipe do passo `i` fica em tela, já com `inicio` e `vel`.
+# É o teto de tudo que é temporal no golpe: a hitbox e o recuo têm que caber aqui,
+# senão o dano sai depois de a animação acabar (ou o golpe some antes do soco).
+static func duracao_tocada(i: int) -> float:
+	var a := clipe(i)
+	if a == null:
+		return 0.0
+	var g := passo(i)
+	return maxf(a.length - float(g.get("inicio", 0.0)), 0.0) / float(g["vel"])
+
+# Instante do clipe (tempo de CLIPE, não de tela) em que a hitbox nasce. Serve
+# para o teste conferir que o `atraso` continua casado com o pico medido do membro
+# depois de qualquer mexida em `vel`/`inicio`.
+static func impacto_no_clipe(i: int) -> float:
+	var g := passo(i)
+	return float(g.get("inicio", 0.0)) + float(g["atraso"]) * float(g["vel"])
 
 # ------------------------------------------------------------------ animação
 # Devolve o clipe do passo, já espelhado se for o caso (e memorizado — espelhar
@@ -120,13 +174,19 @@ static func espelhar(orig: Animation) -> Animation:
 static func golpear(world: Node, caster: Node3D, i: int, origem: Vector3, dir: Vector3) -> void:
 	var g := passo(i)
 	var fwd := dir.normalized()
+	var alto: float = origem.y - caster.global_position.y   # altura do peito, relativa
 	var timer := world.get_tree().create_timer(float(g["atraso"]))
 	timer.timeout.connect(func():
 		if not is_instance_valid(caster) or not is_instance_valid(world):
 			return
 		var zone := DamageZone.new()
 		world.add_child(zone)
-		zone.global_position = origem + fwd * float(g["alcance"])
+		# A hitbox segue o CORPO até o instante do soco. `origem` foi capturada no
+		# clique, e agora o clique fica até 0,50 s à frente do impacto — correndo a
+		# 4,2 m/s isso são 2,1 m de defasagem, ou seja a hitbox nascia ATRÁS do
+		# jogador. A DIREÇÃO continua a do clique: o golpe se compromete com o lado
+		# para onde você olhou ao apertar, e girar o mouse no meio não teleguia.
+		zone.global_position = caster.global_position + Vector3.UP * alto + fwd * float(g["alcance"])
 		# vel = 0: a hitbox do corpo a corpo fica onde nasceu; alcance é o braço,
 		# não um projétil.
 		zone.setup(float(g["dano"]), float(g["kb"]), Vector3.ZERO,

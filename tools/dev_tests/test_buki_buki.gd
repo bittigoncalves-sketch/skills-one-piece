@@ -6,7 +6,11 @@ extends SceneTree
 ##  não vaza nó". Isso não vê NADA da mecânica nova. O que este teste prova, e
 ##  que nenhum outro cobre:
 ##
-##    1. a munição DECREMENTA a cada disparo (e começa descontada do saque);
+##    1. a munição DECREMENTA a cada disparo — e o SAQUE NÃO GASTA BALA
+##       (regra trocada pelo dono em 2026-08-11: sacar não atira mais, a arma
+##       sai CHEIA e o primeiro tiro é do botão esquerdo). Este teste afirmava o
+##       contrário — "12 = 1 no saque + 11 no clique" — e por isso passou a
+##       falhar sozinho quando a regra mudou;
 ##    2. a arma SOME quando a munição zera;
 ##    3. o slot largado ENTRA EM RECARGA — por troca, por desistência e por
 ##       munição zerada (as três portas de saída);
@@ -62,10 +66,13 @@ func _saque() -> void:
 	_p.begin_charge("Z")
 	await _esperar(0.4)
 	_ok(_p.buki_arma() == "Z", "a arma FICA na mão depois do saque (arma='%s')" % _p.buki_arma())
-	# 12 balas = 1 no saque + 11 no botão esquerdo.
-	_ok(_p.buki_municao() == 11, "munição do dono = 11 de 12 (o saque gastou 1) — deu %d" % _p.buki_municao())
-	_ok(int(_p.get("_srv_buki_municao")) == 11,
+	# REGRA NOVA (2026-08-11): sacar NÃO atira -> a pistola sai com as 12 balas.
+	_ok(_p.buki_municao() == 12, "munição do dono = 12 de 12 (o saque não gasta bala) — deu %d" % _p.buki_municao())
+	_ok(int(_p.get("_srv_buki_municao")) == 12,
 		"o SERVIDOR carregou o mesmo número (%d)" % int(_p.get("_srv_buki_municao")))
+	_ok(str(_p.get("_srv_buki_arma")) == "Z",
+		"o SERVIDOR sabe QUAL arma está na mão (='%s') — sem isso ele recusa todo tiro"
+		% str(_p.get("_srv_buki_arma")))
 	_ok(_visivel("Z"), "a pistola está visível no rig")
 	_ok(float(_p._skill_cooldowns["Z"]) == 0.0,
 		"o slot empunhado NÃO está em recarga (recarga é do slot LARGADO) — %.1fs" % float(_p._skill_cooldowns["Z"]))
@@ -92,7 +99,7 @@ func _troca_de_arma() -> void:
 	_ok(_visivel("X"), "o canhão apareceu")
 	_ok(float(_p._skill_cooldowns["Z"]) > 0.0,
 		"o slot Z abandonado entrou em RECARGA (%.1fs)" % float(_p._skill_cooldowns["Z"]))
-	_ok(_p.buki_municao() == 2, "canhão nasce com 3 tiros, 1 no saque -> 2 (deu %d)" % _p.buki_municao())
+	_ok(_p.buki_municao() == 3, "canhão nasce CHEIO: 3 tiros (deu %d)" % _p.buki_municao())
 	# X = o jogador vira o canhão INTEIRO: o corpo tem que sumir.
 	_ok(_p.get("_char_model") != null and not (_p.get("_char_model") as Node3D).visible,
 		"no canhão (X) o CORPO some — a transformação é do jogador inteiro")
@@ -100,9 +107,12 @@ func _troca_de_arma() -> void:
 # ------------------------------------------------ 5. munição zerada = larga
 func _municao_zerada() -> void:
 	print("\n-- 4. acabar a munição derruba a arma e esfria o slot --")
+	# 3 balas no canhão: as duas primeiras não largam a arma, a terceira sim.
 	_p._buki_atirar()
 	await process_frame
-	_ok(_p.buki_arma() == "X", "com 1 bala ainda na agulha a arma continua na mão")
+	_p._buki_atirar()
+	await process_frame
+	_ok(_p.buki_arma() == "X", "com 1 bala ainda na agulha a arma continua na mão (restam %d)" % _p.buki_municao())
 	_p._buki_atirar()
 	await _esperar(0.3)
 	_ok(_p.buki_arma() == "", "munição em 0 -> mãos livres (arma='%s')" % _p.buki_arma())
