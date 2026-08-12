@@ -57,7 +57,26 @@ O trapaceiro caiu para exatamente o que o jogador honesto tem. Bateria: 16/16.
 
 ## 🔴 Alta — afeta o jogo hoje
 
-### 15. O servidor não valida `origin`/`aim` do tiro
+### 15. A morte por queda dispara por DOIS caminhos, com trava de 2 s
+`SkillSystem.process_void_check` (roda no dono do corpo) e
+`Scoreboard._watch_falls` (roda no servidor) veem a **mesma** queda. Só o
+`_dead_until` de 2 s impede contar duas vezes.
+
+Funciona hoje, mas a corretude da contagem depende inteiramente de uma janela
+de tempo fixa: se um respawn demorar mais de 2 s (lag, pódio, cliente travado),
+a mesma queda pode ser contada de novo.
+
+*Detectado:* pelo `test_morte.gd`, ao mapear os caminhos de morte, 2026-08-12.
+**Não reproduzido** — é risco à vista, não bug medido.
+
+### 16. `process_void_check` tem o `-40.0` escrito à mão
+`SkillSystem.gd:120` usa o literal `-40.0` em vez de `Scoreboard.VOID_Y`. Hoje
+os dois batem; se alguém mudar a constante do placar, o Player continua morrendo
+em −40 e o placar declara a morte em outro lugar.
+
+*Detectado:* `test_morte.gd`, 2026-08-12.
+
+### 17. O servidor não valida `origin`/`aim` do tiro
 `_do_server_bullet` (`Player.gd:1332`) valida munição e arma, mas cria a
 `DamageZone` exatamente no `origin` que o **cliente** mandou.
 
@@ -69,7 +88,7 @@ absurda — trate como mecanismo confirmado, não como exploit medido.
 servidor (e recusar acima de um limite), ou aceitar como custo de precisão
 cliente-lado?
 
-### 16. `combat_mode` não replica — o saque remoto funciona por acidente
+### 18. `combat_mode` não replica — o saque remoto funciona por acidente
 `Main.gd:119` replica só `position, net_velocity, net_facing, net_on_floor,
 current_fruit_id`. Como `_buki_ativa()` (`Player.gd:1574`) lê o `combat_mode`
 **da cópia local**, no servidor ele fica preso no default `"fruit"` para sempre.

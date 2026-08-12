@@ -40,6 +40,23 @@ func _init() -> void:
 		quit(1)
 		return
 
+	# ⚠️ CONGELA O RELÓGIO DA RODADA.
+	#
+	# Este teste mede FRUTAS, não regra de partida — mas as duas se cruzam de um
+	# jeito que só apareceu quando a rodada caiu de 10 para 5 minutos
+	# (2026-08-12): o teste leva ~327 s, e ao fim da rodada o `Scoreboard`
+	# dispara o pódio, que força respawn de TODO MUNDO
+	# (`Scoreboard._start_podium` -> `_order_respawn`). O respawn devolve a fruta
+	# à árvore — e os golpes restantes saem vazios, acusando "NÃO PRODUZIU NADA"
+	# num código que está correto.
+	#
+	# Travar o relógio é mais honesto do que encurtar o teste: a duração da
+	# rodada é decisão de jogo e não pode ficar refém do tempo de medição.
+	var placar := get_first_node_in_group("scoreboard")   # em `extends SceneTree` NAO existe get_tree(): o script E a arvore
+	if placar:
+		placar.time_left = 1.0e9
+		print("⏸  relógio da rodada congelado (o pódio devolveria a fruta no meio)")
+
 	var pedidas := PackedStringArray(OS.get_cmdline_user_args())
 	var skills: Dictionary = SkillSystem.get_fruit_skills()
 	var com_arvore := _ids_das_arvores()

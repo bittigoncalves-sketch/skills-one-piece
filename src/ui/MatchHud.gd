@@ -18,6 +18,8 @@ const ROW_H := 26.0
 const COL_NOME := 14.0
 const COL_K := 190.0
 const COL_M := 244.0
+const RELOGIO_W := 150.0    # caixa do cronômetro, centrada no topo
+const RELOGIO_H := 46.0
 
 var _painel: ColorRect
 var _relogio: Label
@@ -102,9 +104,6 @@ func _build_painel() -> void:
 	_painel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_painel)
 
-	_relogio = _texto(_painel, Vector2(COL_NOME, 6), 30, Color(1.0, 0.95, 0.7))
-	_relogio.text = "⏱  10:00"
-
 	_cab = _texto(_painel, Vector2(COL_NOME, 44), 15, Color(0.72, 0.78, 0.9))
 	_cab.text = "JOGADOR"
 	var ck := _texto(_painel, Vector2(COL_K, 44), 15, Color(0.72, 0.78, 0.9))
@@ -115,6 +114,27 @@ func _build_painel() -> void:
 	_nomes = _texto(_painel, Vector2(COL_NOME, 68), 18, Color(1, 1, 1))
 	_kills = _texto(_painel, Vector2(COL_K, 68), 18, Color(0.45, 1.0, 0.55))
 	_mortes = _texto(_painel, Vector2(COL_M, 68), 18, Color(1.0, 0.55, 0.5))
+
+	# ---------------------------------------------------- CRONÔMETRO, no CENTRO
+	# Ele saiu de dentro do painel do placar (que fica no canto superior direito)
+	# e virou elemento próprio: o tempo restante é a informação que TODO mundo
+	# olha o tempo inteiro, e no canto ela disputa espaço com a tabela.
+	#
+	# Ancorado em `PRESET_CENTER_TOP` com `pivot` no meio: assim ele continua
+	# centrado em qualquer resolução, inclusive quando a janela é redimensionada.
+	var caixa := ColorRect.new()
+	caixa.color = Color(0, 0, 0, 0.45)
+	caixa.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	caixa.size = Vector2(RELOGIO_W, RELOGIO_H)
+	caixa.position = Vector2(-RELOGIO_W * 0.5, MARGIN)
+	caixa.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(caixa)
+
+	_relogio = _texto(caixa, Vector2.ZERO, 34, Color(1.0, 0.95, 0.7))
+	_relogio.size = caixa.size
+	_relogio.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_relogio.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_relogio.text = "⏱  05:00"
 
 func _build_podio() -> void:
 	_podio = ColorRect.new()

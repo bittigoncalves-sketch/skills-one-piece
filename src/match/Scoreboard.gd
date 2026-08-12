@@ -21,7 +21,10 @@ extends Node
 #  cliente ele só recebe o estado e serve de fonte para a HUD.
 # ============================================================================
 
-const ROUND_TIME := 600.0      # 10 minutos de rodada
+# 5 minutos de rodada (pedido do dono, 2026-08-12 — era 600). Rodada curta
+# significa que a decisão sai por poucas kills, e é por isso que o desempate
+# importa: ver `ranking()`, que ordena por kills e desempata por MENOS MORTES.
+const ROUND_TIME := 300.0
 const PODIUM_TIME := 8.0       # painel de fim de rodada
 const CREDIT_WINDOW := 10.0    # janela do crédito de kill por queda
 const VOID_Y := -40.0          # abaixo disto = caiu do mapa
