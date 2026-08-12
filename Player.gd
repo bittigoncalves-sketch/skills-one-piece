@@ -111,17 +111,16 @@ var _dash_dir: Vector3:
 var _dash_cooldown: float:
 	get: return _dash.recarga()
 # Mera Mera Z: rajada de balas de fogo (segura pra atirar; para ao soltar ou 16 balas).
-const RAPID_INTERVAL := 0.09
-const RAPID_MAX := 16
-var _rapid_fire: bool = false
-var _rapid_count: int = 0
-var _rapid_t: float = 0.0
+# Rajada Z e pistola da Yami -> src/player/disparo_sustentado.gd (passo 6a).
+# Aqui só as VISTAS.
+var _disparo := DisparoSustentado.new()
+var _rapid_fire: bool:
+	get: return _disparo.rajada_ativa()
 var _gun_recoil: float = 0.0   # coice da rajada Z (1->0 por tiro) p/ a pose de mira
 var _pistols: Array:           # pistolas nas DUAS mãos (visíveis só na rajada Z)
 	get: return _rig.pistolas() if _rig else []
-var _bullet_side: int = 0      # alterna a mão a cada tiro (0=esq, 1=dir)
-var _yami_pistol_active: bool = false # Yami Z: pistola ativa por toggle
-var _yami_shot_cooldown: float = 0.0  # cadência do tiro do Yami Z
+var _yami_pistol_active: bool:
+	get: return _disparo.yami_ativa()
 
 # ---- BUKI BUKI: arma empunhada + munição (regra nova, 2026-08-11) ----
 # A fruta virou um jogo de FPS: a tecla do slot SACA a arma, ela FICA na mão, o
@@ -286,6 +285,7 @@ func _ready() -> void:
 	_rig.montar_em(self)
 	_dash.montar_em(self)
 	_buki.montar_em(self, _rig)
+	_disparo.montar_em(self)
 	_parkour.montar_em(self, GRAVITY, JUMP_VELOCITY)
 
 	# Substitui o quadrado cinza pelo modelo 3D Voxel e equipa a Akuma no Mi correspondente
@@ -390,7 +390,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			_try_tame()   # Fase 8: botão direito DOMA o inimigo mirado
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		# Corpo a corpo. A pistola da Yami e as armas da Buki também usam o botão
-		# esquerdo (têm tratamento próprio em `_process_yami_pistol` /
+		# esquerdo (têm tratamento próprio em `DisparoSustentado` /
 		# `BukiController.atualizar`) — quem está de arma na mão atira, não soca.
 		if not _yami_pistol_active and _buki_weapon == "":
 			_request_melee()
@@ -477,6 +477,36 @@ func _update_pivot() -> void:
 # Tremor de tela. Continua aqui porque MUITA gente de fora chama (efeitos das
 # frutas, corpo a corpo, pouso) — o Player repassa ao rig em vez de expor o
 # componente inteiro.
+# ------------------------------------------------- PEDIDOS DO DISPARO SUSTENTADO
+# `DisparoSustentado` (passo 6a) é dono da rajada Z e da pistola da Yami, e não
+# escreve estado alheio.
+
+# `energy` é campo de TRÊS domínios (ciclo, skills, respawn) e está reservada
+# para a Fase 8 — por isso é pedido, não escrita direta.
+func gastar_energia(custo: float) -> void:
+	energy = maxf(energy - custo, 0.0)
+
+# Bala SEM arma (rajada Z e pistola da Yami). O canal é o mesmo da Buki, e é por
+# isso que ele mora aqui: RPC se resolve por CAMINHO DE NÓ.
+func pedir_bala_simples(aim: Vector3, origem: Vector3) -> void:
+	if not _is_authority or is_suppressed:
+		return
+	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
+		_do_server_bullet(aim, origem, "")
+	else:
+		_net_bullet_req.rpc_id(1, aim, origem, "")
+
+# Aplica uma mira já calculada. Quem decide PARA ONDE olhar é quem tem a arma;
+# `_yaw`/`_pitch` continuam sendo do Player (decisão da Fase 2, porque quem os
+# escreve é o input). `forca_corpo` existe porque cada arma vira o corpo num
+# ritmo diferente — a Yami em 20, a Buki em 14.
+func aplicar_mira(novo_yaw: float, novo_pitch: float, delta: float, forca_corpo: float) -> void:
+	_yaw = novo_yaw
+	_pitch = novo_pitch
+	_update_pivot()
+	if _char_model:
+		_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw, forca_corpo * delta)
+
 # ---------------------------------------------------------- PEDIDOS DA BUKI
 # O `BukiController` (Fase 5) é dono do arsenal, mas NÃO escreve estado alheio.
 # Estes são os pedidos dele — mesma disciplina do `pedir_shake` (Fase 2) e do
@@ -582,8 +612,6 @@ func _etapa_estado_de_combate(delta: float) -> void:
 		if is_instance_valid(g):
 			g.visible = _rapid_fire or _yami_pistol_active
 	energy = minf(energy + ENERGY_REGEN * delta, max_energy)   # regen contínua de energia
-	if _yami_shot_cooldown > 0.0:
-		_yami_shot_cooldown = maxf(_yami_shot_cooldown - delta, 0.0)
 	# RECARGA CONGELA DURANTE UMA HABILIDADE (regra do dono do projeto).
 	# Enquanto um golpe está em andamento, a recarga das OUTRAS técnicas para de
 	# correr — só a do próprio golpe em uso continua. Sem isso dava para segurar
@@ -597,7 +625,7 @@ func _etapa_estado_de_combate(delta: float) -> void:
 			continue                       # congelado: outra habilidade está ativa
 		_skill_cooldowns[slot_k] = maxf(_skill_cooldowns[slot_k] - delta, 0.0)
 	if _yami_pistol_active:
-		_process_yami_pistol(delta)
+		_disparo.atualizar_yami(delta, _yaw, _pitch)
 	if _buki.empunhando():
 		# O coice visual é COMPARTILHADO com a rajada Z e a pistola da Yami, então
 		# quem decai é o Player. O componente só pede (`pedir_coice_de_arma`).
@@ -629,7 +657,7 @@ func _etapa_travamento(delta: float) -> bool:
 				var slot_to_pass = "" if _pose_de_arma() else (_charge_slot if _charging else get_meta("active_skill", ""))
 				_proc_anim.update(velocity, is_on_floor(), false, delta, _pitch, false, _charging, slot_to_pass, "", _pose_de_arma(), _gun_recoil)
 			move_and_slide()
-			_tick_rapid_fire(delta)    # dispara as balas de fogo/gelo enquanto a rajada dura
+			_disparo.tick_rajada(delta, ENERGY_BULLET)    # dispara as balas de fogo/gelo enquanto a rajada dura
 
 			if _movement_locked_timer > 0.0:
 				_movement_locked_timer -= delta
@@ -739,7 +767,7 @@ func _etapa_locomocao(delta: float) -> void:
 # Fôlego, rajada Z e a janela do combo de corpo a corpo.
 func _etapa_ticks_de_combate(delta: float) -> void:
 	_update_breath()
-	_tick_rapid_fire(delta)   # Mera Z: dispara as balas de fogo enquanto a rajada está ativa
+	_disparo.tick_rajada(delta, ENERGY_BULLET)   # Mera Z: dispara as balas de fogo enquanto a rajada está ativa
 	_tick_melee(delta)        # corpo a corpo: janela de 2 s do combo + recuperação
 
 # A autoridade publica seu estado para os outros clientes replicarem.
@@ -1083,7 +1111,7 @@ func begin_charge(slot: String) -> void:
 		print("⏳ Habilidade [%s] em recarga! Aguarde %.1fs." % [slot, _skill_cooldowns[slot]])
 		return
 	if slot != "Z" and _yami_pistol_active:
-		_yami_pistol_active = false
+		_disparo.desligar_yami()
 		for g in _pistols: if is_instance_valid(g): g.visible = false
 		print("🌑 Yami Pistol desativada (Outra habilidade foi acionada).")
 	# BUKI BUKI: a tecla não lança golpe — ela EMPUNHA a arma daquele slot (e o
@@ -1095,8 +1123,7 @@ func begin_charge(slot: String) -> void:
 		print("❌ Black Hole requer contato com o solo!")
 		return
 	if slot == "Z" and combat_mode == "fruit" and current_fruit_id == "yami_yami":
-		_yami_pistol_active = not _yami_pistol_active
-		print("🌑 Yami Pistol: ", "EMPUNHADA (Bt Dir=Mirar / Bt Esq=Atirar)" if _yami_pistol_active else "GUARDADA")
+		print("🌑 Yami Pistol: ", "EMPUNHADA (Bt Dir=Mirar / Bt Esq=Atirar)" if _disparo.alternar_yami() else "GUARDADA")
 		return
 	if slot == "C" and combat_mode == "fruit" and current_fruit_id == "yami_yami":
 		set_meta("yami_black_hole_active", true)
@@ -1106,12 +1133,10 @@ func begin_charge(slot: String) -> void:
 		_request_cast("C")
 		return
 	# Z RAJADA (Mera = balas de fogo; Hie = flechas de gelo) — começa ao PRESSIONAR,
-	# não congela o player; para ao soltar ou ao atingir RAPID_MAX.
+	# não congela o player; para ao soltar ou ao atingir o teto de balas.
 	if slot == "Z" and combat_mode == "fruit" and (current_fruit_id == "mera_mera" or current_fruit_id == "hie_hie"):
 		trigger_skill_cooldown("Z")
-		_rapid_fire = true
-		_rapid_count = 0
-		_rapid_t = 0.0
+		_disparo.iniciar_rajada()
 		return
 	if combat_mode == "style" and STYLES_LIST[current_style_idx] == "teste_animacao":
 		energy = maxf(energy - ENERGY_SKILL, 0.0)
@@ -1139,7 +1164,7 @@ func release_charge(slot: String) -> void:
 		return
 	# MERA MERA Z: soltar a tecla ENCERRA a rajada.
 	if _rapid_fire and slot == "Z":
-		_rapid_fire = false
+		_disparo.parar_rajada()
 		return
 	if not _charging or _charge_slot != slot:
 		return
@@ -1172,7 +1197,7 @@ func _request_cast(slot: String) -> void:
 	if not _buki_ativa():
 		trigger_skill_cooldown(slot)
 	if slot != "Z" and _yami_pistol_active:
-		_yami_pistol_active = false
+		_disparo.desligar_yami()
 		for g in _pistols: if is_instance_valid(g): g.visible = false
 	var cam_dir := -_cam.global_transform.basis.z
 	var origin := global_position + Vector3.UP * 1.0 + cam_dir * 1.5
@@ -1309,43 +1334,6 @@ func _do_server_cast(slot: String, aim: Vector3, origin: Vector3) -> void:
 	else:
 		_net_play_cast(slot, aim, origin)                # sem rede: local direto
 
-# ---- MERA MERA Z: rajada de balas de fogo (servidor-autoridade, como o cast) ----
-func _tick_rapid_fire(delta: float) -> void:
-	if not _rapid_fire:
-		return
-	if energy < ENERGY_BULLET:
-		_rapid_fire = false                              # sem energia -> encerra a rajada
-		return
-	_rapid_t -= delta
-	if _rapid_t <= 0.0:
-		_rapid_t = RAPID_INTERVAL
-		energy = maxf(energy - ENERGY_BULLET, 0.0)       # cada bala gasta energia
-		_request_bullet()
-		add_camera_shake(0.12)                           # Camera Feel: coice de cada tiro
-		_gun_recoil = 1.0                                # coice visual do braço (mira)
-		_rapid_count += 1
-		if _rapid_count >= RAPID_MAX:
-			_rapid_fire = false                          # 16 balas -> para
-
-func _request_bullet() -> void:
-	if not _is_authority or is_suppressed:
-		return
-	# MIRA CORRIGIDA: acha o ponto no mundo sob a mira (raycast) e faz a bala CONVERGIR
-	# nele partindo do cano da pistola — assim ela acerta exatamente onde a mira aponta.
-	var target := _aim_target_point()
-	var origin := _muzzle_pos(_bullet_side)              # alterna esquerda/direita a cada tiro
-	_bullet_side = 1 - _bullet_side
-	var aim := (target - origin)
-	if aim.length() < 0.01:
-		aim = -_cam.global_transform.basis.z
-	aim = aim.normalized()
-	origin += aim * 0.25                                 # sai à frente do cano
-	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
-		_do_server_bullet(aim, origin, "")
-	else:
-		_net_bullet_req.rpc_id(1, aim, origin, "")
-
-# Ponta do cano da pistola da mão `side` (0=esq, 1=dir); fallback = à frente do peito.
 func _muzzle_pos(side: int) -> Vector3:
 	if side < _pistols.size() and is_instance_valid(_pistols[side]):
 		var g: Node3D = _pistols[side]
@@ -1544,7 +1532,7 @@ func equip_fruit(fruit_id: String) -> void:
 	if new_cid != "" and character_id != new_cid:
 		print("🔄 Troca automática de aparência: comendo a fruta [", fruit_id, "] -> transformado em [", new_cid, "]!")
 		_setup_character_model(new_cid)
-	_yami_pistol_active = false
+	_disparo.desligar_yami()
 	# Trocou de fruta -> a arma da Buki cai da mão (e o slot dela esfria).
 	_buki_guardar()
 	_buki_mostrar_arma("")
@@ -1564,42 +1552,6 @@ func equip_fruit(fruit_id: String) -> void:
 	if _is_authority and hud and hud.has_method("update_skills_for_fruit"):
 		hud.update_skills_for_fruit(fruit_id)
 
-func _process_yami_pistol(delta: float) -> void:
-	if Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
-		var target := _alvo_mais_proximo(35.0)
-		if target and is_instance_valid(target):
-			var to_target: Vector3 = (target.global_position + Vector3.UP * 0.9) - _cam.global_position
-			var target_yaw := atan2(-to_target.x, -to_target.z)
-			var h_dist := Vector2(to_target.x, to_target.z).length()
-			var target_pitch := clampf(atan2(to_target.y, h_dist), -1.3, 1.3)
-			_yaw = lerp_angle(_yaw, target_yaw, 15.0 * delta)
-			_pitch = lerpf(_pitch, target_pitch, 15.0 * delta)
-			_update_pivot()
-			if _char_model:
-				_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw, 20.0 * delta)
-	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and _yami_shot_cooldown <= 0.0:
-		_yami_shot_cooldown = 0.35
-		_gun_recoil = 1.0
-		var cam_dir := -_cam.global_transform.basis.z
-		var origin := global_position + Vector3.UP * 1.2 + cam_dir * 0.8
-		var aim := _aim_target_point()
-		var shoot_dir := (aim - origin).normalized()
-		# ⚠️ Aqui a bala era criada DIRETO, sem passar pelo servidor — e a
-		# `DamageZone` só machuca no servidor. Resultado relatado jogando: o tiro
-		# da pistola da Yami saindo do CLIENTE não feria o jogador do servidor
-		# (no host funcionava, porque lá o local JÁ é o servidor).
-		#
-		# Agora segue o mesmo trajeto da rajada Z: o dono pede, o servidor cria a
-		# zona de dano, e todo mundo reproduz o visual.
-		if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
-			_do_server_bullet(shoot_dir, origin, "")
-		else:
-			_net_bullet_req.rpc_id(1, shoot_dir, origin, "")
-
-# Corpo mais PRÓXIMO (inimigo ou outro jogador) dentro do alcance. Nasceu na
-# pistola da Yami e hoje serve também o auxílio de mira da Buki Buki — por isso
-# perdeu o nome próprio. Varre "enemy" E "player": numa arena PvP mirar só em
-# inimigos deixaria o auxílio inútil.
 func _alvo_mais_proximo(max_dist: float) -> Node3D:
 	var best: Node3D = null
 	var best_d := max_dist
@@ -1627,7 +1579,7 @@ func _alvo_mais_proximo(max_dist: float) -> Node3D:
 #  Ou seja: largar a arma SEMPRE custa a recarga do slot largado — seja por
 #  troca, por desistência ou por bala acabada. É isso que obriga o rodízio.
 #
-#  O modelo é o toggle da pistola da Yami (`_process_yami_pistol`), que já fazia
+#  O modelo é o toggle da pistola da Yami (`DisparoSustentado.atualizar_yami`), que já fazia
 #  "aperta, a arma fica, botão esquerdo atira, outra skill guarda" — a Buki só
 #  acrescenta munição por cima e sobe pros quatro slots.
 # ============================================================================

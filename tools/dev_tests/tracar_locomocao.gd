@@ -81,7 +81,7 @@ func _init() -> void:
 	p.global_position = Vector3(0, 3, 0)
 	p.velocity = Vector3.ZERO
 	await _quadros(30)
-	p._rapid_fire = true
+	p._disparo.iniciar_rajada()   # `_rapid_fire` virou vista sem setter no passo 6a
 	# O Espaço entra como TOQUE, não segurado. Segurar faz o player pular e
 	# reencostar todo quadro: o contato com o chão passa a oscilar e a trajetória
 	# vira ruído de float — medido, dava 31 quadros diferentes entre duas rodadas
@@ -102,7 +102,7 @@ func _init() -> void:
 			linhas.append("%04d pos=%s vel=%s chao=%s esc=%s dash=%.3f roll=%.3f lj=%.3f geppo=%d" % [
 				n, _v(p.global_position), _v(p.velocity), "1" if p.is_on_floor() else "0",
 				"1" if p._is_climbing else "0", p._dash_t, p._roll_t, p._long_jump_t, p._geppo_count])
-	p._rapid_fire = false
+	p._disparo.parar_rajada()
 	for i in 25:                            # solta: volta a andar
 		await _quadros(1)
 		n += 1

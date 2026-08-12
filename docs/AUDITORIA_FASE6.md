@@ -110,8 +110,8 @@ validável e commitável sozinho** — o repositório nunca fica quebrado entre 
 
 | passo | o que sai | por que nesta ordem | como validar |
 |---|---|---|---|
-| **6a** | `_cast_token`, `_rapid_*`, `_yami_shot_cooldown`, `suppression_timer` — o estado **contido** | zero acoplamento externo; valida o padrão sem risco | bateria + sondas da Buki |
-| **6b** | a rajada Z e a pistola da Yami (o "disparo sustentado") | as duas dividem `_request_bullet`; separá-las do cast é o corte natural | **sondas da Buki obrigatórias** (canal compartilhado) |
+| **6a** | ✅ **feito** — a rajada Z e a pistola da Yami viraram `DisparoSustentado` (`src/player/disparo_sustentado.gd`, 154 linhas). Player 1.689 → **1.644** | ver nota abaixo | bateria 16/16 + sondas da Buki (11 zonas, 7 checagens) |
+| ~~6b~~ | absorvido pelo 6a — ver nota | | |
 | **6c** | `begin_charge` / `release_charge` / `_fire_skill` — o cast em si | é o miolo; depois de 6a e 6b, o que sobra é coeso | bateria + `test_frutas` (9 frutas × 4 slots) |
 | **6d** | `combat_mode`, `_charging`, `is_suppressed` viram vistas | mecânico, mas toca HUD e VFX de fora | bateria completa |
 
@@ -145,3 +145,46 @@ RPC `_net_cast` vindo de um cliente. **Não apague sem substituir.**
   **6c**.
 - Nada aqui foi visto **na tela**.
 - Não medi o custo em linhas de cada passo — só a ordem e o risco.
+
+---
+
+## Nota de execução do 6a — o plano estava errado, e por quê
+
+O plano dizia: *"6a = extrair o estado **contido** (`_cast_token`, `_rapid_*`,
+`_yami_shot_cooldown`, `suppression_timer`)"*, e o 6b viria depois com as
+mecânicas.
+
+**Isso era refatoração de fachada.** Timers soltos não formam componente
+coerente: o resultado seria um arquivo sem responsabilidade própria, e as
+mecânicas continuariam espalhadas no Player lendo os timers de fora — trocando
+um acoplamento por dois.
+
+O corte que se sustenta é **por mecânica**. A rajada Z e a pistola da Yami não
+são vizinhas por acaso: dividem o canal de bala, pedem bala pelo mesmo caminho e
+usam a mesma pistola do rig. Separá-las criaria dois donos para o mesmo pedido.
+
+Então **6a e 6b viraram um passo só**, e o estado veio junto com quem o usa.
+`_cast_token` e `suppression_timer` ficam para o 6c, com o cast.
+
+### Medido antes de mover
+`_rapid_fire`, `_rapid_count`, `_rapid_t`, `_yami_pistol_active`,
+`_yami_shot_cooldown` e `_bullet_side`: **zero uso fora do `Player.gd`**.
+
+### Pedidos novos no Player
+`gastar_energia` (a `energy` é da Fase 8), `pedir_bala_simples` (o canal de rede
+fica no Player) e `aplicar_mira`.
+
+O `aplicar_mira` recebe `forca_corpo` como parâmetro **de propósito**: a Yami
+vira o corpo em 20 e abre o pitch em ±1,3; a Buki vira em 14 e trava em
+−1,2..0,5. Reaproveitar o `mirar_suave_para` da Fase 5 teria mudado os dois
+números em silêncio.
+
+### O que a rede de segurança pegou
+A bateria acusou **regressão de física** logo na primeira rodada, no quadro
+**342** — exatamente onde o traço liga a rajada. Causa: o traço escrevia
+`p._rapid_fire = true`, e o campo virou **vista sem setter**. É a mesma
+armadilha da Fase 5 (`_buki_scope`), e vale registrar o padrão:
+
+> **Toda vez que um campo vira vista só-leitura, algum teste que escrevia nele
+> passa a falhar em silêncio.** O traço não falha em silêncio — por isso ele
+> existe.
