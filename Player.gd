@@ -174,11 +174,8 @@ var aim_assist: bool = false   # assistência de mira (liga/desliga no E)
 # ---- corpo a corpo (botão esquerdo): soco D -> soco E -> chute ----
 # Ver src/combat/Melee.gd. `_melee_janela` conta o tempo que ainda resta pra
 # encadear; zerou, o próximo clique volta ao primeiro soco.
-var _melee_passo: int = 0
-var _melee_janela: float = 0.0
-var _melee_trava: float = 0.0   # recuperação: bloqueia o clique durante o golpe
-var _melee_buffer: float = 0.0  # clique que chegou na recuperação, esperando a vez
-const BUFFER_MELEE := 0.18      # até quanto antes da trava abrir o clique é guardado
+# O combo vive em src/player/melee_controller.gd (Fase 7).
+var _melee := MeleeController.new()
 
 # Qual slot está EM USO agora — "" se nenhum. Usado para congelar a recarga das
 # outras técnicas (ver o laço de cooldown no _physics_process).
@@ -297,6 +294,7 @@ func _ready() -> void:
 	_buki.montar_em(self, _rig)
 	_disparo.montar_em(self)
 	_cast.montar_em(self)
+	_melee.montar_em(self)
 	_parkour.montar_em(self, GRAVITY, JUMP_VELOCITY)
 
 	# Substitui o quadrado cinza pelo modelo 3D Voxel e equipa a Akuma no Mi correspondente
@@ -488,6 +486,14 @@ func _update_pivot() -> void:
 # Tremor de tela. Continua aqui porque MUITA gente de fora chama (efeitos das
 # frutas, corpo a corpo, pouso) — o Player repassa ao rig em vez de expor o
 # componente inteiro.
+# ------------------------------------------------------- PEDIDO DO CORPO A CORPO
+# O golpe tem que NASCER NO SERVIDOR: a `DamageZone` só machuca lá.
+func pedir_golpe_no_servidor(passo: int, origem: Vector3, fwd: Vector3) -> void:
+	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
+		_do_server_melee(passo, origem, fwd)
+	else:
+		_net_melee.rpc_id(1, passo, origem, fwd)
+
 # ------------------------------------------------------------ PEDIDOS DO CAST
 # `CastController` (passo 6c) decide SE e COMO conjurar; o que é do Player
 # continua do Player.
@@ -833,7 +839,7 @@ func _etapa_locomocao(delta: float) -> void:
 func _etapa_ticks_de_combate(delta: float) -> void:
 	_update_breath()
 	_disparo.tick_rajada(delta, ENERGY_BULLET)   # Mera Z: dispara as balas de fogo enquanto a rajada está ativa
-	_tick_melee(delta)        # corpo a corpo: janela de 2 s do combo + recuperação
+	_melee.tick(delta, _yaw)  # corpo a corpo: janela do combo + recuperação
 
 # A autoridade publica seu estado para os outros clientes replicarem.
 func _etapa_publicar_rede() -> void:
@@ -1189,44 +1195,7 @@ func _net_cast(slot: String, aim: Vector3, origin: Vector3) -> void:
 # Melee.JANELA (2 s). Segue o MESMO trajeto de rede das skills: o dono pede, o
 # servidor cria a hitbox, todo mundo reproduz a animação.
 func _request_melee() -> void:
-	if not _is_authority or _charging:
-		return
-	var hud := get_tree().get_first_node_in_group("hud")
-	if hud and hud.has_method("is_menu_open") and hud.is_menu_open():
-		return
-	# Clique durante a recuperação: em vez de sumir, fica GUARDADO e sai sozinho
-	# quando a trava abrir (ver _tick_melee). Sem isso o combo pune quem clica no
-	# ritmo — e os `recuo` cresceram (0,40->0,58 s) para o soco caber em tela, o
-	# que só piora a janela em que o clique se perdia. Buffer curto de propósito:
-	# clique de 1 s atrás não é intenção de agora.
-	if _melee_trava > 0.0:
-		if _melee_trava <= BUFFER_MELEE:
-			_melee_buffer = BUFFER_MELEE
-		return
-
-	# Janela vencida (ou combo terminado) -> recomeça do primeiro soco.
-	if _melee_janela <= 0.0 or _melee_passo >= Melee.COMBO.size():
-		_melee_passo = 0
-	var golpe := Melee.passo(_melee_passo)
-	_melee_trava = float(golpe["recuo"])
-	_melee_janela = Melee.JANELA
-
-	var fwd := -Basis.from_euler(Vector3(0, _yaw, 0)).z
-	var origem := global_position + Vector3.UP * 1.0
-	# Tranco de câmera NO SOCO, não no clique. Eram disparados aqui, ou seja até
-	# 0,5 s antes de a hitbox nascer: a tela sacudia na preparação e ficava parada
-	# no impacto — exatamente o "o impacto não sai no momento do soco".
-	var t_impacto := get_tree().create_timer(float(golpe["atraso"]))
-	var forca: float = float(golpe["shake"])
-	t_impacto.timeout.connect(func():
-		add_camera_shake(forca)
-		if _camera: _camera.pedir_fov_punch(3.0))
-
-	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
-		_do_server_melee(_melee_passo, origem, fwd)
-	else:
-		_net_melee.rpc_id(1, _melee_passo, origem, fwd)
-	_melee_passo += 1
+	_melee.pedir(_yaw)
 
 @rpc("any_peer", "call_remote", "reliable")
 func _net_melee(passo: int, origem: Vector3, fwd: Vector3) -> void:
@@ -1249,19 +1218,6 @@ func _net_play_melee(passo: int) -> void:
 		var g := Melee.passo(passo)
 		_proc_anim.play_baked(clipe, float(g["vel"]), float(g.get("inicio", 0.0)))
 
-# Corre os dois relógios do combo. Chamado do _physics_process.
-func _tick_melee(delta: float) -> void:
-	if _melee_trava > 0.0:
-		_melee_trava = maxf(_melee_trava - delta, 0.0)
-		if _melee_trava == 0.0 and _melee_buffer > 0.0:
-			_melee_buffer = 0.0
-			_request_melee()      # clique guardado sai agora que a trava abriu
-	if _melee_buffer > 0.0:
-		_melee_buffer = maxf(_melee_buffer - delta, 0.0)
-	if _melee_janela > 0.0:
-		_melee_janela = maxf(_melee_janela - delta, 0.0)
-		if _melee_janela == 0.0:
-			_melee_passo = 0   # esfriou: o próximo clique volta ao soco direito
 
 # SERVIDOR = autoridade: (validaria cooldown/estado) e manda TODOS reproduzirem.
 func _do_server_cast(slot: String, aim: Vector3, origin: Vector3) -> void:

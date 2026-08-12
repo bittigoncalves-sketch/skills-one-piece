@@ -276,10 +276,10 @@ func _melee_dano() -> void:
 		d.health = 1000.0
 		p.global_position = Vector3(0, 1.0, -6.2)
 		p._yaw = 0.0                     # olhando pro −Z, onde está o boneco
-		p._melee_passo = i
-		p._melee_janela = Melee.JANELA
-		p._melee_trava = 0.0
-		p._melee_buffer = 0.0
+		p._melee._passo = i
+		p._melee._janela = Melee.JANELA
+		p._melee._trava = 0.0
+		p._melee._buffer = 0.0
 		await process_frame
 		var hp: float = d.health
 		var aplicacoes := 0
@@ -298,8 +298,8 @@ func _melee_dano() -> void:
 		_ok(aplicacoes == 1, "passo %d (%s): %d aplicação(ões) de dano no clique (esperado 1)"
 			% [i, g["nome"], aplicacoes])
 	d.health = 1000.0
-	p._melee_passo = 0
-	p._melee_trava = 0.0
+	p._melee._passo = 0
+	p._melee._trava = 0.0
 
 # ------------------------------------------------------------------ buki buki
 # As armas viraram ASSET (.glb do Blender). O risco novo é silencioso: se o

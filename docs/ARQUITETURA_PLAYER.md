@@ -201,7 +201,7 @@ que parou de responder ao clique. Depois de cada fase de risco, vale abrir o jog
 | 4 — Movement / Parkour / Dash | ✅ **feita** — etapa 206 → 83; Player 1.959 → 1.776 | ver abaixo |
 | 5 — `BukiController` | ✅ **feita** — componente 286; Player 1.776 → 1.689 | ver abaixo |
 | 6 — `SkillController` | ✅ **feita** — `DisparoSustentado` + `CastController`; Player 1.689 → **1.590** | ver [`AUDITORIA_FASE6.md`](AUDITORIA_FASE6.md) |
-| 7 — `MeleeController` | ⏳ | — |
+| 7 — `MeleeController` | ✅ **feita** — componente 102; Player 1.590 → **1.545** | ver abaixo |
 | 8 — `HealthController` | ⏳ | — |
 | 9 — redução final | ⏳ | — |
 
@@ -603,3 +603,58 @@ balas nunca eram gastas e o pedido forjado era **legitimamente** autorizado.
 - 🟠 O servidor **não valida `origin`/`aim`** do tiro (item 15).
 - 🟠 **`combat_mode` não replica** — o saque remoto funciona por acidente
   (item 16).
+
+---
+
+## Fase 7 — `MeleeController`, feita em 2026-08-12
+
+`src/player/melee_controller.gd`, **102 linhas**. O `Player.gd` foi de 1.590
+para **1.545**.
+
+Foi a única fase feita **sem dividir entre agentes**, e por critério do próprio
+[`AGENTES.md`](AGENTES.md): a regra manda repartir o que **couber em mais de uma
+especialidade**. O corpo a corpo é combate-e-rede e mais nada — repartir seria
+cerimônia.
+
+### O que saiu
+
+Os dois relógios do combo e o buffer: `_melee_passo`, `_melee_janela`,
+`_melee_trava`, `_melee_buffer`, mais `_request_melee` e `_tick_melee`.
+
+A **tabela** dos golpes (tempos, alcance, clipe) continua em
+`src/combat/Melee.gd` — ela já era um arquivo próprio e não tinha por que se
+mexer.
+
+### O que ficou no Player
+
+`_do_server_melee` e os dois `@rpc` (`_net_melee`, `_net_play_melee`): rede e
+apresentação, pela mesma razão das fases 5 e 6 — RPC se resolve por caminho de
+nó. O componente pede por `pedir_golpe_no_servidor`.
+
+### O detalhe que o comentário guardava, e que sobreviveu
+
+> **O tranco de câmera sai no SOCO, não no clique.** Ele já foi disparado no
+> clique — até 0,5 s antes de a hitbox nascer — e a tela sacudia na preparação
+> enquanto ficava parada no impacto. Era o sintoma relatado: *"o impacto não sai
+> no momento do soco"*.
+
+O `SceneTreeTimer` que atrasa o tranco veio junto, intacto.
+
+### A armadilha das vistas — aplicada ANTES de rodar
+
+`test_arena.gd` (que está na bateria) escrevia nos **quatro** campos do combo.
+Quarta ocorrência do padrão — e a primeira em que a regra foi usada de forma
+preventiva, que era o objetivo dela:
+
+```bash
+grep -rn "_campo\s*=" --include=*.gd src/ tools/
+```
+
+Os campos viraram `p._melee._passo` etc. no teste.
+
+### Validação
+
+Bateria **16/16**. Sonda de cast de dois processos **idêntica à linha de base**
+(20 zonas do cliente, vida 2048,0 → 2036,3). E o `test_arena` mede o combo por
+amplitude de membro, não por contagem: soco 1 usa o braço **direito** (300/91),
+soco 2 o **esquerdo** (37/199).
