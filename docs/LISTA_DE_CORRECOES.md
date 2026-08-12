@@ -203,7 +203,20 @@ de escrita na velocidade. **Não corrigido** — ligar o impulso muda o feel do
 pulo duplo, e isso é decisão de design sua. O comportamento foi preservado
 exatamente como estava.
 
-### 13. `Melee.espelhar()` está sem uso
+### 13. `FireFXGrande` marca `set_meta("is_suppressed")` e ninguém lê
+`src/effects/FireFXGrande.gd:185` faz `body.set_meta("is_suppressed", true)` e
+`:234` desfaz. **Metadado não é o campo** — são coisas diferentes, e
+`grep -rn 'get_meta("is_suppressed")'` no projeto inteiro não devolve nada.
+
+**Não é bug de recurso:** a supressão real acontece na linha seguinte,
+`body.suppress_skills_temporarily(0.25)`. As duas linhas de `set_meta` são
+código morto que só confunde quem for ler.
+
+*Detectado:* ao mapear o domínio de supressão para o passo 6d da partição,
+2026-08-12. **Não corrigido** — apagar linha morta ainda é mexer num golpe que
+funciona, e a regra é não alterar sem sua ordem.
+
+### 14. `Melee.espelhar()` está sem uso
 Ficou quando os socos viraram clipes autorais. Continua correta e validada.
 **Gatilho para apagar:** se daqui a alguns golpes nenhum tiver usado, é dívida.
 

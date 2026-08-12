@@ -113,7 +113,7 @@ validável e commitável sozinho** — o repositório nunca fica quebrado entre 
 | **6a** | ✅ **feito** — a rajada Z e a pistola da Yami viraram `DisparoSustentado` (`src/player/disparo_sustentado.gd`, 154 linhas). Player 1.689 → **1.644** | ver nota abaixo | bateria 16/16 + sondas da Buki (11 zonas, 7 checagens) |
 | ~~6b~~ | absorvido pelo 6a — ver nota | | |
 | **6c** | ✅ **feito** — `CastController` (`src/player/cast_controller.gd`, 168 linhas). Player 1.644 → **1.592** | ver nota abaixo | bateria 16/16 + sonda de cast **idêntica à linha de base** + sonda da Buki |
-| **6d** | `combat_mode`, `_charging`, `is_suppressed` viram vistas | mecânico, mas toca HUD e VFX de fora | bateria completa |
+| **6d** | ✅ **feito** — a SUPRESSÃO foi para o `CastController`. `combat_mode` **ficou no Player**, e a razão está na nota | ver nota | bateria 16/16 + sonda de cast idêntica |
 
 `energy` **fica para a Fase 8**, com `HealthController`.
 
@@ -248,3 +248,49 @@ Sem correção, o `test_frutas` passaria a falhar em silêncio.
 > Ao transformar um campo em vista só-leitura, **procure quem escrevia nele**
 > antes de rodar qualquer coisa:
 > `grep -rn "_campo\s*=" --include=*.gd src/ tools/`
+
+---
+
+## Nota de execução do 6d — `combat_mode` NÃO saiu, e por quê
+
+O plano mandava transformar `combat_mode` em vista sobre o componente de
+habilidades. **Medindo antes de mover, isso se mostrou errado.**
+
+`combat_mode` é escrito pelo `toggle_combat_mode()` (tecla R), pela troca de
+personagem e pelo `equip_fruit`; e é lido pela **HUD** (`Hud.update_combat_mode`,
+`AmmoHud`), pelo **corpo a corpo**, pela **Buki** (`_buki_ativa`) e pelo cast.
+
+Ou seja: é o **seletor de modo que o sistema de combate inteiro consulta**, não
+estado de habilidade. Pô-lo dentro do `CastController` faria o componente do
+cast ser dono de algo que o estilo, a Buki e a HUD dependem — exatamente o
+antipadrão que esta refatoração combate.
+
+**Ele fica no Player**, que é onde estado global de fato mora.
+
+### O que saiu: a supressão
+
+`is_suppressed` + `suppression_timer` + o tique + `suppress_skills_temporarily`.
+Esse sim é do domínio: quem liga é um golpe, quem consulta são os portões de
+cast. Viraram `_suprimido`/`_suprimido_t` no `CastController`, com
+`suprimir()` e `tick_silencio()`.
+
+Os portões internos do componente passaram a ler o **próprio** estado
+(`_suprimido`) em vez de voltar ao Player — que era o objetivo.
+
+### Achado no caminho, na lista sem correção
+
+`FireFXGrande.gd:185/234` faz `set_meta("is_suppressed", ...)`, e **ninguém lê
+esse metadado**. Não quebra o recurso (a supressão real vem da chamada
+`suppress_skills_temporarily` logo abaixo), mas é código morto que confunde.
+Item 13 da lista.
+
+### Estado da Fase 6
+
+| passo | estado |
+|---|---|
+| 6a | ✅ `DisparoSustentado` |
+| 6b | absorvido pelo 6a |
+| 6c | ✅ `CastController` |
+| 6d | ✅ supressão movida; `combat_mode` fica |
+
+`Player.gd`: **1.689 → 1.590**. `energy` segue reservada para a Fase 8.

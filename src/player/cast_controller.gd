@@ -36,6 +36,12 @@ extends RefCounted
 
 var _dono: Node = null
 
+# SILÊNCIO (Yami Yami): enquanto vale, nenhuma habilidade sai. É estado do
+# domínio de HABILIDADES — quem o liga é um golpe, e quem o consulta são os
+# portões de cast. Por isso mora aqui, e não no Player.
+var _suprimido: bool = false
+var _suprimido_t: float = 0.0
+
 var _carregando: bool = false   # segurando a tecla, mirando
 var _slot: String = ""          # qual slot está sendo carregado
 # Identidade do cast atual. Serve para o timer de um cast antigo não mandar no
@@ -46,9 +52,27 @@ func montar_em(dono: Node) -> void:
 	_dono = dono
 
 # ------------------------------------------------------------------ leitura
+func suprimido() -> bool:  return _suprimido
+func tempo_de_silencio() -> float: return _suprimido_t
 func carregando() -> bool: return _carregando
 func slot() -> String:     return _slot
 func token() -> int:       return _token
+
+# SILENCIAR por um tempo. O maior pedido não vence de propósito: o golpe mais
+# recente é quem manda, como no comportamento original.
+func suprimir(duracao: float) -> void:
+	_suprimido = true
+	_suprimido_t = duracao
+	StatusFX.aplicar(_dono, StatusFX.SILENCIADO, duracao)   # aparece no canto da tela
+	print("🚫 PODERES DESATIVADOS POR YAMI YAMI! Tempo restante: ", duracao, "s")
+
+func tick_silencio(delta: float) -> void:
+	if not _suprimido:
+		return
+	_suprimido_t -= delta
+	if _suprimido_t <= 0.0:
+		_suprimido = false
+		print("✨ Poderes reativados!")
 
 # Usado pelo respawn/troca de fruta: aborta sem disparar nada.
 func abortar() -> void:
@@ -57,7 +81,7 @@ func abortar() -> void:
 
 # --------------------------------------------- começar a segurar a tecla
 func comecar(slot_pedido: String) -> void:
-	if _dono.is_suppressed:
+	if _suprimido:
 		print("❌ Poderes desativados (Yami Yami).")
 		return
 	if _dono._skill_cooldowns.get(slot_pedido, 0.0) > 0.0:
@@ -132,7 +156,7 @@ func soltar(slot_pedido: String) -> void:
 
 # Disparo imediato, sem segurar (compat + atalhos).
 func conjurar_direto(slot_pedido: String) -> void:
-	if _dono.is_suppressed or _dono._skill_cooldowns.get(slot_pedido, 0.0) > 0.0:
+	if _suprimido or _dono._skill_cooldowns.get(slot_pedido, 0.0) > 0.0:
 		return
 	if _dono._buki_ativa():
 		_dono._buki_empunhar(slot_pedido)   # na Buki o slot empunha, não lança
@@ -142,7 +166,7 @@ func conjurar_direto(slot_pedido: String) -> void:
 # ------------------------------------------------------- pedido ao servidor
 # Calcula a mira e entrega ao Player, que fala com a rede.
 func pedir_cast(slot_pedido: String) -> void:
-	if not _dono._is_authority or _dono.is_suppressed:
+	if not _dono._is_authority or _suprimido:
 		return
 	if _dono._skill_cooldowns.get(slot_pedido, 0.0) > 0.0:
 		return

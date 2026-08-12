@@ -29,8 +29,12 @@ var max_energy: float = 4096.0
 const ENERGY_REGEN := 320.0        # por segundo
 const ENERGY_BULLET := 10.0        # por bala da rajada Z
 const ENERGY_SKILL := 180.0        # por skill lançada
-var is_suppressed: bool = false
-var suppression_timer: float = 0.0
+# SILÊNCIO (Yami) -> CastController (passo 6d). Vistas: `is_suppressed` é lido
+# em 5 pontos aqui e por sondas de fora.
+var is_suppressed: bool:
+	get: return _cast.suprimido()
+var suppression_timer: float:
+	get: return _cast.tempo_de_silencio()
 
 var combat_mode: String = "fruit" # "fruit" ou "style"
 var current_style_idx: int = 0
@@ -844,11 +848,7 @@ func _etapa_publicar_rede() -> void:
 func _etapa_vida(delta: float) -> bool:
 
 	# Processamento de Supressão da Passiva Yami Yami
-	if is_suppressed:
-		suppression_timer -= delta
-		if suppression_timer <= 0.0:
-			is_suppressed = false
-			print("✨ Poderes reativados!")
+	_cast.tick_silencio(delta)
 
 	# Verificação de Void (Morte ao cair no Void)
 	if SkillSystem.process_void_check(self):
@@ -1154,10 +1154,7 @@ func net_force_respawn() -> void:
 	global_position = Scoreboard.RESPAWN   # centro da plataforma (zona sem buraco)
 
 func suppress_skills_temporarily(duration: float) -> void:
-	is_suppressed = true
-	suppression_timer = duration
-	StatusFX.aplicar(self, StatusFX.SILENCIADO, duration)   # aparece no canto da tela
-	print("🚫 PODERES DESATIVADOS POR YAMI YAMI! Tempo restante: ", duration, "s")
+	_cast.suprimir(duration)
 
 func lock_movement(duration: float, skill_id: String = "") -> void:
 	_movement_locked_timer = maxf(_movement_locked_timer, duration)
