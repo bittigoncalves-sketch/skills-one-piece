@@ -29,6 +29,7 @@ var jump_multiplier: float = 1.0
 # não quebra. A regra "vista sem setter" vale para campo cujo write de fora é
 # bug — não é o caso destes.
 var _vida := HealthController.new()
+var _mira := Mira.new()
 var health: float:
 	get: return _vida.vida
 	set(v): _vida.vida = v
@@ -309,6 +310,7 @@ func _ready() -> void:
 	_cast.montar_em(self)
 	_melee.montar_em(self)
 	_vida.montar_em(self)
+	_mira.montar_em(self)
 	_parkour.montar_em(self, GRAVITY, JUMP_VELOCITY)
 
 	# Substitui o quadrado cinza pelo modelo 3D Voxel e equipa a Akuma no Mi correspondente
@@ -1225,44 +1227,16 @@ func _do_server_cast(slot: String, aim: Vector3, origin: Vector3) -> void:
 	else:
 		_net_play_cast(slot, aim, origin)                # sem rede: local direto
 
+# MIRA -> src/player/mira.gd (Fase 9). Estas três continuam aqui como cascas
+# porque são a API que testes e componentes já conhecem.
 func _muzzle_pos(side: int) -> Vector3:
-	if side < _pistols.size() and is_instance_valid(_pistols[side]):
-		var g: Node3D = _pistols[side]
-		return g.global_position - g.global_transform.basis.y * 0.34   # cano = -Y local
-	return global_position + Vector3.UP * 1.0 - _cam.global_transform.basis.z * 1.2
+	return _mira.boca_da_pistola(_pistols, side, _cam)
 
-# Ponto no mundo sob a MIRA. Com aim assist, puxa pro inimigo mais alinhado no cone.
 func _aim_target_point() -> Vector3:
-	var cam_pos := _cam.global_position
-	var fwd := -_cam.global_transform.basis.z
-	if aim_assist:
-		var e := _aim_assist_target(cam_pos, fwd)
-		if e != null:
-			return e.global_position + Vector3.UP * 0.6
-	var space := get_world_3d().direct_space_state
-	var q := PhysicsRayQueryParameters3D.create(cam_pos, cam_pos + fwd * 200.0)
-	q.exclude = [get_rid()]
-	var hit := space.intersect_ray(q)
-	if not hit.is_empty():
-		return hit["position"]
-	return cam_pos + fwd * 60.0
+	return _mira.ponto_de_mira(_cam, aim_assist)
 
-# Inimigo mais ALINHADO à mira dentro do cone (~25°) e alcance — p/ a assistência.
 func _aim_assist_target(cam_pos: Vector3, fwd: Vector3) -> Node3D:
-	var best: Node3D = null
-	var best_align := 0.9      # cos do cone
-	for e in get_tree().get_nodes_in_group("enemy"):
-		if not (e is Node3D):
-			continue
-		var to: Vector3 = (e.global_position + Vector3.UP * 0.6) - cam_pos
-		var d := to.length()
-		if d > 55.0 or d < 0.5:
-			continue
-		var align := fwd.dot(to / d)
-		if align > best_align:
-			best_align = align
-			best = e
-	return best
+	return _mira.alvo_alinhado(cam_pos, fwd)
 
 @rpc("any_peer", "reliable")
 func _net_bullet_req(aim: Vector3, origin: Vector3, arma: String) -> void:
@@ -1444,18 +1418,7 @@ func equip_fruit(fruit_id: String) -> void:
 		hud.update_skills_for_fruit(fruit_id)
 
 func _alvo_mais_proximo(max_dist: float) -> Node3D:
-	var best: Node3D = null
-	var best_d := max_dist
-	if get_tree() and get_tree().current_scene:
-		var cands := get_tree().get_nodes_in_group("enemy") + get_tree().get_nodes_in_group("player")
-		for c in cands:
-			if not (c is Node3D) or c == self:
-				continue
-			var d: float = global_position.distance_to(c.global_position)
-			if d < best_d and d > 0.2:
-				best_d = d
-				best = c
-	return best
+	return _mira.mais_proximo(max_dist)
 
 # ============================================================================
 #  BUKI BUKI NO MI — a fruta virou FPS (regra nova do dono, 2026-08-11)

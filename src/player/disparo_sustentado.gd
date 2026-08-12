@@ -111,9 +111,9 @@ func tick_rajada(delta: float, custo_por_bala: float) -> void:
 # CONVERGIR nele partindo do cano da pistola — assim ela acerta exatamente onde
 # a mira aponta, e não paralelo a ela.
 func pedir_bala() -> void:
-	var origem: Vector3 = _dono._muzzle_pos(_mao)   # alterna esquerda/direita
+	var origem: Vector3 = _dono._mira.boca_da_pistola(_dono._pistols, _mao, _dono._cam)   # alterna esquerda/direita
 	_mao = 1 - _mao
-	var alvo: Vector3 = _dono._aim_target_point()
+	var alvo: Vector3 = _dono._mira.ponto_de_mira(_dono._cam, _dono.aim_assist)
 	var aim := alvo - origem
 	if aim.length() < 0.01:
 		aim = -_dono._cam.global_transform.basis.z
@@ -129,7 +129,7 @@ func atualizar_yami(delta: float, yaw: float, pitch: float) -> void:
 		_yami_cd = maxf(_yami_cd - delta, 0.0)
 
 	if Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
-		var alvo: Node3D = _dono._alvo_mais_proximo(35.0)
+		var alvo: Node3D = _dono._mira.mais_proximo(35.0)
 		if alvo and is_instance_valid(alvo):
 			var para: Vector3 = (alvo.global_position + Vector3.UP * 0.9) - _dono._cam.global_position
 			var h := Vector2(para.x, para.z).length()
@@ -145,7 +145,7 @@ func atualizar_yami(delta: float, yaw: float, pitch: float) -> void:
 		_dono.pedir_coice_de_arma()
 		var frente: Vector3 = -_dono._cam.global_transform.basis.z
 		var origem: Vector3 = _dono.global_position + Vector3.UP * 1.2 + frente * 0.8
-		var alvo_pt: Vector3 = _dono._aim_target_point()
+		var alvo_pt: Vector3 = _dono._mira.ponto_de_mira(_dono._cam, _dono.aim_assist)
 		# ⚠️ A bala já foi criada DIRETO aqui, sem passar pelo servidor — e a
 		# `DamageZone` só machuca no servidor. Sintoma relatado jogando: o tiro
 		# da pistola da Yami saindo do CLIENTE não feria o jogador do servidor

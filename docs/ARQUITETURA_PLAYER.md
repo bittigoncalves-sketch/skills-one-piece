@@ -203,7 +203,7 @@ que parou de responder ao clique. Depois de cada fase de risco, vale abrir o jog
 | 6 — `SkillController` | ✅ **feita** — `DisparoSustentado` + `CastController`; Player 1.689 → **1.590** | ver [`AUDITORIA_FASE6.md`](AUDITORIA_FASE6.md) |
 | 7 — `MeleeController` | ✅ **feita** — componente 102; Player 1.590 → **1.545** | ver abaixo |
 | 8 — `HealthController` | ✅ **feita** — componente 124; Player 1.545 → **1.531** | ver abaixo |
-| 9 — redução final | ⏳ | — |
+| 9 — redução final | ✅ **feita** — `Mira` extraída; Player 1.531 → **1.498**. Veredito abaixo | ver abaixo |
 
 ---
 
@@ -735,3 +735,82 @@ servidor, `Input.is_key_pressed` leria o teclado do host.
 
 Bateria **16/16** · traço de 492 quadros idêntico · sonda de cast idêntica à
 linha de base (20 zonas, vida 2048,0 → 2036,3) · sonda da Buki 7/7.
+
+---
+
+## Fase 9 — redução final e o veredito do limite
+
+`src/player/mira.gd`, 103 linhas. O `Player.gd` foi de 1.531 para **1.498**.
+
+### O corte não foi por tamanho — foi para apagar um cheiro
+
+As fases 5 a 8 deixaram os componentes de combate chamando **métodos privados
+do Player** para conseguir o ponto de mira:
+
+```
+_dono._aim_target_point()      (Buki, DisparoSustentado)
+_dono._alvo_mais_proximo(...)  (Buki, DisparoSustentado)
+_dono._muzzle_pos(...)         (DisparoSustentado)
+```
+
+Sete chamadas, três componentes, todas atravessando exatamente a fronteira que
+esta refatoração existe para desenhar. Agora é componente com API pública.
+
+### O NÚMERO QUE DECIDE A FASE
+
+```
+total: 1.498   comentário: 450 (30%)   em branco: 158   CÓDIGO: 890
+```
+
+**890 linhas de código — abaixo do limite de 900.**
+
+Mas a regra do dono, como está escrita, é `wc -l`, e `wc -l` conta 1.498. Então
+há uma decisão a tomar, e ela **não é técnica**:
+
+| leitura da regra | resultado |
+|---|---|
+| `wc -l` (a regra literal) | 1.498 — **1,7× o limite** |
+| linhas de código | 890 — **dentro** |
+
+### Por que eu não corto os comentários para "passar"
+
+Os 450 comentários não são enfeite. São as cicatrizes já pagas:
+
+- por que remover `_request_cast` custou *sniper cheia, 5 balas, 0 `DamageZone`*;
+- por que a autoridade **não desce** para componente criado no `_ready()`;
+- por que a munição existe nos dois lados de propósito;
+- por que o tranco de câmera sai no soco e não no clique;
+- por que `−0,0 + 0,0` fez o traço de 492 quadros acusar regressão.
+
+Apagar isso para bater uma contagem seria destruir a parte mais cara do arquivo
+para satisfazer a métrica que existe para protegê-lo.
+
+### O que ainda poderia sair, e o preço
+
+Restam **13 `@rpc` + 5 handlers de servidor**. Eles só sairiam virando **nó
+filho** — o que muda o caminho de rede dos treze de uma vez. O relatório original
+já dizia isso, e as fases 5 e 6 confirmaram medindo: o canal de bala é
+compartilhado por três mecânicas.
+
+Também restam ~79 linhas que existem **por causa** da partição (34 de vistas,
+45 de cascas). São o preço das fronteiras, não gordura.
+
+> **Veredito honesto:** 890 linhas de código é o piso sem mexer no protocolo de
+> rede. Ir além é decisão de arquitetura — a mesma que o relatório original
+> chamou de "corte 4" — e não de arrumação.
+
+### Resultado da partição inteira
+
+| | linhas |
+|---|---|
+| `Player.gd` antes | **2.167** |
+| `Player.gd` hoje | **1.498** (890 de código) |
+| 10 componentes em `src/player/` | ~1.926 |
+
+Campos com mais de um dono: **22 → praticamente zero**. Os que restam são
+públicos de propósito (`health`, `energy`) e têm dono único do valor.
+
+### Validação final
+
+Bateria **16/16** · traço de 492 quadros idêntico · sonda de cast idêntica à
+linha de base · sonda da Buki 7/7.

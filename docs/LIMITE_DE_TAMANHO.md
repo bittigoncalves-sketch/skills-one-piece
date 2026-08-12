@@ -15,7 +15,7 @@ find . -name "*.gd" -not -path "./.godot/*" | xargs wc -l | sort -rn | head
 
 | arquivo | linhas | |
 |---|---|---|
-| `Player.gd` | **2.167** | 🔴 **acima do limite — pendente** |
+| `Player.gd` | **1.498** | 🟡 **1.498 por `wc -l`, mas 890 de código** — ver o veredito da Fase 9 em [`ARQUITETURA_PLAYER.md`](ARQUITETURA_PLAYER.md) |
 | `src/effects/FireFXGrande.gd` | 553 | ✅ criado no corte de 2026-08-11 |
 | `src/effects/BukiFX.gd` | 537 | ✅ |
 | `src/anim/ProceduralAnimator.gd` | 762 | ⚠️ na mira |

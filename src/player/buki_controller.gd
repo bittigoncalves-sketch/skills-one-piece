@@ -282,7 +282,7 @@ func atualizar(delta: float, pitch: float, yaw: float, facing: float) -> void:
 # Quem é dono de `_yaw`/`_pitch` é o Player (decisão da Fase 2) — aqui só se
 # escolhe O ALVO e se PEDE a mira.
 func _auxilio_de_mira(delta: float) -> void:
-	var alvo: Node3D = _dono._alvo_mais_proximo(50.0)
+	var alvo: Node3D = _dono._mira.mais_proximo(50.0)
 	if alvo == null or not is_instance_valid(alvo):
 		return
 	_dono.mirar_suave_para(alvo.global_position + Vector3.UP * 0.9, delta, 9.0)
@@ -301,7 +301,7 @@ func atirar() -> void:
 	_dono.add_camera_shake(float(d["shake"]))
 
 	var origem := boca_do_cano()
-	var alvo_pt: Vector3 = _dono._aim_target_point()
+	var alvo_pt: Vector3 = _dono._mira.ponto_de_mira(_dono._cam, _dono.aim_assist)
 	var aim := alvo_pt - origem
 	aim = aim.normalized() if aim.length() > 0.01 else -_dono._cam.global_transform.basis.z
 	origem += aim * 0.25
