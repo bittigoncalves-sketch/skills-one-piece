@@ -155,7 +155,37 @@ if quer "lan"; then
 	fi
 fi
 
-# ------------------------------------------ 3. regressão de locomoção (golden)
+# ------------------------------------- 3. multiplayer: dois processos
+# Mesma receita do teste de LAN: o host sobe primeiro (a porta 24565 é única),
+# o cliente age, e o host fecha o relatório sozinho quando o cliente anuncia a
+# última fase. Sem isso, nada aqui cobre "morrer, respawnar e regenerar EM REDE".
+if quer "mp"; then
+	echo
+	echo "-- multiplayer (dois processos: host juiz + cliente ator) --"
+	printf '  %-24s ' "net_mp_probe"
+	timeout 300 "$GODOT" --headless --path "$PROJ" \
+		--script tools/dev_tests/net_mp_host_probe.gd >"$TMP/mp_host.log" 2>&1 &
+	MP_PID=$!
+	sleep 5                                    # o host precisa estar no ar antes
+	t0=$SECONDS
+	timeout 300 "$GODOT" --headless --path "$PROJ" \
+		--script tools/dev_tests/net_mp_client_probe.gd >"$TMP/mp_cli.log" 2>&1
+	cod=$?
+	wait "$MP_PID" 2>/dev/null; cod_host=$?
+	dt=$((SECONDS - t0))
+	if _falhou "$cod" "$TMP/mp_cli.log" || _falhou "$cod_host" "$TMP/mp_host.log"; then
+		echo "$(vermelho FALHOU) (${dt}s)"
+		grep -E '✗|❌' "$TMP/mp_host.log" "$TMP/mp_cli.log" | head -3 | sed 's/^/        /'
+		cp "$TMP/mp_host.log" /tmp/validar_mp_host.log
+		cp "$TMP/mp_cli.log" /tmp/validar_mp_cli.log
+		FALHOU=$((FALHOU+1)); FALHAS+=("net_mp_probe")
+	else
+		echo "$(verde ok) (${dt}s)"
+		PASSOU=$((PASSOU+1))
+	fi
+fi
+
+# ------------------------------------------ 4. regressão de locomoção (golden)
 # Este é diferente dos outros: compara a trajetória com um arquivo de
 # referência commitado. É o que pega "o personagem não anda" / "atravessa
 # parede" — que nenhum teste headless acusa. Precisa de tela: a locomoção só lê

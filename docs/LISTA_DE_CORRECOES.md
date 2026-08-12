@@ -57,6 +57,65 @@ O trapaceiro caiu para exatamente o que o jogador honesto tem. Bateria: 16/16.
 
 ## 🔴 Alta — afeta o jogo hoje
 
+### 19. 💀 A vida da cópia AUTORITATIVA nunca volta depois de uma morte em rede
+**É o bug mais grave achado até agora, e ele arruína o PvP.**
+
+`Scoreboard._order_respawn` (`Scoreboard.gd:156`) manda
+`victim.net_force_respawn.rpc_id(peer)` — **só o DONO executa**. E o
+`_vida.restaurar()` está *dentro* desse método (`Player.gd:1150`).
+
+Resultado: na **cópia do servidor** — que é exatamente a que a `DamageZone`
+machuca — a vida fica em **0 para sempre**.
+
+*Detectado:* sonda de multiplayer de dois processos, 2026-08-12.
+**Medido: 96,60 s depois do respawn, hp autoritativo = 0,0 de 2048.**
+
+**Consequência de jogo:** depois da primeira morte por dano, passados os 2 s de
+`_dead_until`, **qualquer** acerto mata o cliente na hora — pelo resto da
+rodada. Só o host escapa, porque ele respawna localmente
+(`peer == get_unique_id()`).
+
+**Decisão pendente:** o `_order_respawn` também restaura na cópia do servidor,
+ou o `net_force_respawn` vira `call_local` com broadcast?
+
+### 20. 🩸 `health` e `energy` não replicam nem têm RPC
+`Main._make_player_sync` (`Main.gd:119`) replica só `position`,
+`net_velocity`, `net_facing`, `net_on_floor` e `current_fruit_id`. Não existe
+nenhum `@rpc` de vida no `Player.gd`.
+
+*Detectado:* sonda de multiplayer, 2026-08-12. **Medido no dono durante a morte
+por dano em rede: vida mínima lida = 2048,0 de 2048,0 e `on_player_damaged`
+recebido 0 vezes.**
+
+**Consequência de jogo:** em partida de dois PCs a barra de vida da vítima
+**não se mexe**. Ela morre com a barra cheia, sem flash vermelho, sem som e sem
+número de dano — o único sinal que chega é o teleporte do respawn.
+
+É o gêmeo do item 19: cada lado tem uma vida própria e elas nunca se falam.
+
+**Decisão pendente:** replicar `health` pelo `MultiplayerSynchronizer` (simples,
+mas manda vida 60×/s), ou um `@rpc` de "você levou X de dano" só no evento?
+
+### 21. `FireFX.gd:200` chama `look_at` antes de o nó entrar na árvore
+`mmi.look_at(...)` roda **antes** de `zone.add_child(mmi)`, então
+`get_global_transform` é inválido e o `look_at` falha. **32 ocorrências por
+processo** durante o Z da Mera Mera. Efeito: a bala de fogo nunca é orientada.
+
+*Detectado:* ruído no log da sonda de multiplayer, 2026-08-12. Pré-existente,
+sem relação com as sondas.
+
+### 22. Morte devolve a fruta, mas a recarga continua correndo
+**Medido:** a recarga atravessa a morte sem zerar nem congelar — cast de `C`
+(10 s), morte em t=2,036 s com 7,967 s restantes, e 2 s depois do respawn valia
+**5,967 s** (a hipótese "continuou correndo" previa 5,964; "zerou" previa 0;
+"congelou" previa 7,967). Liberou em 9,998 s.
+
+Só que o respawn **devolve a fruta à árvore**, então o jogador volta sem poder
+nenhum e a recarga corre no vazio.
+
+**Decisão pendente:** a recarga deveria zerar junto com a fruta?
+
+
 ### 15. A morte por queda dispara por DOIS caminhos, com trava de 2 s
 `SkillSystem.process_void_check` (roda no dono do corpo) e
 `Scoreboard._watch_falls` (roda no servidor) veem a **mesma** queda. Só o
