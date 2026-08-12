@@ -90,10 +90,11 @@ imunidade, em ciclo) é o comportamento desejado numa rodada de 10 minutos.
 
 ## 🟢 Baixa — armadilhas conhecidas, documentadas
 
-### 8. `Player.gd` com 1.959 linhas, 2,2× o limite
+### 8. `Player.gd` com 1.776 linhas, 2,0× o limite
 **Em tratamento.** A partição está em curso, em fases, por
 [`ARQUITETURA_PLAYER.md`](ARQUITETURA_PLAYER.md): fase 1 (etapas nomeadas) e
-fase 2 (`CameraRig`, 2.167 → 2.128) e fase 3 (`PlayerRig`, → 1.959) feitas. Ver também
+fase 2 (`CameraRig`, 2.167 → 2.128), fase 3 (`PlayerRig`, → 1.959) e
+fase 4 (movimento, → 1.776) feitas. Ver também
 [`RELATORIO_PLAYER.md`](RELATORIO_PLAYER.md) e
 [`LIMITE_DE_TAMANHO.md`](LIMITE_DE_TAMANHO.md). **Gatilho:** o arquivo não pode
 crescer mais — qualquer tarefa que precise adicionar código nele deve primeiro
@@ -120,7 +121,31 @@ O jeito certo, que o `BukiFX.gd:140` já usa, é `caster.get("_char_model")`.
 **Não corrigido** — é mudança de comportamento visual (o golpe passaria a ter
 uma animação que hoje não tem), então é decisão sua.
 
-### 12. `Melee.espelhar()` está sem uso
+### 12. O impulso horizontal do GEPPO é código morto
+No geppo (pulo duplo), quando há direção, o código faz:
+
+```gdscript
+vel.x = q.dir.x * vel_efetiva * 1.35   # impulso de 1,35x
+vel.z = q.dir.z * vel_efetiva * 1.35
+```
+
+Só que **logo abaixo, no mesmo ramo**, a locomoção normal reescreve os dois:
+
+```gdscript
+velocity.x = q.dir.x * effective_speed   # sem o 1,35
+velocity.z = q.dir.z * effective_speed
+```
+
+O `y` sobrevive (o pulo funciona), o impulso horizontal **nunca** chega a valer.
+Se `dir` for zero o geppo nem entra nesse caminho — ou seja, o 1,35x é morto em
+todos os casos.
+
+*Detectado:* ao mover o parkour para o componente na Fase 4, comparando a ordem
+de escrita na velocidade. **Não corrigido** — ligar o impulso muda o feel do
+pulo duplo, e isso é decisão de design sua. O comportamento foi preservado
+exatamente como estava.
+
+### 13. `Melee.espelhar()` está sem uso
 Ficou quando os socos viraram clipes autorais. Continua correta e validada.
 **Gatilho para apagar:** se daqui a alguns golpes nenhum tiver usado, é dívida.
 

@@ -196,7 +196,7 @@ que parou de responder ao clique. Depois de cada fase de risco, vale abrir o jog
 | 1 — etapas no `_physics_process` | ✅ **feita** — 291 → 32 linhas | ver abaixo |
 | 2 — `CameraRig` | ✅ **feita** — componente de 201 linhas; Player 2.167 → 2.128 | ver abaixo |
 | 3 — `PlayerRig` | ✅ **feita** — componente com 291; Player 2.128 → 1.959 | ver abaixo |
-| 4 — Movement / Parkour / Dash | ⏳ | — |
+| 4 — Movement / Parkour / Dash | ✅ **feita** — etapa 206 → 83; Player 1.959 → 1.776 | ver abaixo |
 | 5 — `BukiController` | ⏳ | — |
 | 6 — `SkillController` | ⏳ | — |
 | 7 — `MeleeController` | ⏳ | — |
@@ -400,3 +400,107 @@ anatomia_rig, elenco_trancado, camera 13.
 real, o clique em JOGAR levou ao mundo, e a foto mostra o personagem montado —
 membros, marcador dourado das costas, HUD e fruta. Foi assim que o bug do
 `class_name` apareceu; a lição pegou.
+
+---
+
+## Fase 4 — o ciclo físico, feita em 2026-08-11
+
+A fase de maior risco do plano: é o caminho de **todo quadro**, e um erro aqui
+aparece como "o personagem não anda" ou "atravessa parede" — coisa que nenhuma
+suíte do projeto pegava.
+
+`_etapa_locomocao` foi de **206 para 83 linhas**. O `Player.gd` foi de 1.959
+para **1.776**.
+
+| arquivo novo | linhas | o que é dono |
+|---|---|---|
+| `src/player/move_frame.gd` | 83 | o que o jogador PEDIU no quadro |
+| `src/player/dash_controller.gd` | 89 | mira, recarga, direção travada, tempo |
+| `src/player/parkour_controller.gd` | 251 | os 8 movimentos de cenário + as sondas |
+
+### Primeiro: a rede de segurança
+
+Antes de tocar em uma linha, `tools/dev_tests/tracar_locomocao.gd`. Ele dirige o
+player com um **roteiro de teclas fixo** e grava posição, velocidade e estado
+quadro a quadro.
+
+Roda com janela (`DISPLAY=:1`) porque a locomoção só lê teclado com o mouse
+capturado — e não dá pra capturar mouse sem servidor de vídeo. As teclas são
+falsificadas com `Input.parse_input_event`, que alimenta o `is_key_pressed`.
+
+**427 quadros**, cobrindo: andar, correr, salto longo, geppo, dash (medido a
+21,4286 m/s), rolamento, queda, strafe, ré, parada — e **parkour de parede de
+verdade**, achando uma parede no mapa por varredura determinística.
+
+Rodado duas vezes seguidas: byte a byte idêntico. Sem isso ele não serviria
+para nada.
+
+### O passo zero: encolher os locais compartilhados
+
+A Fase 1 tinha deixado a regra escrita: *"os locais compartilhados são a métrica
+do acoplamento; a Fase 4 começa reduzindo essa lista, não criando três
+arquivos."*
+
+Eram **16**. O `MoveFrame` levou a metade que é **leitura pura** — teclas e base
+da câmera:
+
+```
+LER (move_frame)  →  DECIDIR (etapa)  →  ESCREVER (velocity)
+```
+
+Sobraram **7**. Só então os cortes fizeram sentido — e `_space_was` saiu do
+Player junto, porque lembrar o quadro anterior é assunto de quem lê a tecla.
+
+### A medição que autorizou os cortes
+
+| campo | usos dentro da etapa |
+|---|---|
+| `_dash_t` | 8 de 9 |
+| `_dash_dir` | 4 de 5 |
+| `_is_climbing` | 14 de 16 |
+| `_long_jump_t` | 10 de 11 |
+| `_geppo_count`, `_fall_peak`, `_precision_armed`, `_was_on_floor` | idem |
+
+O uso restante de cada um era **a própria linha de declaração**. Nada fora
+dependia deles — daí os dois cortes saírem limpos.
+
+### A fronteira: ninguém escreve na velocidade dos outros
+
+Nenhum dos dois controladores escreve `velocity`. Eles **recebem e devolvem**:
+
+```gdscript
+if _parkour.assumiu():
+	velocity = _parkour.velocidade(delta, q, velocity, effective_speed)
+else:
+	velocity = _parkour.aplicar_pulos(q, velocity, effective_speed, ...)
+	if _dash.passo() > 0.0:
+		velocity = _dash.velocidade(delta)
+```
+
+Até o impulso do salto longo virou **fator** (`bonus_velocidade()`) em vez de
+uma multiplicação escondida dentro do parkour.
+
+### Um conflito a menos, e uma mudança declarada
+
+`_roll_t` tinha **dois donos** — o pouso de precisão e o dash escreviam nele
+direto. Virou `pedir_rolamento()`, no padrão do `pedir_shake`.
+
+⚠️ **Isso muda um caso raro, de propósito.** Antes, o último a escrever vencia:
+pousar forte *e* dar dash no mesmo quadro deixava a janela em 0,28 (a do dash).
+Agora vale `maxf` — fica 0,4. Ou seja, dois gatilhos no mesmo quadro não
+encurtam mais a animação. É o único desvio de comportamento da fase, e ele não
+aparece no traço porque o caso não ocorre lá.
+
+### Validação
+
+**Traço A/B contra o commit anterior: 427 quadros IDÊNTICOS.**
+
+Suíte: compila 0, arena 53, buki 24, frutas 0, camera 13, player_rig 20,
+walk_run, rig_unico, anatomia_rig, elenco_trancado — todos 0 falhas.
+
+### Achado que foi para a lista, sem correção
+
+O impulso horizontal de 1,35× do **geppo é código morto**: a locomoção normal
+reescreve `velocity.x/z` logo abaixo, no mesmo ramo. Item 12 da
+[`LISTA_DE_CORRECOES.md`](LISTA_DE_CORRECOES.md) — ligar isso muda o feel do
+pulo duplo, e é decisão de design.

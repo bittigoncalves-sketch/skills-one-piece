@@ -10,9 +10,6 @@ const SPEED := 4.2
 const JUMP_VELOCITY := 16.0
 const GRAVITY := 32.0        # gravidade reforcada (Godot padrao ~9.8)
 const MOUSE_SENS := 0.0035
-const CLIMB_SPEED := 4.5
-const CLIMB_STICK_SPEED := 1.0
-const CLIMB_WALL_NORMAL_MAX_Y := 0.2
 
 # A câmera virou COMPONENTE (Fase 2 — ver docs/ARQUITETURA_PLAYER.md). O rig é
 # dono do tremor, do soco de FOV, do balanço, da perspectiva e da distância;
@@ -58,9 +55,15 @@ const KB_DECAIMENTO := 4.0   # 1/s — quanto o empurrão perde força por segun
 
 var _yaw := 0.0     # rotacao horizontal da camera
 var _pitch := -0.25 # rotacao vertical da camera
-var _is_climbing := false
-var max_geppo: int = 1      # número de pulos duplos aéreos (Geppo / Técnica do CP9)
-var _geppo_count: int = 0   # contador atual de geppo desde o último toque no chão
+# PARKOUR -> src/player/parkour_controller.gd (Fase 4). Aqui só as VISTAS.
+var _parkour := ParkourController.new()
+var _is_climbing: bool:
+	get: return _parkour.escalando()
+var max_geppo: int:
+	get: return _parkour.max_geppo
+	set(v): _parkour.max_geppo = v
+var _geppo_count: int:
+	get: return _parkour.geppos()
 
 var _camera: CameraRig        # componente: câmera, tremor, FOV, balanço, tela
 var _cam: Camera3D            # atalho para `_camera.camera()` — a mira usa muito
@@ -70,12 +73,16 @@ var _cam: Camera3D            # atalho para `_camera.camera()` — a mira usa mu
 # o movimento tem a própria checagem em _physics_process.
 func _is_sprinting() -> bool:
 	return Input.is_key_pressed(KEY_SHIFT) and velocity.length_squared() > 0.5
-var _long_jump_t: float = 0.0 # Parkour: janela de impulso horizontal (salto longo/vault)
-var _space_was: bool = false  # borda do Espaço (salto longo só na batida, não segurando)
-var _was_on_floor: bool = false   # Parkour: detecção de POUSO (#4)
-var _fall_peak: float = 0.0       # maior velocidade de queda acumulada no ar
-var _precision_armed: bool = false # Espaço no ar armou o pouso de precisão
-var _roll_t: float = 0.0          # janela da animação de ROLAMENTO (pós-pouso e dash)
+var _long_jump_t: float:
+	get: return _parkour.janela_impulso()
+# O PEDIDO do jogador neste quadro (teclas + base da câmera) -> move_frame.gd.
+# Vive entre quadros porque a borda do Espaço precisa lembrar o quadro anterior
+# — era o campo `_space_was`, que saiu do Player junto.
+var _quadro := MoveFrame.new()
+# Janela da animação de ROLAMENTO. Tinha DOIS donos — o pouso de precisão e o
+# dash escreviam nela direto. Virou PEDIDO (`pedir_rolamento`), no mesmo padrão
+# do `pedir_shake` da câmera: quem quer rolar pede, o Player é o dono do prazo.
+var _roll_t: float = 0.0
 # DASH (Q): esquiva curta e invencível. A DISTÂNCIA é o parâmetro de design; a
 # velocidade sai dela. Assim mudar o alcance não obriga a recalcular nada, e o
 # alcance fica escrito em metros no código em vez de escondido num multiplicador.
@@ -93,13 +100,16 @@ var _roll_t: float = 0.0          # janela da animação de ROLAMENTO (pós-pous
 #
 # Para calibrar: mexa na DISTÂNCIA para mudar alcance e no TEMPO para mudar o
 # tranco. A velocidade é consequência dos dois, não um terceiro botão.
-const DASH_DISTANCE := 6.0        # metros percorridos por dash
-const DASH_TIME := 0.28           # segundos de deslocamento
-const DASH_COOLDOWN := 1.5        # recarga entre dashes
-var _is_aiming_dash: bool = false # Segurando Q para dar o dash
-var _dash_cooldown: float = 0.0   # Recarga da esquiva
-var _dash_t: float = 0.0          # Tempo restante do movimento (dash)
-var _dash_dir: Vector3 = Vector3.FORWARD # Direção TRAVADA no disparo do dash
+#
+# Os números e o estado da esquiva moram em src/player/dash_controller.gd
+# (Fase 4). Aqui ficam só as VISTAS, para quem observa de fora.
+var _dash := DashController.new()
+var _dash_t: float:
+	get: return _dash.tempo()
+var _dash_dir: Vector3:
+	get: return _dash.direcao()
+var _dash_cooldown: float:
+	get: return _dash.recarga()
 # Mera Mera Z: rajada de balas de fogo (segura pra atirar; para ao soltar ou 16 balas).
 const RAPID_INTERVAL := 0.09
 const RAPID_MAX := 16
@@ -263,6 +273,8 @@ func _ready() -> void:
 	_rig.name = "PlayerRig"
 	add_child(_rig)
 	_rig.montar_em(self)
+	_dash.montar_em(self)
+	_parkour.montar_em(self, GRAVITY, JUMP_VELOCITY)
 
 	# Substitui o quadrado cinza pelo modelo 3D Voxel e equipa a Akuma no Mi correspondente
 	set_character(character_id)
@@ -453,6 +465,11 @@ func _update_pivot() -> void:
 # Tremor de tela. Continua aqui porque MUITA gente de fora chama (efeitos das
 # frutas, corpo a corpo, pouso) — o Player repassa ao rig em vez de expor o
 # componente inteiro.
+# Pede a janela de ROLAMENTO. O maior pedido vence — dois gatilhos no mesmo
+# quadro (pousar em cima de um dash) não devem encurtar a animação.
+func pedir_rolamento(duracao: float) -> void:
+	_roll_t = maxf(_roll_t, duracao)
+
 func add_camera_shake(amount: float) -> void:
 	if _is_authority and _camera:
 		_camera.pedir_shake(amount)
@@ -552,221 +569,104 @@ func _etapa_travamento(delta: float) -> bool:
 				return true
 	return false
 
-# ENTRADA + PARKOUR + DASH + LOCOMOÇÃO + facing + animação.
+# O CICLO FÍSICO — quem manda na velocidade deste quadro.
 #
-# ⚠️ Estes cinco assuntos ficaram numa etapa só, e isso é uma CONCLUSÃO, não
-# preguiça: eles compartilham os mesmos locais de quadro — `dir`, `f`/`r`,
-# `is_sprinting`, `on_floor_now`, `wall_normal`, `side_wall`, `wall_running`,
-# `dash_step`, `effective_speed`. Separá-los agora obrigaria a passar tudo isso
-# de mão em mão, o que troca acoplamento por cerimônia sem ganhar clareza.
+# Era um bloco de 206 linhas com entrada, parkour, dash, locomoção, facing e
+# animação misturados, disputando 16 locais de quadro. A Fase 4 separou por
+# RESPONSABILIDADE, não por verbo:
 #
-# Os locais compartilhados SÃO a medida do acoplamento: enquanto forem tantos,
-# MovementController / ParkourController / DashController são o mesmo componente.
-# Quebrar aqui dentro é a Fase 4, e vem depois de reduzir essa lista.
+#   src/player/move_frame.gd         o que o jogador PEDIU (teclas + câmera)
+#   src/player/parkour_controller.gd os 8 movimentos de cenário + as sondas
+#   src/player/dash_controller.gd    a esquiva do Q
+#
+# A ordem abaixo é a regra do jogo, e é por isso que ela mora AQUI e não nos
+# componentes: nenhum deles escreve `velocity`. Eles recebem e devolvem; quem
+# atribui é esta etapa. Escalada e wall run são exclusivos — enquanto valem, o
+# parkour manda sozinho e nem a gravidade roda.
+#
+# Sobraram 7 locais de quadro (eram 16). Continuam aqui de propósito: são o
+# RESULTADO das decisões, e é justamente combiná-los que esta etapa faz.
 func _etapa_locomocao(delta: float) -> void:
-	# Direcao relativa a ORIENTACAO REAL da camera (nada de adivinhar o yaw).
-	var f := 0.0  # frente(+)/tras(-)
-	var r := 0.0  # direita(+)/esquerda(-)
-	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):    f += 1.0
-		if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN):  f -= 1.0
-		if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT): r += 1.0
-		if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):  r -= 1.0
-
-	# Base do pivo da camera pura (yaw), sem distorcao de pitch
-	var cam_basis := Basis.from_euler(Vector3(0, _yaw, 0))
-	var forward := -cam_basis.z
-	var right := cam_basis.x
-
-	var dir := (forward * f + right * r)
-	if dir.length() > 1.0:
-		dir = dir.normalized()
+	# LEITURA do quadro: teclas + base da câmera -> src/player/move_frame.gd.
+	# A etapa passou a DECIDIR sobre um pedido já lido, em vez de ler e decidir
+	# ao mesmo tempo. Ler aqui dentro (e não antes) é de propósito: quando o
+	# `_etapa_travamento` corta o quadro, a borda do Espaço NÃO avança — mesmo
+	# comportamento de quando `_space_was` era campo do Player.
+	var q := _quadro
+	q.ler(_yaw)
 	# Rajada (Mera/Hie Z): fica PARADO enquanto atira; só a câmera gira. Volta a
 	# andar ao soltar o botão ou acabar as balas (release_charge zera _rapid_fire).
 	if _rapid_fire:
-		dir = Vector3.ZERO
+		q.congelar()
 
-	# Corrida (Shift): Aumenta a velocidade em 1.5x ao segurar Shift enquanto se move
-	var is_sprinting := Input.is_key_pressed(KEY_SHIFT) and dir.length_squared() > 0.01
-	if _long_jump_t > 0.0:
-		_long_jump_t -= delta
-	# Borda do Espaço: salto longo/vault só disparam na BATIDA da tecla (não segurando).
-	var space_down := Input.is_key_pressed(KEY_SPACE) and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
-	var space_just := space_down and not _space_was
-	_space_was = space_down
-
-	# POUSO DE PRECISÃO (#4): Espaço apertado NO AR (caindo) arma um rolamento; ao
-	# tocar o chão após uma queda real, o player rola e PRESERVA o embalo + poeira.
+	# PARKOUR -> src/player/parkour_controller.gd. Uma chamada resolve pouso de
+	# precisão, sondagem de parede, decisão de escalar/correr na parede e recarga
+	# do geppo. Antes isso estava espalhado em quatro pedaços da etapa.
 	var on_floor_now := is_on_floor()
-	if not on_floor_now:
-		_fall_peak = maxf(_fall_peak, -velocity.y)
-		if space_just and velocity.y < 3.0 and not _is_climbing:
-			_precision_armed = true
-	elif not _was_on_floor:                       # acabou de tocar o chão
-		if _precision_armed and _fall_peak > 9.0:
-			_long_jump_t = maxf(_long_jump_t, 0.28)
-			_roll_t = 0.4                 # dispara a animação de rolamento
-			_land_puff()
-		_fall_peak = 0.0
-		_precision_armed = false
-	_was_on_floor = on_floor_now
+	_parkour.avaliar(delta, q, on_floor_now)
+
 	if _roll_t > 0.0:
 		_roll_t -= delta
 
-	if _dash_cooldown > 0.0:
-		_dash_cooldown = maxf(_dash_cooldown - delta, 0.0)
-
-	var q_pressed := Input.is_physical_key_pressed(KEY_Q) and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
-	if q_pressed and _dash_cooldown <= 0.0 and _dash_t <= 0.0 and not _charging and not _rapid_fire and not _yami_pistol_active:
-		_is_aiming_dash = true
-	elif not q_pressed and _is_aiming_dash:
-		_is_aiming_dash = false
-		_dash_t = DASH_TIME
-		_roll_t = DASH_TIME               # dispara a animação de rolamento
-		_dash_cooldown = DASH_COOLDOWN
-		set_meta("damage_immune", true)
-		# Direção = TECLA segurada (W frente, D lado, S ré...). Sem tecla nenhuma,
-		# usa a frente da câmera. Os dois já vêm do yaw puro, sem pitch: o dash é
-		# sempre horizontal, e a suspensão da gravidade não vira empuxo.
-		# Travada aqui: a esquiva vai aonde o jogador apontou ao disparar, e girar
-		# a câmera no meio do dash não a curva.
-		_dash_dir = dir.normalized() if dir.length_squared() > 0.01 else forward
-		FxUtil.dash_effect(get_tree().current_scene, global_position, _dash_dir)
-
-	# Consome o tempo de dash DEPOIS do gatilho, para o disparo já andar neste frame.
-	# `dash_step` é quanto do dash cabe no frame: no último ele é MENOR que o delta.
-	# Sem isso o dash anda um frame inteiro a mais (o `_dash_t` não zera exato — 1/60
-	# não tem representação binária finita) e passa ~4% da distância pedida.
-	var dash_step := 0.0
-	if _dash_t > 0.0:
-		dash_step = minf(_dash_t, delta)
-		_dash_t = maxf(_dash_t - delta, 0.0)
-		if _dash_t <= 0.0:
-			set_meta("damage_immune", false) # Finaliza a invencibilidade
+	# ESQUIVA (Q) -> src/player/dash_controller.gd. Ele cuida de mira, recarga,
+	# direção travada e tempo restante; aqui só se pergunta o que ele quer.
+	# `bloqueado`: o combate está usando o corpo, não dá pra armar a esquiva.
+	_dash.atualizar(delta, q, _charging or _rapid_fire or _yami_pistol_active)
 
 
-	var effective_speed := SPEED * speed_multiplier * (1.5 if is_sprinting else 1.0)
-	if _long_jump_t > 0.0:
-		effective_speed *= 1.5   # Parkour: impulso horizontal (salto longo / vault)
+	# `bonus_velocidade` é o impulso horizontal do salto longo / vault: o parkour
+	# devolve o FATOR e quem multiplica é a etapa. Componente não escreve na
+	# velocidade dos outros.
+	var effective_speed := SPEED * speed_multiplier * (1.5 if q.sprint else 1.0) * _parkour.bonus_velocidade()
 
-	# Escalada: no ar, segure ESPAÇO enquanto avança contra uma parede vertical.
-	# W/sobe e S/desce; ao soltar Espaço ou perder a parede, a gravidade volta.
-	var wants_climb := Input.is_key_pressed(KEY_SPACE) and f > 0.0
-	var wall_normal := _climbable_wall_normal(dir)
-	if _is_climbing and (not wants_climb or wall_normal == Vector3.ZERO):
-		_is_climbing = false
-	if not _is_climbing and wants_climb and not is_on_floor() and wall_normal != Vector3.ZERO:
-		_is_climbing = true
-
-	# WALL RUN (#3): no ar, CORRENDO (Shift) rente a uma parede LATERAL -> corre por ela.
-	var side_wall := _wall_side_normal(dir) if not _is_climbing else Vector3.ZERO
-	var wall_running := not _is_climbing and not is_on_floor() and is_sprinting and f > 0.0 and side_wall != Vector3.ZERO and velocity.y < 5.0
-
-	# Recarrega as cargas do Geppo assim que apoiar no chão ou em paredes/escada
-	if on_floor_now or _is_climbing or wall_running:
-		_geppo_count = 0
-
-	if _is_climbing:
-		# Uma leve pressão contra a parede preserva o contato de colisão entre
-		# frames; sem isso, ao mover apenas no eixo Y a escalada terminaria logo.
-		# W sobe / S desce (#7), parado = segura; A/D faz travessia lateral (#8).
-		var tang := wall_normal.cross(Vector3.UP).normalized()   # horizontal ao longo da parede
-		velocity.x = -wall_normal.x * CLIMB_STICK_SPEED + tang.x * r * CLIMB_SPEED * 0.8
-		velocity.z = -wall_normal.z * CLIMB_STICK_SPEED + tang.z * r * CLIMB_SPEED * 0.8
-		velocity.y = CLIMB_SPEED * clampf(f, -1.0, 1.0)
-		# SUBIR NA BEIRADA / MANTLE (#6): chegou ao TOPO (cabeça livre acima da beirada)
-		# e empurra pra cima (W) -> impulso pra cima + pra frente e larga a parede.
-		if f > 0.1 and _head_clear_of_wall(wall_normal):
-			velocity = -wall_normal * 6.0 + Vector3.UP * (JUMP_VELOCITY * 0.8)
-			_is_climbing = false
-			_long_jump_t = 0.25
-	elif wall_running:
-		# WALL RUN: quase sem gravidade + corre ao longo da parede; Espaço = pula pra longe.
-		velocity.y = maxf(velocity.y - GRAVITY * 0.12 * delta, -1.5)   # "cola" e cai devagar
-		var tangent := side_wall.cross(Vector3.UP).normalized()        # horizontal, ao longo da parede
-		if tangent.dot(forward) < 0.0:
-			tangent = -tangent                                          # sentido = pra onde o player olha
-		velocity.x = tangent.x * effective_speed - side_wall.x * 2.0    # corre + encosta na parede
-		velocity.z = tangent.z * effective_speed - side_wall.z * 2.0
-		if space_just:
-			velocity = side_wall * 9.0 + Vector3.UP * (JUMP_VELOCITY * 0.85)   # empurra PRA LONGE
-			_long_jump_t = 0.3
+	# QUEM MANDA NA VELOCIDADE DESTE QUADRO.
+	# Escalada e wall run são exclusivos: enquanto valem, o parkour manda sozinho.
+	if _parkour.assumiu():
+		velocity = _parkour.velocidade(delta, q, velocity, effective_speed)
 	else:
 		# Gravidade.
 		if not is_on_floor():
 			velocity.y -= GRAVITY * delta
 
-		# Pulo + PARKOUR.
-		if is_on_floor() and is_sprinting and f > 0.0 and _long_jump_t <= 0.0 and _low_obstacle_ahead(dir):
-			# VAULT automático: correndo contra um obstáculo BAIXO -> pula por cima.
-			velocity.y = JUMP_VELOCITY * 0.7
-			_long_jump_t = 0.35
-		elif space_just and is_on_floor():
-			# Salto longo SÓ na batida do Espaço correndo (evita velocidade infinita).
-			if is_sprinting and f > 0.0:
-				velocity.y = JUMP_VELOCITY * 0.95   # SALTO LONGO (Shift+Espaço)
-				_long_jump_t = 0.55
-			else:
-				velocity.y = JUMP_VELOCITY * jump_multiplier   # pulo normal
-		elif space_down and is_on_floor():
-			velocity.y = JUMP_VELOCITY * jump_multiplier       # segurar Espaço = pulo normal
-		elif space_just and not is_on_floor() and not _is_climbing and not wall_running and _geppo_count < max_geppo:
-			# GEPPO (Técnica do CP9 / Pulo Duplo): chuta o ar com anel de ar comprimido!
-			_geppo_count += 1
-			_fall_peak = 0.0
-			_precision_armed = false
-			if dir.length_squared() > 0.01:
-				velocity.x = dir.x * effective_speed * 1.35
-				velocity.z = dir.z * effective_speed * 1.35
-				velocity.y = JUMP_VELOCITY * jump_multiplier * 0.95
-			else:
-				velocity.y = JUMP_VELOCITY * jump_multiplier * 1.15
-			add_camera_shake(0.28)
-			AudioFX.whoosh(get_tree().current_scene, global_position, 1.35)
-			AudioFX.snap(get_tree().current_scene, global_position, 0.85)
-			FxUtil.geppo_effect(get_tree().current_scene, global_position + Vector3(0, -0.75, 0), dir, _yaw, self)
-			if _proc_anim:
-				_proc_anim.trigger_recovery("Z")
+		# Vault, salto longo, pulo normal e geppo: o parkour recebe a velocidade
+		# e devolve a velocidade — não escreve nela.
+		velocity = _parkour.aplicar_pulos(q, velocity, effective_speed, is_on_floor(), jump_multiplier)
 
-		if dash_step > 0.0:
-			# Velocidade constante na direção travada, derivada da distância alvo.
-			# O fator dash_step/delta encurta SÓ o último frame (nos demais é 1.0).
-			# Sobrescrever o `velocity` inteiro zera o Y de propósito: durante o
-			# dash NÃO há gravidade (nem queda, nem subida — só o plano).
-			velocity = _dash_dir * (DASH_DISTANCE / DASH_TIME) * (dash_step / delta)
+		if _dash.passo() > 0.0:
+			velocity = _dash.velocidade(delta)
 		else:
-			velocity.x = dir.x * effective_speed
-			velocity.z = dir.z * effective_speed
+			velocity.x = q.dir.x * effective_speed
+			velocity.z = q.dir.z * effective_speed
 
 	# A FRENTE do personagem se move dinamicamente durante a locomoção.
 	if _char_model:
-		if _is_climbing and wall_normal != Vector3.ZERO:
+		if _parkour.escalando() and _parkour.parede_frontal() != Vector3.ZERO:
 			# Convenção do projeto: FRENTE = -Z. Ao escalar, a frente vira PARA DENTRO
 			# da parede, ou seja, o -Z do modelo aponta ao longo de -wall_normal
 			# (wall_normal aponta da parede para o jogador). Daí atan2(wn.x, wn.z).
-			var target_rot := atan2(wall_normal.x, wall_normal.z)
+			var target_rot := atan2(_parkour.parede_frontal().x, _parkour.parede_frontal().z)
 			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, target_rot, 24.0 * delta)
-		elif _dash_t > 0.0:
-			var move_rot := atan2(-_dash_dir.x, -_dash_dir.z)
+		elif _dash.ativo():
+			var move_rot := atan2(-_dash.direcao().x, -_dash.direcao().z)
 			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, move_rot, 35.0 * delta)
-		elif dir.length_squared() > 0.01:
-			var move_rot := atan2(-dir.x, -dir.z)
+		elif q.dir.length_squared() > 0.01:
+			var move_rot := atan2(-q.dir.x, -q.dir.z)
 			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, move_rot, 35.0 * delta)
 		else:
 			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw, 24.0 * delta)
 
 	# Animação: rig procedural (por-nós) OU esqueletal (skinnado).
 	if _skel_anim:
-		_skel_anim.update(velocity, is_on_floor(), _is_climbing, delta, is_sprinting)
+		_skel_anim.update(velocity, is_on_floor(), _parkour.escalando(), delta, q.sprint)
 	elif _proc_anim:
 		var parkour := ""
-		if wall_running:
+		if _parkour.correndo_na_parede():
 			parkour = "wall_run"
 		elif _roll_t > 0.0:
 			parkour = "roll"
-		elif _long_jump_t > 0.0 and not on_floor_now:
+		elif _parkour.janela_impulso() > 0.0 and not on_floor_now:
 			parkour = "long_jump"
-		_proc_anim.update(velocity, is_on_floor(), _is_climbing, delta, _pitch, is_sprinting, false, "", parkour, _pose_de_arma(), _gun_recoil)
+		_proc_anim.update(velocity, is_on_floor(), _parkour.escalando(), delta, _pitch, q.sprint, false, "", parkour, _pose_de_arma(), _gun_recoil)
 
 # Fôlego, rajada Z e a janela do combo de corpo a corpo.
 func _etapa_ticks_de_combate(delta: float) -> void:
@@ -885,83 +785,6 @@ func _remote_process(delta: float) -> void:
 	elif _proc_anim:
 		_proc_anim.update(net_velocity, net_on_floor, false, delta, _pitch, false)
 
-# Parkour: há um obstáculo BAIXO logo à frente? (bate na altura do joelho, mas está
-# livre na altura da cabeça -> dá pra pular por cima = vault).
-func _low_obstacle_ahead(move_dir: Vector3) -> bool:
-	var flat := Vector3(move_dir.x, 0.0, move_dir.z)
-	if flat.length_squared() < 0.01:
-		return false
-	flat = flat.normalized()
-	var space := get_world_3d().direct_space_state
-	var base := global_position
-	var low_q := PhysicsRayQueryParameters3D.create(base + Vector3(0, -0.4, 0), base + Vector3(0, -0.4, 0) + flat * 1.2)
-	low_q.exclude = [get_rid()]
-	if space.intersect_ray(low_q).is_empty():
-		return false                       # nada na altura do joelho -> não é vault
-	var hi_q := PhysicsRayQueryParameters3D.create(base + Vector3(0, 0.7, 0), base + Vector3(0, 0.7, 0) + flat * 1.2)
-	hi_q.exclude = [get_rid()]
-	return space.intersect_ray(hi_q).is_empty()   # livre em cima -> obstáculo é baixo
-
-# Wall run (#3): procura uma parede à ESQUERDA ou à DIREITA (perpendicular ao
-# movimento) dentro de ~0.85m. Retorna a normal da parede (aponta pra fora dela).
-func _wall_side_normal(move_dir: Vector3) -> Vector3:
-	var flat := Vector3(move_dir.x, 0.0, move_dir.z)
-	if flat.length_squared() < 0.01:
-		return Vector3.ZERO
-	flat = flat.normalized()
-	var side := flat.cross(Vector3.UP)      # perpendicular horizontal
-	var space := get_world_3d().direct_space_state
-	var base := global_position
-	for s in [side, -side]:
-		var q := PhysicsRayQueryParameters3D.create(base, base + s * 0.85)
-		q.exclude = [get_rid()]
-		var hit := space.intersect_ray(q)
-		if not hit.is_empty():
-			var n: Vector3 = hit["normal"]
-			if absf(n.y) < 0.3:             # parede vertical (não chão/teto)
-				return n
-	return Vector3.ZERO
-
-# Mantle (#6): true quando a CABEÇA já passou do topo da parede (raio à altura da
-# cabeça, em direção à parede, não bate em nada) -> dá pra subir na beirada.
-func _head_clear_of_wall(wall_normal: Vector3) -> bool:
-	var space := get_world_3d().direct_space_state
-	var from := global_position + Vector3(0, 0.95, 0)
-	var q := PhysicsRayQueryParameters3D.create(from, from - wall_normal * 0.9)  # -normal = pra parede
-	q.exclude = [get_rid()]
-	return space.intersect_ray(q).is_empty()
-
-# Poeira do pouso de precisão (#4).
-func _land_puff() -> void:
-	var world := get_tree().current_scene
-	if world == null:
-		return
-	var pm := ParticleProcessMaterial.new()
-	pm.direction = Vector3.UP
-	pm.spread = 85.0
-	pm.initial_velocity_min = 1.5
-	pm.initial_velocity_max = 4.0
-	pm.gravity = Vector3(0, -5.0, 0)
-	pm.scale_min = 0.2
-	pm.scale_max = 0.5
-	pm.color_ramp = FxUtil.gradient([Color(0.82, 0.79, 0.72, 0.7), Color(0.82, 0.79, 0.72, 0)])
-	var burst := FxUtil.particles(24, 0.5, true, pm, FxUtil.grain(0.3), 1.0)
-	world.add_child(burst)
-	burst.global_position = global_position + Vector3(0, -0.7, 0)
-	FxUtil.autofree(burst, 0.8)
-
-func _climbable_wall_normal(move_direction: Vector3) -> Vector3:
-	# Usa as colisões do último movimento. Isso evita RayCast extra e faz a
-	# escalada funcionar em qualquer StaticBody3D, inclusive os blocos do mapa.
-	for i in get_slide_collision_count():
-		var collision := get_slide_collision(i)
-		var normal := collision.get_normal()
-		if abs(normal.y) <= CLIMB_WALL_NORMAL_MAX_Y and move_direction.dot(normal) < -0.15:
-			return normal
-	return Vector3.ZERO
-
-# ----------------------------------------------------------- troca de modelo ---
-# API pública usada pelo menu de Personagens (muda modelo e equipa a Akuma no Mi correta).
 func set_character(cid: String) -> void:
 	# Coage aqui também: abaixo o `match cid` escolhe a fruta inicial, e ele
 	# precisa ver o personagem que de fato foi carregado.
