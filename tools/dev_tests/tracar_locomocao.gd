@@ -70,6 +70,47 @@ func _init() -> void:
 				"1" if p._is_climbing else "0", p._dash_t, p._roll_t, p._long_jump_t, p._geppo_count])
 	_aplicar([])
 
+	# ------------------------------------------------- COMBATE CONGELA O CORPO
+	# A rajada Z (Mera/Hie) deixa o jogador PARADO enquanto atira — só a câmera
+	# gira. Esse caminho (`MoveFrame.congelar`) não era coberto: apaguei o
+	# `sprint = false` de lá de propósito e o traço passou igual. Buraco fechado.
+	#
+	# O gatilho vem de `_rapid_fire`, que depende da fruta certa; aqui ele é
+	# ligado direto no player, porque o que está sob teste é a LOCOMOÇÃO durante
+	# o congelamento, não como a fruta chega nesse estado.
+	p.global_position = Vector3(0, 3, 0)
+	p.velocity = Vector3.ZERO
+	await _quadros(30)
+	p._rapid_fire = true
+	# O Espaço entra como TOQUE, não segurado. Segurar faz o player pular e
+	# reencostar todo quadro: o contato com o chão passa a oscilar e a trajetória
+	# vira ruído de float — medido, dava 31 quadros diferentes entre duas rodadas
+	# do MESMO código. Um roteiro instável não serve de referência.
+	#
+	# E o toque tem um motivo: só zerar `dir` não provaria o congelamento. O
+	# `sprint` também precisa cair, senão o Espaço durante a rajada dispara SALTO
+	# LONGO em vez de pulo normal (a condição é `q.sprint and q.f > 0.0`, e o `f`
+	# NÃO é zerado). É esse detalhe que separa um congelamento correto de um
+	# quase-correto.
+	for passo_rajada in [[15, [KEY_W, KEY_SHIFT]],
+						 [2,  [KEY_W, KEY_SHIFT, KEY_SPACE]],   # toque
+						 [23, [KEY_W, KEY_SHIFT]]]:
+		_aplicar(passo_rajada[1])
+		for i in int(passo_rajada[0]):
+			await _quadros(1)
+			n += 1
+			linhas.append("%04d pos=%s vel=%s chao=%s esc=%s dash=%.3f roll=%.3f lj=%.3f geppo=%d" % [
+				n, _v(p.global_position), _v(p.velocity), "1" if p.is_on_floor() else "0",
+				"1" if p._is_climbing else "0", p._dash_t, p._roll_t, p._long_jump_t, p._geppo_count])
+	p._rapid_fire = false
+	for i in 25:                            # solta: volta a andar
+		await _quadros(1)
+		n += 1
+		linhas.append("%04d pos=%s vel=%s chao=%s esc=%s dash=%.3f roll=%.3f lj=%.3f geppo=%d" % [
+			n, _v(p.global_position), _v(p.velocity), "1" if p.is_on_floor() else "0",
+			"1" if p._is_climbing else "0", p._dash_t, p._roll_t, p._long_jump_t, p._geppo_count])
+	_aplicar([])
+
 	# ---------------------------------------------------------------- PAREDE
 	# O trecho acima é todo em chão plano — e parkour de parede (wall run,
 	# escalada, mantle) é justamente o que a Fase 4 mais mexe. Aqui a gente acha
@@ -147,8 +188,18 @@ func _tecla(code: int, apertada: bool) -> void:
 func _v(v: Vector3) -> String:
 	return "(%.4f,%.4f,%.4f)" % [v.x, v.y, v.z]
 
+# ⚠️ `Engine.time_scale` é forçado a 1.0 a CADA quadro, e isso não é paranoia:
+# o `GameFlow.hit_stop()` põe a escala em 0.06 no impacto de um golpe, e a escala
+# multiplica o DELTA DA FÍSICA. Um acerto de bala no meio do traço fazia o mesmo
+# pulo, no mesmo quadro, com a mesma velocidade (16.0), andar 0.0161 em vez de
+# 0.2667 — e a rodada inteira divergia dali pra frente.
+#
+# Foi o que deixou a bateria intermitente: passava sozinha e falhava na bateria
+# completa. O traço mede FÍSICA; tempo cinematográfico é outro assunto.
 func _quadros(n: int) -> void:
-	for i in n: await physics_frame
+	for i in n:
+		Engine.time_scale = 1.0
+		await physics_frame
 
 func _esperar(s: float) -> void:
 	var t := Time.get_ticks_msec()

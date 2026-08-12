@@ -168,13 +168,15 @@ simplesmente para de replicar, e o sintoma aparece só com dois jogadores.
 
 ## Como cada fase é validada
 
+Um comando só. Ver [`VALIDACAO.md`](VALIDACAO.md).
+
 ```bash
-godot --headless --path . --script tools/dev_tests/test_compila.gd   # 0
-godot --headless --path . --script tools/dev_tests/test_arena.gd     # 53 checagens
-godot --headless --path . --script tools/dev_tests/test_buki_buki.gd # 24
-godot --headless --path . --script tools/dev_tests/test_frutas.gd    # 9 frutas, 4/4
-godot --headless --path . --script tools/dev_tests/test_walk_run.gd
+DISPLAY=:1 ./validar.sh     # 16 testes, ~9 min, sai 0 só se tudo passou
 ```
+
+Inclui o **traço de locomoção**: 492 quadros de física comparados com uma
+referência commitada — a única rede contra "o personagem não anda" e "atravessa
+parede".
 
 **As fases 5, 6 e 7 exigem, além disso, dois processos:**
 
