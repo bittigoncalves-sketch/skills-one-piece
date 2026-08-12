@@ -112,7 +112,7 @@ validável e commitável sozinho** — o repositório nunca fica quebrado entre 
 |---|---|---|---|
 | **6a** | ✅ **feito** — a rajada Z e a pistola da Yami viraram `DisparoSustentado` (`src/player/disparo_sustentado.gd`, 154 linhas). Player 1.689 → **1.644** | ver nota abaixo | bateria 16/16 + sondas da Buki (11 zonas, 7 checagens) |
 | ~~6b~~ | absorvido pelo 6a — ver nota | | |
-| **6c** | `begin_charge` / `release_charge` / `_fire_skill` — o cast em si | é o miolo; depois de 6a e 6b, o que sobra é coeso | bateria + `test_frutas` (9 frutas × 4 slots) |
+| **6c** | ✅ **feito** — `CastController` (`src/player/cast_controller.gd`, 168 linhas). Player 1.644 → **1.592** | ver nota abaixo | bateria 16/16 + sonda de cast **idêntica à linha de base** + sonda da Buki |
 | **6d** | `combat_mode`, `_charging`, `is_suppressed` viram vistas | mecânico, mas toca HUD e VFX de fora | bateria completa |
 
 `energy` **fica para a Fase 8**, com `HealthController`.
@@ -189,3 +189,62 @@ armadilha da Fase 5 (`_buki_scope`), e vale registrar o padrão:
 > **Toda vez que um campo vira vista só-leitura, algum teste que escrevia nele
 > passa a falhar em silêncio.** O traço não falha em silêncio — por isso ele
 > existe.
+
+---
+
+## Nota de execução do 6c
+
+`src/player/cast_controller.gd`, 168 linhas. O `Player.gd` foi de 1.644 para
+**1.592**.
+
+### A fronteira: decidir ≠ executar
+
+```
+CastController  →  decide, valida, mira
+Player          →  fala rede (`_net_cast`), cria a hitbox (`_do_server_cast`)
+                   e apresenta (`_fire_skill`)
+```
+
+`_do_server_cast`, `_fire_skill` e `_generic_vfx` **ficaram no Player** de
+propósito: são o lado servidor e a apresentação, colados nos `@rpc`. O que se
+moveu foi a **decisão**.
+
+### Por que `comecar()` continua uma pilha de casos
+
+Parece remendo, e não é: cada caso é uma **regra de jogo** diferente — a Buki
+empunha em vez de lançar, o Yami Z é toggle, o Yami C exige solo, a rajada Z não
+congela o corpo. Espalhar isso em cinco arquivos esconderia a **ordem** em que as
+regras se aplicam, que é justamente o que importa ali.
+
+### Pedidos novos no Player
+
+`mira_do_cast` (depende da câmera e do corpo), `pedir_cast_no_servidor` (a rede
+fica no Player), `congelar_para_cast` (a `velocity` é do movimento),
+`pausar_animacao` (o animador é do rig), `guardar_pistola_da_yami` (as pistolas
+são do `PlayerRig`), `pedir_soco_de_fov` e `estilo_atual`.
+
+### A prova
+
+A sonda de cast foi rodada **antes** da refatoração para virar linha de base, e
+depois de novo. Resultado **idêntico**:
+
+| | zonas do cliente | danos | vida do host |
+|---|---|---|---|
+| antes | 20 | `6.0`×16, `45.0`×2, `65.0`, `104.0` | 2048,0 → 2036,3 |
+| depois | 20 | idem | 2048,0 → 2036,3 |
+
+Mais a sonda da Buki (canal de bala compartilhado): 11 zonas, 7 checagens, sem
+recarga indevida de pente.
+
+### A armadilha das vistas pegou de novo — em DOIS testes
+
+`_charging` e `_charge_slot` viraram vistas só-leitura, e dois testes escreviam
+neles: `test_frutas.gd:83` (que está **na bateria**) e `net_bugs_client.gd`.
+Sem correção, o `test_frutas` passaria a falhar em silêncio.
+
+É a **terceira** vez que isso acontece (Fase 5: `_buki_scope`; 6a:
+`_rapid_fire`). Já é regra:
+
+> Ao transformar um campo em vista só-leitura, **procure quem escrevia nele**
+> antes de rodar qualquer coisa:
+> `grep -rn "_campo\s*=" --include=*.gd src/ tools/`

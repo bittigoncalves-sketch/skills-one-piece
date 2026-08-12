@@ -33,12 +33,12 @@ func _init() -> void:
 	print("\n===== COOLDOWN congelado durante habilidade =====")
 	me.equip_fruit("gomu_gomu"); await _esperar(0.3)
 	me._skill_cooldowns["X"] = 9.0
-	me._charging = true; me._charge_slot = "Z"
+	me._cast._carregando = true; me._cast._slot = "Z"   # vistas sem setter (6c)
 	me.set_meta("is_casting", true)   # sem isso o proprio _physics_process destrava o _charging
 	var x0: float = me._skill_cooldowns["X"]
 	await _esperar(1.2)
 	var x1: float = me._skill_cooldowns["X"]
-	me._charging = false; me._charge_slot = ""; me.set_meta("is_casting", false)
+	me._cast.abortar(); me.set_meta("is_casting", false)
 	await _esperar(1.2)
 	var x2: float = me._skill_cooldowns["X"]
 	print("  X: %.2f -> %.2f (com Z ativo)  -> %.2f (Z solto)" % [x0, x1, x2])

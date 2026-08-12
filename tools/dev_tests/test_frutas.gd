@@ -80,7 +80,7 @@ func _auditar(fid: String, com_arvore: Array) -> void:
 		var zonas_antes := _contar_tipo(_main, "DamageZone")
 		_player._skill_cooldowns[slot] = 0.0
 		_player.set_meta("is_casting", false)
-		_player._charging = false
+		_player._cast.abortar()   # `_charging` virou vista sem setter (passo 6c)
 		_player._rapid_fire = false
 		_player._movement_locked_timer = 0.0
 		_player.energy = _player.max_energy

@@ -36,14 +36,20 @@ var combat_mode: String = "fruit" # "fruit" ou "style"
 var current_style_idx: int = 0
 const STYLES_LIST: Array[String] = ["karate_tritao", "pacifista", "mink", "boxe", "cyborg", "teste_animacao"]
 
-var _charging: bool = false
-var _charge_slot: String = ""
+# O cast vive em src/player/cast_controller.gd (passo 6c). Aqui só as VISTAS —
+# `_charging` é lido por 5 arquivos de fora.
+var _cast := CastController.new()
+var _charging: bool:
+	get: return _cast.carregando()
+var _charge_slot: String:
+	get: return _cast.slot()
 # Nº de série do cast atual. Cada `begin_charge` emite um novo. O temporizador de
 # 0.3 s que apaga `is_casting` no fim do golpe carrega o número do golpe DELE e só
 # apaga se ainda for o mesmo — senão o temporizador do golpe ANTERIOR apagava o
 # `is_casting` do golpe SEGUINTE, e o bloco do _physics_process lia isso como
 # "cast interrompido" e engolia a skill seguinte.
-var _cast_token: int = 0
+var _cast_token: int:
+	get: return _cast.token()
 var _movement_locked_timer: float = 0.0
 # IMPULSO EXTERNO (knockback). NÃO pode viver dentro de `velocity`: o bloco de
 # locomoção faz `velocity.x = dir.x * speed` — ATRIBUIÇÃO, não soma — e apagaria
@@ -286,6 +292,7 @@ func _ready() -> void:
 	_dash.montar_em(self)
 	_buki.montar_em(self, _rig)
 	_disparo.montar_em(self)
+	_cast.montar_em(self)
 	_parkour.montar_em(self, GRAVITY, JUMP_VELOCITY)
 
 	# Substitui o quadrado cinza pelo modelo 3D Voxel e equipa a Akuma no Mi correspondente
@@ -477,6 +484,60 @@ func _update_pivot() -> void:
 # Tremor de tela. Continua aqui porque MUITA gente de fora chama (efeitos das
 # frutas, corpo a corpo, pouso) — o Player repassa ao rig em vez de expor o
 # componente inteiro.
+# ------------------------------------------------------------ PEDIDOS DO CAST
+# `CastController` (passo 6c) decide SE e COMO conjurar; o que é do Player
+# continua do Player.
+
+# A mira do cast: raio da câmera até o mundo, e a origem à frente do corpo.
+# Fica aqui porque depende da câmera e do corpo — os dois são do Player.
+func mira_do_cast() -> Dictionary:
+	var frente := -_cam.global_transform.basis.z
+	var origem := global_position + Vector3.UP * 1.0 + frente * 1.5
+	var espaco := get_world_3d().direct_space_state
+	var de := _cam.global_position
+	var ate := de + frente * 150.0
+	var par := PhysicsRayQueryParameters3D.create(de, ate)
+	par.exclude = [get_rid()]
+	# Ignora ÁREAS (triggers e a própria DamageZone) para a mira não bater no ar.
+	par.collide_with_areas = false
+	par.collide_with_bodies = true
+	var hit := espaco.intersect_ray(par)
+	var ponto: Vector3 = hit.position if not hit.is_empty() else ate
+	return {"aim": (ponto - origem).normalized(), "origem": origem}
+
+# Host/SP JÁ é o servidor -> executa a autoridade DIRETO (`rpc_id` a si mesmo é
+# proibido pelo Godot). Cliente puro -> pede ao servidor (peer 1).
+func pedir_cast_no_servidor(slot: String, aim: Vector3, origem: Vector3) -> void:
+	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
+		_do_server_cast(slot, aim, origem)
+	else:
+		_net_cast.rpc_id(1, slot, aim, origem)
+
+# Carregar um golpe PRENDE o corpo no lugar. `velocity` é do domínio de
+# movimento — por isso é pedido, não escrita.
+func congelar_para_cast() -> void:
+	velocity = Vector3.ZERO
+
+# Pausar a animação enquanto mira é apresentação, e o animador é do rig.
+func pausar_animacao(pausado: bool) -> void:
+	if _animator and _animator.animation_player:
+		_animator.animation_player.speed_scale = 0.0 if pausado else 1.0
+
+# Guardar a pistola da Yami some com ela do rig também — o componente de
+# disparo não conhece as pistolas (elas são do `PlayerRig`).
+func guardar_pistola_da_yami() -> void:
+	_disparo.desligar_yami()
+	for g in _pistols:
+		if is_instance_valid(g):
+			g.visible = false
+
+func pedir_soco_de_fov(quantidade: float) -> void:
+	if _camera:
+		_camera.pedir_fov_punch(quantidade)
+
+func estilo_atual() -> String:
+	return STYLES_LIST[current_style_idx] if current_style_idx < STYLES_LIST.size() else ""
+
 # ------------------------------------------------- PEDIDOS DO DISPARO SUSTENTADO
 # `DisparoSustentado` (passo 6a) é dono da rajada Z e da pistola da Yami, e não
 # escreve estado alheio.
@@ -641,7 +702,7 @@ func _etapa_travamento(delta: float) -> bool:
 	# as balas acabarem. Só a câmera continua livre (mira). A rajada dispara aqui.
 	if _charging or _rapid_fire or _movement_locked_timer > 0.0 or (has_meta("is_frozen") and get_meta("is_frozen")) or (has_meta("in_vortex") and get_meta("in_vortex")) or (has_meta("in_kurouzu") and get_meta("in_kurouzu")) or (has_meta("in_black_hole") and get_meta("in_black_hole")):
 		if _charging and not (has_meta("is_casting") and get_meta("is_casting")):
-			_charging = false          # cast foi interrompido (ex.: dano) -> destrava
+			_cast.abortar()            # cast foi interrompido (ex.: dano) -> destrava
 		else:
 			velocity = Vector3.ZERO    # congela no lugar (sem gravidade)
 			if _breath:
@@ -1102,138 +1163,25 @@ func lock_movement(duration: float, skill_id: String = "") -> void:
 	_movement_locked_timer = maxf(_movement_locked_timer, duration)
 	set_meta("active_skill", skill_id)
 
-# Começa a segurar a skill: congela + pausa animação (mira com o mouse).
+# CAST — a decisão mora em src/player/cast_controller.gd (passo 6c). Aqui ficam
+# as cascas: a API pública que o input, a HUD e a rede já conhecem.
 func begin_charge(slot: String) -> void:
-	if is_suppressed:
-		print("❌ Poderes desativados (Yami Yami).")
-		return
-	if _skill_cooldowns.get(slot, 0.0) > 0.0:
-		print("⏳ Habilidade [%s] em recarga! Aguarde %.1fs." % [slot, _skill_cooldowns[slot]])
-		return
-	if slot != "Z" and _yami_pistol_active:
-		_disparo.desligar_yami()
-		for g in _pistols: if is_instance_valid(g): g.visible = false
-		print("🌑 Yami Pistol desativada (Outra habilidade foi acionada).")
-	# BUKI BUKI: a tecla não lança golpe — ela EMPUNHA a arma daquele slot (e o
-	# saque já dá o primeiro tiro). Ver o bloco BUKI BUKI no fim do arquivo.
-	if _buki_ativa():
-		_buki_empunhar(slot)
-		return
-	if slot == "C" and combat_mode == "fruit" and current_fruit_id == "yami_yami" and not is_on_floor():
-		print("❌ Black Hole requer contato com o solo!")
-		return
-	if slot == "Z" and combat_mode == "fruit" and current_fruit_id == "yami_yami":
-		print("🌑 Yami Pistol: ", "EMPUNHADA (Bt Dir=Mirar / Bt Esq=Atirar)" if _disparo.alternar_yami() else "GUARDADA")
-		return
-	if slot == "C" and combat_mode == "fruit" and current_fruit_id == "yami_yami":
-		set_meta("yami_black_hole_active", true)
-		_charging = true
-		_charge_slot = "C"
-		velocity = Vector3.ZERO
-		_request_cast("C")
-		return
-	# Z RAJADA (Mera = balas de fogo; Hie = flechas de gelo) — começa ao PRESSIONAR,
-	# não congela o player; para ao soltar ou ao atingir o teto de balas.
-	if slot == "Z" and combat_mode == "fruit" and (current_fruit_id == "mera_mera" or current_fruit_id == "hie_hie"):
-		trigger_skill_cooldown("Z")
-		_disparo.iniciar_rajada()
-		return
-	if combat_mode == "style" and STYLES_LIST[current_style_idx] == "teste_animacao":
-		energy = maxf(energy - ENERGY_SKILL, 0.0)
-		_request_cast(slot)
-		return
-	if _charging:
-		return
-	_charging = true
-	_charge_slot = slot
-	velocity = Vector3.ZERO
-	_cast_token += 1               # este cast é novo: o timer do anterior não manda nele
-	set_meta("is_casting", true)   # interrompível por dano
-	if _animator and _animator.animation_player:
-		_animator.animation_player.speed_scale = 0.0
+	_cast.comecar(slot)
 
-# Solta a tecla -> dispara a skill na direção mirada e destrava.
 func release_charge(slot: String) -> void:
-	if combat_mode == "style" and STYLES_LIST[current_style_idx] == "teste_animacao":
-		return
-	if slot == "C" and combat_mode == "fruit" and current_fruit_id == "yami_yami":
-		if has_meta("yami_black_hole_active"):
-			set_meta("yami_black_hole_active", false)
-		_charging = false
-		_charge_slot = ""
-		return
-	# MERA MERA Z: soltar a tecla ENCERRA a rajada.
-	if _rapid_fire and slot == "Z":
-		_disparo.parar_rajada()
-		return
-	if not _charging or _charge_slot != slot:
-		return
-	_charging = false
-	if _animator and _animator.animation_player:
-		_animator.animation_player.speed_scale = 1.0
-	energy = maxf(energy - ENERGY_SKILL, 0.0)   # skill consome energia
-	_request_cast(slot)
+	_cast.soltar(slot)
 
 # Compat: disparo imediato (sem segurar).
 func cast_skill_slot(slot_key: String) -> void:
-	if is_suppressed or _skill_cooldowns.get(slot_key, 0.0) > 0.0:
-		return
-	if _buki_ativa():
-		_buki_empunhar(slot_key)   # na Buki o slot empunha, não lança
-		return
-	_request_cast(slot_key)
+	_cast.conjurar_direto(slot_key)
 
-# ---- Fase 5: casting SERVIDOR-AUTORIDADE ----
+func _request_cast(slot: String) -> void:
+	_cast.pedir_cast(slot)
+
+# ---- casting SERVIDOR-AUTORIDADE ----
 # Cliente PEDE o cast -> servidor valida e é dono da hitbox -> a PRESENTATION
 # (VFX/anim) roda em TODOS os clientes; o dano/knockback (DamageZone) só é ativo
 # no servidor. Sem peer (SP puro/harness) roda tudo local, idêntico.
-func _request_cast(slot: String) -> void:
-	if not _is_authority or is_suppressed or _skill_cooldowns.get(slot, 0.0) > 0.0:
-		return
-	# ⚠️ BUKI BUKI: aqui o slot está sendo EMPUNHADO, não gasto. A recarga dele só
-	# começa quando a arma é LARGADA (troca, desistência ou munição zerada) — ver
-	# `_buki_guardar`. Disparar o cooldown no saque colocaria a arma que você
-	# acabou de sacar em recarga com ela ainda na mão.
-	if not _buki_ativa():
-		trigger_skill_cooldown(slot)
-	if slot != "Z" and _yami_pistol_active:
-		_disparo.desligar_yami()
-		for g in _pistols: if is_instance_valid(g): g.visible = false
-	var cam_dir := -_cam.global_transform.basis.z
-	var origin := global_position + Vector3.UP * 1.0 + cam_dir * 1.5
-	
-	var space := get_world_3d().direct_space_state
-	var cam_pos := _cam.global_position
-	var end_pos := cam_pos + cam_dir * 150.0
-	var query := PhysicsRayQueryParameters3D.create(cam_pos, end_pos)
-	query.exclude = [get_rid()]
-	
-	# Ignora áreas (como triggers e a própria DamageZone) para a mira não bater no ar
-	query.collide_with_areas = false
-	query.collide_with_bodies = true
-	
-	var hit := space.intersect_ray(query)
-	var target_point := end_pos
-	if not hit.is_empty():
-		target_point = hit.position
-		
-	var aim := (target_point - origin).normalized()
-	
-	# Camera Feel ao usar skill (V = ultimate: mais forte + slow-mo + flash).
-	var ult := slot == "V"
-	add_camera_shake(0.85 if ult else 0.6)
-	if _camera: _camera.pedir_fov_punch(8.0 if ult else 5.0)
-	ScreenFX.chromatic_pulse(0.7 if ult else 0.35)
-	if ult:
-		GameFlow.slow_mo()
-		ScreenFX.flash(Color(1, 1, 1), 0.3)
-	# Host/SP JÁ é o servidor -> executa a autoridade DIRETO (rpc_id a si mesmo é
-	# proibido pelo Godot). Cliente puro -> pede ao servidor (peer 1).
-	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
-		_do_server_cast(slot, aim, origin)
-	else:
-		_net_cast.rpc_id(1, slot, aim, origin)
-
 @rpc("any_peer", "reliable")
 func _net_cast(slot: String, aim: Vector3, origin: Vector3) -> void:
 	if multiplayer.is_server():
