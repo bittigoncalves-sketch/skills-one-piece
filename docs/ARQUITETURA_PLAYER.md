@@ -200,7 +200,7 @@ que parou de responder ao clique. Depois de cada fase de risco, vale abrir o jog
 | 3 — `PlayerRig` | ✅ **feita** — componente com 291; Player 2.128 → 1.959 | ver abaixo |
 | 4 — Movement / Parkour / Dash | ✅ **feita** — etapa 206 → 83; Player 1.959 → 1.776 | ver abaixo |
 | 5 — `BukiController` | ✅ **feita** — componente 286; Player 1.776 → 1.689 | ver abaixo |
-| 6 — `SkillController` | ⏳ | — |
+| 6 — `SkillController` | 🔎 auditada — ver [`AUDITORIA_FASE6.md`](AUDITORIA_FASE6.md); execução em 4 passos (6a–6d) | — |
 | 7 — `MeleeController` | ⏳ | — |
 | 8 — `HealthController` | ⏳ | — |
 | 9 — redução final | ⏳ | — |
