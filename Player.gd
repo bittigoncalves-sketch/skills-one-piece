@@ -197,12 +197,15 @@ func _slot_em_uso() -> String:
 func _pose_de_arma() -> bool:
 	return _rapid_fire or _yami_pistol_active or (_buki_weapon != "" and _buki_weapon != "X")
 
+# FONTE ÚNICA das recargas. Virou constante porque o SERVIDOR passou a precisar
+# dos mesmos números para barrar o saque repetido da Buki (ver
+# `BukiController.servidor_sacar`) — dois lugares com a mesma tabela escrita à
+# mão é como o furo de munição infinita nasceu.
+const RECARGA_POR_SLOT := {"Z": 5.0, "X": 7.0, "C": 10.0, "V": 60.0}  # V = ultimate
+
 func trigger_skill_cooldown(slot: String) -> void:
-	match slot:
-		"Z": _skill_cooldowns["Z"] = 5.0
-		"X": _skill_cooldowns["X"] = 7.0
-		"C": _skill_cooldowns["C"] = 10.0
-		"V": _skill_cooldowns["V"] = 60.0 # 1 minuto para skills ultimate em V
+	if RECARGA_POR_SLOT.has(slot):
+		_skill_cooldowns[slot] = RECARGA_POR_SLOT[slot]
 var _mesh: MeshInstance3D
 var _crosshair: Control
 

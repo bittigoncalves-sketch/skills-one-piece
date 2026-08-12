@@ -16,28 +16,46 @@ lista vira palpite.
 | 2 | jogador tomava dano preso no Black Hole; inimigo e dummy não | guarda `in_black_hole` acrescentada ao `Player` — o golpe é **controle puro** | preso: 2048 intacto · solto: 2048 → 1548 |
 | 3 | escombros do V da Yami só feriam `"enemy"` | o laço varre `"enemy"` **e** `"player"` | outro jogador 2048 → **2037** |
 
+## ✅ Resolvido em 2026-08-12
+
+### 14. MUNIÇÃO INFINITA na Buki Buki — **corrigido**
+`_do_server_buki_sacar` reenchia o pente autoritativo **sem olhar recarga
+nenhuma**: a penalidade era decidida só no cliente. Quem mandasse
+`_net_buki_sacar_req` direto pulava a única penalidade que a fruta tem.
+
+**Por que "perguntar se o slot está quente" não resolvia:** a recarga do jogador
+**não anda** na cópia do servidor — o `_physics_process` sai cedo quando
+`_is_authority` é falso, e para o corpo de um cliente, no servidor, ele é falso.
+`_skill_cooldowns` fica em zero lá para sempre. O servidor precisava do próprio
+relógio, e ele é **carimbo de tempo** (`_srv_recarga_ate`), que não exige tique.
+
+**Duas guardas, e as duas são necessárias** (`BukiController.servidor_sacar`):
+1. sacar com arma na mão põe a **anterior** em recarga — senão o trapaceiro
+   simplesmente nunca manda `guardar_req` e o slot nunca esfria;
+2. só então se pergunta se o slot pedido está frio.
+
+Sem a (1), a (2) sozinha não barra nada — era exatamente esse o buraco.
+
+A tabela de recargas virou `Player.RECARGA_POR_SLOT`, **fonte única**: duas
+cópias do mesmo número escritas à mão foi como o furo nasceu.
+
+**Folga de 250 ms** na checagem do servidor: a recarga do dono começa na hora, a
+do servidor só quando o `guardar_req` chega (meia viagem depois), então sem folga
+quem apertasse no fim da recarga levaria recusa **muda**. 250 ms é 5% da menor
+recarga (5 s) — absorve latência sem reabrir o furo.
+
+**Medido na sonda de rede, mesmos 17 pedidos de tiro:**
+
+| | pente do último saque de Z | zonas de dano | total |
+|---|---|---|---|
+| antes | `12→12` (mín 9) — recarregou 2× | **6** | 14 |
+| depois | `12→9` (mín 9) — só desce | **3** | 11 |
+
+O trapaceiro caiu para exatamente o que o jogador honesto tem. Bateria: 16/16.
+
 ---
 
 ## 🔴 Alta — afeta o jogo hoje
-
-### 14. MUNIÇÃO INFINITA na Buki Buki: o saque não olha a recarga
-`Player.gd:1641` (`_do_server_buki_sacar`) reenche `_srv_buki_municao` até o
-pente cheio **sem consultar `_skill_cooldowns`**. A recarga do slot é decidida
-**só no cliente**, em `_buki_empunhar` (`Player.gd:1598`).
-
-Ou seja: quem manda `_net_buki_sacar_req` direto pula a única penalidade da
-fruta. A munição *é* o balanceamento da Buki — e hoje ela é opcional para quem
-trapaceia.
-
-*Detectado:* sonda de rede de dois processos (`net_buki_host_probe.gd` /
-`net_buki_client_probe.gd`), 2026-08-12. **Medido:** com a recarga local de Z
-quente (5,0s → 2,8s → 0,5s), repetindo o pedido de saque, o pente autoritativo
-voltou **9 → 12 duas vezes**, rendendo **6 zonas de dano onde o jogador honesto
-teria 3**.
-
-**Decisão pendente:** o servidor passa a manter o próprio relógio de recarga por
-slot (o certo, mas é estado novo no lado autoritativo), ou basta o
-`_do_server_buki_sacar` recusar quando o slot estiver quente na cópia dele?
 
 ### 15. O servidor não valida `origin`/`aim` do tiro
 `_do_server_bullet` (`Player.gd:1332`) valida munição e arma, mas cria a

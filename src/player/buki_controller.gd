@@ -76,6 +76,28 @@ var _luneta: bool = false     # luneta da sniper (C) ligada
 var _srv_arma: String = ""
 var _srv_municao: int = 0
 
+# RECARGA DO LADO DO SERVIDOR — slot -> instante (ms) em que ele esfria.
+#
+# ⚠️ Isto existe porque a recarga do jogador NÃO ANDA na cópia do servidor: o
+# `_physics_process` sai cedo quando `_is_authority` é falso, e para o corpo de
+# um cliente, no servidor, ele é falso. Ou seja, `_skill_cooldowns` fica em zero
+# lá para sempre — não dá para "perguntar se o slot está quente".
+#
+# Por isso é CARIMBO DE TEMPO, não contador: não precisa de tique nenhum.
+var _srv_recarga_ate: Dictionary = {}
+
+# FOLGA da recarga do servidor, em ms.
+#
+# A recarga do dono começa na HORA em que ele guarda; a do servidor só quando o
+# `guardar_req` chega — meia viagem depois. Num ping de 100 ms o servidor esfria
+# ~50 ms mais tarde, e quem apertar exatamente no fim da recarga levaria uma
+# recusa MUDA ("apertei e não aconteceu nada").
+#
+# 250 ms absorve a latência sem abrir o furo de volta: a menor recarga é de 5 s,
+# então a folga vale 5% dela. Trapacear com isso renderia um saque a cada 4,75 s
+# em vez de 5 — nada perto do reenchimento infinito que existia antes.
+const FOLGA_RECARGA_MS := 250
+
 # ---- apresentação: roda em TODOS os peers ----
 var _visual: String = ""      # arma VISÍVEL (o adversário também vê)
 
@@ -153,16 +175,44 @@ func guardar() -> void:
 # ------------------------------------------------------- lado do SERVIDOR
 # Carrega a munição autoritativa. Devolve `false` quando o saque não vale — daí
 # o Player não faz broadcast nenhum.
+# ⚠️ FURO FECHADO EM 2026-08-12 — MUNIÇÃO INFINITA.
+#
+# Antes esta função reenchia o pente sem olhar recarga nenhuma: a penalidade da
+# fruta era decidida SÓ no cliente (`empunhar`). Quem mandasse
+# `_net_buki_sacar_req` direto pulava a única penalidade que a Buki tem.
+# Medido pela sonda de rede: com a recarga de Z quente (5,0s -> 2,8s -> 0,5s),
+# repetindo o pedido, o pente autoritativo voltou 9 -> 12 DUAS VEZES — 6 zonas
+# de dano onde o jogador honesto teria 3.
+#
+# Duas guardas fecham o caminho, e as DUAS são necessárias:
+#   1. sacar com arma na mão põe a ANTERIOR em recarga — senão o trapaceiro
+#      simplesmente nunca manda `guardar_req` e o slot nunca esfria;
+#   2. só então se pergunta se o slot pedido está frio.
+# Sem (1), (2) sozinha não barra nada: era exatamente esse o buraco.
 func servidor_sacar(slot: String) -> bool:
 	if not (ativa() and BukiFX.ARSENAL.has(slot)):
 		return false
+	if _srv_arma != "":
+		servidor_guardar()               # a de agora paga a recarga dela
+	if Time.get_ticks_msec() + FOLGA_RECARGA_MS < int(_srv_recarga_ate.get(slot, 0)):
+		return false                     # slot ainda quente no SERVIDOR
 	_srv_arma = slot
 	_srv_municao = BukiFX.municao(slot)   # CHEIA: o saque não gasta bala
 	return true
 
 func servidor_guardar() -> void:
+	if _srv_arma != "":
+		# Mesma tabela do dono (`Player.RECARGA_POR_SLOT`): duas cópias do número
+		# escritas à mão foi como o furo nasceu.
+		var segundos: float = float(_dono.RECARGA_POR_SLOT.get(_srv_arma, 0.0))
+		_srv_recarga_ate[_srv_arma] = Time.get_ticks_msec() + int(segundos * 1000.0)
 	_srv_arma = ""
 	_srv_municao = 0
+
+# Quanto falta da recarga autoritativa deste slot, em segundos (0 = frio).
+func servidor_recarga(slot: String) -> float:
+	var falta := int(_srv_recarga_ate.get(slot, 0)) - Time.get_ticks_msec()
+	return maxf(float(falta) / 1000.0, 0.0)
 
 # Autoriza UM tiro e consome a bala. Sem bala, nenhum tiro sai — nem visual, nem
 # `DamageZone`. Cliente adulterado não ganha munição infinita.
