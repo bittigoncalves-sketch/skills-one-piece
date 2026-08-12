@@ -20,7 +20,47 @@ lista vira palpite.
 
 ## 🔴 Alta — afeta o jogo hoje
 
-*(vazio — os três foram resolvidos acima)*
+### 14. MUNIÇÃO INFINITA na Buki Buki: o saque não olha a recarga
+`Player.gd:1641` (`_do_server_buki_sacar`) reenche `_srv_buki_municao` até o
+pente cheio **sem consultar `_skill_cooldowns`**. A recarga do slot é decidida
+**só no cliente**, em `_buki_empunhar` (`Player.gd:1598`).
+
+Ou seja: quem manda `_net_buki_sacar_req` direto pula a única penalidade da
+fruta. A munição *é* o balanceamento da Buki — e hoje ela é opcional para quem
+trapaceia.
+
+*Detectado:* sonda de rede de dois processos (`net_buki_host_probe.gd` /
+`net_buki_client_probe.gd`), 2026-08-12. **Medido:** com a recarga local de Z
+quente (5,0s → 2,8s → 0,5s), repetindo o pedido de saque, o pente autoritativo
+voltou **9 → 12 duas vezes**, rendendo **6 zonas de dano onde o jogador honesto
+teria 3**.
+
+**Decisão pendente:** o servidor passa a manter o próprio relógio de recarga por
+slot (o certo, mas é estado novo no lado autoritativo), ou basta o
+`_do_server_buki_sacar` recusar quando o slot estiver quente na cópia dele?
+
+### 15. O servidor não valida `origin`/`aim` do tiro
+`_do_server_bullet` (`Player.gd:1332`) valida munição e arma, mas cria a
+`DamageZone` exatamente no `origin` que o **cliente** mandou.
+
+*Detectado:* leitura de código + mecanismo confirmado na sonda (as zonas
+nasceram e acertaram onde o cliente pediu). **Não foi testada** uma distância
+absurda — trate como mecanismo confirmado, não como exploit medido.
+
+**Decisão pendente:** validar distância entre `origin` e a posição do corpo no
+servidor (e recusar acima de um limite), ou aceitar como custo de precisão
+cliente-lado?
+
+### 16. `combat_mode` não replica — o saque remoto funciona por acidente
+`Main.gd:119` replica só `position, net_velocity, net_facing, net_on_floor,
+current_fruit_id`. Como `_buki_ativa()` (`Player.gd:1574`) lê o `combat_mode`
+**da cópia local**, no servidor ele fica preso no default `"fruit"` para sempre.
+
+Hoje isso **ajuda** (o saque é aceito), mas é acidente: um cliente em modo
+`"style"` continua sendo aceito como se estivesse na fruta, e **se o default
+mudar, todo saque remoto quebra em silêncio**.
+
+*Detectado:* sonda de rede, 2026-08-12.
 
 ## 🔴 ~~Alta~~ — histórico
 
@@ -90,11 +130,11 @@ imunidade, em ciclo) é o comportamento desejado numa rodada de 10 minutos.
 
 ## 🟢 Baixa — armadilhas conhecidas, documentadas
 
-### 8. `Player.gd` com 1.776 linhas, 2,0× o limite
+### 8. `Player.gd` com 1.689 linhas, 1,9× o limite
 **Em tratamento.** A partição está em curso, em fases, por
 [`ARQUITETURA_PLAYER.md`](ARQUITETURA_PLAYER.md): fase 1 (etapas nomeadas) e
-fase 2 (`CameraRig`, 2.167 → 2.128), fase 3 (`PlayerRig`, → 1.959) e
-fase 4 (movimento, → 1.776) feitas. Ver também
+fase 2 (`CameraRig`, 2.167 → 2.128), fase 3 (`PlayerRig`, → 1.959),
+fase 4 (movimento, → 1.776) e fase 5 (`BukiController`, → 1.689) feitas. Ver também
 [`RELATORIO_PLAYER.md`](RELATORIO_PLAYER.md) e
 [`LIMITE_DE_TAMANHO.md`](LIMITE_DE_TAMANHO.md). **Gatilho:** o arquivo não pode
 crescer mais — qualquer tarefa que precise adicionar código nele deve primeiro

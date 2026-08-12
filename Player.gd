@@ -137,13 +137,21 @@ var _yami_shot_cooldown: float = 0.0  # cadência do tiro do Yami Z
 #     `DamageZone` nasce. Cliente mentindo não fere ninguém.
 # O dono desconta ao pedir; o servidor desconta ao criar. Empate garantido
 # porque os dois partem do mesmo número e o canal é `reliable`.
-var _buki_weapon: String = ""       # slot empunhado no DONO ("" = mãos livres)
-var _buki_municao: int = 0          # balas restantes (visão do dono / HUD)
-var _buki_shot_cd: float = 0.0      # cadência do tiro
-var _buki_scope: bool = false       # luneta da sniper (C) ativa
-var _srv_buki_arma: String = ""     # SERVIDOR: qual arma este corpo empunha
-var _srv_buki_municao: int = 0      # SERVIDOR: balas que ele ainda autoriza
-var _buki_visual: String = ""       # arma VISÍVEL (roda em todos os peers)
+# O estado do arsenal vive em src/player/buki_controller.gd (Fase 5). Aqui só
+# as VISTAS — os RPCs e a HUD continuam falando com o Player.
+var _buki := BukiController.new()
+var _buki_weapon: String:
+	get: return _buki.arma()
+var _buki_municao: int:
+	get: return _buki.municao()
+var _buki_scope: bool:
+	get: return _buki.luneta()
+var _buki_visual: String:
+	get: return _buki.visual()
+var _srv_buki_arma: String:
+	get: return _buki._srv_arma
+var _srv_buki_municao: int:
+	get: return _buki.servidor_municao()
 # As armas e o pivô são MONTADOS pelo rig (nascem e morrem com o modelo); quem
 # decide qual aparece é o combate, aqui. Era o conflito de dois donos que o
 # relatório apontou.
@@ -274,6 +282,7 @@ func _ready() -> void:
 	add_child(_rig)
 	_rig.montar_em(self)
 	_dash.montar_em(self)
+	_buki.montar_em(self, _rig)
 	_parkour.montar_em(self, GRAVITY, JUMP_VELOCITY)
 
 	# Substitui o quadrado cinza pelo modelo 3D Voxel e equipa a Akuma no Mi correspondente
@@ -379,7 +388,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		# Corpo a corpo. A pistola da Yami e as armas da Buki também usam o botão
 		# esquerdo (têm tratamento próprio em `_process_yami_pistol` /
-		# `_process_buki_arma`) — quem está de arma na mão atira, não soca.
+		# `BukiController.atualizar`) — quem está de arma na mão atira, não soca.
 		if not _yami_pistol_active and _buki_weapon == "":
 			_request_melee()
 
@@ -465,6 +474,58 @@ func _update_pivot() -> void:
 # Tremor de tela. Continua aqui porque MUITA gente de fora chama (efeitos das
 # frutas, corpo a corpo, pouso) — o Player repassa ao rig em vez de expor o
 # componente inteiro.
+# ---------------------------------------------------------- PEDIDOS DA BUKI
+# O `BukiController` (Fase 5) é dono do arsenal, mas NÃO escreve estado alheio.
+# Estes são os pedidos dele — mesma disciplina do `pedir_shake` (Fase 2) e do
+# `pedir_rolamento` (Fase 4).
+
+# RECUO do canhão: o tranco empurra o jogador. `_kb_impulso` e `velocity` são do
+# domínio de MOVIMENTO; o arsenal pede, não escreve.
+func pedir_recuo(direcao: Vector3, forca: float) -> void:
+	_kb_impulso += direcao * forca
+	velocity.y += forca * 0.32
+
+# Coice visual da arma (1 -> 0), lido pela pose de mira do animador. É
+# compartilhado com a rajada Z e a pistola da Yami — por isso continua aqui.
+func pedir_coice_de_arma() -> void:
+	_gun_recoil = 1.0
+
+# MIRA ASSISTIDA: puxa devagar (não trava) para um ponto. Quem escolhe o ALVO é
+# quem tem a arma; quem é dono de `_yaw`/`_pitch` é o Player — decisão da Fase 2,
+# porque quem os escreve é o input.
+func mirar_suave_para(ponto: Vector3, delta: float, forca: float) -> void:
+	var para: Vector3 = ponto - _cam.global_position
+	var h := Vector2(para.x, para.z).length()
+	_yaw = lerp_angle(_yaw, atan2(-para.x, -para.z), forca * delta)
+	_pitch = lerpf(_pitch, clampf(atan2(para.y, h), -1.2, 0.5), forca * delta)
+	_update_pivot()
+	if _char_model:
+		_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw, 14.0 * delta)
+
+# ⚠️ A BALA TEM QUE NASCER NO SERVIDOR, senão a `DamageZone` do cliente não fere
+# ninguém e o sintoma vira "a arma não funciona" (docs/erros.md, 2026-08-10 —
+# pistola da Yami). O canal é COMPARTILHADO com a rajada Z e a Yami: é por isso
+# que a Fase 5 manteve os RPCs aqui em vez de levar o componente para nó filho.
+func pedir_bala_da_buki(aim: Vector3, origem: Vector3, slot: String) -> void:
+	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
+		_do_server_bullet(aim, origem, slot)
+	else:
+		_net_bullet_req.rpc_id(1, aim, origem, slot)
+
+# Encanamento de rede do saque/guardar. Fica no Player porque RPC se resolve por
+# CAMINHO DE NÓ — mover o método mudaria o protocolo.
+func avisar_servidor_do_saque(slot: String) -> void:
+	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
+		_do_server_buki_sacar(slot)
+	else:
+		_net_buki_sacar_req.rpc_id(1, slot)
+
+func avisar_servidor_do_guardar() -> void:
+	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
+		_do_server_buki_guardar()
+	else:
+		_net_buki_guardar_req.rpc_id(1)
+
 # Pede a janela de ROLAMENTO. O maior pedido vence — dois gatilhos no mesmo
 # quadro (pousar em cima de um dash) não devem encurtar a animação.
 func pedir_rolamento(duracao: float) -> void:
@@ -534,8 +595,12 @@ func _etapa_estado_de_combate(delta: float) -> void:
 		_skill_cooldowns[slot_k] = maxf(_skill_cooldowns[slot_k] - delta, 0.0)
 	if _yami_pistol_active:
 		_process_yami_pistol(delta)
-	if _buki_weapon != "":
-		_process_buki_arma(delta)   # arma na mão: mira, cadência e munição
+	if _buki.empunhando():
+		# O coice visual é COMPARTILHADO com a rajada Z e a pistola da Yami, então
+		# quem decai é o Player. O componente só pede (`pedir_coice_de_arma`).
+		if _gun_recoil > 0.0:
+			_gun_recoil = maxf(_gun_recoil - delta * 7.0, 0.0)
+		_buki.atualizar(delta, _pitch, _yaw, net_facing)   # mira, cadência e munição
 
 # O personagem está preso a alguma coisa? Devolve `true` quando consumiu o
 # quadro — quem chama tem que devolver na hora, sem seguir para a locomoção.
@@ -827,7 +892,7 @@ func _setup_character_model(cid: String) -> void:
 	if not ELENCO_LIBERADO.has(cid):
 		cid = ELENCO_LIBERADO[0]
 
-	_buki_visual = ""   # o modelo antigo levou as armas embora
+	_buki.esquecer_visual()   # o modelo antigo levou as armas embora
 	_rig.montar(cid)
 
 	# Fôlego (VFX): é do PLAYER, não do rig — sobrevive à troca de personagem e é
@@ -841,16 +906,7 @@ func _setup_character_model(cid: String) -> void:
 # `_fire_skill` e do `_net_buki_guardar`), então o adversário vê a arma na mão
 # e vê o corpo virar canhão. "" = guardar tudo.
 func _buki_mostrar_arma(slot: String) -> void:
-	_buki_visual = slot
-	for s in _buki_armas.keys():
-		var n = _buki_armas[s]
-		if not is_instance_valid(n):
-			continue
-		var ligar: bool = (s == slot)
-		if ligar and not n.visible:
-			BukiFX.onda_de_aco(n.get_parent())   # o aço descendo pelo membro
-		n.visible = ligar
-	_atualizar_visibilidade_corpo()
+	_buki.mostrar_arma(slot)
 
 # O corpo some em DOIS casos: 1ª pessoa (já era) e canhão-corpo da Buki (X).
 # Ficam no mesmo lugar porque brigavam: o `_apply_perspective` reacendia o corpo
@@ -1239,9 +1295,12 @@ func _do_server_cast(slot: String, aim: Vector3, origin: Vector3) -> void:
 	# BUKI BUKI: o cast É o saque da arma. É AQUI, na cópia autoritativa, que a
 	# munição do servidor é carregada — o cliente não escolhe quantas balas tem.
 	# Já sai com uma a menos porque o próprio saque dispara o primeiro tiro.
-	if _buki_ativa() and BukiFX.ARSENAL.has(slot):
-		_srv_buki_arma = slot
-		_srv_buki_municao = BukiFX.municao(slot)
+	# ⚠️ SEGUNDO ESCRITOR do estado autoritativo da Buki — o gêmeo da armadilha
+	# de 2026-08-11. Está morto pelo caminho de input (begin_charge e
+	# cast_skill_slot desviam para `_buki_empunhar` e RETORNAM), mas continua
+	# alcançável pelo RPC `_net_cast` vindo de um cliente. Some com ele e o
+	# servidor volta a recusar tiro por caminho que ninguém lembra de testar.
+	_buki.servidor_sacar(slot)
 	if multiplayer.has_multiplayer_peer():
 		_net_play_cast.rpc(slot, aim, origin)            # broadcast + call_local
 	else:
@@ -1333,9 +1392,8 @@ func _do_server_bullet(aim: Vector3, origin: Vector3, arma: String = "") -> void
 	if arma != "":
 		# Sem bala no contador do servidor, nenhum tiro sai — nem visual, nem
 		# DamageZone. Cliente adulterado não ganha munição infinita.
-		if _srv_buki_arma != arma or _srv_buki_municao <= 0:
+		if not _buki.servidor_autoriza_tiro(arma):
 			return
-		_srv_buki_municao -= 1
 	if multiplayer.has_multiplayer_peer():
 		_net_bullet_play.rpc(aim, origin, arma)
 	else:
@@ -1580,56 +1638,15 @@ func buki_arma() -> String:
 func buki_municao() -> int:
 	return _buki_municao
 func buki_municao_max() -> int:
-	return BukiFX.municao(_buki_weapon)
+	return _buki.municao_max()
 
-# EMPUNHAR (ou guardar, se for o mesmo slot). Só o dono do corpo passa por aqui.
+# EMPUNHAR / GUARDAR: a regra mora no componente; aqui fica o que é do Player
+# (autoridade e supressão) e o encanamento de rede.
 func _buki_empunhar(slot: String) -> void:
-	if not _is_authority or is_suppressed:
-		return
-	if _buki_weapon == slot:
-		print("🔫 Buki: %s GUARDADA — o slot %s entra em recarga." % [BukiFX.nome_da_arma(slot), slot])
-		_buki_guardar()
-		return
-	if _buki_weapon != "":
-		# TROCA DE SKILL: a arma anterior é perdida e o slot dela entra em recarga.
-		print("🔫 Buki: larguei a %s pra sacar a %s." % [
-			BukiFX.nome_da_arma(_buki_weapon), BukiFX.nome_da_arma(slot)])
-		_buki_guardar()
-	if _skill_cooldowns.get(slot, 0.0) > 0.0:
-		print("⏳ Buki: %s em recarga (%.1fs)." % [BukiFX.nome_da_arma(slot), _skill_cooldowns[slot]])
-		return
-	# SACAR NÃO ATIRA (pedido do dono, 2026-08-11).
-	#
-	# Antes a 1ª bala saía no próprio saque: apertar a tecla já disparava, e a
-	# munição começava descontada (12 = 1 no saque + 11 no clique). Em jogo isso
-	# vira tiro que o jogador não pediu — ele saca para MIRAR, e o disparo tem
-	# que ser decisão dele. Agora a tecla só empunha; quem atira é o botão
-	# esquerdo, sempre. A arma sai com a munição CHEIA.
-	_buki_weapon = slot
-	_buki_municao = BukiFX.municao(slot)
-	_buki_shot_cd = 0.0                 # pronta pra atirar assim que o dedo mandar
-	_buki_scope = false
-	print("🔫 Buki: %s EMPUNHADA — %d balas (Bt Esq = atirar%s)." % [
-		BukiFX.nome_da_arma(slot), _buki_municao,
-		" / Bt Dir = luneta" if slot == "C" else " / Bt Dir = mira assistida"])
+	_buki.empunhar(slot, _is_authority, is_suppressed)
 
-	# ⚠️ SACAR TEM QUE AVISAR O SERVIDOR — e isso quase se perdeu.
-	#
-	# Quando tirei o tiro do saque, saiu junto a linha `_request_cast(slot)`. Eu a
-	# li como "isto atira", mas ela carregava outras DUAS coisas de carona:
-	#   • `_do_server_cast` gravava `_srv_buki_arma`/`_srv_buki_municao` — sem
-	#     isso o servidor não sabe qual arma está na mão e RECUSA TODO TIRO
-	#     (medido: sniper cheia, 5 balas, 0 DamageZone criada);
-	#   • `_fire_skill` chamava `_buki_mostrar_arma` — sem isso a arma nunca
-	#     aparece no rig, e no canhão o corpo nem some.
-	#
-	# Agora o saque tem caminho PRÓPRIO, que arma o estado e mostra a arma sem
-	# disparar nada. Lição: remover chamada é tão perigoso quanto adicionar,
-	# quando ela tem efeito colateral.
-	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
-		_do_server_buki_sacar(slot)
-	else:
-		_net_buki_sacar_req.rpc_id(1, slot)
+func _buki_guardar() -> void:
+	_buki.guardar()
 
 @rpc("any_peer", "reliable")
 func _net_buki_sacar_req(slot: String) -> void:
@@ -1639,10 +1656,8 @@ func _net_buki_sacar_req(slot: String) -> void:
 # SERVIDOR: guarda qual arma este corpo empunha e com quanta munição, e manda
 # todos os peers mostrarem a arma. O servidor é quem valida cada tiro depois.
 func _do_server_buki_sacar(slot: String) -> void:
-	if not (_buki_ativa() and BukiFX.ARSENAL.has(slot)):
+	if not _buki.servidor_sacar(slot):
 		return
-	_srv_buki_arma = slot
-	_srv_buki_municao = BukiFX.municao(slot)   # CHEIA: o saque não gasta bala
 	if multiplayer.has_multiplayer_peer():
 		_net_buki_sacar.rpc(slot)
 	else:
@@ -1652,20 +1667,6 @@ func _do_server_buki_sacar(slot: String) -> void:
 func _net_buki_sacar(slot: String) -> void:
 	_buki_mostrar_arma(slot)
 
-# GUARDAR: a arma some e o slot largado entra em recarga. Chamado na troca, no
-# fim da munição, ao trocar de fruta e ao morrer.
-func _buki_guardar() -> void:
-	if _buki_weapon == "":
-		return
-	trigger_skill_cooldown(_buki_weapon)   # a penalidade: aquele slot esfria
-	_buki_weapon = ""
-	_buki_municao = 0
-	_buki_scope = false
-	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
-		_do_server_buki_guardar()
-	else:
-		_net_buki_guardar_req.rpc_id(1)
-
 @rpc("any_peer", "reliable")
 func _net_buki_guardar_req() -> void:
 	if multiplayer.is_server():
@@ -1674,8 +1675,7 @@ func _net_buki_guardar_req() -> void:
 # SERVIDOR: zera a munição autoritativa (nenhum tiro mais é aceito) e manda todo
 # mundo tirar a arma da mão.
 func _do_server_buki_guardar() -> void:
-	_srv_buki_arma = ""
-	_srv_buki_municao = 0
+	_buki.servidor_guardar()
 	if multiplayer.has_multiplayer_peer():
 		_net_buki_guardar.rpc()
 	else:
@@ -1685,98 +1685,5 @@ func _do_server_buki_guardar() -> void:
 func _net_buki_guardar() -> void:
 	_buki_mostrar_arma("")
 
-# ------------------------------------------------------- laço da arma na mão
-# Roda todo frame enquanto houver arma empunhada (chamado do _physics_process,
-# como o `_process_yami_pistol`). NÃO congela o jogador: com arma na mão dá pra
-# andar — é FPS, não pose de golpe.
-func _process_buki_arma(delta: float) -> void:
-	if _buki_shot_cd > 0.0:
-		_buki_shot_cd = maxf(_buki_shot_cd - delta, 0.0)
-	if _gun_recoil > 0.0:
-		_gun_recoil = maxf(_gun_recoil - delta * 7.0, 0.0)
-	_buki_apontar_canhao()
-
-	var bt_dir := Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
-	# HABILIDADE ATIVA DA FRUTA: o botão direito faz a mira TENDER pro alvo mais
-	# próximo. ⚠️ EXCEÇÃO DA SNIPER (C): ali o auxílio fica DESLIGADO e o botão
-	# direito é a luneta — mira assistida com zoom seria tiro grátis.
-	if _buki_weapon == "C":
-		_buki_scope = bt_dir
-	else:
-		_buki_scope = false
-		if bt_dir:
-			_buki_auxilio_de_mira(delta)
-
-	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and _buki_shot_cd <= 0.0:
-		_buki_atirar()
-
-# O canhão-corpo (X) aponta pra onde a câmera olha; as armas de braço já seguem
-# o membro. Roda também nas cópias remotas (ver `_remote_process`), senão o
-# adversário vê um canhão apontando sempre pro norte.
 func _buki_apontar_canhao() -> void:
-	if not is_instance_valid(_buki_pivot) or _buki_visual != "X":
-		return
-	if _is_authority:
-		_buki_pivot.rotation = Vector3(_pitch, _yaw, 0)
-	else:
-		_buki_pivot.rotation = Vector3(0, net_facing, 0)
-
-# Mira assistida: puxa devagar (não trava) pro alvo mais próximo.
-func _buki_auxilio_de_mira(delta: float) -> void:
-	var alvo := _alvo_mais_proximo(50.0)
-	if alvo == null or not is_instance_valid(alvo):
-		return
-	var para: Vector3 = (alvo.global_position + Vector3.UP * 0.9) - _cam.global_position
-	var h := Vector2(para.x, para.z).length()
-	_yaw = lerp_angle(_yaw, atan2(-para.x, -para.z), 9.0 * delta)
-	_pitch = lerpf(_pitch, clampf(atan2(para.y, h), -1.2, 0.5), 9.0 * delta)
-	_update_pivot()
-	if _char_model:
-		_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw, 14.0 * delta)
-
-# UM TIRO. ⚠️ NADA de criar o efeito aqui: a bala tem que NASCER NO SERVIDOR,
-# senão a DamageZone do cliente não fere ninguém e o sintoma vira "a arma não
-# funciona" (docs/erros.md, 2026-08-10 — pistola da Yami). O trajeto é o mesmo
-# da rajada Z: dono pede -> `_do_server_bullet` -> `_net_bullet_play`.
-func _buki_atirar() -> void:
-	if _buki_weapon == "" or _buki_municao <= 0:
-		return
-	var slot := _buki_weapon
-	var d: Dictionary = BukiFX.ARSENAL[slot]
-	_buki_municao -= 1
-	_buki_shot_cd = float(d["cadencia"])
-	_gun_recoil = 1.0
-	add_camera_shake(float(d["shake"]))
-
-	var origin := _buki_muzzle()
-	var alvo_pt := _aim_target_point()
-	var aim := alvo_pt - origin
-	aim = aim.normalized() if aim.length() > 0.01 else -_cam.global_transform.basis.z
-	origin += aim * 0.25
-	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
-		_do_server_bullet(aim, origin, slot)
-	else:
-		_net_bullet_req.rpc_id(1, aim, origin, slot)
-
-	# RECUO do canhão: o tranco empurra o jogador pra trás — o tiro vira mobilidade.
-	var recuo := float(d["recuo"])
-	if recuo > 0.0:
-		_kb_impulso += -aim * recuo
-		velocity.y += recuo * 0.32
-
-	if _buki_municao <= 0:
-		print("🔫 Buki: %s SEM MUNIÇÃO — some da mão e o slot %s entra em recarga." % [
-			BukiFX.nome_da_arma(slot), slot])
-		_buki_guardar()
-
-# Boca do cano da arma empunhada. Sem arma na árvore, cai no peito (mesma rede
-# de segurança do `_muzzle_pos` da pistola).
-func _buki_muzzle() -> Vector3:
-	var n = _buki_armas.get(_buki_weapon)
-	if n is Node3D and is_instance_valid(n) and (n as Node3D).is_inside_tree():
-		var t := (n as Node3D).global_transform
-		# Pistola aponta pro −Y do antebraço; o resto (.glb) pro −Z do próprio nó.
-		if _buki_weapon == "Z":
-			return t.origin - t.basis.y.normalized() * 0.34
-		return t.origin - t.basis.z.normalized() * (1.7 if _buki_weapon == "X" else 0.9)
-	return global_position + Vector3.UP * 1.2 + (-_cam.global_transform.basis.z) * 0.9
+	_buki.apontar_canhao(_is_authority, _pitch, _yaw, net_facing)

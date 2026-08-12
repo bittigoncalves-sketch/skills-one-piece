@@ -199,7 +199,7 @@ que parou de responder ao clique. Depois de cada fase de risco, vale abrir o jog
 | 2 — `CameraRig` | ✅ **feita** — componente de 201 linhas; Player 2.167 → 2.128 | ver abaixo |
 | 3 — `PlayerRig` | ✅ **feita** — componente com 291; Player 2.128 → 1.959 | ver abaixo |
 | 4 — Movement / Parkour / Dash | ✅ **feita** — etapa 206 → 83; Player 1.959 → 1.776 | ver abaixo |
-| 5 — `BukiController` | ⏳ | — |
+| 5 — `BukiController` | ✅ **feita** — componente 286; Player 1.776 → 1.689 | ver abaixo |
 | 6 — `SkillController` | ⏳ | — |
 | 7 — `MeleeController` | ⏳ | — |
 | 8 — `HealthController` | ⏳ | — |
@@ -506,3 +506,100 @@ O impulso horizontal de 1,35× do **geppo é código morto**: a locomoção norm
 reescreve `velocity.x/z` logo abaixo, no mesmo ramo. Item 12 da
 [`LISTA_DE_CORRECOES.md`](LISTA_DE_CORRECOES.md) — ligar isso muda o feel do
 pulo duplo, e é decisão de design.
+
+---
+
+## Fase 5 — `BukiController`, feita em 2026-08-12
+
+A primeira fase que encosta em **RPC**. `src/player/buki_controller.gd`, 286
+linhas. O `Player.gd` foi de 1.776 para **1.689**.
+
+Trabalho dividido entre dois agentes especializados, com escopo fechado e sem
+sobreposição de arquivos: um **auditou** (só leitura) o domínio e a rede; o
+outro **construiu a sonda** de dois processos (só `tools/dev_tests/`).
+
+### A decisão: `RefCounted`, RPCs ficam no Player
+
+O plano previa avaliar se o componente viraria **nó filho**, levando os 4 `@rpc`
+junto. A auditoria testou isso com host e cliente ENet de verdade: **funciona** —
+o RPC chega e o broadcast volta. Foi recusado mesmo assim, e não por medo:
+
+> **O tiro da Buki não tem RPC próprio.** Ele pega emprestado o canal de bala
+> compartilhado com a rajada Z da Mera/Hie e a pistola da Yami
+> (`_net_bullet_req` → `_do_server_bullet` → `_net_bullet_play`), e é **dentro**
+> desse canal que mora a autorização de munição.
+
+Levar só `sacar`/`guardar` para um nó filho partiria o protocolo da Buki em dois
+caminhos de rede, por ganho zero. Levar o canal de bala junto arrastaria a Fase 6
+para dentro da Fase 5.
+
+**Gatilho para virar nó:** canal de bala próprio, ou `_buki_visual` precisando de
+`MultiplayerSynchronizer` (hoje quem entra no meio da partida não vê a arma na
+mão do adversário — a sincronia é por evento).
+
+### ⚠️ A autoridade NÃO desce para componentes criados no `_ready()`
+
+Medido pela auditoria: **pai=7, filho=1**. O `Main.gd:104-105` define a
+autoridade **antes** de o Player entrar na árvore, e o `_ready()` roda depois.
+
+`CameraRig` e `PlayerRig` estão corretos hoje **por não perguntarem** — o
+CameraRig recebe a autoridade por parâmetro. Não é acidente feliz: quem escrever
+`is_multiplayer_authority()` dentro de um componente vai receber `true` no host
+para o corpo de **todo mundo**. O `BukiController` segue a mesma regra e nunca
+pergunta.
+
+### A fronteira
+
+O componente é dono do estado do arsenal (`_arma`, `_municao`, `_cadencia`,
+`_luneta`, `_srv_arma`, `_srv_municao`, `_visual`) e **não escreve estado
+alheio**. Seis pedidos novos no Player:
+
+| pedido | em vez de |
+|---|---|
+| `pedir_recuo(dir, forca)` | escrever `_kb_impulso` e `velocity.y` |
+| `mirar_suave_para(ponto, delta, forca)` | escrever `_yaw`, `_pitch`, `_char_model.rotation.y` |
+| `pedir_coice_de_arma()` | escrever `_gun_recoil` (compartilhado com Mera/Yami) |
+| `pedir_bala_da_buki(...)`, `avisar_servidor_do_saque/guardar(...)` | encanamento de RPC (fica no Player: RPC resolve por caminho de nó) |
+
+O componente guarda referência direta ao **`PlayerRig`**: o rig constrói as
+armas, a Buki decide qual aparece. É a resolução do conflito de dois donos em
+`_buki_armas`.
+
+### O segundo escritor foi preservado de propósito
+
+`_do_server_cast` também gravava `_srv_buki_arma`/`_srv_buki_municao` — o gêmeo
+da armadilha de 2026-08-11. Está morto pelo caminho de input, mas continua
+alcançável pelo RPC `_net_cast` vindo de um cliente. Virou
+`_buki.servidor_sacar(slot)` **com comentário explicando por que não foi
+apagado**.
+
+### Validação
+
+**Sonda de rede de dois processos** (`net_buki_host_probe.gd` /
+`net_buki_client_probe.gd`, novas): o host observa a cópia autoritativa do corpo
+do cliente e fatia o tempo em segmentos a cada troca de `_srv_buki_arma`.
+
+| item | medido com o componente ligado |
+|---|---|
+| sacar replica | 4 saques `["Z","X","C","Z"]`; **4/4** com `_buki_visual == _srv_buki_arma` |
+| guardar replica | 2 guardadas chegaram |
+| servidor manda na munição | nenhuma arma pariu mais zona que o pente autorizado; **0** zona sem arma autorizada |
+| o tiro do cliente fere no host | vida **2048,0 → 2000,5** (Δ −47,5) |
+| os 4 RPCs exercitados | rastro medido dos quatro |
+
+Bateria: 16 testes verdes, incluindo o traço de 492 quadros.
+
+**Dois testes precisaram ser atualizados** — e o motivo importa: eles chamavam
+`_p._buki_atirar()` e escreviam em `_buki_scope`, que agora é vista **sem
+setter**. O `test_buki_buki` chegou a acusar "nasceu `DamageZone` sem munição",
+o que parecia regressão grave; era o teste chamando método removido, então as
+balas nunca eram gastas e o pedido forjado era **legitimamente** autorizado.
+
+### Três achados da sonda, na lista sem correção
+
+- 🔴 **Munição infinita** (item 14): `_do_server_buki_sacar` reenche o pente
+  **sem olhar a recarga** — ela é decidida só no cliente. Medido: pente
+  autoritativo voltou **9 → 12 duas vezes** com a recarga quente.
+- 🟠 O servidor **não valida `origin`/`aim`** do tiro (item 15).
+- 🟠 **`combat_mode` não replica** — o saque remoto funciona por acidente
+  (item 16).

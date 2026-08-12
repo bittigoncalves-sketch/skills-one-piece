@@ -82,7 +82,7 @@ func _decremento() -> void:
 	print("\n-- 2. cada disparo gasta uma bala --")
 	var antes: int = _p.buki_municao()
 	for i in 3:
-		_p._buki_atirar()
+		_p._buki.atirar()
 		await process_frame
 	_ok(_p.buki_municao() == antes - 3,
 		"3 disparos = 3 balas a menos (%d -> %d)" % [antes, _p.buki_municao()])
@@ -108,12 +108,12 @@ func _troca_de_arma() -> void:
 func _municao_zerada() -> void:
 	print("\n-- 4. acabar a munição derruba a arma e esfria o slot --")
 	# 3 balas no canhão: as duas primeiras não largam a arma, a terceira sim.
-	_p._buki_atirar()
+	_p._buki.atirar()
 	await process_frame
-	_p._buki_atirar()
+	_p._buki.atirar()
 	await process_frame
 	_ok(_p.buki_arma() == "X", "com 1 bala ainda na agulha a arma continua na mão (restam %d)" % _p.buki_municao())
-	_p._buki_atirar()
+	_p._buki.atirar()
 	await _esperar(0.3)
 	_ok(_p.buki_arma() == "", "munição em 0 -> mãos livres (arma='%s')" % _p.buki_arma())
 	_ok(not _visivel("X"), "o canhão sumiu da tela")
@@ -141,7 +141,7 @@ func _servidor_sem_bala() -> void:
 	_p.begin_charge("C")
 	await _esperar(0.4)
 	var base := _zonas(cena)
-	_p._buki_atirar()
+	_p._buki.atirar()
 	await _esperar(0.3)
 	_ok(_zonas(cena) > base, "com bala, o disparo cria DamageZone (%d -> %d)" % [base, _zonas(cena)])
 	_ok(_p.buki_arma() == "C" and _visivel("C"), "a sniper ficou empunhada entre os tiros")

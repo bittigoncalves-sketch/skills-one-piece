@@ -43,10 +43,10 @@ func _init() -> void:
 
 	print("\n-- luneta da sniper sobrescreve o FOV de velocidade --")
 	var fov_normal: float = cam.fov
-	p._buki_scope = true
+	p._buki._luneta = true    # a vista do Player nao tem setter (Fase 5): quem e dono e o componente
 	await _w(1.2)
 	var fov_luneta: float = cam.fov
-	p._buki_scope = false
+	p._buki._luneta = false
 	await _w(1.2)
 	_ok(fov_luneta < fov_normal - 10.0, "a luneta FECHA o FOV (%.0f -> %.0f)" % [fov_normal, fov_luneta])
 	_ok(cam.fov > fov_luneta + 10.0, "e ele volta ao soltar (%.0f)" % cam.fov)
