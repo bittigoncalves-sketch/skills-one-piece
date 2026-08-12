@@ -139,10 +139,11 @@ RPC `_net_cast` vindo de um cliente. **Não apague sem substituir.**
 
 ## 6. O que esta auditoria NÃO cobre
 
-- **Não existe sonda de rede para o canal de cast.** A da Buki cobre o canal de
-  bala; o `_net_cast`/`_net_play_cast` só é exercitado por `test_frutas.gd`, que
-  roda **um processo só**. Construir essa sonda é pré-requisito honesto do passo
-  **6c**.
+- ~~Não existe sonda de rede para o canal de cast.~~ ✅ **Feita** em 2026-08-12:
+  `net_cast_host_probe.gd` / `net_cast_client_probe.gd`. Linha de base medida
+  **antes** de refatorar (é o que a torna útil): o cliente conjura os 4 slots da
+  Mera Mera e o processo do host registra **20 `DamageZone` do cliente** e vida
+  caindo **2048,0 → 2036,3**.
 - Nada aqui foi visto **na tela**.
 - Não medi o custo em linhas de cada passo — só a ordem e o risco.
 
