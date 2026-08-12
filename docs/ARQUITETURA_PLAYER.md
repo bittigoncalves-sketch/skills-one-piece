@@ -202,7 +202,7 @@ que parou de responder ao clique. Depois de cada fase de risco, vale abrir o jog
 | 5 — `BukiController` | ✅ **feita** — componente 286; Player 1.776 → 1.689 | ver abaixo |
 | 6 — `SkillController` | ✅ **feita** — `DisparoSustentado` + `CastController`; Player 1.689 → **1.590** | ver [`AUDITORIA_FASE6.md`](AUDITORIA_FASE6.md) |
 | 7 — `MeleeController` | ✅ **feita** — componente 102; Player 1.590 → **1.545** | ver abaixo |
-| 8 — `HealthController` | ⏳ | — |
+| 8 — `HealthController` | ✅ **feita** — componente 124; Player 1.545 → **1.531** | ver abaixo |
 | 9 — redução final | ⏳ | — |
 
 ---
@@ -658,3 +658,80 @@ Bateria **16/16**. Sonda de cast de dois processos **idêntica à linha de base*
 (20 zonas do cliente, vida 2048,0 → 2036,3). E o `test_arena` mede o combo por
 amplitude de membro, não por contagem: soco 1 usa o braço **direito** (300/91),
 soco 2 o **esquerdo** (37/199).
+
+---
+
+## Fase 8 — `HealthController`, feita em 2026-08-12
+
+`src/player/health_controller.gd`, **124 linhas**. O `Player.gd` foi de 1.545
+para **1.531** — a menor queda de todas, e a fase mais importante em conceito.
+
+### O diagrama que abriu tudo virou código
+
+O documento começa com este desenho:
+
+```
+  MovementController  →  movement_velocity
+  HealthController    →  knockback_velocity
+                              ↓
+                      Player / física
+                              ↓
+                        velocity final
+```
+
+Agora ele existe literalmente, no `_etapa_mover`:
+
+```gdscript
+var empurrao := _vida.impulso_do_quadro(delta)
+if empurrao != Vector3.ZERO:
+	velocity += empurrao
+```
+
+A locomoção escreve `velocity`; o empurrão, que é de **outro dono**, é somado
+por cima. Era exatamente o bug que originou o princípio: o knockback não
+funcionava porque a locomoção reatribuía `velocity.x/z` todo quadro.
+
+### Vistas com setter — e por quê
+
+`health`, `max_health`, `energy` e `max_energy` são **API pública**: `StatsHud`,
+`TargetSystem` e `GomuArm` leem, e quatro arquivos de teste escrevem em `energy`
+para montar cenário.
+
+Nas fases anteriores as vistas eram só-leitura de propósito ("escrever de fora
+vira impossível"). Aqui isso seria errado: escrever nesses campos **não é bug**.
+Então a vista tem getter **e** setter, e continua havendo **um dono só do
+valor** — o componente. A regra "sem setter" vale para campo cujo write externo
+é defeito, não para API pública.
+
+### O traço pegou um zero negativo
+
+A bateria acusou regressão, com **posições idênticas** e só a velocidade Z
+diferindo: `-0.0000` virou `0.0000`.
+
+Causa: o código antigo **só somava** quando havia empurrão; a primeira versão
+minha somava sempre, e `-0,0 + 0,0 = +0,0`.
+
+É cosmético — mas a correção foi **preservar exato**, não regravar a referência:
+
+> Regravar a referência por conveniência é como uma rede de segurança vira
+> carimbo. Se o traço acusou, ou o código volta a bater, ou a mudança é
+> declarada de propósito.
+
+### O que ficou no Player
+
+Os dois `@rpc` (`net_apply_knockback`, `net_force_respawn`), a porta pública
+`take_damage` (chamada de fora pela `DamageZone`), o feedback (flash vermelho,
+som, número flutuante, HUD) e a conversa com o `Scoreboard`.
+
+O componente ficou com o **número e a regra**: escala do knockback, dobrar no
+ar, resistir andando contra (até 70%, nunca 100%), decaimento do impulso,
+regeneração de energia.
+
+⚠️ A leitura de teclado da **regra 2** foi junto, e isso é intencional: ela
+precisa do teclado da **vítima**, e a função sempre roda no dono do corpo. No
+servidor, `Input.is_key_pressed` leria o teclado do host.
+
+### Validação
+
+Bateria **16/16** · traço de 492 quadros idêntico · sonda de cast idêntica à
+linha de base (20 zonas, vida 2048,0 → 2036,3) · sonda da Buki 7/7.

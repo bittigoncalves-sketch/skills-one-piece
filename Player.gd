@@ -21,12 +21,27 @@ var jump_multiplier: float = 1.0
 
 # Vida (barra verde, HUD) — máx 2048. Foco continua no knockback pra fora do mapa,
 # mas agora o dano importa e é mostrado.
-var health: float = 2048.0
-var max_health: float = 2048.0
+# VIDA/ENERGIA/EMPURRÃO -> src/player/health_controller.gd (Fase 8).
+#
+# Estas quatro são API PÚBLICA — `StatsHud`, `TargetSystem` e `GomuArm` leem, e
+# os testes escrevem em `energy` para montar cenário. Por isso aqui a vista tem
+# getter E setter: continua havendo UM dono do valor (o componente), mas a API
+# não quebra. A regra "vista sem setter" vale para campo cujo write de fora é
+# bug — não é o caso destes.
+var _vida := HealthController.new()
+var health: float:
+	get: return _vida.vida
+	set(v): _vida.vida = v
+var max_health: float:
+	get: return _vida.vida_max
+	set(v): _vida.vida_max = v
 # Energia (barra azul, HUD) — máx 4096. Regenera com o tempo; skills consomem.
-var energy: float = 4096.0
-var max_energy: float = 4096.0
-const ENERGY_REGEN := 320.0        # por segundo
+var energy: float:
+	get: return _vida.energia
+	set(v): _vida.energia = v
+var max_energy: float:
+	get: return _vida.energia_max
+	set(v): _vida.energia_max = v
 const ENERGY_BULLET := 10.0        # por bala da rajada Z
 const ENERGY_SKILL := 180.0        # por skill lançada
 # SILÊNCIO (Yami) -> CastController (passo 6d). Vistas: `is_suppressed` é lido
@@ -60,8 +75,6 @@ var _movement_locked_timer: float = 0.0
 # o empurrão no quadro seguinte. Foi exatamente isso que fez ninguém tomar
 # knockback, nem em rede nem em um-jogador. Vive aqui, decai sozinho, e é somado
 # à velocidade logo antes do move_and_slide.
-var _kb_impulso: Vector3 = Vector3.ZERO
-const KB_DECAIMENTO := 4.0   # 1/s — quanto o empurrão perde força por segundo
 
 var _yaw := 0.0     # rotacao horizontal da camera
 var _pitch := -0.25 # rotacao vertical da camera
@@ -295,6 +308,7 @@ func _ready() -> void:
 	_disparo.montar_em(self)
 	_cast.montar_em(self)
 	_melee.montar_em(self)
+	_vida.montar_em(self)
 	_parkour.montar_em(self, GRAVITY, JUMP_VELOCITY)
 
 	# Substitui o quadrado cinza pelo modelo 3D Voxel e equipa a Akuma no Mi correspondente
@@ -555,7 +569,7 @@ func estilo_atual() -> String:
 # `energy` é campo de TRÊS domínios (ciclo, skills, respawn) e está reservada
 # para a Fase 8 — por isso é pedido, não escrita direta.
 func gastar_energia(custo: float) -> void:
-	energy = maxf(energy - custo, 0.0)
+	_vida.gastar(custo)
 
 # Bala SEM arma (rajada Z e pistola da Yami). O canal é o mesmo da Buki, e é por
 # isso que ele mora aqui: RPC se resolve por CAMINHO DE NÓ.
@@ -583,10 +597,10 @@ func aplicar_mira(novo_yaw: float, novo_pitch: float, delta: float, forca_corpo:
 # Estes são os pedidos dele — mesma disciplina do `pedir_shake` (Fase 2) e do
 # `pedir_rolamento` (Fase 4).
 
-# RECUO do canhão: o tranco empurra o jogador. `_kb_impulso` e `velocity` são do
+# RECUO do canhão: o tranco empurra o jogador. O empurrão e a `velocity` são de
 # domínio de MOVIMENTO; o arsenal pede, não escreve.
 func pedir_recuo(direcao: Vector3, forca: float) -> void:
-	_kb_impulso += direcao * forca
+	_vida.empurrar_cru(direcao, forca)
 	velocity.y += forca * 0.32
 
 # Coice visual da arma (1 -> 0), lido pela pose de mira do animador. É
@@ -682,7 +696,7 @@ func _etapa_estado_de_combate(delta: float) -> void:
 	for g in _pistols:
 		if is_instance_valid(g):
 			g.visible = _rapid_fire or _yami_pistol_active
-	energy = minf(energy + ENERGY_REGEN * delta, max_energy)   # regen contínua de energia
+	_vida.regenerar(delta)     # regen contínua de energia
 	# RECARGA CONGELA DURANTE UMA HABILIDADE (regra do dono do projeto).
 	# Enquanto um golpe está em andamento, a recarga das OUTRAS técnicas para de
 	# correr — só a do próprio golpe em uso continua. Sem isso dava para segurar
@@ -868,12 +882,15 @@ func _etapa_mover(delta: float) -> void:
 
 	# Empurrão externo: somado DEPOIS da locomoção ter escrito velocity, e antes
 	# de mover. Decai sozinho, então o controle volta ao jogador em ~1 s.
-	if _kb_impulso.length_squared() > 0.01:
-		velocity.x += _kb_impulso.x
-		velocity.z += _kb_impulso.z
-		_kb_impulso = _kb_impulso.move_toward(Vector3.ZERO, KB_DECAIMENTO * delta * _kb_impulso.length())
-	else:
-		_kb_impulso = Vector3.ZERO
+	# É AQUI que o diagrama da arquitetura acontece: a locomoção já escreveu
+	# `velocity`, e agora o empurrão — que é de OUTRO dono — é somado por cima.
+	#
+	# O `if` não é otimização: somar `Vector3.ZERO` normaliza −0,0 para +0,0, e o
+	# traço de 492 quadros acusou exatamente isso (posições idênticas, sinal do
+	# zero diferente). Sem empurrão, não se toca na velocidade — como antes.
+	var empurrao := _vida.impulso_do_quadro(delta)
+	if empurrao != Vector3.ZERO:
+		velocity += empurrao
 	move_and_slide()
 
 ## Posiciona o VFX de fôlego na frente da boca (segue cabeça + facing -Z) e regula
@@ -1033,7 +1050,7 @@ func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knock
 	elif _skel_anim:
 		_skel_anim.play_one_shot("damage")
 
-	health = maxf(health - amount, 0.0)
+	var morreu := _vida.sofrer_dano(amount)
 	# Feedback de dano: pisca vermelho, som de recepção e número flutuante.
 	FxUtil.flash_red(_char_model)
 	AudioFX.hurt(get_tree().current_scene, global_position + Vector3.UP * 1.0)
@@ -1065,7 +1082,7 @@ func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knock
 			return
 		_aplicar_knockback(base_knockback)
 
-	if health <= 0.0:
+	if morreu:
 		die_and_respawn()
 
 # Pedido do servidor para o DONO do corpo se empurrar. Só o servidor manda.
@@ -1077,38 +1094,12 @@ func net_apply_knockback(base_knockback: Vector3) -> void:
 			return
 	_aplicar_knockback(base_knockback)
 
-# Escala o empurrão pelas regras do jogo e aplica na própria velocidade.
-# SEMPRE roda no dono do corpo — ver o comentário em take_damage.
+# Aplica o empurrão. As REGRAS (dobrar no ar, resistir andando contra) e o
+# número moram no `HealthController`; aqui só se entrega o contexto que é do
+# Player — chão e mira — e se soma o componente VERTICAL, que a locomoção não
+# reatribui.
 func _aplicar_knockback(base_knockback: Vector3) -> void:
-	if base_knockback.length() <= 0.1:
-		return
-	var final_knockback := SkillSystem.calculate_knockback(base_knockback, health, max_health)
-	# Regra 1: Quando alguém é atingido no ar o knockback DOBRA.
-	if not is_on_floor():
-		final_knockback *= 2.0
-		print("✈️ Atingido no AR! Knockback dobrado!")
-	# Regra 2: O knockback pode ser reduzido em até 70% se tentar se mover para outra direção (nunca 100%).
-	var f_kb := 0.0; var r_kb := 0.0
-	if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):    f_kb += 1.0
-	if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN):  f_kb -= 1.0
-	if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT): r_kb += 1.0
-	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):  r_kb -= 1.0
-	var move_attempt := ((-Basis.from_euler(Vector3(0, _yaw, 0)).z) * f_kb + (Basis.from_euler(Vector3(0, _yaw, 0)).x) * r_kb)
-	if move_attempt.length_squared() > 0.01:
-		move_attempt = move_attempt.normalized()
-		var kb_dir := final_knockback.normalized()
-		var dot := move_attempt.dot(kb_dir)
-		if dot < 0.85: # Tentativa de mover para outra direção / resistir
-			var reduction_pct := remap(clampf(dot, -1.0, 0.5), 0.5, -1.0, 0.0, 0.70)
-			var mult := clampf(1.0 - reduction_pct, 0.30, 1.0) # Nunca menos que 30% (nunca reduzido completamente)
-			final_knockback *= mult
-			print("🛡️ Knockback Reduzido por Movimento (", int(reduction_pct * 100), "% resistido)!")
-	# O componente HORIZONTAL vira impulso (senão a locomoção o sobrescreve no
-	# próximo quadro); o VERTICAL entra direto na velocidade, porque o eixo Y não
-	# é reatribuído pela locomoção — só pela gravidade.
-	_kb_impulso += Vector3(final_knockback.x, 0.0, final_knockback.z)
-	velocity.y += final_knockback.y
-	print("🚀 Knockback Final Aplicado: ", final_knockback)
+	velocity.y += _vida.empurrar(base_knockback, is_on_floor(), _yaw)
 
 
 # Porta de entrada da MORTE — chegam aqui os dois caminhos: vida zerada (a
@@ -1154,8 +1145,7 @@ func net_force_respawn() -> void:
 	_buki_guardar()
 	_buki_mostrar_arma("")
 
-	health = max_health
-	energy = max_energy
+	_vida.restaurar()
 	velocity = Vector3.ZERO
 	global_position = Scoreboard.RESPAWN   # centro da plataforma (zona sem buraco)
 
