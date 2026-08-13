@@ -231,10 +231,16 @@ func _fase_morte_por_dano() -> void:
 	_ok(float(_p.health) == float(_p.max_health),
 		"depois do respawn a vida está cheia (%.1f)" % float(_p.health))
 
-	print("\n   ⚠️ ACHADO (relatado, NÃO corrigido) — o DONO nunca vê o próprio dano:")
+	# Era o item 20 da LISTA_DE_CORRECOES, corrigido em 2026-08-12: o servidor
+	# passou a avisar a vida nova por `net_vida_do_servidor` (RPC, não
+	# synchronizer — o synchronizer replica DA AUTORIDADE, e a autoridade do
+	# corpo é o cliente; a vida ficaria nas mãos dele).
+	_ok(_sonda.eventos.size() > 0,
+		"o DONO recebeu %d aviso(s) de dano — a barra dele se mexe agora" % _sonda.eventos.size())
+	print("   -- contexto histórico do item 20 --")
 	print("      vida mínima que o dono leu durante a morte inteira: %.1f de %.1f" % [hp_min, hp0])
 	print("      avisos `on_player_damaged` recebidos: %d" % _sonda.eventos.size())
-	print("      `health`/`energy` não estão no SceneReplicationConfig (Main.gd:119) e não têm RPC.")
+	print("      antes do conserto: 0 avisos — a vítima morria com a BARRA CHEIA na tela dela.")
 	print("      A barra de vida do jogador atacado NÃO se mexe em partida de 2 PCs: ele morre")
 	print("      com a barra cheia. O único sinal que chega é o teleporte do respawn.")
 	await _esperar(ESPERA_MORTE)

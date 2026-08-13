@@ -154,6 +154,11 @@ func _order_respawn(victim: Node, peer: int) -> void:
 		victim.net_force_respawn()
 	elif multiplayer.get_peers().has(peer):
 		victim.net_force_respawn.rpc_id(peer)
+		# ⚠️ O `rpc_id` acima faz SÓ O DONO respawnar. A cópia autoritativa — a
+		# mesma que a `DamageZone` machuca — ficava com a vida em 0 para sempre.
+		# Ver item 19 da LISTA_DE_CORRECOES.
+		if victim.has_method("restaurar_vida_no_servidor"):
+			victim.restaurar_vida_no_servidor()
 	# Peer que caiu fora entre a queda e a ordem: nada a fazer — o nó dele sai da
 	# árvore no _despawn_player_for. Sem esta guarda o rpc_id derruba um erro
 	# "unknown peer ID" a cada frame enquanto o corpo órfão afunda no vazio.

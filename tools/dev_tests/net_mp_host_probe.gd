@@ -379,8 +379,15 @@ func _relatorio() -> void:
 			float(_dano["t_respawn"]) - float(_dano["t_golpe"]) if float(_dano["t_respawn"]) >= 0.0 else -1.0])
 	_ok(float(_dano["hp0"]) == float(_cli.max_health) if is_instance_valid(_cli) else false,
 		"a cópia autoritativa entrou na fase com a vida cheia (%.1f)" % float(_dano["hp0"]))
-	_ok(float(_dano["hp_pos_fatal"]) == 0.0,
-		"o golpe fatal levou a vida autoritativa a ZERO (%.1f)" % float(_dano["hp_pos_fatal"]))
+	# ⚠️ O ZERO NÃO É MAIS OBSERVÁVEL, e isso é o CONSERTO, não regressão.
+	# Antes (bug do item 19) a vida ficava em 0 e ali continuava, então dava pra
+	# amostrar. Agora `take_damage -> die_and_respawn -> restaurar` acontece na
+	# mesma chamada, no mesmo quadro. Quem prova a morte é o PLACAR (logo abaixo),
+	# não uma amostra da vida. Mesma lição que o `test_morte.gd` já tinha
+	# aprendido com o "fundo do poço".
+	_ok(float(_dano["hp_pos_golpe1"]) < float(_dano["hp0"]),
+		"o dano ENTROU na cópia autoritativa (%.1f -> %.1f no golpe não-fatal)"
+		% [float(_dano["hp0"]), float(_dano["hp_pos_golpe1"])])
 	_ok(int(_dano["mortes1"]) == int(_dano["mortes0"]) + 1,
 		"o PLACAR DO HOST contou a morte por dano (%d -> %d)" % [int(_dano["mortes0"]), int(_dano["mortes1"])])
 	_ok(int(_dano["kills1"]) == int(_dano["kills0"]) + 1,
@@ -388,7 +395,14 @@ func _relatorio() -> void:
 	_ok(float(_dano["dist_respawn"]) < 3.0,
 		"o host VIU o cliente respawnar no RESPAWN (menor distância medida: %.2f m)" % float(_dano["dist_respawn"]))
 
-	print("\n   ⚠️ ACHADO (relatado, NÃO corrigido) — a cópia autoritativa NUNCA volta a ter vida:")
+	# Era o item 19 da LISTA_DE_CORRECOES, corrigido em 2026-08-12: o
+	# `Scoreboard._order_respawn` passou a chamar `restaurar_vida_no_servidor()`
+	# na cópia autoritativa, porque o `rpc_id(peer)` só alcança o dono.
+	_ok(float(_dano["hp_fim"]) == (float(_cli.max_health) if is_instance_valid(_cli) else -1.0),
+		"a cópia AUTORITATIVA voltou com a vida cheia depois do respawn (%.1f)" % float(_dano["hp_fim"]))
+	print("      medido %.2f s depois do golpe — antes do conserto isto ficava em 0,0 para sempre"
+		% (_t() - float(_dano["t_golpe"])))
+	print("   -- contexto histórico do item 19 --")
 	print("      hp no servidor %.2f s depois do respawn = %.1f de %.1f"
 		% [_t() - float(_dano["t_golpe"]), float(_dano["hp_fim"]),
 			float(_cli.max_health) if is_instance_valid(_cli) else 0.0])

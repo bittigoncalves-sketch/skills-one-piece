@@ -57,44 +57,45 @@ O trapaceiro caiu para exatamente o que o jogador honesto tem. Bateria: 16/16.
 
 ## 🔴 Alta — afeta o jogo hoje
 
-### 19. 💀 A vida da cópia AUTORITATIVA nunca volta depois de uma morte em rede
-**É o bug mais grave achado até agora, e ele arruína o PvP.**
+## ✅ Resolvidos em 2026-08-12 (tarde)
 
-`Scoreboard._order_respawn` (`Scoreboard.gd:156`) manda
-`victim.net_force_respawn.rpc_id(peer)` — **só o DONO executa**. E o
-`_vida.restaurar()` está *dentro* desse método (`Player.gd:1150`).
+### 19. A vida da cópia AUTORITATIVA nunca voltava — **corrigido**
+`Scoreboard._order_respawn` mandava `net_force_respawn.rpc_id(peer)`: **só o
+dono executava**, e o `_vida.restaurar()` mora dentro desse método. A cópia do
+servidor — a mesma que a `DamageZone` machuca — ficava em **0 para sempre**.
 
-Resultado: na **cópia do servidor** — que é exatamente a que a `DamageZone`
-machuca — a vida fica em **0 para sempre**.
+**Conserto:** o `_order_respawn` passou a chamar também
+`victim.restaurar_vida_no_servidor()`, que restaura a cópia autoritativa **e**
+avisa os peers.
 
-*Detectado:* sonda de multiplayer de dois processos, 2026-08-12.
-**Medido: 96,60 s depois do respawn, hp autoritativo = 0,0 de 2048.**
+**Medido pela sonda de rede, 96,61 s depois do golpe:** era `0,0 de 2048`,
+agora é **2048,0**.
 
-**Consequência de jogo:** depois da primeira morte por dano, passados os 2 s de
-`_dead_until`, **qualquer** acerto mata o cliente na hora — pelo resto da
-rodada. Só o host escapa, porque ele respawna localmente
-(`peer == get_unique_id()`).
+### 20. `health` não atravessava a rede — **corrigido**
+A vítima morria com a **barra cheia** na tela dela: sem flash, sem som, sem
+número de dano. Medido: `on_player_damaged` recebido **0 vezes**.
 
-**Decisão pendente:** o `_order_respawn` também restaura na cópia do servidor,
-ou o `net_force_respawn` vira `call_local` com broadcast?
+**Conserto:** `net_vida_do_servidor` — um `@rpc` que o **servidor** dispara
+sempre que a vida muda na cópia autoritativa.
 
-### 20. 🩸 `health` e `energy` não replicam nem têm RPC
-`Main._make_player_sync` (`Main.gd:119`) replica só `position`,
-`net_velocity`, `net_facing`, `net_on_floor` e `current_fruit_id`. Não existe
-nenhum `@rpc` de vida no `Player.gd`.
+> ⚠️ **Por que RPC e não `MultiplayerSynchronizer`.** O pedido original era
+> "replicar `health`". Isso teria sido pior que o bug: o synchronizer replica
+> **da autoridade** para os outros, e a autoridade do corpo é o **cliente**. Pôr
+> `health` lá deixaria a vida nas mãos dele — cliente adulterado ficaria
+> **imortal** — e o dano aplicado pelo servidor seria **sobrescrito** no quadro
+> seguinte. Com RPC, o servidor continua dono e só **anuncia** o resultado.
 
-*Detectado:* sonda de multiplayer, 2026-08-12. **Medido no dono durante a morte
-por dano em rede: vida mínima lida = 2048,0 de 2048,0 e `on_player_damaged`
-recebido 0 vezes.**
+O `call_remote` é de propósito: quem emitiu já aplicou e já deu o feedback;
+repetir localmente piscaria e tocaria o som duas vezes.
 
-**Consequência de jogo:** em partida de dois PCs a barra de vida da vítima
-**não se mexe**. Ela morre com a barra cheia, sem flash vermelho, sem som e sem
-número de dano — o único sinal que chega é o teleporte do respawn.
+**Medido:** o dono passou de **0** para **2 avisos** de dano.
 
-É o gêmeo do item 19: cada lado tem uma vida própria e elas nunca se falam.
-
-**Decisão pendente:** replicar `health` pelo `MultiplayerSynchronizer` (simples,
-mas manda vida 60×/s), ou um `@rpc` de "você levou X de dano" só no evento?
+**Efeito colateral no teste, que vale registrar:** a sonda checava
+"a vida autoritativa chegou a ZERO". Depois do conserto o zero **deixou de ser
+observável** — `take_damage → die_and_respawn → restaurar` acontece na mesma
+chamada. A checagem virou "o dano ENTROU" + "a vida VOLTOU cheia", e quem prova
+a morte é o placar. Mesma lição que o `test_morte` já tinha aprendido com o
+"fundo do poço".
 
 ### 21. `FireFX.gd:200` chama `look_at` antes de o nó entrar na árvore
 `mmi.look_at(...)` roda **antes** de `zone.add_child(mmi)`, então

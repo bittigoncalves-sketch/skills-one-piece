@@ -1053,14 +1053,21 @@ func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knock
 		_skel_anim.play_one_shot("damage")
 
 	var morreu := _vida.sofrer_dano(amount)
-	# Feedback de dano: pisca vermelho, som de recepção e número flutuante.
-	FxUtil.flash_red(_char_model)
-	AudioFX.hurt(get_tree().current_scene, global_position + Vector3.UP * 1.0)
-	FxUtil.damage_number(get_tree().current_scene, global_position + Vector3.UP * 1.7, amount, Color(1.0, 0.75, 0.2))
-	var hud := get_tree().get_first_node_in_group("hud")
-	if hud and hud.has_method("on_player_damaged"):
-		hud.on_player_damaged(amount, health, max_health)
-	print("💥 Dano Recebido: ", amount, " | HP Restante: ", health, "/", max_health)
+	_feedback_de_dano(amount)
+
+	# ⚠️ A VIDA É DO SERVIDOR — e ela precisa ATRAVESSAR a rede.
+	#
+	# A `DamageZone` roda no servidor, então este `take_damage` roda na cópia que
+	# o servidor tem da vítima. Sem avisar o dono, cada lado fica com uma vida
+	# própria e elas nunca se falam: medido em 2026-08-12, a vítima morria com a
+	# BARRA CHEIA na tela dela — sem flash, sem som e sem número de dano.
+	#
+	# Por que RPC e não `MultiplayerSynchronizer`: o synchronizer replica DA
+	# AUTORIDADE para os outros, e a autoridade do corpo é o CLIENTE. Pôr `health`
+	# lá deixaria a vida nas mãos dele — cliente adulterado ficaria imortal, e o
+	# dano que o servidor aplica seria sobrescrito no quadro seguinte.
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		net_vida_do_servidor.rpc(_vida.vida, amount)
 
 	# 2. KNOCKBACK ESCALADO E MODIFICADO POR AR E MOVIMENTO
 	if base_knockback.length() > 0.1:
@@ -1086,6 +1093,45 @@ func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knock
 
 	if morreu:
 		die_and_respawn()
+
+# Pisca vermelho, som de recepção e número flutuante. Roda em QUALQUER cópia que
+# souber do dano — é o que faz o adversário te ver apanhar.
+func _feedback_de_dano(amount: float) -> void:
+	FxUtil.flash_red(_char_model)
+	AudioFX.hurt(get_tree().current_scene, global_position + Vector3.UP * 1.0)
+	FxUtil.damage_number(get_tree().current_scene, global_position + Vector3.UP * 1.7, amount, Color(1.0, 0.75, 0.2))
+	var hud := get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("on_player_damaged"):
+		hud.on_player_damaged(amount, health, max_health)
+	print("💥 Dano Recebido: ", amount, " | HP Restante: ", health, "/", max_health)
+
+# O SERVIDOR manda a vida nova para todos. `call_remote` de propósito: quem
+# emitiu (o servidor) já aplicou e já deu o feedback — repetir aqui piscaria e
+# tocaria som duas vezes na tela dele.
+#
+# `dano > 0` = foi pancada, então dá feedback. `dano = 0` = foi restauração
+# (respawn), e aí só o número muda.
+@rpc("any_peer", "call_remote", "reliable")
+func net_vida_do_servidor(nova_vida: float, dano: float) -> void:
+	if multiplayer.has_multiplayer_peer():
+		var sender := multiplayer.get_remote_sender_id()
+		if sender != 0 and sender != 1:
+			return                      # só o servidor manda na vida
+	_vida.vida = nova_vida
+	if dano > 0.0:
+		_feedback_de_dano(dano)
+
+# RESTAURA a vida na cópia AUTORITATIVA e avisa todo mundo.
+#
+# ⚠️ Isto existe porque o `net_force_respawn` é mandado com `rpc_id(peer)` — só o
+# DONO executa. A cópia do servidor, que é justamente a que a `DamageZone`
+# machuca, ficava em 0 PARA SEMPRE: medido, 96,6 s depois do respawn o hp
+# autoritativo ainda era 0,0 de 2048. Efeito em jogo: depois da primeira morte,
+# qualquer acerto matava o cliente na hora, pelo resto da rodada.
+func restaurar_vida_no_servidor() -> void:
+	_vida.restaurar()
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		net_vida_do_servidor.rpc(_vida.vida, 0.0)
 
 # Pedido do servidor para o DONO do corpo se empurrar. Só o servidor manda.
 @rpc("any_peer", "call_local", "reliable")
