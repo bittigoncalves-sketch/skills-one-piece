@@ -1450,6 +1450,27 @@ func _cycle_fruit() -> void:
 	print("🔀 Fruta de teste: ", nxt)
 
 func equip_fruit(fruit_id: String) -> void:
+	# ⚠️ A FRUTA SOME DA ÁRVORE AO SER EQUIPADA — por QUALQUER caminho.
+	#
+	# Isto vive aqui, e não no `pickup_fruit`, porque equipar tem TRÊS entradas e
+	# só uma delas escondia a fruta:
+	#   • `TreeAndFruitGenerator.pickup_fruit` (encostar na árvore) — escondia;
+	#   • `Main.gd:114`, a fruta de nascença — NÃO escondia;
+	#   • `FruitNet._apply_pickup` e o ciclo de debug — dependiam do caminho.
+	#
+	# Sintoma medido em 2026-08-12: o jogador nascia com `suna_suna` e a
+	# `suna_suna` continuava VISÍVEL na árvore. Em partida de dois, os dois
+	# nasciam com ela e o mapa ainda oferecia uma terceira — o oposto do
+	# equilíbrio que a regra existe para garantir.
+	#
+	# A fruta ANTERIOR volta para a árvore: trocar de poder devolve o antigo ao
+	# mapa, exatamente como morrer devolve.
+	if fruit_id != current_fruit_id:
+		if current_fruit_id != "":
+			TreeAndFruitGenerator.respawn_fruit(current_fruit_id)
+		if fruit_id != "":
+			TreeAndFruitGenerator.hide_fruit(fruit_id)
+
 	current_fruit_id = fruit_id
 	# Troca automática de aparência ao comer/equipar uma Akuma no Mi
 	var new_cid := ""
