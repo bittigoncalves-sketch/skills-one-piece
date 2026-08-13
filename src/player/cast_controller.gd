@@ -48,6 +48,25 @@ var _slot: String = ""          # qual slot está sendo carregado
 # cast novo quando o jogador solta e aperta de novo rápido.
 var _token: int = 0
 
+# --------------------------------------------------- CHARGE-UP / CHARGED SKILL
+# Mecânica nova (tarefa 5, 2026-08-12). O que a torna diferente de TODAS as
+# outras skills, e por que ela precisa de estado próprio:
+#
+#   • a execução 3D começa no CLIQUE, não na soltura;
+#   • enquanto a tecla fica pressionada a skill CRESCE;
+#   • soltar dispara com a carga que houver;
+#   • levar dano TAMBÉM dispara, com a carga que houver — ao contrário das
+#     outras, que o dano CANCELA. Decisão do dono; ver docs/PEDIDO_2026-08-12.md.
+#
+# Guardo o efeito vivo aqui porque quem sabe a hora de soltar é o input, e quem
+# sabe a direção é a mira do INSTANTE da soltura.
+var _carregado: Node = null
+var _slot_carregado := ""
+
+# Quais golpes são carregáveis. Tabela em vez de `if` espalhado: quando a
+# segunda skill carregável existir, é uma linha.
+const CARREGAVEIS := {"goro_goro": ["V"]}
+
 func montar_em(dono: Node) -> void:
 	_dono = dono
 
@@ -55,6 +74,10 @@ func montar_em(dono: Node) -> void:
 func suprimido() -> bool:  return _suprimido
 func tempo_de_silencio() -> float: return _suprimido_t
 func carregando() -> bool: return _carregando
+func carregando_skill() -> bool: return is_instance_valid(_carregado)
+
+func _e_carregavel(fruta: String, slot_pedido: String) -> bool:
+	return CARREGAVEIS.has(fruta) and slot_pedido in CARREGAVEIS[fruta]
 func slot() -> String:     return _slot
 func token() -> int:       return _token
 
@@ -113,6 +136,31 @@ func comecar(slot_pedido: String) -> void:
 		_dono.congelar_para_cast()
 		pedir_cast("C")
 		return
+	# EL THOR (X da Goro): o raio que sobe do BRAÇO é o GATILHO da reação, não o
+	# ataque. Por isso sai já no APERTO, com a tecla ainda pressionada — pedido
+	# do dono, 2026-08-12.
+	if slot_pedido == "X" and na_fruta and fruta == "goro_goro":
+		GoroFXGrande.gatilho_do_braco(_dono.get_tree().current_scene, _dono)
+
+	# CHARGE-UP: a skill NASCE AGORA e cresce enquanto a tecla estiver segurada.
+	# A recarga e a energia são cobradas no aperto, senão dava para "espiar" o
+	# golpe de graça começando e cancelando.
+	if _e_carregavel(fruta, slot_pedido):
+		_carregando = true
+		_slot = slot_pedido
+		_slot_carregado = slot_pedido
+		_token += 1
+		_dono.set_meta("is_casting", true)
+		_dono.trigger_skill_cooldown(slot_pedido)
+		_dono.gastar_energia(_dono.ENERGY_SKILL)
+		var mira_c: Dictionary = _dono.mira_do_cast()
+		var dano_c: float = float(SkillSystem.get_fruit_skills()[fruta][slot_pedido]["dano"])
+		_carregado = GoroFXGrande.mamaragan_carregado(
+			_dono.get_tree().current_scene, mira_c["origem"], mira_c["aim"], dano_c, _dono)
+		_dono.add_camera_shake(0.85)
+		_dono.pedir_soco_de_fov(8.0)
+		return
+
 	# Z RAJADA (Mera = balas de fogo; Hie = flechas de gelo) — começa ao
 	# PRESSIONAR, não congela o corpo; para ao soltar ou ao acabar o pente.
 	if slot_pedido == "Z" and na_fruta and (fruta == "mera_mera" or fruta == "hie_hie"):
@@ -135,6 +183,11 @@ func comecar(slot_pedido: String) -> void:
 
 # ----------------------------------------------- soltar a tecla -> dispara
 func soltar(slot_pedido: String) -> void:
+	# CHARGE-UP: soltar dispara na mira DE AGORA, com a carga que houver.
+	if is_instance_valid(_carregado) and slot_pedido == _slot_carregado:
+		_liberar_carregado()
+		return
+
 	if _dono.combat_mode == "style" and _dono.estilo_atual() == "teste_animacao":
 		return
 	if slot_pedido == "C" and _dono.combat_mode == "fruit" and _dono.current_fruit_id == "yami_yami":
@@ -153,6 +206,30 @@ func soltar(slot_pedido: String) -> void:
 	_dono.pausar_animacao(false)
 	_dono.gastar_energia(_dono.ENERGY_SKILL)   # skill consome energia
 	pedir_cast(slot_pedido)
+
+# Solta o golpe carregado na direção da mira ATUAL.
+func _liberar_carregado() -> void:
+	if not is_instance_valid(_carregado):
+		_carregado = null
+		_slot_carregado = ""
+		_carregando = false
+		return
+	var mira: Dictionary = _dono.mira_do_cast()
+	if _carregado.has_method("soltar"):
+		_carregado.soltar(mira["aim"])
+	_carregado = null
+	_slot_carregado = ""
+	_carregando = false
+	_slot = ""
+	_dono.set_meta("is_casting", false)
+
+# ⚠️ DANO TAMBÉM LIBERA — e isso é o OPOSTO do que o `interrupt_casting` faz com
+# todas as outras skills, que são canceladas. Decisão do dono: "libera com a
+# carga que tiver". Chamado do `Player.take_damage`.
+func liberar_por_dano() -> void:
+	if is_instance_valid(_carregado):
+		print("⚡ Charge-up interrompido por dano — sai com a carga que tem.")
+		_liberar_carregado()
 
 # Disparo imediato, sem segurar (compat + atalhos).
 func conjurar_direto(slot_pedido: String) -> void:

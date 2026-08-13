@@ -221,7 +221,10 @@ func _pose_de_arma() -> bool:
 # dos mesmos números para barrar o saque repetido da Buki (ver
 # `BukiController.servidor_sacar`) — dois lugares com a mesma tabela escrita à
 # mão é como o furo de munição infinita nasceu.
-const RECARGA_POR_SLOT := {"Z": 5.0, "X": 7.0, "C": 10.0, "V": 60.0}  # V = ultimate
+# V baixou de 60 para 25 s a pedido do dono (2026-08-12): com 60 s o ultimate
+# saía uma vez por rodada de 5 min, e testar a mecânica de Charge-up exigia
+# esperar um minuto por tentativa.
+const RECARGA_POR_SLOT := {"Z": 5.0, "X": 7.0, "C": 10.0, "V": 25.0}
 
 func trigger_skill_cooldown(slot: String) -> void:
 	if RECARGA_POR_SLOT.has(slot):
@@ -1045,6 +1048,12 @@ func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knock
 		return
 
 	# 1. INTERRUPÇÃO DE ATAQUE SOBRE DANO
+	#
+	# ⚠️ O Charge-up é a EXCEÇÃO: nele o dano LIBERA o golpe com a carga que
+	# houver, em vez de cancelar. Por isso ele vem ANTES do
+	# `interrupt_casting`, que cancelaria. Decisão do dono — ver
+	# docs/PEDIDO_2026-08-12.md.
+	_cast.liberar_por_dano()
 	SkillSystem.interrupt_casting(self)
 
 	if _animator:

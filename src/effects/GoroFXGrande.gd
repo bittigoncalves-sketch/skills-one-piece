@@ -66,7 +66,7 @@ static func el_thor(world: Node, origin: Vector3, dir: Vector3, damage: float, c
 		if caster.has_method("lock_movement"):
 			caster.lock_movement(1.6, "X")
 
-	_carga_do_braco(world, origin, caster)
+	# (a carga do braço já saiu no APERTO — ver `gatilho_do_braco`)
 
 	var ctrl := ElThorController.new(alvo, damage, caster)
 	world.add_child(ctrl)
@@ -106,10 +106,33 @@ static func _ponto_de_mira(world: Node, origin: Vector3, fwd: Vector3, alcance: 
 
 # A carga que sobe do braço erguido até o céu: bola de luz na mão + raio subindo
 # + fagulhas. É o elo visual entre o jogador e a nuvem lá em cima.
+# GATILHO DO EL THOR — o raio que sobe do BRAÇO.
+#
+# ⚠️ Ele NÃO é o ataque, é o que INICIA a reação: por isso dispara no APERTO da
+# tecla e não espera a soltura (pedido do dono, 2026-08-12). Quem chama é o
+# `CastController.comecar`, não o cast.
+#
+# A origem é o ANTEBRAÇO DIREITO do rig, não o peito: "este mesmo raio deve
+# partir do braço do jogador para cima". Sem rig na árvore, cai no peito.
+static func gatilho_do_braco(world: Node, caster: Node) -> void:
+	if not is_instance_valid(caster):
+		return
+	_carga_do_braco(world, _ponto_do_braco(caster), caster)
+
+# Ponta do antebraço direito, em mundo. O rig é montado pelo `PlayerRig` e o
+# papel se chama `ForeArm_R` nos 13 papéis canônicos do projeto.
+static func _ponto_do_braco(caster: Node) -> Vector3:
+	var modelo = caster.get("_char_model")
+	if modelo is Node3D and is_instance_valid(modelo):
+		var braco := (modelo as Node3D).find_child("ForeArm_R", true, false)
+		if braco is Node3D and (braco as Node3D).is_inside_tree():
+			return (braco as Node3D).global_position
+	return (caster as Node3D).global_position + Vector3(0, 1.05, 0)
+
 static func _carga_do_braco(world: Node, origin: Vector3, caster: Node) -> void:
 	var root := Node3D.new()
 	world.add_child(root)
-	root.global_position = origin + Vector3(0, 1.05, 0)
+	root.global_position = origin
 
 	var orb := MeshInstance3D.new()
 	var sm := SphereMesh.new()
@@ -350,7 +373,22 @@ class ElThorController extends Node3D:
 # ============================================================================
 #  V — MAMARAGAN
 # ============================================================================
+# Entrada CARREGÁVEL: devolve o controlador para quem vai segurá-lo. O golpe
+# começa na hora (a execução 3D nasce no CLIQUE, como o dono pediu) e só é
+# liberado por `soltar()`.
+static func mamaragan_carregado(world: Node, origin: Vector3, dir: Vector3,
+		damage: float, caster: Node) -> Node:
+	var c := _novo_mamaragan(world, origin, dir, damage, caster)
+	c.segurando = true
+	return c
+
 static func mamaragan(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
+	_novo_mamaragan(world, origin, dir, damage, caster)
+
+# Monta o golpe e devolve o controlador. Separado porque a versão CARREGÁVEL
+# precisa da referência para poder soltar depois.
+static func _novo_mamaragan(world: Node, origin: Vector3, dir: Vector3,
+		damage: float, caster: Node) -> MamaraganController:
 	var fwd: Vector3 = dir.normalized()
 	if fwd.length_squared() < 0.01:
 		fwd = Vector3(0, 0, -1)
@@ -358,11 +396,14 @@ static func mamaragan(world: Node, origin: Vector3, dir: Vector3, damage: float,
 	if is_instance_valid(caster):
 		caster.set_meta("custom_pose", "mamaragan")
 		if caster.has_method("lock_movement"):
+			# ⚠️ No modo carregável quem solta o travamento é a soltura da tecla,
+			# então o prazo aqui é só a rede de segurança de um cast normal.
 			caster.lock_movement(MamaraganController.LIBERA_EM, "V")
 
 	var ctrl := MamaraganController.new(origin, fwd, damage, caster)
 	world.add_child(ctrl)
 	FxUtil.autofree(ctrl, MamaraganController.TOTAL + 1.6)   # rede de segurança
+	return ctrl
 
 
 # ---------------------------------------------------------------------------
@@ -525,6 +566,16 @@ class MamaraganController extends Node3D:
 	var _lancou := false
 	var _fechou := false
 	var _snap_salvo := -1.0
+
+	# ---------------------------------------------------- CHARGE-UP (tarefa 5)
+	# `segurando` = a linha do tempo PARA no fim da carga e espera a tecla soltar.
+	# Sem isto o golpe é um relógio: nasce, carrega e lança sozinho.
+	#
+	# ⚠️ A regra que o dono definiu: soltar OU levar dano libera — e o dano libera
+	# **com a carga que tiver**, ao contrário de todas as outras skills, que são
+	# canceladas pelo dano. Está no docs/PEDIDO_2026-08-12.md.
+	var segurando := false
+	var _carga_travada := 0.0
 	var _ceu: Node3D
 	var _orb: ThunderOrb
 	var _correntes: Array = []
@@ -604,12 +655,16 @@ class MamaraganController extends Node3D:
 
 		if is_instance_valid(_orb) and not _lancou:
 			_orb.position = _pos_bola()
-			_orb.set_charge((_t - T_ORB) / T_CARGA)
+			_orb.set_charge(carga_atual())
 			if _orb.esta_completa() and not _completou:
 				_completou = true
 				_bola_completa()
 
-		if _t >= T_LANCA and not _lancou:
+		# SEGURANDO: a bola cresce até o teto e ESPERA. O tempo não avança para o
+		# arremesso — quem decide o instante é o dedo do jogador.
+		if segurando:
+			_t = minf(_t, T_LANCA - 0.01)
+		elif _t >= T_LANCA and not _lancou:
 			_lancou = true
 			_arremessar()
 
@@ -619,6 +674,27 @@ class MamaraganController extends Node3D:
 
 		if _t >= TOTAL:
 			queue_free()
+
+	# Quanto a bola já cresceu, de 0 a 1.
+	func carga_atual() -> float:
+		if _carga_travada > 0.0:
+			return _carga_travada
+		return clampf((_t - T_ORB) / T_CARGA, 0.0, 1.0)
+
+	# SOLTAR: dispara na direção pedida, com a carga que houver.
+	# `direcao` é a mira NO INSTANTE DA LIBERAÇÃO — não a de quando começou.
+	func soltar(direcao: Vector3) -> void:
+		if _lancou or not segurando:
+			return
+		segurando = false
+		_carga_travada = carga_atual()
+		if direcao.length_squared() > 0.01:
+			fwd = direcao.normalized()
+		_t = T_LANCA          # o próximo quadro arremessa
+
+	# Já dá para arremessar? A bola só existe depois de T_ORB.
+	func pode_soltar() -> bool:
+		return is_instance_valid(_orb)
 
 	# ---- O JOGADOR FLUTUANDO ----
 	func _flutuar(delta: float) -> void:
