@@ -222,6 +222,11 @@ func servidor_autoriza_tiro(arma_pedida: String) -> bool:
 	_srv_municao -= 1
 	return true
 
+# A morte zera as recargas (decisão do dono, 2026-08-12). Chamado pelo servidor
+# no respawn, junto com a restauração da vida.
+func esquecer_recargas_do_servidor() -> void:
+	_srv_recarga_ate.clear()
+
 func servidor_municao() -> int:
 	return _srv_municao
 

@@ -454,11 +454,17 @@ func _fase_recarga_apos_morte() -> void:
 	print("   [dono] 🔎 %s" % diag)
 	print("   [dono] o slot '%s' voltou a ficar disponível %.3f s depois do cast (tabela: %.1f s, erro %+.3f s)"
 		% [slot, t_liberou, esperado, t_liberou - esperado])
-	_ok(t_liberou > 0.0 and absf(t_liberou - esperado) < 0.6,
-		"mesmo com uma morte no meio, '%s' liberou em %.3f s — os mesmos %.1f s de sempre" % [slot, t_liberou, esperado])
-	print("   [dono] contexto: `net_force_respawn` (Player.gd:1126) NÃO toca em `_skill_cooldowns`;")
-	print("          e a fruta é devolvida à árvore, então o jogador respawna SEM PODER NENHUM até")
-	print("          pegar outra — a recarga do slot vira irrelevante nesse intervalo.")
+	# REGRA (decisão do dono, 2026-08-12): morrer ZERA a recarga. Antes ela
+	# atravessava a morte — e como o respawn devolve a fruta à árvore, o jogador
+	# voltava sem poder nenhum E com o relógio andando no vazio.
+	_ok(cd_ver <= 0.01,
+		"morrer ZEROU a recarga de '%s' (%.3f s medidos 2 s depois do respawn; se corresse valeria %.3f)"
+		% [slot, cd_ver, se_corresse])
+	_ok(diag.begins_with("ZEROU"),
+		"o diagnóstico independente concorda: %s" % diag)
+	print("   [dono] contexto: `net_force_respawn` zera `_skill_cooldowns`, e")
+	print("          `restaurar_vida_no_servidor` limpa o relógio da Buki no SERVIDOR —")
+	print("          zerar só um lado deixaria o jogador vendo o slot livre e o servidor recusando.")
 	print("   [dono] fruta depois do respawn: '%s'" % str(_p.current_fruit_id))
 	await _esperar(ESPERA_MORTE)
 

@@ -100,6 +100,24 @@ a morte é o placar. Mesma lição que o `test_morte` já tinha aprendido com o
 
 ## 🔴 Alta — afeta o jogo hoje
 
+### 22. Morte e recarga de skill — **resolvido em 2026-08-12**
+A recarga atravessava a morte sem zerar. **Medido:** cast de `C` (10 s), morte
+em t=2,036 s com 7,967 s restantes, e 2 s depois do respawn ainda valia 5,967 s.
+Como o respawn devolve a fruta à árvore, o jogador voltava **sem poder nenhum e
+com o relógio andando no vazio**.
+
+**Decisão do dono:** morrer **zera** a recarga.
+
+**Conserto em dois lugares, e os dois eram necessários:**
+- `net_force_respawn` zera `_skill_cooldowns` — roda no **dono**;
+- `restaurar_vida_no_servidor` limpa `_srv_recarga_ate` da Buki — roda no
+  **servidor**.
+
+Zerar só um lado deixaria o jogador vendo o slot livre e o servidor recusando em
+silêncio: o sintoma "apertei e não aconteceu nada".
+
+**Medido depois:** `0,000 s` onde a hipótese "continuou correndo" previa 7,972 s.
+
 ### 21. `FireFX.gd:200` chama `look_at` antes de o nó entrar na árvore
 `mmi.look_at(...)` roda **antes** de `zone.add_child(mmi)`, então
 `get_global_transform` é inválido e o `look_at` falha. **32 ocorrências por
@@ -107,18 +125,6 @@ processo** durante o Z da Mera Mera. Efeito: a bala de fogo nunca é orientada.
 
 *Detectado:* ruído no log da sonda de multiplayer, 2026-08-12. Pré-existente,
 sem relação com as sondas.
-
-### 22. Morte devolve a fruta, mas a recarga continua correndo
-**Medido:** a recarga atravessa a morte sem zerar nem congelar — cast de `C`
-(10 s), morte em t=2,036 s com 7,967 s restantes, e 2 s depois do respawn valia
-**5,967 s** (a hipótese "continuou correndo" previa 5,964; "zerou" previa 0;
-"congelou" previa 7,967). Liberou em 9,998 s.
-
-Só que o respawn **devolve a fruta à árvore**, então o jogador volta sem poder
-nenhum e a recarga corre no vazio.
-
-**Decisão pendente:** a recarga deveria zerar junto com a fruta?
-
 
 ### 15. A morte por queda dispara por DOIS caminhos, com trava de 2 s
 `SkillSystem.process_void_check` (roda no dono do corpo) e

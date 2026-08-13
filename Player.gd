@@ -1142,6 +1142,11 @@ func premiar_kill() -> void:
 # qualquer acerto matava o cliente na hora, pelo resto da rodada.
 func restaurar_vida_no_servidor() -> void:
 	_vida.restaurar()
+	# ⚠️ A recarga da Buki tem DOIS relógios: `_skill_cooldowns` no dono (zerado
+	# no `net_force_respawn`) e `_srv_recarga_ate` na cópia do servidor. Zerar só
+	# um deixaria o jogador vendo o slot livre e o servidor recusando em
+	# silêncio — o sintoma "apertei e não aconteceu nada".
+	_buki.esquecer_recargas_do_servidor()
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 		net_vida_do_servidor.rpc(_vida.vida, 0.0)
 
@@ -1204,6 +1209,13 @@ func net_force_respawn() -> void:
 	# e o slot entra em recarga como em qualquer outro abandono.
 	_buki_guardar()
 	_buki_mostrar_arma("")
+
+	# MORRER ZERA AS RECARGAS (decisão do dono, 2026-08-12). Antes elas
+	# atravessavam a morte — medido: cast de C (10 s), morte com 7,967 s
+	# restantes, e a recarga seguia correndo. Como o respawn também devolve a
+	# fruta, o jogador voltava sem poder nenhum E com o relógio andando no vazio.
+	for slot_k in _skill_cooldowns.keys():
+		_skill_cooldowns[slot_k] = 0.0
 
 	_vida.restaurar()
 	velocity = Vector3.ZERO
