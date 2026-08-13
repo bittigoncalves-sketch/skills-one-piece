@@ -16,6 +16,7 @@ var _stats: Node
 var _match: MatchHud
 var _status: StatusEffectsHud
 var _ammo: AmmoHud
+var _scope: SniperScope
 
 func _ready() -> void:
 	add_to_group("hud")   # o Player encontra a HUD por este grupo ao equipar fruta
@@ -47,6 +48,13 @@ func _ready() -> void:
 	_status = StatusEffectsHud.new()
 	_status.name = "StatusEffectsHud"
 	add_child(_status)
+
+	# LUNETA DA SNIPER (Buki Buki, slot C). Vem ANTES do AmmoHud de propósito: a
+	# máscara é preta opaca e cobre os irmãos somados antes dela, e o contador de
+	# balas é a única coisa que precisa continuar legível com o zoom ligado.
+	_scope = SniperScope.new()
+	_scope.name = "SniperScope"
+	add_child(_scope)
 
 	# Munição da Buki Buki (canto inferior direito). Só aparece com arma na mão.
 	_ammo = AmmoHud.new()

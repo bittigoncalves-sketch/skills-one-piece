@@ -44,7 +44,17 @@ extends RefCounted
 const ARSENAL := {
 	"Z": {"nome": "Pistola", "balas": 12,  "cadencia": 0.20, "raio": 0.18, "vel": 42.0, "kb": 4.0,  "shake": 0.12, "recuo": 0.0,  "papel": "ForeArm_R", "som": "pistol",  "fogacho": 0.34},
 	"X": {"nome": "Canhão",  "balas": 3,   "cadencia": 0.95, "raio": 0.55, "vel": 22.0, "kb": 24.0, "shake": 0.90, "recuo": 11.0, "papel": "",          "som": "cannon",  "fogacho": 1.00},
-	"C": {"nome": "Sniper",  "balas": 5,   "cadencia": 1.05, "raio": 0.16, "vel": 95.0, "kb": 10.0, "shake": 0.45, "recuo": 0.0,  "papel": "ForeArm_R", "som": "sniper",  "fogacho": 0.55},
+	# ⚠️ `vel` da sniper (95 -> 125 em 2026-08-13, a pedido do dono: "quase
+	# instantânea"). O TETO NÃO É DE GOSTO, É DE FÍSICA: a DamageZone anda por
+	# teleporte (`global_position += vel * delta`, 60 Hz) e a Area3D só percebe
+	# quem estiver sobreposto NO QUADRO. Com raio 0,16 contra o colisor de 1,0 m
+	# do jogador, a janela de acerto tem 1,32 m -> acima de 79 m/s a bala começa
+	# a ATRAVESSAR o alvo entre dois quadros. Medido (24 fases, tiro frontal no
+	# centro): 79->24/24, 95->20/24, 110->17/24, 125->16/24, 200->9/24.
+	# Enquanto a DamageZone não andar em sub-passos, subir daqui é trocar
+	# consistência por velocidade (o dano ESPERADO não muda: acima de 79 m/s
+	# velocidade x chance de acerto é constante).
+	"C": {"nome": "Sniper",  "balas": 5,   "cadencia": 1.05, "raio": 0.16, "vel": 125.0, "kb": 10.0, "shake": 0.45, "recuo": 0.0,  "papel": "ForeArm_R", "som": "sniper",  "fogacho": 0.55},
 	"V": {"nome": "Minigun", "balas": 100, "cadencia": 0.06, "raio": 0.14, "vel": 46.0, "kb": 1.6,  "shake": 0.05, "recuo": 0.0,  "papel": "ForeArm_R", "som": "minigun", "fogacho": 0.18},
 }
 const SLOTS := ["Z", "X", "C", "V"]

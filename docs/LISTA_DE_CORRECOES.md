@@ -127,6 +127,51 @@ a pistola da Yami.
 
 ## 🔴 Alta — afeta o jogo hoje
 
+### 24. 🎯 PROJÉTIL RÁPIDO ATRAVESSA O ALVO — a sniper já erra 1 tiro em 6
+`DamageZone._physics_process` (`src/effects/DamageZone.gd:32`) move a zona por
+**teleporte**: `global_position += vel * delta`. A `Area3D` só enxerga quem está
+sobreposto **naquele quadro** — então tudo que a bala pula entre dois quadros
+simplesmente não existe para ela.
+
+A 60 Hz, o passo por quadro é `vel / 60`. Com o alvo de 1,0 m e raio de bala
+0,16, a janela de acerto é ~1,32 m — ou seja, **acima de ~79 m/s a bala começa a
+atravessar**.
+
+*Detectado:* medição do agente de UI ao escolher a velocidade nova da sniper,
+2026-08-12. **24 fases de disparo por velocidade:**
+
+| vel | passo/quadro | acertos |
+|---|---|---|
+| 79 | 1,32 m | **24/24** |
+| 95 (a de antes) | 1,58 m | 20/24 |
+| 125 (a de agora) | 2,08 m | 16/24 |
+| 200 | 3,33 m | 9/24 |
+
+**Consequência de jogo:** a sniper — 5 balas, 10 s de recarga — perde tiros
+perfeitamente mirados, e o jogador não tem como saber por quê. E isso vale para
+**todo projétil rápido**, não só a sniper.
+
+**Conserto proposto (NÃO feito):** sub-passo no `_physics_process` — mover em N
+passos de ≤ 0,5 m em vez de um salto só. Com isso a velocidade sobe para 250+
+com 100% de acerto.
+
+**Decisão pendente:** autorizar o sub-passo na `DamageZone` (vale para o jogo
+inteiro), ou baixar a sniper para ~79 m/s e conviver com o teto?
+
+### 25. A luneta da sniper esconde a HUD inteira
+Conferido por print: com a luneta ligada, a máscara preta cobre **vida, energia,
+cronômetro, placar e lista de skills**. O jogador fica cego para a própria vida
+enquanto mira.
+
+*Detectado:* print do jogo rodando, 2026-08-12. O agente pendurou o
+`SniperScope` antes do `AmmoHud` justamente para o contador de munição
+sobreviver — mas o resto da HUD tem outro pai, e a ordem de irmãos não a
+protege.
+
+**Decisão pendente:** é intencional (mirar cega, e isso é o preço da sniper), ou
+a vida e o cronômetro devem continuar visíveis por cima da máscara?
+
+
 ### 22. Morte e recarga de skill — **resolvido em 2026-08-12**
 A recarga atravessava a morte sem zerar. **Medido:** cast de `C` (10 s), morte
 em t=2,036 s com 7,967 s restantes, e 2 s depois do respawn ainda valia 5,967 s.
