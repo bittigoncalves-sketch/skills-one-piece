@@ -34,7 +34,15 @@ var _podio_lista: Label
 var _podio_rodape: Label
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# ⚠️ `set_anchors_preset` sozinho NÃO mexe nos offsets: ele recalcula para
+	# MANTER o retângulo atual, que aqui era (0,0). Com tamanho zero, toda âncora
+	# de filho resolve contra zero — o painel do placar ia parar em x = −320
+	# (fora da tela, pela esquerda) e o cronômetro em x = −75, em cima da barra
+	# de vida.
+	#
+	# Medido em 2026-08-12 por print do jogo rodando: `MatchHud.size = (0, 0)`.
+	# O painel de kills/mortes nunca apareceu na tela por causa disto.
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_painel()
 	_build_podio()

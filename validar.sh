@@ -60,7 +60,31 @@ _falhou() {
 	[ "$cod" -ne 0 ] && return 0
 	grep -qE '✗|❌|^  XX  ' "$log" && return 0
 	grep -qE 'scripts que nao compilam: [1-9]' "$log" && return 0
+	_parse_error_real "$log" && return 0
 	return 1
+}
+
+# Autoloads NÃO viram identificador num `godot --script`, então o erro
+# "Identifier \"GameFlow\" not declared" é esperado e não significa nada.
+AUTOLOADS_TOLERADOS='GameFlow|ServerManager|ClientManager|FruitNet|ScreenFX|AudioManager|SoundLibrary'
+
+# QUALQUER outro `Parse Error` é defeito de verdade.
+#
+# ⚠️ ISTO EXISTE PORQUE O `test_compila` TEM UM PONTO CEGO: a tolerância dele é
+# por TEXTO DO ARQUIVO (`if texto.find("ScreenFX") >= 0`), então qualquer script
+# que apenas MENCIONE um autoload fica imune a erro de compilação.
+#
+# Custou caro em 2026-08-12: o `GoroFX.gd` ficou totalmente quebrado
+# (`class_name GoroFXGrande` fora do cache) e o `test_compila` respondeu
+# "0 falhas", porque o arquivo cita "ScreenFX". Só o `test_frutas` pegou.
+#
+# Aqui a tolerância é pela MENSAGEM do erro, não pelo conteúdo do arquivo.
+_parse_error_real() {
+	grep -E 'Parse Error|Compile Error' "$1" 2>/dev/null \
+		| grep -vE "Identifier \"($AUTOLOADS_TOLERADOS)\" not declared" \
+		| grep -vE "Identifier not found: ($AUTOLOADS_TOLERADOS)\$" \
+		| grep -vE 'Compile Error: Failed to compile depended scripts' \
+		| grep -q .
 }
 
 PASSOU=0; FALHOU=0; PULADO=0
