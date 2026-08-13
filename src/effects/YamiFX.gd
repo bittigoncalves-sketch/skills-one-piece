@@ -233,17 +233,29 @@ static func _black_hole(world: Node, origin: Vector3, damage: float, caster: Nod
 		if caster.has_method("lock_movement"):
 			caster.lock_movement(7.0, "black_hole")
 
+	# O BURACO NEGRO NASCE NOS PÉS DO JOGADOR (pedido do dono, 2026-08-12).
+	#
+	# ⚠️ O raycast que procura o chão NÃO EXCLUÍA O PRÓPRIO CASTER. Ele parte de
+	# 3 m acima do CENTRO do corpo e desce — então a primeira coisa que acertava
+	# era o colisor do próprio jogador (1,6 m de altura, topo em +0,8 do centro).
+	# Resultado: `hit_y` virava o TOPO DA CABEÇA e o vórtice abria a ~1,78 m
+	# acima dos pés, flutuando na altura do rosto.
+	#
+	# Com a exclusão, o raio passa direto pelo corpo e encontra o piso de fato.
 	var ground_pos: Vector3 = origin
 	if is_instance_valid(caster) and caster is Node3D:
 		ground_pos = caster.global_position
-	# Raycast ou ajuste compensado acima do piso para eliminar conflito (Z-fighting) com o chão
 	var hit_y: float = ground_pos.y
 	if world.get_viewport() and world.get_viewport().world_3d:
 		var space_state := world.get_viewport().world_3d.direct_space_state
-		var query := PhysicsRayQueryParameters3D.create(ground_pos + Vector3(0, 3.0, 0), ground_pos - Vector3(0, 10.0, 0))
+		var query := PhysicsRayQueryParameters3D.create(
+			ground_pos + Vector3(0, 3.0, 0), ground_pos - Vector3(0, 10.0, 0))
+		if is_instance_valid(caster) and caster is CollisionObject3D:
+			query.exclude = [(caster as CollisionObject3D).get_rid()]
 		var hit := space_state.intersect_ray(query)
 		if hit and hit.has("position"):
 			hit_y = hit["position"].y
+	# +0,18 evita o z-fighting com o chão; é rente ao piso, não flutuando.
 	ground_pos.y = hit_y + 0.18
 
 	var ctrl := BlackHoleController.new(caster, ground_pos, damage)
