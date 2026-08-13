@@ -1121,6 +1121,18 @@ func net_vida_do_servidor(nova_vida: float, dano: float) -> void:
 	if dano > 0.0:
 		_feedback_de_dano(dano)
 
+# O SERVIDOR premia quem matou: 30 s de regeneração acelerada.
+#
+# É `@rpc` porque a regeneração só roda na AUTORIDADE — premiar a cópia do
+# servidor não teria efeito nenhum sobre a vida que o jogador vê.
+@rpc("any_peer", "call_local", "reliable")
+func premiar_kill() -> void:
+	if multiplayer.has_multiplayer_peer():
+		var sender := multiplayer.get_remote_sender_id()
+		if sender != 0 and sender != 1:
+			return                       # só o servidor decide quem matou
+	_vida.premiar_kill()
+
 # RESTAURA a vida na cópia AUTORITATIVA e avisa todo mundo.
 #
 # ⚠️ Isto existe porque o `net_force_respawn` é mandado com `rpc_id(peer)` — só o

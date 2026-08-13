@@ -497,13 +497,52 @@ func _fase_vida() -> void:
 		print("      t=%.2f s  vida=%.1f" % [float(amostras[idx][0]), float(amostras[idx][1])])
 	print("   [dono] em %.2f s de observação: vida final %.1f, máximo lido %.1f, Δ = %+.3f"
 		% [float(amostras[-1][0]), hp_fim, hp_max, hp_fim - hp1])
-	print("   [dono] comparação: a ENERGIA, no mesmo corpo, sobe %.0f/s." % HealthController.REGEN_ENERGIA)
-	_ok(absf(hp_fim - hp1) < 0.01,
-		"a vida NÃO regenerou: parada em %.1f por %.2f s (Δ = %+.4f)" % [hp_fim, float(amostras[-1][0]), hp_fim - hp1])
+	# A REGENERAÇÃO DE VIDA passou a existir em 2026-08-12. Ela tem duas
+	# velocidades, e o teste mede as DUAS, porque medir só a média esconderia a
+	# penalidade — que é justamente o que impede a cura no meio da briga:
+	#
+	#   dentro da JANELA_DE_COMBATE (5 s do último dano): 0,5%/s x 10%  = 1,02 hp/s
+	#   depois dela:                                      0,5%/s        = 10,24 hp/s
+	var vmax: float = float(_p.max_health)
+	var esperado_penal := vmax * HealthController.REGEN_VIDA_PCT * HealthController.PENALIDADE_DANO
+	var esperado_livre := vmax * HealthController.REGEN_VIDA_PCT
+
+	# taxa no 1º segundo (penalizada) e no último (livre)
+	var hp_1s := _vida_em(amostras, 1.0)
+	var hp_2s := _vida_em(amostras, 2.0)
+	var hp_7s := _vida_em(amostras, 7.0)
+	var hp_8s := _vida_em(amostras, 8.0)
+	var taxa_penal := hp_2s - hp_1s
+	var taxa_livre := hp_8s - hp_7s
+	print("   [dono] JANELA_DE_COMBATE = %.1f s | penalidade = %.0f%%"
+		% [HealthController.JANELA_DE_COMBATE, (1.0 - HealthController.PENALIDADE_DANO) * 100.0])
+	print("      taxa medida DENTRO da janela (t=1->2 s): %.2f hp/s   (esperado %.2f)"
+		% [taxa_penal, esperado_penal])
+	print("      taxa medida FORA da janela  (t=7->8 s): %.2f hp/s   (esperado %.2f)"
+		% [taxa_livre, esperado_livre])
+	print("   [dono] comparação: a ENERGIA, no mesmo corpo, sobe %.0f/s (base)." % HealthController.REGEN_ENERGIA)
+	_ok(hp_fim > hp1,
+		"a vida REGENEROU: %.1f -> %.1f em %.2f s (Δ = %+.1f)" % [hp1, hp_fim, float(amostras[-1][0]), hp_fim - hp1])
+	_ok(absf(taxa_penal - esperado_penal) < esperado_penal * 0.5 + 0.5,
+		"dentro da janela de combate a cura é FREADA: %.2f hp/s (esperado %.2f)" % [taxa_penal, esperado_penal])
+	_ok(absf(taxa_livre - esperado_livre) < esperado_livre * 0.25,
+		"fora da janela a cura vai à taxa cheia: %.2f hp/s (esperado %.2f)" % [taxa_livre, esperado_livre])
+	_ok(taxa_livre > taxa_penal * 3.0,
+		"a penalidade é sentida: fora da janela cura %.1fx mais rápido" % (taxa_livre / maxf(taxa_penal, 0.01)))
 	_ok(_sonda.eventos.size() == 1,
 		"o dano local avisou a HUD 1 vez (%d eventos) — a HUD só sabe do dano que nasce no próprio processo"
 		% _sonda.eventos.size())
 
+
+# Vida amostrada no instante `t` (segundos desde o início da observação).
+func _vida_em(amostras: Array, t: float) -> float:
+	var melhor: float = float(amostras[0][1])
+	for a in amostras:
+		if float(a[0]) <= t:
+			melhor = float(a[1])
+		else:
+			break
+	return melhor
 
 # ------------------------------------------------------------------ utilidades
 # Anuncia a fase ao host escrevendo o campo replicado e espera a viagem.

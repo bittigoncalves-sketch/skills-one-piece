@@ -35,7 +35,30 @@ extends RefCounted
 #  componentes criados no `_ready()` (medido na Fase 5: pai=7, filho=1).
 # ============================================================================
 
-const REGEN_ENERGIA := 320.0   # por segundo
+const REGEN_ENERGIA := 320.0   # energia por segundo (base, inalterada)
+
+# ---------------------------------------------------------- REGENERAÇÃO DE VIDA
+# Pedido do dono, 2026-08-12. Os números são PERCENTUAIS do máximo, não valores
+# absolutos: assim continuam válidos se a vida cheia mudar de 2048.
+#
+#   base .............. 0,5%/s  -> 10,24 hp/s, cura 0 -> cheio em 200 s
+#   depois de apanhar . −90%    -> 1,02 hp/s enquanto a briga está quente
+#   depois de uma kill  2,0%/s  -> 40,96 hp/s por 30 s, cura em 50 s
+#
+# A penalidade de dano vale para VIDA E ENERGIA (pedido explícito). O bônus de
+# kill vale só para a VIDA: em energia, 2%/s seria 82/s, um nerf de 4× sobre os
+# 320/s atuais.
+const REGEN_VIDA_PCT := 0.005        # 0,5% do máximo por segundo
+const REGEN_VIDA_KILL_PCT := 0.02    # 2% por segundo, depois de matar
+const BONUS_KILL_DURACAO := 30.0     # segundos de bônus por kill
+const PENALIDADE_DANO := 0.10        # apanhou -> regenera a 10% (−90%)
+
+# ⚠️ NÚMERO ASSUMIDO, não especificado pelo dono: por quanto tempo depois do
+# último dano a penalidade de −90% continua valendo. 5 s é o tempo típico de
+# "ainda estou em combate" — curto o bastante para premiar quem desengaja, longo
+# o bastante para a penalidade significar alguma coisa numa troca de golpes.
+# É o primeiro número a calibrar se a arena ficar lenta ou rápida demais.
+const JANELA_DE_COMBATE := 5.0
 const DECAIMENTO := 4.0        # 1/s — quanto o empurrão perde força por segundo
 
 var _dono: Node = null
@@ -52,20 +75,46 @@ var _empurrao: Vector3 = Vector3.ZERO
 func montar_em(dono: Node) -> void:
 	_dono = dono
 
+# Carimbos de tempo (ms). Carimbo em vez de contador: não precisa de tique e
+# sobrevive a qualquer quadro perdido.
+var _t_ultimo_dano: int = -999999
+var _t_bonus_kill: int = -999999
+
 # ------------------------------------------------------------------- vida
 # Devolve `true` quando a vida chegou a zero — quem decide o que fazer com isso
 # é o Player (ele é quem fala com o placar).
 func sofrer_dano(quantidade: float) -> bool:
+	_t_ultimo_dano = Time.get_ticks_msec()   # esfria a regeneração
 	vida = maxf(vida - quantidade, 0.0)
 	return vida <= 0.0
+
+# O dono deste corpo matou alguém: a regeneração dispara por 30 s.
+func premiar_kill() -> void:
+	_t_bonus_kill = Time.get_ticks_msec()
+	print("🩸 Regeneração acelerada por 30s (kill).")
+
+func em_combate() -> bool:
+	return Time.get_ticks_msec() - _t_ultimo_dano < int(JANELA_DE_COMBATE * 1000.0)
+
+func com_bonus_de_kill() -> bool:
+	return Time.get_ticks_msec() - _t_bonus_kill < int(BONUS_KILL_DURACAO * 1000.0)
 
 func restaurar() -> void:
 	vida = vida_max
 	energia = energia_max
+	_t_ultimo_dano = -999999      # respawn zera o "estou em combate"
 
 # ---------------------------------------------------------------- energia
+# Regenera VIDA e ENERGIA. A penalidade de combate multiplica as duas; o bônus
+# de kill acelera só a vida.
 func regenerar(delta: float) -> void:
-	energia = minf(energia + REGEN_ENERGIA * delta, energia_max)
+	var fator := PENALIDADE_DANO if em_combate() else 1.0
+
+	var pct := REGEN_VIDA_KILL_PCT if com_bonus_de_kill() else REGEN_VIDA_PCT
+	if vida < vida_max:
+		vida = minf(vida + vida_max * pct * fator * delta, vida_max)
+
+	energia = minf(energia + REGEN_ENERGIA * fator * delta, energia_max)
 
 func gastar(custo: float) -> void:
 	energia = maxf(energia - custo, 0.0)

@@ -133,6 +133,20 @@ func _register_death(victim: Node, peer: int, by_fall: bool) -> void:
 	if killer != 0 and killer != peer:
 		_ensure_entry(killer)
 		scores[killer]["k"] = int(scores[killer]["k"]) + 1
+		# Kill acelera a regeneração de quem matou por 30 s (pedido do dono,
+		# 2026-08-12). Quem premia é o SERVIDOR, que é quem sabe de quem foi a
+		# kill — e ele avisa o dono do corpo, porque a regen só roda na
+		# autoridade (Player.gd:279-280).
+		# ⚠️ Tem que chegar no DONO do corpo, não na cópia do servidor: a
+		# regeneração roda dentro do `_physics_process`, que sai cedo quando
+		# `_is_authority` é falso (Player.gd:279-280). Premiar a cópia errada não
+		# faria efeito nenhum. Mesmo padrão do `_order_respawn` logo abaixo.
+		var corpo := _corpo_do_peer(killer)
+		if corpo and corpo.has_method("premiar_kill"):
+			if not multiplayer.has_multiplayer_peer() or killer == multiplayer.get_unique_id():
+				corpo.premiar_kill()
+			elif multiplayer.get_peers().has(killer):
+				corpo.premiar_kill.rpc_id(killer)
 	_last_hit.erase(peer)
 
 	var motivo := "caiu do mapa" if by_fall else "vida zerada"
@@ -206,6 +220,13 @@ func _ensure_entry(peer: int) -> void:
 
 # O nome do nó do player É o peer id (ver Main._spawn_player_data). Qualquer
 # outra coisa (dummy, inimigo) devolve 0 e fica fora do placar.
+# Acha o corpo de um peer pelo nome do nó (o `Main` batiza o player com o id).
+func _corpo_do_peer(peer: int) -> Node:
+	for p in get_tree().get_nodes_in_group("player"):
+		if _peer_of(p) == peer:
+			return p
+	return null
+
 func _peer_of(n: Node) -> int:
 	if n == null or not is_instance_valid(n) or not n.is_in_group("player"):
 		return 0
