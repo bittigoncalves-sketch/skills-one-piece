@@ -54,7 +54,7 @@ const ARSENAL := {
 	# Enquanto a DamageZone não andar em sub-passos, subir daqui é trocar
 	# consistência por velocidade (o dano ESPERADO não muda: acima de 79 m/s
 	# velocidade x chance de acerto é constante).
-	"C": {"nome": "Sniper",  "balas": 5,   "cadencia": 1.05, "raio": 0.16, "vel": 125.0, "kb": 10.0, "shake": 0.45, "recuo": 0.0,  "papel": "ForeArm_R", "som": "sniper",  "fogacho": 0.55},
+	"C": {"nome": "Sniper",  "balas": 5,   "cadencia": 1.05, "raio": 0.16, "vel": 250.0, "kb": 10.0, "shake": 0.45, "recuo": 0.0,  "papel": "ForeArm_R", "som": "sniper",  "fogacho": 0.55},
 	"V": {"nome": "Minigun", "balas": 100, "cadencia": 0.06, "raio": 0.14, "vel": 46.0, "kb": 1.6,  "shake": 0.05, "recuo": 0.0,  "papel": "ForeArm_R", "som": "minigun", "fogacho": 0.18},
 }
 const SLOTS := ["Z", "X", "C", "V"]

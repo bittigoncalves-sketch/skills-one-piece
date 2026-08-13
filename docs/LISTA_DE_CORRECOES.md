@@ -125,38 +125,33 @@ a pistola da Yami.
 
 ---
 
+## ✅ Resolvido em 2026-08-12 (noite)
+
+### 24. Projétil rápido atravessava o alvo — **corrigido**
+`DamageZone` andava por **teleporte** (`global_position += vel * delta`), e a
+`Area3D` só enxerga quem está sobreposto **naquele quadro**. A 60 Hz, acima de
+~79 m/s a bala pulava o alvo entre dois quadros. **A sniper estava em 95 e
+perdia 1 tiro em 6.**
+
+**Sub-passo de posição NÃO resolveria** — e essa foi a parte que quase me
+enganou: a `Area3D` detecta uma vez por quadro de física, então mover em pedaços
+dentro do mesmo quadro não gera detecção nova.
+
+**Conserto:** `_varrer_caminho()` — um raio da posição anterior até a nova, todo
+quadro. O que a bala passou por cima conta como acerto.
+
+**Medido, com a bala mirada no boneco:**
+
+| vel | passo/quadro | antes | depois |
+|---|---|---|---|
+| 95 | 1,58 m | 20/24 | **10/10** |
+| 250 | 4,17 m | — | **10/10** |
+| 400 | 6,67 m | — | **10/10** |
+
+Só com isso a sniper pôde dobrar para **250 m/s** a pedido do dono — dobrar
+antes teria entregado uma arma pior.
+
 ## 🔴 Alta — afeta o jogo hoje
-
-### 24. 🎯 PROJÉTIL RÁPIDO ATRAVESSA O ALVO — a sniper já erra 1 tiro em 6
-`DamageZone._physics_process` (`src/effects/DamageZone.gd:32`) move a zona por
-**teleporte**: `global_position += vel * delta`. A `Area3D` só enxerga quem está
-sobreposto **naquele quadro** — então tudo que a bala pula entre dois quadros
-simplesmente não existe para ela.
-
-A 60 Hz, o passo por quadro é `vel / 60`. Com o alvo de 1,0 m e raio de bala
-0,16, a janela de acerto é ~1,32 m — ou seja, **acima de ~79 m/s a bala começa a
-atravessar**.
-
-*Detectado:* medição do agente de UI ao escolher a velocidade nova da sniper,
-2026-08-12. **24 fases de disparo por velocidade:**
-
-| vel | passo/quadro | acertos |
-|---|---|---|
-| 79 | 1,32 m | **24/24** |
-| 95 (a de antes) | 1,58 m | 20/24 |
-| 125 (a de agora) | 2,08 m | 16/24 |
-| 200 | 3,33 m | 9/24 |
-
-**Consequência de jogo:** a sniper — 5 balas, 10 s de recarga — perde tiros
-perfeitamente mirados, e o jogador não tem como saber por quê. E isso vale para
-**todo projétil rápido**, não só a sniper.
-
-**Conserto proposto (NÃO feito):** sub-passo no `_physics_process` — mover em N
-passos de ≤ 0,5 m em vez de um salto só. Com isso a velocidade sobe para 250+
-com 100% de acerto.
-
-**Decisão pendente:** autorizar o sub-passo na `DamageZone` (vale para o jogo
-inteiro), ou baixar a sniper para ~79 m/s e conviver com o teto?
 
 ### 25. A luneta da sniper esconde a HUD inteira
 Conferido por print: com a luneta ligada, a máscara preta cobre **vida, energia,

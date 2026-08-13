@@ -288,7 +288,11 @@ class ElThorController extends Node3D:
 			var zona := DamageZone.new()
 			mundo.add_child(zona)
 			zona.global_position = pos_global + Vector3.UP * 0.6
-			zona.setup(damage * 0.35, 13.0, Vector3.ZERO, 0.22, caster, 2.8)
+			# ⚠️ OS RAIOS QUE CAEM PARALISAM, NÃO EMPURRAM (pedido do dono,
+			# 2026-08-12). Empurrar aqui espalhava o alvo para fora da área
+			# antes de a COLUNA FINAL chegar — o golpe se sabotava.
+			zona.setup(damage * 0.35, 0.0, Vector3.ZERO, 0.22, caster, 2.8)
+			zona.paralisa = 1.2
 			AudioFX.snap(mundo, pos_global, randf_range(1.15, 1.75))
 			if _restam % 4 == 0:
 				AudioFX.cannon(mundo, pos_global, randf_range(0.55, 0.8))
@@ -340,6 +344,7 @@ class ElThorController extends Node3D:
 			# ⚠️ A velocidade era `Vector3.UP * 15.0`: em 3,2 s de vida a hitbox
 			# subia 48 m e abandonava a coluna no primeiro instante. Agora ela fica
 			# ONDE O RAIO CAIU. Dano, knockback, vida e raio continuam os de antes.
+			# A COLUNA FINAL é a única que arremessa — é o clímax do golpe.
 			zona.setup(damage, 22.0, Vector3.ZERO, 3.2, caster, 3.5)
 			AudioFX.cannon(mundo, global_position, 0.34)
 			AudioFX.impact(mundo, global_position, 0.5)
@@ -565,6 +570,7 @@ class MamaraganController extends Node3D:
 	var _completou := false
 	var _lancou := false
 	var _fechou := false
+	var _destravou := false
 	var _snap_salvo := -1.0
 
 	# ---------------------------------------------------- CHARGE-UP (tarefa 5)
@@ -668,6 +674,12 @@ class MamaraganController extends Node3D:
 			_lancou = true
 			_arremessar()
 
+		# Destrava assim que a bola SAI — não no fim do espetáculo. O resto da
+		# animação (nuvens fechando) roda com o jogador já livre.
+		if _lancou and not _destravou:
+			_destravou = true
+			_liberar_jogador()
+
 		if _t >= TOTAL - 0.9 and not _fechou:
 			_fechou = true
 			_fechar_ceu()
@@ -690,7 +702,16 @@ class MamaraganController extends Node3D:
 		_carga_travada = carga_atual()
 		if direcao.length_squared() > 0.01:
 			fwd = direcao.normalized()
-		_t = T_LANCA          # o próximo quadro arremessa
+		# ⚠️ SOLTAR CEDO NÃO PODE DEIXAR O JOGADOR PRESO NO AR.
+		#
+		# O `lock_movement(LIBERA_EM)` foi armado para a duração CHEIA do golpe.
+		# Quem soltava a tecla em 1 s ficava flutuando e travado até o prazo
+		# original vencer — relatado jogando em 2026-08-12.
+		#
+		# Pular o tempo para o instante do arremesso resolve as duas pontas: a
+		# bola sai agora, e a descida/destravamento vêm logo atrás, no ritmo que
+		# a linha do tempo já previa.
+		_t = T_LANCA
 
 	# Já dá para arremessar? A bola só existe depois de T_ORB.
 	func pode_soltar() -> bool:
@@ -793,12 +814,23 @@ class MamaraganController extends Node3D:
 			if m is StandardMaterial3D:
 				tw.tween_property(m, "albedo_color:a", 0.0, 0.85)
 
+	# Devolve o corpo ao jogador: pose, aderência ao chão e travamento.
+	# Chamado no ARREMESSO (não no fim do espetáculo) e de novo na saída, porque
+	# o golpe pode ser destruído antes da hora.
+	func _liberar_jogador() -> void:
+		if not is_instance_valid(caster):
+			return
+		if caster.get_meta("custom_pose", "") == "mamaragan":
+			caster.set_meta("custom_pose", "")
+		if caster is CharacterBody3D and _snap_salvo >= 0.0:
+			(caster as CharacterBody3D).floor_snap_length = _snap_salvo
+			_snap_salvo = -1.0
+		# O `lock_movement` foi armado para a duração cheia; solto agora.
+		caster.set("_movement_locked_timer", 0.0)
+		caster.set_meta("active_skill", "")
+
 	func _exit_tree() -> void:
-		if is_instance_valid(caster):
-			if caster.get_meta("custom_pose", "") == "mamaragan":
-				caster.set_meta("custom_pose", "")
-			if caster is CharacterBody3D and _snap_salvo >= 0.0:
-				(caster as CharacterBody3D).floor_snap_length = _snap_salvo
+		_liberar_jogador()
 
 
 # ---------------------------------------------------------------------------
