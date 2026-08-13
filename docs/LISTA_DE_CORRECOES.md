@@ -55,8 +55,6 @@ O trapaceiro caiu para exatamente o que o jogador honesto tem. Bateria: 16/16.
 
 ---
 
-## 🔴 Alta — afeta o jogo hoje
-
 ## ✅ Resolvidos em 2026-08-12 (tarde)
 
 ### 19. A vida da cópia AUTORITATIVA nunca voltava — **corrigido**
@@ -96,6 +94,11 @@ observável** — `take_damage → die_and_respawn → restaurar` acontece na me
 chamada. A checagem virou "o dano ENTROU" + "a vida VOLTOU cheia", e quem prova
 a morte é o placar. Mesma lição que o `test_morte` já tinha aprendido com o
 "fundo do poço".
+
+
+---
+
+## 🔴 Alta — afeta o jogo hoje
 
 ### 21. `FireFX.gd:200` chama `look_at` antes de o nó entrar na árvore
 `mmi.look_at(...)` roda **antes** de `zone.add_child(mmi)`, então
