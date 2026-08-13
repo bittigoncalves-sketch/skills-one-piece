@@ -98,6 +98,33 @@ a morte é o placar. Mesma lição que o `test_morte` já tinha aprendido com o
 
 ---
 
+## ✅ Resolvido em 2026-08-12 (noite)
+
+### 23. 💀 Morrer SEGURANDO a tecla travava o jogo — **corrigido**
+Relatado jogando. Quem morria com a tecla de uma skill pressionada ficava com
+`_charging` e `is_casting` verdadeiros **para sempre**. Duas consequências, as
+duas permanentes:
+
+- `_slot_em_uso()` devolvia aquele slot eternamente, e o laço de recarga
+  **congelava todos os outros** — *"o contador trava e nunca recarrega"*;
+- `CastController.comecar()` saía no `if _carregando: return` — **nenhum poder
+  funcionava mais** pelo resto da partida.
+
+O `net_force_respawn` devolvia vida, fruta e recarga, e **deixava o cast
+pendurado**.
+
+**Conserto:** o respawn passou a abortar o cast e limpar `is_casting`,
+`active_skill`, `yami_black_hole_active`, `_movement_locked_timer`, a rajada e
+a pistola da Yami.
+
+**Reproduzido antes e medido depois:** `_charging=true / slot_em_uso='V'` mesmo
+3 s após o respawn → agora `false / ''`, e a recarga volta a andar
+(6,48 → 5,06 em 1,5 s).
+
+**Travado por teste:** `tools/dev_tests/test_morte_limpa_cast.gd`, 8 checagens.
+
+---
+
 ## 🔴 Alta — afeta o jogo hoje
 
 ### 22. Morte e recarga de skill — **resolvido em 2026-08-12**

@@ -1210,6 +1210,26 @@ func net_force_respawn() -> void:
 	_buki_guardar()
 	_buki_mostrar_arma("")
 
+	# ⚠️ MORRER TEM QUE ABORTAR O CAST — sem isso o jogo trava DE VERDADE.
+	#
+	# Relatado jogando em 2026-08-12 e reproduzido aqui: quem morre **segurando**
+	# a tecla de uma skill fica com `_charging = true` e `is_casting = true` para
+	# sempre. Duas consequências, as duas permanentes:
+	#
+	#   • `_slot_em_uso()` passa a devolver aquele slot eternamente, e o laço de
+	#     recarga CONGELA todos os outros ("o contador trava e nunca recarrega");
+	#   • `CastController.comecar()` sai no `if _carregando: return` — ou seja,
+	#     NENHUM poder funciona mais, pelo resto da partida.
+	#
+	# O respawn devolvia vida, fruta e recarga, mas deixava o cast pendurado.
+	_cast.abortar()
+	set_meta("is_casting", false)
+	set_meta("active_skill", "")
+	set_meta("yami_black_hole_active", false)
+	_movement_locked_timer = 0.0
+	_disparo.parar_rajada()
+	_disparo.desligar_yami()
+
 	# MORRER ZERA AS RECARGAS (decisão do dono, 2026-08-12). Antes elas
 	# atravessavam a morte — medido: cast de C (10 s), morte com 7,967 s
 	# restantes, e a recarga seguia correndo. Como o respawn também devolve a
