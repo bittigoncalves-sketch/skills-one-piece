@@ -77,8 +77,12 @@ var _roll_w := 0.0          # parkour: rolamento do pouso de precisão (#4)
 var _ljump_w := 0.0         # parkour: salto longo / vault no ar (#1, #2)
 var _gun_w := 0.0           # rajada Z (mera/hie): pose de dedo-revólver mirando
 var _hibashira_w := 0.0     # pose de entrada e sustentação do Hibashira (soca o chão, pernas abertas)
+var _gura_x_charge_w := 0.0 # pose de carregamento da Skill X (braço direito esticado para captura)
+var _gura_rush_w := 0.0     # pose assimétrica de investida do Barba Branca (braço direito levantado)
 var _kurouzu_w := 0.0       # pose de atração do Kurouzu (braço à frente)
 var _black_hole_w := 0.0    # pose do Barba Negra no Black Hole (pernas abertas, mão pro chão)
+var _gura_v_w := 0.0        # peso da ultimate V da Gura Gura
+var _gura_v_state := ""     # estado interno da ultimate V
 var _recovery_t := 0.0      # timer do tranco elástico de recepção (chicote)
 var _t := 0.0
 
@@ -164,8 +168,17 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	_hibashira_w  = lerpf(_hibashira_w,  1.0 if custom_pose == "hibashira" else 0.0,  1.0 - exp(-20.0 * delta))
 	_kurouzu_w    = lerpf(_kurouzu_w,    1.0 if custom_pose == "kurouzu" else 0.0,    1.0 - exp(-20.0 * delta))
 	_black_hole_w = lerpf(_black_hole_w, 1.0 if custom_pose == "black_hole" else 0.0, 1.0 - exp(-20.0 * delta))
+	_gura_x_charge_w = lerpf(_gura_x_charge_w, 1.0 if custom_pose == "gura_x_charge" else 0.0, 1.0 - exp(-20.0 * delta))
+	_gura_rush_w  = lerpf(_gura_rush_w,  1.0 if custom_pose == "gura_rush" else 0.0,  1.0 - exp(-25.0 * delta))
+	
+	if custom_pose.begins_with("gura_v_"):
+		_gura_v_state = custom_pose
+		_gura_v_w = lerpf(_gura_v_w, 1.0, 1.0 - exp(-15.0 * delta))
+	else:
+		_gura_v_w = lerpf(_gura_v_w, 0.0, 1.0 - exp(-15.0 * delta))
+		
 	var parkour_w: float = maxf(_wallrun_w, maxf(_roll_w, _ljump_w))
-	var upper_free: float = (1.0 - parkour_w) * (1.0 - _hibashira_w) * (1.0 - _kurouzu_w) * (1.0 - _black_hole_w)   # as poses especiais assumem o corpo todo (exceto mira Z no _gun_w!)
+	var upper_free: float = (1.0 - parkour_w) * (1.0 - _hibashira_w) * (1.0 - _kurouzu_w) * (1.0 - _black_hole_w) * (1.0 - _gura_v_w)   # as poses especiais assumem o corpo todo (exceto mira Z no _gun_w!)
 
 	var ground_w := (1.0 - _air_w) * (1.0 - _climb_w)
 	var loco_w: float = ground_w * smoothstep(0.05, 0.35, speed01) * upper_free
@@ -200,6 +213,9 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	_hibashira_pose(off, _hibashira_w)
 	_kurouzu_pose(off, _kurouzu_w)
 	_black_hole_pose(off, _black_hole_w)
+	_gura_rush_pose(off, _gura_rush_w) # Pose assimétrica sobreposta
+	_gura_x_charge_pose(off, _gura_x_charge_w)
+	_gura_v_poses(off, _gura_v_w, _gura_v_state)
 	_charge(off, _charge_w, charge_slot)
 	
 	# Se não estiver em charge, mas tem charge_slot = "C" (Gatling firing) -> aplica shake no torso.
@@ -280,10 +296,12 @@ func _idle(off: Dictionary, w: float) -> void:
 	# braços soltos, um pouco à frente e afastados: guarda baixa, não em posição
 	# de sentido. O `_gun_w` tira o balanço quando a pistola está erguida.
 	var arm_w: float = w * (1.0 - _gun_w)
+	var arm_r_w: float = arm_w * (1.0 - _gura_rush_w) # Isola o braço direito da animação normal
 	_add(off, "UpperArm_L", Vector3(0.10 + 0.05 * resp, 0, 0.13) * arm_w)
-	_add(off, "UpperArm_R", Vector3(0.10 - 0.05 * resp, 0, -0.13) * arm_w)
+	_add(off, "UpperArm_R", Vector3(0.10 - 0.05 * resp, 0, -0.13) * arm_r_w)
 	_add(off, "ForeArm_L", Vector3(0.34 + 0.05 * peso, 0, 0.10) * arm_w)
-	_add(off, "ForeArm_R", Vector3(0.34 - 0.05 * peso, 0, -0.10) * arm_w)
+	_add(off, "ForeArm_R", Vector3(0.34 - 0.05 * peso, 0, -0.10) * arm_r_w)
+	_add(off, "Torso", Vector3(0.04 + 0.02 * resp, 0, 0) * w)
 
 func _locomotion(off: Dictionary, w: float, phase: float, speed01: float, is_sprinting: bool) -> void:
 	if w <= 0.001:
@@ -327,12 +345,13 @@ func _locomotion(off: Dictionary, w: float, phase: float, speed01: float, is_spr
 	var sL_lag := cos(phase - 0.6)   # atraso -> sensação de braço "solto"
 	var sR_lag := cos(phase + PI - 0.6)
 	var arm_w: float = w * (1.0 - _gun_w)
+	var arm_r_w: float = arm_w * (1.0 - _gura_rush_w) # Isola o braço direito
 	_add(off, "UpperArm_L", Vector3(-A_arm * cL, 0, 0.08 + arm_out) * arm_w)
-	_add(off, "UpperArm_R", Vector3(-A_arm * cR, 0, -0.08 - arm_out) * arm_w)
+	_add(off, "UpperArm_R", Vector3(-A_arm * cR, 0, -0.08 - arm_out) * arm_r_w)
 	# Cotovelo: dobra um pouco mais quando o braço vem à frente (não fica esticado).
 	var A_elbow: float = lerpf(0.10, 0.25, t) * (2.0 if is_sprinting else 1.0)
 	_add(off, "ForeArm_L", Vector3(0.18 + A_elbow * maxf(sL_lag, 0.0), 0, 0.08) * arm_w)
-	_add(off, "ForeArm_R", Vector3(0.18 + A_elbow * maxf(sR_lag, 0.0), 0, -0.08) * arm_w)
+	_add(off, "ForeArm_R", Vector3(0.18 + A_elbow * maxf(sR_lag, 0.0), 0, -0.08) * arm_r_w)
 
 	# Torso inclina p/ FRENTE (-Z) + BALANÇO DOS OMBROS: giro no eixo Y (ombros gingam
 	# opostos ao passo) e leve rolamento no Z. rot.x+ joga o topo p/ +Z (trás), logo a
@@ -610,8 +629,87 @@ func _finger_gun(off: Dictionary, w: float, pitch: float, gun_recoil: float) -> 
 	_add(off, "UpperArm_L", Vector3(aim_x + kick, 0.0, 0.14) * w)
 	_add(off, "ForeArm_L", Vector3(0.05, 0.0, 0.0) * w)
 	# APENAS os braços empunhando as armas ficam fixos à frente! As pernas e o corpo ficam livres!
-	_add(off, "Torso", Vector3(-0.05 - gun_recoil * 0.1, -0.02, 0.0) * w)
-	_add(off, "Head", Vector3(clampf(-pitch * 0.5, -0.5, 0.5), -0.02, 0.0) * w)
+	_add(off, "Head", Vector3(0.0, -pitch * 0.5, 0.0) * w)
+
+# Pose Especial Assimétrica: Gura Gura Z Rush (Apenas o braço direito reage)
+func _gura_rush_pose(off: Dictionary, w: float) -> void:
+	if w <= 0.001: return
+	
+	# Torso inclinado para frente e um pouco torcido para dar o "balanço do corpo"
+	_add(off, "Torso", Vector3(0.3, -0.2, 0) * w)
+	
+	# Braço direito socando/investindo para a frente (-Z = X positivo)
+	# e levemente aberto para a direita (+X = Z positivo)
+	_add(off, "UpperArm_R", Vector3(1.4, 0.1, 0.3) * w)
+	
+	# Cotovelo com leve flexão (ForeArm_R X = 0.5) para quebrar a rigidez total
+	_add(off, "ForeArm_R", Vector3(-0.4, 0.0, -0.2) * w)
+	
+	_add(off, "Head", Vector3(-0.1, 0.2, 0) * w)
+
+# Pose Especial de Carregamento: Gura Gura X (Captura Sísmica)
+func _gura_x_charge_pose(off: Dictionary, w: float) -> void:
+	if w <= 0.001: return
+	# Braço direito estendido diretamente na direção da mira para capturar o alvo,
+	# X = 1.5 aponta perfeitamente para frente (-Z).
+	var vib_y = sin(_t * 30.0) * 0.02
+	var vib_z = cos(_t * 35.0) * 0.02
+	_add(off, "UpperArm_R", Vector3(1.5 + vib_y, vib_y, 0.1 + vib_z) * w)
+	_add(off, "ForeArm_R", Vector3(-0.1 + vib_y, 0.0, 0.0) * w)
+	_add(off, "Torso", Vector3(0.1, 0.0, 0.0) * w)
+	_add(off, "Head", Vector3(0.1, 0.0, 0.0) * w)
+
+# --- Poses da Ultimate V da Gura Gura (Sequência de 4s) ---
+func _gura_v_poses(off: Dictionary, w: float, state: String) -> void:
+	if w <= 0.001: return
+	
+	if state == "gura_v_prep":
+		# Preparação (0.0s): Postura firme, respira fundo
+		var resp = sin(_t * 3.0) * 0.05
+		_add(off, "Torso", Vector3(0.1 - resp, 0, 0) * w)
+		_add(off, "Head", Vector3(-0.1 + resp, 0, 0) * w)
+		_add(off, "UpperArm_L", Vector3(0.2, 0.0, 0.1) * w)
+		_add(off, "UpperArm_R", Vector3(0.2, 0.0, -0.1) * w)
+		
+	elif state == "gura_v_squat":
+		# Agachamento (1.0s): Flexiona joelhos, braços pra trás
+		_add(off, "Thigh_L", Vector3(0.8, 0.1, 0) * w)
+		_add(off, "Thigh_R", Vector3(0.8, -0.1, 0) * w)
+		_add(off, "Shin_L", Vector3(-1.0, 0, 0) * w)
+		_add(off, "Shin_R", Vector3(-1.0, 0, 0) * w)
+		_add(off, "Torso", Vector3(0.3, 0, 0) * w)
+		_add(off, "UpperArm_L", Vector3(-1.2, 0.0, 0.2) * w)
+		_add(off, "UpperArm_R", Vector3(-1.2, 0.0, -0.2) * w)
+		
+	elif state == "gura_v_gather":
+		# Reúne energia (2.0s): Agachado vibrando fortemente
+		var vib = sin(_t * 45.0) * 0.03
+		_add(off, "Thigh_L", Vector3(0.9, 0.1, 0) * w)
+		_add(off, "Thigh_R", Vector3(0.9, -0.1, 0) * w)
+		_add(off, "Shin_L", Vector3(-1.1, 0, 0) * w)
+		_add(off, "Shin_R", Vector3(-1.1, 0, 0) * w)
+		_add(off, "Torso", Vector3(0.4 + vib, 0, 0) * w)
+		_add(off, "UpperArm_L", Vector3(-1.3, 0.0, 0.3 + vib) * w)
+		_add(off, "UpperArm_R", Vector3(-1.3, 0.0, -0.3 - vib) * w)
+		_add(off, "ForeArm_L", Vector3(0.5, 0, 0) * w)
+		_add(off, "ForeArm_R", Vector3(0.5, 0, 0) * w)
+		
+	elif state == "gura_v_lift":
+		# Levanta os braços (3.0s): Braços sobem lentamente
+		var vib = sin(_t * 30.0) * 0.02
+		_add(off, "Torso", Vector3(0.0, 0, 0) * w)
+		_add(off, "UpperArm_L", Vector3(0.0, 0.2, 0.8 + vib) * w)
+		_add(off, "UpperArm_R", Vector3(0.0, -0.2, -0.8 - vib) * w)
+		
+	elif state == "gura_v_tpose":
+		# Pose em T (4.0s): Braços totalmente horizontais, vibração máxima
+		var vib = sin(_t * 50.0) * 0.05
+		_add(off, "Torso", Vector3(-0.1, 0, 0) * w)
+		_add(off, "Head", Vector3(0.1, 0, 0) * w)
+		_add(off, "UpperArm_L", Vector3(0.0, 0.0, 1.4 + vib) * w)
+		_add(off, "UpperArm_R", Vector3(0.0, 0.0, -1.4 - vib) * w)
+		_add(off, "ForeArm_L", Vector3(-0.1, 0, 0) * w)
+		_add(off, "ForeArm_R", Vector3(-0.1, 0, 0) * w)
 
 func _lookat(off: Dictionary, pitch: float, w: float) -> void:
 	if w <= 0.001:

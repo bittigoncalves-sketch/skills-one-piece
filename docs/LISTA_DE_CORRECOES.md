@@ -373,9 +373,45 @@ código morto que só confunde quem for ler.
 2026-08-12. **Não corrigido** — apagar linha morta ainda é mexer num golpe que
 funciona, e a regra é não alterar sem sua ordem.
 
-### 14. `Melee.espelhar()` está sem uso
+### 28. `Melee.espelhar()` está sem uso
 Ficou quando os socos viraram clipes autorais. Continua correta e validada.
 **Gatilho para apagar:** se daqui a alguns golpes nenhum tiver usado, é dívida.
+
+### 26. Projétil rápido pode empurrar o alvo PARA TRÁS (na direção do atirador)
+`DamageZone._on_body` calcula o knockback como `alvo − centro da zona`. Isso
+pressupõe que a zona está ATRÁS do alvo na hora do acerto — verdade para uma
+explosão, nem sempre para uma bala.
+
+Quem registra o acerto de um projétil rápido é o `_varrer_caminho`, e ele roda
+**depois** do passo (`global_position += vel * delta`), no mesmo quadro. A 46 m/s
+o passo é 0,77 m; a 95 m/s (sniper) é 1,58 m. Se o passo pular por cima do alvo,
+no instante do cálculo a zona já está **na frente** dele — e o vetor
+`alvo − zona` aponta de volta para o atirador. O alvo leva o dano correto e é
+arremessado na direção errada.
+
+*Detectado:* ao desenhar os tiros d'água do Karate Tritão (tarefa 7,
+2026-08-13), lendo o `_varrer_caminho` para dimensionar a velocidade do
+projétil. **Não corrigido** — o conserto é na `DamageZone`, que estava fora do
+escopo daquela tarefa. O caminho seria usar a direção do próprio movimento
+(`vel.normalized()`) quando a zona tem velocidade, e só cair no radial quando
+ela está parada.
+
+*Mitigação em vigor:* os tiros do Z saem com knockback baixo (6,0) de propósito,
+então o erro de direção é quase invisível ali. A **sniper da Buki** (95 m/s, o
+dobro do passo) é onde isso mais aparece.
+
+### 27. A `DamageZone` não avisa quando acerta
+Não há sinal de impacto: quem cria a zona não tem como saber se ela pegou
+alguém, nem onde. Duas consequências já em produção:
+
+* o respingo dos tiros d'água (`WaterFX._agendar_respingo`) é agendado por
+  **tempo**, não por acerto — a água quebra no fim do alcance, tenha acertado ou
+  não. Fica plausível para água; não ficaria para um impacto de metal.
+* nenhum golpe consegue reagir ao acerto (marca no alvo, som de carne, combo).
+
+*Detectado:* na mesma tarefa 7. **Não corrigido** — um `signal acertou(corpo,
+ponto)` na `DamageZone` resolveria os dois, mas é mudança numa classe que 9
+efeitos usam, e a regra é não alterar fora do escopo sem sua ordem.
 
 ---
 
@@ -384,3 +420,37 @@ Ficou quando os socos viraram clipes autorais. Continua correta e validada.
 Nada testado **em rede com dois PCs de verdade** nem **visto na tela**. As
 sondas `net_host_probe.gd` / `net_client_probe.gd` cobrem loopback headless; o
 resto é olho humano jogando.
+
+### 29. Os outros QUATRO estilos também têm um golpe só disfarçado de quatro
+O mesmo defeito que a tarefa 7 consertou no Karatê Tritão: `_cast_laser`,
+`_cast_electro`, `_cast_boxe` e `_cast_cyborg` **recebem `variant` e não leem**.
+
+*Detectado:* conferido por contagem — nos quatro, a palavra `variant` aparece
+**uma vez só no arquivo inteiro, na assinatura**. Z, X, C e V de cada estilo
+disparam efeito idêntico; o que muda é só o nome na HUD e o número de dano que o
+`Player._fire_skill` lê da tabela.
+
+Só o Tritão foi tratado porque só ele estava no pedido. **Pacifista, Mink, Boxe
+e Cyborg continuam com quatro nomes e um golpe.**
+
+**Decisão pendente:** tratar os quatro (é o mesmo trabalho da tarefa 7, quatro
+vezes), ou deixar como está enquanto o Tritão é o estilo em uso?
+
+### 30. `RECARGA_ESTILO` de 60 s não passa pelo servidor
+A recarga de estilo é decidida **só no cliente**, pela `trigger_skill_cooldown`.
+É exatamente a forma do buraco de **munição infinita da Buki** (item 14): cliente
+adulterado que mande `_net_cast_req` direto ignora a recarga.
+
+*Detectado:* revendo o item 14 depois de escrever a `RECARGA_ESTILO`. A Buki
+ganhou carimbo de tempo no servidor (`_srv_recarga_ate`) justamente porque
+`_skill_cooldowns` **não anda** na cópia do servidor — o `_physics_process` sai
+cedo quando `_is_authority` é falso. O mesmo vale aqui.
+
+**Peso menor que o item 14, e é por isso que não parei para consertar:** lá o
+furo dava munição infinita numa arma de tiro rápido; aqui dá golpe de estilo mais
+frequente. Mas é o **mesmo furo**, e ele cresce se o estilo virar a via principal
+de combate.
+
+**Decisão pendente:** estender o `_srv_recarga_ate` da Buki para todo cast (era
+também o item 17, "o servidor não valida `origin`/`aim`"), ou aceitar enquanto o
+jogo for entre amigos?

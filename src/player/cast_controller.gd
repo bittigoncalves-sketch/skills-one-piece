@@ -65,7 +65,7 @@ var _slot_carregado := ""
 
 # Quais golpes são carregáveis. Tabela em vez de `if` espalhado: quando a
 # segunda skill carregável existir, é uma linha.
-const CARREGAVEIS := {"goro_goro": ["V"]}
+const CARREGAVEIS := {"goro_goro": ["V"], "gura_gura": ["X"]}
 
 func montar_em(dono: Node) -> void:
 	_dono = dono
@@ -78,6 +78,19 @@ func carregando_skill() -> bool: return is_instance_valid(_carregado)
 
 func _e_carregavel(fruta: String, slot_pedido: String) -> bool:
 	return CARREGAVEIS.has(fruta) and slot_pedido in CARREGAVEIS[fruta]
+
+# A tecla foi desligada pelo ESTILO em uso? Só faz sentido no modo "style" — no
+# modo fruta a tabela consultada é outra e todas as 4 teclas existem.
+func _slot_desabilitado(slot_pedido: String) -> bool:
+	if _dono.combat_mode != "style":
+		return false
+	var estilo: String = _dono.estilo_atual()
+	if not FightingStyles.STYLES.has(estilo):
+		return false
+	var skills: Dictionary = FightingStyles.STYLES[estilo].get("skills", {})
+	if not skills.has(slot_pedido):
+		return true          # slot que o estilo nem declara também não sai
+	return bool((skills[slot_pedido] as Dictionary).get("desabilitado", false))
 func slot() -> String:     return _slot
 func token() -> int:       return _token
 
@@ -106,6 +119,13 @@ func abortar() -> void:
 func comecar(slot_pedido: String) -> void:
 	if _suprimido:
 		print("❌ Poderes desativados (Yami Yami).")
+		return
+	# TECLA DESABILITADA PELO ESTILO. Vem antes da recarga de propósito: uma tecla
+	# que não existe não deve nem reclamar de recarga. Lê a FLAG dos dados
+	# (`FightingStyles.STYLES[...]["desabilitado"]`), não o nome do estilo — ver o
+	# comentário do dicionário lá.
+	if _slot_desabilitado(slot_pedido):
+		print("🚫 O estilo %s não usa a tecla %s." % [_dono.estilo_atual(), slot_pedido])
 		return
 	if _dono._skill_cooldowns.get(slot_pedido, 0.0) > 0.0:
 		print("⏳ Habilidade [%s] em recarga! Aguarde %.1fs." % [
@@ -136,11 +156,16 @@ func comecar(slot_pedido: String) -> void:
 		_dono.congelar_para_cast()
 		pedir_cast("C")
 		return
-	# EL THOR (X da Goro): o raio que sobe do BRAÇO é o GATILHO da reação, não o
-	# ataque. Por isso sai já no APERTO, com a tecla ainda pressionada — pedido
-	# do dono, 2026-08-12.
+	# EL THOR (X da Goro): o raio que sobe do BRAÇO é o GATILHO da reação
 	if slot_pedido == "X" and na_fruta and fruta == "goro_goro":
 		GoroFXGrande.gatilho_do_braco(_dono.get_tree().current_scene, _dono)
+		
+	# GURA GURA Z (INVESTIDA FÍSICA): Inicia imediatamente o estado de Rush do jogador
+	if slot_pedido == "Z" and na_fruta and fruta == "gura_gura":
+		var mira_c: Dictionary = _dono.mira_do_cast()
+		if _dono.has_method("start_gura_rush"):
+			_dono.start_gura_rush(mira_c["aim"])
+		return
 
 	# CHARGE-UP: a skill NASCE AGORA e cresce enquanto a tecla estiver segurada.
 	# A recarga e a energia são cobradas no aperto, senão dava para "espiar" o
@@ -155,9 +180,19 @@ func comecar(slot_pedido: String) -> void:
 		_dono.gastar_energia(_dono.ENERGY_SKILL)
 		var mira_c: Dictionary = _dono.mira_do_cast()
 		var dano_c: float = float(SkillSystem.get_fruit_skills()[fruta][slot_pedido]["dano"])
-		_carregado = GoroFXGrande.mamaragan_carregado(
-			_dono.get_tree().current_scene, mira_c["origem"], mira_c["aim"], dano_c, _dono)
-		_dono.add_camera_shake(0.85)
+		# Carrega a skill X (Captura Sísmica)
+		_dono.congelar_para_cast() # Exige concentração e congela
+		
+		if fruta == "gura_gura" and slot_pedido == "X":
+			_carregado = GuraChargeNode.new(_dono, slot_pedido)
+			_dono.get_tree().current_scene.add_child(_carregado)
+			_dono.add_camera_shake(0.3)
+			_dono.set_meta("custom_pose", "gura_x_charge")
+		else:
+			_carregado = GoroFXGrande.mamaragan_carregado(
+				_dono.get_tree().current_scene, mira_c["origem"], mira_c["aim"], dano_c, _dono)
+			_dono.add_camera_shake(0.85)
+			_dono.pedir_soco_de_fov(8.0)
 		_dono.pedir_soco_de_fov(8.0)
 		return
 
@@ -267,3 +302,69 @@ func pedir_cast(slot_pedido: String) -> void:
 		ScreenFX.flash(Color(1, 1, 1), 0.3)
 
 	_dono.pedir_cast_no_servidor(slot_pedido, mira["aim"], mira["origem"])
+
+class GuraChargeNode extends Node:
+	var _dono: Node
+	var _slot: String
+	var _tempo: float = 0.0
+	var _target: Node3D = null
+	
+	func _init(dono: Node, slot: String) -> void:
+		_dono = dono
+		_slot = slot
+		# CAPTURA SÍSMICA (X): Tenta prender um alvo ao redor da mira
+		if _slot == "X":
+			var mira := _dono.mira_do_cast() as Dictionary
+			var mundo = _dono.get_world_3d()
+			var par = PhysicsRayQueryParameters3D.create(mira["origem"], mira["origem"] + mira["aim"] * 30.0)
+			par.collide_with_areas = false
+			par.collide_with_bodies = true
+			if _dono is CollisionObject3D:
+				par.exclude = [_dono.get_rid()]
+			var hit = mundo.direct_space_state.intersect_ray(par)
+			if not hit.is_empty() and hit.get("collider") is Node3D and hit.get("collider").has_method("take_damage"):
+				_target = hit.get("collider")
+				_target.set_meta("is_frozen", true)
+				StatusFX.aplicar(_target, StatusFX.CONGELADO, 4.0)
+				# Inicia o VFX de Captura na autoridade visual
+				if _dono.has_method("get_tree") and Engine.has_singleton("GuraFX") == false:
+					pass # Poderíamos chamar um GuraFX.capture_vfx(_target, self) aqui
+				
+	func _process(delta: float) -> void:
+		_tempo = minf(_tempo + delta, 3.0) # MAX_CHARGE = 3.0
+		
+		if is_instance_valid(_dono) and _dono.has_method("add_camera_shake"):
+			_dono.add_camera_shake(minf(_tempo * 0.8, 2.5))
+			
+		if _slot == "X" and is_instance_valid(_target) and is_instance_valid(_dono):
+			# Posicionamento Relativo Rigoroso (Evita jitter e colisão cega)
+			# O inimigo fica suspenso exatamente a 5m de distância na frente do jogador, e 2.5m de altura
+			var fwd = -_dono.global_transform.basis.z.normalized()
+			var ideal_pos = _dono.global_position + fwd * 5.0 + Vector3.UP * 2.5
+			_target.global_position = _target.global_position.lerp(ideal_pos, 10.0 * delta)
+			
+	func _exit_tree() -> void:
+		if is_instance_valid(_dono) and _dono.has_meta("custom_pose") and _dono.get_meta("custom_pose") == "gura_x_charge":
+			_dono.remove_meta("custom_pose")
+		# CLEANUP GARANTIDO: Restaura o inimigo se a skill for abortada por dano/morte
+		if is_instance_valid(_target) and _target.has_meta("is_frozen") and _target.get_meta("is_frozen"):
+			_target.set_meta("is_frozen", false)
+			
+	func soltar(aim: Vector3) -> void:
+		if is_instance_valid(_dono):
+			if _dono.has_method("pedir_soco_de_fov"):
+				_dono.pedir_soco_de_fov(5.0)
+			if Engine.has_singleton("ScreenFX"):
+				Engine.get_singleton("ScreenFX").chromatic_pulse(0.4)
+				
+			var mira := _dono.mira_do_cast() as Dictionary
+			if _slot == "X":
+				if is_instance_valid(_target):
+					# Em vez de soltar instantaneamente, deixamos _exit_tree cuidar disso após o RPC.
+					# Isso garante que ele fique preso durante o delay inicial da animação da explosão.
+					_dono.pedir_cast_no_servidor(_slot, _target.global_position, mira["origem"], _tempo)
+				else:
+					_dono.pedir_cast_no_servidor(_slot, mira["origem"] + aim * 8.0, mira["origem"], _tempo)
+			else:
+				_dono.pedir_cast_no_servidor(_slot, aim, mira["origem"], _tempo)
+		queue_free()

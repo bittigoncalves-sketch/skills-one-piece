@@ -15,7 +15,7 @@ const MOUSE_SENS := 0.0035
 # dono do tremor, do soco de FOV, do balanço, da perspectiva e da distância;
 # aqui só sobra a referência a ele e o `_cam` de conveniência para a mira.
 
-var current_fruit_id: String = ""
+var current_fruit_id: String = "gura_gura"
 var speed_multiplier: float = 1.0
 var jump_multiplier: float = 1.0
 
@@ -184,6 +184,11 @@ var _buki_pivot: Node3D:            # pivô do canhão-corpo (X): gira com a mir
 	get: return _rig.pivo_buki() if _rig else null
 var _skill_cooldowns: Dictionary = {"Z": 0.0, "X": 0.0, "C": 0.0, "V": 0.0}
 var aim_assist: bool = false   # assistência de mira (liga/desliga no E)
+var _gura_rush_active := false
+var _gura_rush_timer := 0.0
+var _gura_rush_dir := Vector3.ZERO
+var _gura_rush_target: Node3D = null
+var _gura_grab_timer := 0.0
 
 # ---- corpo a corpo (botão esquerdo): soco D -> soco E -> chute ----
 # Ver src/combat/Melee.gd. `_melee_janela` conta o tempo que ainda resta pra
@@ -226,9 +231,20 @@ func _pose_de_arma() -> bool:
 # esperar um minuto por tentativa.
 const RECARGA_POR_SLOT := {"Z": 5.0, "X": 7.0, "C": 10.0, "V": 25.0}
 
+# ESTILO DE LUTA custa 1 MINUTO em qualquer slot (pedido do dono, 2026-08-12).
+# É o preço de não depender de fruta: o estilo está SEMPRE disponível — não
+# precisa achar árvore, não se perde na morte, não some quando outro jogador
+# pega a fruta antes. Uma recarga própria e cara é o que impede o estilo de ser
+# estritamente melhor que a fruta.
+# ⚠️ Vale para TODOS os estilos, não só o Tritão — foi assim que o dono pediu
+# ("para todos os ataques de skills que não sejam frutas").
+const RECARGA_ESTILO := 60.0
+
 func trigger_skill_cooldown(slot: String) -> void:
-	if RECARGA_POR_SLOT.has(slot):
-		_skill_cooldowns[slot] = RECARGA_POR_SLOT[slot]
+	if not RECARGA_POR_SLOT.has(slot):
+		return
+	_skill_cooldowns[slot] = RECARGA_ESTILO if combat_mode == "style" \
+		else RECARGA_POR_SLOT[slot]
 var _mesh: MeshInstance3D
 var _crosshair: Control
 
@@ -536,11 +552,11 @@ func mira_do_cast() -> Dictionary:
 
 # Host/SP JÁ é o servidor -> executa a autoridade DIRETO (`rpc_id` a si mesmo é
 # proibido pelo Godot). Cliente puro -> pede ao servidor (peer 1).
-func pedir_cast_no_servidor(slot: String, aim: Vector3, origem: Vector3) -> void:
+func pedir_cast_no_servidor(slot: String, aim: Vector3, origem: Vector3, charge: float = 0.0) -> void:
 	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
-		_do_server_cast(slot, aim, origem)
+		_do_server_cast(slot, aim, origem, charge)
 	else:
-		_net_cast.rpc_id(1, slot, aim, origem)
+		_net_cast.rpc_id(1, slot, aim, origem, charge)
 
 # Carregar um golpe PRENDE o corpo no lugar. `velocity` é do domínio de
 # movimento — por isso é pedido, não escrita.
@@ -820,6 +836,10 @@ func _etapa_locomocao(delta: float) -> void:
 
 		if _dash.passo() > 0.0:
 			velocity = _dash.velocidade(delta)
+		elif _gura_rush_active:
+			velocity.x = _gura_rush_dir.x * effective_speed * 4.0
+			velocity.z = _gura_rush_dir.z * effective_speed * 4.0
+			_process_gura_rush(delta) # HITBOX e Timer da Investida!
 		else:
 			velocity.x = q.dir.x * effective_speed
 			velocity.z = q.dir.z * effective_speed
@@ -834,6 +854,9 @@ func _etapa_locomocao(delta: float) -> void:
 			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, target_rot, 24.0 * delta)
 		elif _dash.ativo():
 			var move_rot := atan2(-_dash.direcao().x, -_dash.direcao().z)
+			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, move_rot, 35.0 * delta)
+		elif _gura_rush_active:
+			var move_rot := atan2(-_gura_rush_dir.x, -_gura_rush_dir.z)
 			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, move_rot, 35.0 * delta)
 		elif q.dir.length_squared() > 0.01:
 			var move_rot := atan2(-q.dir.x, -q.dir.z)
@@ -1277,9 +1300,9 @@ func _request_cast(slot: String) -> void:
 # (VFX/anim) roda em TODOS os clientes; o dano/knockback (DamageZone) só é ativo
 # no servidor. Sem peer (SP puro/harness) roda tudo local, idêntico.
 @rpc("any_peer", "reliable")
-func _net_cast(slot: String, aim: Vector3, origin: Vector3) -> void:
+func _net_cast(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.0) -> void:
 	if multiplayer.is_server():
-		_do_server_cast(slot, aim, origin)
+		_do_server_cast(slot, aim, origin, charge)
 
 # ======================= CORPO A CORPO (botão esquerdo) =======================
 # Combo: soco DIREITO -> soco ESQUERDO -> CHUTE, encadeáveis dentro de
@@ -1309,9 +1332,66 @@ func _net_play_melee(passo: int) -> void:
 		var g := Melee.passo(passo)
 		_proc_anim.play_baked(clipe, float(g["vel"]), float(g.get("inicio", 0.0)))
 
+# --- GURA GURA Z: INVESTIDA FÍSICA ---
+func start_gura_rush(aim_dir: Vector3) -> void:
+	if _gura_rush_active or _skill_cooldowns.get("Z", 0.0) > 0.0: return
+	_gura_rush_active = true
+	_gura_rush_timer = 0.6 # Tempo máximo correndo
+	_gura_grab_timer = 0.0
+	_gura_rush_target = null
+	var flat = Vector3(aim_dir.x, 0, aim_dir.z)
+	_gura_rush_dir = flat.normalized() if flat.length() > 0.1 else -global_transform.basis.z
+	trigger_skill_cooldown("Z")
+	gastar_energia(ENERGY_SKILL)
+	congelar_para_cast()
+	set_meta("custom_pose", "gura_rush")
+
+func _process_gura_rush(delta: float) -> void:
+	if _gura_grab_timer > 0.0:
+		velocity = Vector3.ZERO # Para imediatamente
+		_gura_grab_timer -= delta
+		if _gura_grab_timer <= 0.0:
+			_gura_rush_active = false
+			remove_meta("custom_pose")
+			if is_instance_valid(_gura_rush_target):
+				_gura_rush_target.set_meta("is_frozen", false)
+				_gura_rush_target = null
+		elif is_instance_valid(_gura_rush_target):
+			# Sincroniza e prende a posição do inimigo ao jogador de forma absoluta
+			_gura_rush_target.global_position = global_position + _gura_rush_dir * 1.5 + Vector3.UP * 0.5
+		return
+
+	_gura_rush_timer -= delta
+	if _gura_rush_timer <= 0.0:
+		_gura_rush_active = false
+		remove_meta("custom_pose")
+		return
+		
+	# Detecção da hitbox de inimigo (Area3D ou Body) usando Shape Cast
+	var mundo = get_world_3d()
+	var par = PhysicsShapeQueryParameters3D.new()
+	var shape = SphereShape3D.new()
+	shape.radius = 1.2
+	par.shape = shape
+	par.transform = Transform3D(Basis(), global_position + Vector3.UP * 1.0 + _gura_rush_dir * 1.5)
+	par.collide_with_areas = true
+	par.collide_with_bodies = true
+	if self is CollisionObject3D: par.exclude = [get_rid()]
+	
+	var hits = mundo.direct_space_state.intersect_shape(par)
+	for h in hits:
+		var col = h.get("collider")
+		if col != self and col is Node3D and col.has_method("take_damage") and not (col.has_meta("is_frozen") and col.get_meta("is_frozen")):
+			_gura_rush_target = col
+			_gura_rush_target.set_meta("is_frozen", true)
+			StatusFX.aplicar(_gura_rush_target, StatusFX.CONGELADO, 1.0) # Desativa controle do alvo
+			_gura_grab_timer = 0.5 # Tempo para sincronizar a animação do soco
+			# Dispara o golpe visual (RPC) com charge 1.0 (golpe rápido e fatal)
+			pedir_cast_no_servidor("Z", _gura_rush_dir, global_position, 1.0)
+			break
 
 # SERVIDOR = autoridade: (validaria cooldown/estado) e manda TODOS reproduzirem.
-func _do_server_cast(slot: String, aim: Vector3, origin: Vector3) -> void:
+func _do_server_cast(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.0) -> void:
 	# BUKI BUKI: o cast É o saque da arma. É AQUI, na cópia autoritativa, que a
 	# munição do servidor é carregada — o cliente não escolhe quantas balas tem.
 	# Já sai com uma a menos porque o próprio saque dispara o primeiro tiro.
@@ -1322,9 +1402,9 @@ func _do_server_cast(slot: String, aim: Vector3, origin: Vector3) -> void:
 	# servidor volta a recusar tiro por caminho que ninguém lembra de testar.
 	_buki.servidor_sacar(slot)
 	if multiplayer.has_multiplayer_peer():
-		_net_play_cast.rpc(slot, aim, origin)            # broadcast + call_local
+		_net_play_cast.rpc(slot, aim, origin, charge)            # broadcast + call_local
 	else:
-		_net_play_cast(slot, aim, origin)                # sem rede: local direto
+		_net_play_cast(slot, aim, origin, charge)                # sem rede: local direto
 
 # MIRA -> src/player/mira.gd (Fase 9). Estas três continuam aqui como cascas
 # porque são a API que testes e componentes já conhecem.
@@ -1375,12 +1455,12 @@ func _net_bullet_play(aim: Vector3, origin: Vector3, arma: String) -> void:
 		FireFX.bullet(get_tree().current_scene, origin, aim, 8.0, self)  # bala de fogo
 
 @rpc("any_peer", "call_local", "reliable")
-func _net_play_cast(slot: String, aim: Vector3, origin: Vector3) -> void:
-	_fire_skill(slot, aim, origin)
+func _net_play_cast(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.0) -> void:
+	_fire_skill(slot, aim, origin, charge)
 
 # Presentation da skill (roda em todos): VFX pela fruta/estilo. A DamageZone criada
 # dentro só aplica dano no SERVIDOR (ver DamageZone).
-func _fire_skill(slot: String, aim: Vector3, origin: Vector3) -> void:
+func _fire_skill(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.0) -> void:
 	var variant: int = ["Z", "X", "C", "V"].find(slot)
 	if variant < 0:
 		variant = 0
@@ -1426,7 +1506,7 @@ func _fire_skill(slot: String, aim: Vector3, origin: Vector3) -> void:
 			"goro_goro": GoroFX.cast(world, origin, aim, variant, dano, self)
 			"yami_yami": YamiFX.cast(world, origin, aim, variant, dano, self)
 			"bara_bara": BaraFX.cast(world, origin, aim, variant, dano, self)
-			"gura_gura": GuraFX.cast(world, origin, aim, variant, dano, self)
+			"gura_gura": GuraFX.cast(world, origin, aim, variant, dano, self, charge)
 			"buki_buki":
 				# SAQUE DA ARMA. Roda em TODOS os peers (este método é a
 				# presentation do cast), então o adversário vê a arma aparecer
@@ -1501,6 +1581,12 @@ func equip_fruit(fruit_id: String) -> void:
 			TreeAndFruitGenerator.hide_fruit(fruit_id)
 
 	current_fruit_id = fruit_id
+	
+	if fruit_id == "gura_gura":
+		scale = Vector3(2.0, 2.0, 2.0)
+	else:
+		scale = Vector3.ONE
+		
 	# Troca automática de aparência ao comer/equipar uma Akuma no Mi
 	var new_cid := ""
 	match fruit_id:

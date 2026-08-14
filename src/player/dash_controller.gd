@@ -27,7 +27,7 @@ extends RefCounted
 #   • a imunidade a dano durante a esquiva, que é meta do corpo.
 # ============================================================================
 
-const DISTANCIA := 6.0        # metros percorridos por dash
+const DISTANCIA := 12.0       # metros percorridos por dash
 const TEMPO := 0.28           # segundos de deslocamento
 const RECARGA := 1.5          # recarga entre dashes
 

@@ -7,12 +7,12 @@ extends RefCounted
 const QUAKE := Color(0.85, 0.94, 1.0)   # branco-azulado (o ar rachando)
 const DEBRIS := Color(0.55, 0.5, 0.45)
 
-static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float, caster: Node) -> void:
+static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float, caster: Node, charge: float = 0.0) -> void:
 	match variant:
-		0: _punch(world, origin, dir.normalized(), damage, caster)
-		1: _shockwave(world, origin + dir.normalized() * 2.5, damage, caster)
-		2: _eruption(world, _ground(caster, dir, 5.0), damage, caster)
-		_: _seaquake(world, _self_pos(caster), damage, caster)
+		0: _punch(world, origin, dir.normalized(), damage, caster, charge)
+		1: _shockwave(world, dir, damage, caster, charge) # `dir` agora carrega a posição absoluta do alvo (captura sísmica)
+		2: _eruption(world, _ground(caster, dir, 5.0), damage, caster, charge)
+		_: _seaquake(world, _self_pos(caster), damage, caster, charge)
 
 # ---------- helpers ----------
 static func _self_pos(caster: Node) -> Vector3:
@@ -83,46 +83,146 @@ static func _debris(parent: Node, up_bias: float, amount: int) -> void:
 	parent.add_child(p)
 
 # ---------- Z: Gura Punch — soco do tremor (onda pra frente) ----------
-static func _punch(world: Node, origin: Vector3, fwd: Vector3, damage: float, caster: Node) -> void:
-	var zone := DamageZone.new()
-	world.add_child(zone)
-	zone.global_position = origin
-	_bubble(zone, 2.2, 0.4)
-	_ring(zone, 0.6, 6.0, QUAKE, 0.5)
-	_debris(zone, 0.4, 40)
-	AudioFX.impact(world, origin, 0.7)
-	zone.setup(damage, 30.0, fwd * 22.0, 0.5, caster, 1.8)   # viaja + knockback ALTO
+static func _punch(world: Node, origin: Vector3, fwd: Vector3, damage: float, caster: Node, charge: float = 0.0) -> void:
+	var mult: float = 1.0 + clampf(charge / 1.5, 0.0, 3.0)
+	
+	if is_instance_valid(caster) and caster.has_method("get_node"):
+		var proc = caster.get_node_or_null("ProceduralAnimator")
+		if proc and proc.has_method("play_baked"):
+			var anim_res = load("res://assets/animations/right_upper_hook_from_guard.res")
+			if anim_res:
+				# Toca a animação nativa (sem distorções procedurais e sem espelhamentos acidentais).
+				# A animação é estritamente direita (mixamorig_RightArm).
+				proc.play_baked(anim_res, 0.4 / mult, 0.0) # Animação muito lenta com o charge
+		elif caster.has_method("trigger_recovery_anim"):
+			caster.trigger_recovery_anim("Z")
+			
+	var delay: float = 0.25 * mult
+	var tw := world.create_tween()
+	tw.tween_interval(delay)
+	
+	tw.tween_callback(func():
+		if not is_instance_valid(world): return
+		var atq_pos = origin if not is_instance_valid(caster) else (caster as Node3D).global_position + Vector3.UP * 1.0 + fwd * 1.5
+		var zone := DamageZone.new()
+		world.add_child(zone)
+		zone.global_position = atq_pos
+		_bubble(zone, 2.2 * mult, 0.4)
+		_ring(zone, 0.6, 6.0 * mult, QUAKE, 0.5)
+		_debris(zone, 0.4, int(40 * mult))
+		GuraShatterMesh.spawn(zone, zone.global_position, 1.2 * mult)
+		if Engine.has_singleton("ScreenShatterFX"):
+			Engine.get_singleton("ScreenShatterFX").shatter(0.3 * mult, 0.5 * mult)
+		elif world.get_node_or_null("/root/ScreenShatterFX"):
+			world.get_node("/root/ScreenShatterFX").shatter(0.3 * mult, 0.5 * mult)
+		AudioFX.impact(world, atq_pos, 0.7 * mult)
+		
+		# PASSO 5: Efeitos de Câmera (Leve zoom in no impacto, Desfoque Radial)
+		var cam = world.get_viewport().get_camera_3d()
+		if cam:
+			var orig_fov = cam.fov
+			cam.fov -= 12.0 # Leve zoom in
+			var tw_cam = cam.create_tween()
+			tw_cam.tween_property(cam, "fov", orig_fov, 0.4).set_trans(Tween.TRANS_EXPO)
+			
+		var sfx := world.get_node_or_null("/root/ScreenFX")
+		if sfx and sfx.has_method("chromatic_pulse"):
+			sfx.chromatic_pulse(1.5 * mult)
+		if sfx and sfx.has_method("set_borrao"):
+			sfx.set_borrao(0.8 * mult)
+			var tw_fx = sfx.create_tween()
+			tw_fx.tween_method(sfx.set_borrao, 0.8 * mult, 0.0, 0.4)
+			
+		zone.override_kb_dir = Vector3.UP
+		zone.setup(damage * mult, 30.0 * mult, fwd * 22.0, 0.5, caster, 1.8 * mult)   # viaja + knockback ALTO
+	)
 
 # ---------- X: Shockwave — onda de choque radial ----------
-static func _shockwave(world: Node, pos: Vector3, damage: float, caster: Node) -> void:
-	var zone := DamageZone.new()
-	world.add_child(zone)
-	zone.global_position = pos
-	_ring(zone, 0.8, 9.0, QUAKE, 0.55)
-	_ring(zone, 0.4, 6.0, Color(1, 1, 1), 0.4)
-	_debris(zone, 0.2, 60)
-	AudioFX.impact(world, pos, 0.85)
-	zone.setup(damage, 34.0, Vector3.ZERO, 0.4, caster, 6.0)  # estático, raio grande, KB enorme
+static func _shockwave(world: Node, pos: Vector3, damage: float, caster: Node, charge: float = 0.0) -> void:
+	if is_instance_valid(caster) and caster.has_method("get_node"):
+		var proc = caster.get_node_or_null("ProceduralAnimator")
+		if proc and proc.has_method("play_baked"):
+			var anim_res = load("res://assets/animations/smash.res")
+			if not anim_res:
+				anim_res = load("res://assets/animations/punching.res")
+			if anim_res:
+				proc.play_baked(anim_res, 0.5, 0.0)
+		elif caster.has_method("trigger_recovery_anim"):
+			caster.trigger_recovery_anim("X")
+
+	var mult: float = 1.0 + clampf(charge / 1.5, 0.0, 3.0)
+	var delay: float = 0.3
+	var tw := world.create_tween()
+	tw.tween_interval(delay)
+	tw.tween_callback(func():
+		if not is_instance_valid(world): return
+		var zone := DamageZone.new()
+		world.add_child(zone)
+		zone.global_position = pos
+		
+		# PASSO 5: Zoom OUT na Explosão e Tremor Forte
+		var cam = world.get_viewport().get_camera_3d()
+		if cam:
+			var orig_fov = cam.fov
+			cam.fov += 10.0 # Zoom out (expande a visão pra mostrar a enorme área)
+			var tw_cam = cam.create_tween()
+			tw_cam.tween_property(cam, "fov", orig_fov, 0.6).set_trans(Tween.TRANS_EXPO)
+			
+		var sfx := world.get_node_or_null("/root/ScreenFX")
+		if sfx and sfx.has_method("chromatic_pulse"):
+			sfx.chromatic_pulse(1.2 * mult)
+			
+		_ring(zone, 0.8 * mult, 9.0 * mult, QUAKE, 0.55)
+		_ring(zone, 0.4 * mult, 6.0 * mult, Color(1, 1, 1), 0.4)
+		_debris(zone, 0.6, int(60 * mult)) # Detritos massivos da explosão
+		GuraShatterMesh.spawn(zone, zone.global_position, 1.5 * mult)
+		if Engine.has_singleton("ScreenShatterFX"):
+			Engine.get_singleton("ScreenShatterFX").shatter(0.5 * mult, 0.6)
+		elif world.get_node_or_null("/root/ScreenShatterFX"):
+			world.get_node("/root/ScreenShatterFX").shatter(0.5 * mult, 0.6)
+		AudioFX.impact(world, pos, 0.85 * mult)
+		zone.override_kb_dir = Vector3.UP
+		zone.setup(damage * mult, 34.0 * mult, Vector3.ZERO, 0.4, caster, 6.0 * mult)  # estático, raio grande, KB enorme
+	)
 
 # ---------- C: Eruption — o chão racha e ergue os inimigos ----------
-static func _eruption(world: Node, pos: Vector3, damage: float, caster: Node) -> void:
-	var zone := DamageZone.new()
-	world.add_child(zone)
-	zone.global_position = Vector3(pos.x, 0.2, pos.z)
-	_bubble(zone, 3.0, 0.5)
-	_ring(zone, 0.6, 7.0, QUAKE, 0.5)
-	_debris(zone, 1.2, 90)                                    # muitos destroços PRA CIMA
-	AudioFX.impact(world, zone.global_position, 0.9)
-	zone.setup(damage, 30.0, Vector3.ZERO, 0.5, caster, 5.0)
+static func _eruption(world: Node, pos: Vector3, damage: float, caster: Node, charge: float = 0.0) -> void:
+	if is_instance_valid(caster) and caster.has_method("get_node"):
+		var proc = caster.get_node_or_null("ProceduralAnimator")
+		if proc and proc.has_method("play_baked"):
+			var anim_res = load("res://assets/animations/left_uppercut_from_guard.res")
+			if not anim_res:
+				anim_res = load("res://assets/animations/punching.res")
+			if anim_res:
+				proc.play_baked(anim_res, 0.3, 0.0)
+		elif caster.has_method("trigger_recovery_anim"):
+			caster.trigger_recovery_anim("C")
 
-# ---------- V: Seaquake — abalo massivo (ultimate) ----------
-static func _seaquake(world: Node, pos: Vector3, damage: float, caster: Node) -> void:
-	var zone := DamageZone.new()
-	world.add_child(zone)
-	zone.global_position = pos
-	_bubble(zone, 6.0, 0.7)
-	for i in 3:
-		_ring(zone, 0.8 + i * 1.5, 16.0, QUAKE if i % 2 == 0 else Color(1, 1, 1), 0.7 + i * 0.1)
-	_debris(zone, 0.5, 160)
-	AudioFX.impact(world, pos, 1.1)
-	zone.setup(damage, 46.0, Vector3.ZERO, 0.6, caster, 12.0) # abalo GIGANTE, KB devastador
+	var delay: float = 0.4
+	var tw := world.create_tween()
+	tw.tween_interval(delay)
+	tw.tween_callback(func():
+		if not is_instance_valid(world): return
+		var zone := DamageZone.new()
+		world.add_child(zone)
+		zone.global_position = Vector3(pos.x, 0.2, pos.z)
+		_bubble(zone, 3.0, 0.5)
+		_ring(zone, 0.6, 7.0, QUAKE, 0.5)
+		_debris(zone, 1.2, 90)                                    # muitos destroços PRA CIMA
+		GuraShatterMesh.spawn(zone, zone.global_position, 1.8)
+		if Engine.has_singleton("ScreenShatterFX"):
+			Engine.get_singleton("ScreenShatterFX").shatter(0.6, 0.7)
+		elif world.get_node_or_null("/root/ScreenShatterFX"):
+			world.get_node("/root/ScreenShatterFX").shatter(0.6, 0.7)
+		AudioFX.impact(world, zone.global_position, 0.9)
+		zone.override_kb_dir = Vector3.UP
+		zone.setup(damage, 30.0, Vector3.ZERO, 0.5, caster, 5.0) # Erupção joga MUITO para cima
+	)
+
+# ---------- V: Seaquake / Tsunamis Duplos (ultimate) ----------
+static func _seaquake(world: Node, pos: Vector3, damage: float, caster: Node, charge: float = 0.0) -> void:
+	var v_node = load("res://src/effects/GuraVNode.gd").new(caster, damage)
+	world.add_child(v_node)
+	v_node.global_position = pos
+
+# Removido: _exagerar_soco (Euler * escalar causava inversão de eixos (gimbal) e afetava o braço esquerdo acidentalmente)

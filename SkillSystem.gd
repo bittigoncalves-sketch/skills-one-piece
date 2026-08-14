@@ -30,7 +30,7 @@ static func get_fruit_skills() -> Dictionary:
 			"Z": {"nome": "Gura Punch (Soco do Tremor)", "cor": Color(0.85, 0.94, 1.0), "dano": 20, "cooldown": 5.0},
 			"X": {"nome": "Shockwave (Onda de Choque)", "cor": Color(0.8, 0.9, 1.0), "dano": 25, "cooldown": 7.0},
 			"C": {"nome": "Kabutsuchi (Erupção)", "cor": Color(0.7, 0.85, 1.0), "dano": 30, "cooldown": 10.0},
-			"V": {"nome": "Shima Yurashi (Abalo Total)", "cor": Color(0.9, 0.96, 1.0), "dano": 45, "cooldown": 60.0}
+			"V": {"nome": "Tsunamis Duplos", "cor": Color(0.9, 0.96, 1.0), "dano": 85, "cooldown": 60.0}
 		},
 		"mera_mera": {
 			"Z": {"nome": "Tiros de Pistola de Fogo", "cor": Color(1.0, 0.45, 0.1), "dano": 20, "cooldown": 5.0},

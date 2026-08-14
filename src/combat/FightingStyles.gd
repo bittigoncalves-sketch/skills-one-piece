@@ -3,15 +3,28 @@ extends RefCounted
 # Estilos de Luta (Karate Tritão, Pacifista, Mink, Boxe, Cyborg).
 # Alternados com a tecla R em tempo real pelo jogador.
 
+# ⚠️ O campo "cooldown" daqui NÃO É LIDO por ninguém — confirmado por grep. Quem
+# manda na recarga de estilo é `Player.RECARGA_ESTILO` (60 s em qualquer slot,
+# pedido do dono em 2026-08-12). Os números continuam aqui só como registro do
+# ritmo pretendido de cada golpe; se um dia o estilo voltar a ter recarga por
+# skill, é este campo que a `trigger_skill_cooldown` deve passar a consultar.
+#
+# "desabilitado": a tecla não lança nada e o `CastController` recusa no aperto.
+# É uma FLAG DE DADOS, não um `if estilo == "karate_tritao"`: o próximo estilo
+# que quiser 3 golpes em vez de 4 não precisa de código novo.
 const STYLES := {
 	"karate_tritao": {
 		"nome": "Karate Tritão",
 		"cor": Color(0.15, 0.65, 0.95),
 		"skills": {
-			"Z": {"nome": "Karakusa Kawaragete (Onda d'Água)", "cor": Color(0.2, 0.7, 1.0), "dano": 28, "cooldown": 2.0},
+			# Z e C trocaram de NOME, não de lugar: o pedido do dono é "Z = tiros
+			# d'água da mão" e "C = onda empurrada pra frente", e os nomes canônicos
+			# estavam invertidos em relação a isso desde sempre. Murasame é o jato
+			# de água disparado; Karakusa Kawaragete é a onda.
+			"Z": {"nome": "Murasame (Tiros d'Água)", "cor": Color(0.3, 0.8, 1.0), "dano": 28, "cooldown": 2.0},
 			"X": {"nome": "Samehada Shotei (Palma de Tubarão)", "cor": Color(0.1, 0.6, 0.9), "dano": 42, "cooldown": 4.0},
-			"C": {"nome": "Murasame (Projéteis de Água)", "cor": Color(0.3, 0.8, 1.0), "dano": 36, "cooldown": 5.5},
-			"V": {"nome": "Gokushou Shichiseiken (Explosão Oceânica)", "cor": Color(0.05, 0.4, 0.95), "dano": 85, "cooldown": 12.0}
+			"C": {"nome": "Karakusa Kawaragete (Onda d'Água)", "cor": Color(0.2, 0.7, 1.0), "dano": 36, "cooldown": 5.5},
+			"V": {"nome": "— (sem técnica)", "cor": Color(0.05, 0.4, 0.95), "dano": 0, "cooldown": 0.0, "desabilitado": true}
 		}
 	},
 	"pacifista": {
@@ -78,24 +91,28 @@ static func cast(world: Node, style_id: String, variant: int, origin: Vector3, d
 		_:               _cast_water(world, origin, fwd, variant, damage, caster)
 
 # ---------- Karate Tritão ----------
+# ⚠️ ATÉ 2026-08-13 ESTA FUNÇÃO IGNORAVA O `variant`: os quatro slots do estilo
+# caíam no MESMO esguicho de partículas. O estilo tinha quatro nomes na HUD e um
+# golpe só. Agora o `variant` é o que ele sempre deveria ter sido — o índice do
+# slot (0=Z, 1=X, 2=C, 3=V) — e cada tecla tem forma própria.
+#
+# O corpo dos efeitos mora no `WaterFX`, seguindo os vizinhos (IceFX, FireFX,
+# GoroFX): este arquivo é a TABELA de estilos, não a oficina de VFX. Ele já gasta
+# ~270 linhas só com 6 estilos genéricos; enfiar três golpes de água aqui dentro
+# o levaria ao teto de 900 linhas (docs/LIMITE_DE_TAMANHO.md) no SEGUNDO estilo
+# que ganhasse tratamento de verdade.
+#
+# O `_` cobre dois casos ao mesmo tempo, e por isso é o esguicho e não "nada":
+#   • V do Karate Tritão — desabilitado nos DADOS (o `CastController` recusa a
+#     tecla no aperto), então em jogo ele não chega aqui;
+#   • estilo SEM tratamento próprio — o `cast()` acima manda o desconhecido para
+#     cá, e ele tem que continuar saindo com o mesmo golpe genérico de sempre.
 static func _cast_water(world: Node, origin: Vector3, fwd: Vector3, variant: int, damage: float, caster: Node) -> void:
-	var zone := DamageZone.new()
-	world.add_child(zone)
-	zone.global_position = origin
-
-	var pm := ParticleProcessMaterial.new()
-	pm.direction = fwd
-	pm.spread = 35.0
-	pm.initial_velocity_min = 8.0
-	pm.initial_velocity_max = 18.0
-	pm.scale_min = 0.6
-	pm.scale_max = 2.0
-	pm.color_ramp = FxUtil.gradient([Color(0.2, 0.7, 1.0, 0.9), Color(0.05, 0.4, 0.9, 0.7), Color(1, 1, 1, 0)])
-
-	var water := FxUtil.particles(260, 0.7, true, pm, FxUtil.grain(0.5))
-	zone.add_child(water)
-
-	zone.setup(damage, 14.0, fwd * 25.0, 1.2, caster, 1.2)
+	match variant:
+		0: WaterFX.tiros_da_mao(world, origin, fwd, damage, caster)   # Z — tiros d'água da mão
+		1: WaterFX.esguicho(world, origin, fwd, damage, caster)       # X — INTACTO (pedido do dono)
+		2: WaterFX.onda(world, origin, fwd, damage, caster)           # C — onda empurrada pra frente
+		_: WaterFX.esguicho(world, origin, fwd, damage, caster)       # V / estilo desconhecido
 
 # ---------- Pacifista Laser ----------
 static func _cast_laser(world: Node, origin: Vector3, fwd: Vector3, variant: int, damage: float, caster: Node) -> void:

@@ -9,6 +9,7 @@ var damage: float = 0.0
 var knockback: float = 0.0
 var vel: Vector3 = Vector3.ZERO
 var caster: Node = null
+var override_kb_dir: Vector3 = Vector3.ZERO
 var _hit: Dictionary = {}
 
 # Cria a colisão e a agenda de vida. Chamar logo após add_child.
@@ -81,10 +82,16 @@ func _on_body(body: Node3D) -> void:
 		return
 	if body.has_method("take_damage"):
 		_hit[body] = true
-		var dir: Vector3 = body.global_position - global_position
-		dir.y = 0.0
-		dir = dir.normalized() if dir.length() > 0.01 else Vector3.FORWARD
-		var kb: Vector3 = dir * knockback + Vector3.UP * knockback * 0.35
+		
+		var kb: Vector3
+		if override_kb_dir != Vector3.ZERO:
+			kb = override_kb_dir * knockback
+		else:
+			var dir: Vector3 = body.global_position - global_position
+			dir.y = 0.0
+			dir = dir.normalized() if dir.length() > 0.01 else Vector3.FORWARD
+			kb = dir * knockback + Vector3.UP * knockback * 0.35
+			
 		# PARALISIA: prende em vez de arremessar. O `is_frozen` é o mesmo sinal
 		# que o gelo já usa, e o `_etapa_travamento` do Player o respeita.
 		if paralisa > 0.0:

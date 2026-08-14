@@ -18,6 +18,7 @@ ClientManager="*res://network/ClientManager.gd"
 FruitNet="*res://network/FruitNet.gd"
 GameFlow="*res://autoload/GameFlow.gd"
 ScreenFX="*res://src/fx/ScreenFX.gd"
+ScreenShatterFX="*res://src/fx/ScreenShatterFX.gd"
 
 [display]
 

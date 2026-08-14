@@ -111,7 +111,7 @@ func _spawn_player_data(data: Dictionary) -> Node:
 	# cliente" — dava para atribuir ao bug da HUD o que era falta de fruta.
 	# Escolha por-jogador continua sendo fase futura; o ponto aqui é que os dois
 	# lados comecem iguais.
-	player.call_deferred("equip_fruit", "suna_suna")
+	player.call_deferred("equip_fruit", "gura_gura")
 	return player
 
 func _make_player_sync() -> MultiplayerSynchronizer:

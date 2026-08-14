@@ -50,8 +50,8 @@ func start_singleplayer() -> void:
 	room_id = ""
 	# Singleplayer = SERVIDOR LOCAL (host = você, peer id 1). Exatamente o mesmo
 	# caminho do multiplayer -> zero lógica duplicada.
-	if not ServerManager.host():
-		push_error("[GameFlow] falha ao iniciar servidor local")
+	if not ServerManager.host_offline():
+		push_error("[GameFlow] falha ao iniciar servidor local offline")
 		return
 	_enter_world()
 

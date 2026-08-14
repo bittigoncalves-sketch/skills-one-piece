@@ -31,6 +31,15 @@ func host(port: int = NetConf.DEFAULT_PORT, max_players: int = NetConf.MAX_PLAYE
 	print("[Server] hospedando na porta %d (host id=%d)" % [port, multiplayer.get_unique_id()])
 	return true
 
+func host_offline() -> bool:
+	stop()
+	var peer := OfflineMultiplayerPeer.new()
+	multiplayer.multiplayer_peer = peer
+	is_running = true
+	started.emit()
+	print("[Server] hospedando offline (host id=%d)" % [multiplayer.get_unique_id()])
+	return true
+
 func stop() -> void:
 	if multiplayer.peer_connected.is_connected(_on_peer_connected):
 		multiplayer.peer_connected.disconnect(_on_peer_connected)

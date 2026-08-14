@@ -191,11 +191,31 @@ static func golpear(world: Node, caster: Node3D, i: int, origem: Vector3, dir: V
 		# não um projétil.
 		zone.setup(float(g["dano"]), float(g["kb"]), Vector3.ZERO,
 			float(g["vida"]), caster, float(g["raio"]))
-		_impacto(world, zone.global_position, i))
+		_impacto(world, zone.global_position, i, cor_do_impacto(caster)))
+
+# COR DO SOCO = cor do ESTILO em uso (pedido do dono, 2026-08-12: "quando
+# equipado os efeitos do combate corpo a corpo mudam para azul" — o Tritão já é
+# azul em `FightingStyles.STYLES["karate_tritao"]["cor"]`).
+#
+# Genérico de propósito. Um `if estilo == "karate_tritao": azul` resolveria hoje
+# e obrigaria a mexer aqui a cada estilo novo; ler a cor que o estilo JÁ declara
+# não custa mais e faz o Pacifista sair vermelho e o Mink amarelo de graça.
+# No modo FRUTA fica o branco-quente de sempre: lá o soco é o golpe "sem poder",
+# e pintá-lo da cor da fruta confundiria com as skills dela.
+static func cor_do_impacto(caster: Node) -> Color:
+	const PADRAO := Color(1.0, 0.95, 0.8)
+	if caster == null or str(caster.get("combat_mode")) != "style":
+		return PADRAO
+	if not caster.has_method("estilo_atual"):
+		return PADRAO
+	var estilo: String = caster.estilo_atual()
+	if not FightingStyles.STYLES.has(estilo):
+		return PADRAO
+	return FightingStyles.STYLES[estilo].get("cor", PADRAO)
 
 # Fiapo visual do golpe: um anel achatado que abre e some no lugar do impacto.
 # Curto de propósito — o corpo a corpo tem que ler pela ANIMAÇÃO, não por VFX.
-static func _impacto(world: Node, pos: Vector3, i: int) -> void:
+static func _impacto(world: Node, pos: Vector3, i: int, cor: Color = Color(1.0, 0.95, 0.8)) -> void:
 	AudioFX.whoosh(world, pos, 1.15 if i < 2 else 0.85)
 	var m := MeshInstance3D.new()
 	var anel := TorusMesh.new()
@@ -203,9 +223,12 @@ static func _impacto(world: Node, pos: Vector3, i: int) -> void:
 	anel.outer_radius = 0.45
 	m.mesh = anel
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(1.0, 0.95, 0.8, 0.55)
+	mat.albedo_color = Color(cor.r, cor.g, cor.b, 0.55)
 	mat.emission_enabled = true
-	mat.emission = Color(1.0, 0.85, 0.5)
+	# A emissão é a mesma cor puxada pro brilho — `lightened` em vez de um segundo
+	# valor escrito à mão, senão cada cor de estilo precisaria de DUAS entradas na
+	# tabela e as duas poderiam divergir.
+	mat.emission = cor.lightened(0.15)
 	mat.emission_energy_multiplier = 2.5
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
