@@ -701,3 +701,64 @@ guarde o fato de ter encontrado numa variável à parte.
 
 Vale para as sondas que já existem em `tools/dev_tests/` — nenhuma foi auditada
 sob essa luz.
+
+### 43. O `base.glb` — a ORIGEM do modelo — continua espelhado
+O `base.scn` foi desespelhado em 2026-08-14 (item 39), mas a sonda
+`tools/dev_tests/medir_lados.gd` mostra que o **`base.glb`** ainda tem os lados
+trocados:
+
+```
+== base.scn ==   10 ok, 0 trocados
+== base.glb ==   UpperArm_L x=+0.3750  TROCADO
+                 UpperArm_R x=-0.3750  TROCADO
+```
+
+**Quem reimportar o GLB traz o problema de volta**, e desta vez sem o aviso — o
+`base.scn` passaria a discordar da própria origem.
+
+*Detectado:* rodando a sonda de lado depois da cirurgia de rig, por hábito de
+conferir os dois modelos.
+
+**Decisão pendente:** consertar o `.glb` na origem (Blender), ou documentar que o
+`.scn` é a fonte de verdade e o `.glb` é histórico? A segunda é mais barata e
+mais frágil.
+
+### 44. A paralisia da `DamageZone` ainda não anima
+`RecepcaoDeDano.paralisar_com_animacao()` existe e foi medida (prende, anima e
+solta), mas a `DamageZone` continua no caminho antigo: `set_meta("is_frozen")` +
+`StatusFX` na mão, sem pose.
+
+Resultado: o X da Goro paralisa **sem** animação de recepção, enquanto uma
+chamada direta anima. Duas paralisias com aparências diferentes.
+
+*Detectado:* ao escrever `docs/MECANICAS.md` e comparar os dois caminhos.
+
+**Não consertei porque** trocar isso mexe no comportamento de um golpe que o dono
+aprovou jogando, e a regra é não alterar sem ordem. É uma linha.
+
+### 45. 🔴 `test_arena` REPROVA — o `AutoDummy` faz dois dummies onde o teste espera um
+A bateria caiu de 25/25 para **24/25**. A checagem que falha é
+`test_arena.gd:81` — `dummies == 1`, "o dummy de treino continua (saco de
+pancadas)".
+
+**Causa:** `src/entities/AutoDummy.gd` faz `extends TrainingDummy`, então herda o
+`add_to_group("dummy")` da linha 26 do pai. E `Main.gd:85` passou a criar o
+`AutoDummy` além do `TrainingDummy`. São **dois** no grupo.
+
+*Detectado:* bateria de 2026-08-14, depois do trabalho de mecânicas. **A causa
+NÃO é o trabalho de mecânicas** — nada nele toca em spawn de dummy; o
+`AutoDummy` e a linha do `Main.gd` vieram de outra sessão trabalhando no mesmo
+repositório em paralelo.
+
+**Decisão pendente, e ela é de quem escreveu o `AutoDummy`:**
+
+1. o `AutoDummy` **não deveria** estar no grupo `dummy` (ele é um inimigo ativo,
+   não um saco de pancadas) — nesse caso o conserto é no `AutoDummy`, e o teste
+   está certo;
+2. ou passaram a existir **dois sacos de pancadas de propósito** — nesse caso o
+   teste é que precisa ser atualizado, e a asserção vira `dummies >= 1`.
+
+**Não escolhi por conta própria** porque as duas mexem em intenção de design de
+outra pessoa: a (1) muda o comportamento do inimigo novo, a (2) afrouxa um teste
+que existe para pegar exatamente esse tipo de spawn acidental (a seção se chama
+"inimigos fora do mapa").

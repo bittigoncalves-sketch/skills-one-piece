@@ -94,15 +94,16 @@ func _on_body(body: Node3D) -> void:
 	if body.has_method("take_damage"):
 		_hit[body] = true
 		
-		var kb: Vector3
-		if override_kb_dir != Vector3.ZERO:
-			kb = override_kb_dir * knockback
-		else:
-			var dir: Vector3 = body.global_position - global_position
-			dir.y = 0.0
-			dir = dir.normalized() if dir.length() > 0.01 else Vector3.FORWARD
-			kb = dir * knockback + Vector3.UP * knockback * 0.35
-			
+		# KNOCKBACK -> src/mechanics/Knockback.gd (2026-08-14).
+		# A conta é a MESMA de sempre, inclusive o 0.35 vertical; ela só deixou de
+		# morar aqui dentro. Motivo: o dono trata "knockback horizontal" e
+		# "knockback vertical" como duas mecânicas, e o vertical era uma constante
+		# escondida no meio de uma expressão — invisível para quem quisesse
+		# ajustar, e impossível de testar em separado.
+		var kb: Vector3 = Knockback.calcular(
+			global_position, body.global_position, knockback,
+			Knockback.PADRAO, override_kb_dir)
+
 		# PARALISIA: prende em vez de arremessar. O `is_frozen` é o mesmo sinal
 		# que o gelo já usa, e o `_etapa_travamento` do Player o respeita.
 		if paralisa > 0.0:

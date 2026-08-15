@@ -83,6 +83,7 @@ var _kurouzu_w := 0.0       # pose de atração do Kurouzu (braço à frente)
 var _black_hole_w := 0.0    # pose do Barba Negra no Black Hole (pernas abertas, mão pro chão)
 var _gura_v_w := 0.0        # peso da ultimate V da Gura Gura
 var _gura_v_state := ""     # estado interno da ultimate V
+var _dano_w := 0.0          # tranco de recepção de dano (src/mechanics/RecepcaoDeDano.gd)
 var _recovery_t := 0.0      # timer do tranco elástico de recepção (chicote)
 var _t := 0.0
 
@@ -170,6 +171,12 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	_black_hole_w = lerpf(_black_hole_w, 1.0 if custom_pose == "black_hole" else 0.0, 1.0 - exp(-20.0 * delta))
 	_gura_x_charge_w = lerpf(_gura_x_charge_w, 1.0 if custom_pose == "gura_x_charge" else 0.0, 1.0 - exp(-20.0 * delta))
 	_gura_rush_w  = lerpf(_gura_rush_w,  1.0 if custom_pose == "gura_rush" else 0.0,  1.0 - exp(-25.0 * delta))
+	# RECEPÇÃO DE DANO -> src/mechanics/RecepcaoDeDano.gd. Entra RÁPIDO (40) e sai
+	# devagar (14): o tranco tem que bater na hora e relaxar depois. As poses de
+	# fruta usam 15-25 nos dois sentidos porque são intenção, não impacto.
+	var _quer_dano: bool = custom_pose == RecepcaoDeDano.POSE
+	_dano_w = lerpf(_dano_w, 1.0 if _quer_dano else 0.0,
+		1.0 - exp(-(RecepcaoDeDano.RIGIDEZ_ENTRA if _quer_dano else RecepcaoDeDano.RIGIDEZ_SAI) * delta))
 	
 	if custom_pose.begins_with("gura_v_"):
 		_gura_v_state = custom_pose
@@ -210,12 +217,15 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	_air(off, _air_w * upper_free, velocity.y)
 	_parkour(off, _phase)
 	_finger_gun(off, _gun_w, pitch, gun_recoil)
-	_hibashira_pose(off, _hibashira_w)
-	_kurouzu_pose(off, _kurouzu_w)
-	_black_hole_pose(off, _black_hole_w)
-	_gura_rush_pose(off, _gura_rush_w) # Pose assimétrica sobreposta
-	_gura_x_charge_pose(off, _gura_x_charge_w)
-	_gura_v_poses(off, _gura_v_w, _gura_v_state)
+	FruitPoses.hibashira_pose(_add, off, _hibashira_w, _t)
+	FruitPoses.kurouzu_pose(_add, off, _kurouzu_w, _t)
+	FruitPoses.black_hole_pose(_add, off, _black_hole_w, _t)
+	FruitPoses.gura_rush_pose(_add, off, _gura_rush_w, _t) # Pose assimetrica sobreposta
+	FruitPoses.gura_x_charge_pose(_add, off, _gura_x_charge_w, _t)
+	FruitPoses.gura_v_poses(_add, off, _gura_v_w, _t, _gura_v_state)
+	# POR ÚLTIMO entre as poses: o tranco de dano SOMA por cima do que o corpo já
+	# estava fazendo. É o que faz levar um tiro correndo continuar lendo como corrida.
+	RecepcaoDeDano.pose(_add, off, _dano_w, _t)
 	_charge(off, _charge_w, charge_slot)
 	
 	# Se não estiver em charge, mas tem charge_slot = "C" (Gatling firing) -> aplica shake no torso.
@@ -669,87 +679,10 @@ func _finger_gun(off: Dictionary, w: float, pitch: float, gun_recoil: float) -> 
 # de propósito, com o sinal do lado direito, para as duas poses não inventarem
 # cada uma o seu T. Medido, 1,4 rad dá 80° do chão — 10° abaixo da horizontal
 # exata; quem quiser o T no esquadro troca -1,4 por -1,5708 nos DOIS lugares.
-func _gura_rush_pose(off: Dictionary, w: float) -> void:
-	if w <= 0.001: return
-
-	# Tronco à FRENTE (x NEGATIVO é frente — x positivo joga o topo p/ trás, e a
-	# versão anterior usava +0,3, ou seja, corria de costas para o próprio avanço).
-	# Sem torção no Y: torcer o tronco tiraria o braço do perfil lateral limpo,
-	# que é justamente o que o T tem de leitura.
-	_add(off, "Torso", Vector3(-0.15, 0.0, 0.0) * w)
-
-	# BRAÇO DIREITO ABERTO PARA O LADO (metade do T). O braço ESQUERDO não recebe
-	# nada aqui — é o que separa esta pose do `gura_v_tpose`, que abre os dois.
-	_add(off, "UpperArm_R", Vector3(0.0, 0.0, 1.4) * w)
-	_add(off, "ForeArm_R", Vector3(-0.1, 0.0, 0.0) * w)
-
-	# Cabeça compensa a inclinação do tronco, para o olhar seguir no alvo em vez
-	# de acompanhar o peito para baixo.
-	_add(off, "Head", Vector3(0.18, 0.0, 0.0) * w)
 
 # Pose Especial de Carregamento: Gura Gura X (Captura Sísmica)
-func _gura_x_charge_pose(off: Dictionary, w: float) -> void:
-	if w <= 0.001: return
-	# Braço direito estendido diretamente na direção da mira para capturar o alvo,
-	# X = 1.5 aponta perfeitamente para frente (-Z).
-	var vib_y = sin(_t * 30.0) * 0.02
-	var vib_z = cos(_t * 35.0) * 0.02
-	_add(off, "UpperArm_R", Vector3(1.5 + vib_y, -vib_y, -(0.1 + vib_z)) * w)
-	_add(off, "ForeArm_R", Vector3(-0.1 + vib_y, 0.0, 0.0) * w)
-	_add(off, "Torso", Vector3(0.1, 0.0, 0.0) * w)
-	_add(off, "Head", Vector3(0.1, 0.0, 0.0) * w)
 
 # --- Poses da Ultimate V da Gura Gura (Sequência de 4s) ---
-func _gura_v_poses(off: Dictionary, w: float, state: String) -> void:
-	if w <= 0.001: return
-	
-	if state == "gura_v_prep":
-		# Preparação (0.0s): Postura firme, respira fundo
-		var resp = sin(_t * 3.0) * 0.05
-		_add(off, "Torso", Vector3(0.1 - resp, 0, 0) * w)
-		_add(off, "Head", Vector3(-0.1 + resp, 0, 0) * w)
-		_add(off, "UpperArm_L", Vector3(0.2, 0.0, -0.1) * w)
-		_add(off, "UpperArm_R", Vector3(0.2, 0.0, 0.1) * w)
-		
-	elif state == "gura_v_squat":
-		# Agachamento (1.0s): Flexiona joelhos, braços pra trás
-		_add(off, "Thigh_L", Vector3(0.8, -0.1, 0) * w)
-		_add(off, "Thigh_R", Vector3(0.8, 0.1, 0) * w)
-		_add(off, "Shin_L", Vector3(-1.0, 0, 0) * w)
-		_add(off, "Shin_R", Vector3(-1.0, 0, 0) * w)
-		_add(off, "Torso", Vector3(0.3, 0, 0) * w)
-		_add(off, "UpperArm_L", Vector3(-1.2, 0.0, -0.2) * w)
-		_add(off, "UpperArm_R", Vector3(-1.2, 0.0, 0.2) * w)
-		
-	elif state == "gura_v_gather":
-		# Reúne energia (2.0s): Agachado vibrando fortemente
-		var vib = sin(_t * 45.0) * 0.03
-		_add(off, "Thigh_L", Vector3(0.9, -0.1, 0) * w)
-		_add(off, "Thigh_R", Vector3(0.9, 0.1, 0) * w)
-		_add(off, "Shin_L", Vector3(-1.1, 0, 0) * w)
-		_add(off, "Shin_R", Vector3(-1.1, 0, 0) * w)
-		_add(off, "Torso", Vector3(0.4 + vib, 0, 0) * w)
-		_add(off, "UpperArm_L", Vector3(-1.3, 0.0, -0.3 - vib) * w)
-		_add(off, "UpperArm_R", Vector3(-1.3, 0.0, 0.3 + vib) * w)
-		_add(off, "ForeArm_L", Vector3(0.5, 0, 0) * w)
-		_add(off, "ForeArm_R", Vector3(0.5, 0, 0) * w)
-		
-	elif state == "gura_v_lift":
-		# Levanta os braços (3.0s): Braços sobem lentamente
-		var vib = sin(_t * 30.0) * 0.02
-		_add(off, "Torso", Vector3(0.0, 0, 0) * w)
-		_add(off, "UpperArm_L", Vector3(0.0, -0.2, -0.8 - vib) * w)
-		_add(off, "UpperArm_R", Vector3(0.0, 0.2, 0.8 + vib) * w)
-		
-	elif state == "gura_v_tpose":
-		# Pose em T (4.0s): Braços totalmente horizontais, vibração máxima
-		var vib = sin(_t * 50.0) * 0.05
-		_add(off, "Torso", Vector3(-0.1, 0, 0) * w)
-		_add(off, "Head", Vector3(0.1, 0, 0) * w)
-		_add(off, "UpperArm_L", Vector3(0.0, 0.0, -1.4 - vib) * w)
-		_add(off, "UpperArm_R", Vector3(0.0, 0.0, 1.4 + vib) * w)
-		_add(off, "ForeArm_L", Vector3(-0.1, 0, 0) * w)
-		_add(off, "ForeArm_R", Vector3(-0.1, 0, 0) * w)
 
 func _lookat(off: Dictionary, pitch: float, w: float) -> void:
 	if w <= 0.001:
@@ -851,50 +784,9 @@ func _recovery(off: Dictionary, delta: float) -> void:
 
 # POSE DE ENTRADA DO HIBASHIRA (Mera Mera C): Soca o chão no centro e abre as pernas numa
 # postura de firmeza de combate (power stance), permanecendo em imobilidade imune e imponente.
-func _hibashira_pose(off: Dictionary, w: float) -> void:
-	if w <= 0.001:
-		return
-	# Base de combate: pernas bem abertas lateralmente e joelhos flexionados firmes na terra.
-	_add(off, "Thigh_L", Vector3(0.5, 0.0, -0.45) * w)
-	_add(off, "Thigh_R", Vector3(0.5, 0.0, 0.45) * w)
-	_add(off, "Shin_L", Vector3(-0.85, 0.0, 0.0) * w)
-	_add(off, "Shin_R", Vector3(-0.85, 0.0, 0.0) * w)
-	_add(off, "Foot_L", Vector3(0.35, 0.0, 0.2) * w)
-	_add(off, "Foot_R", Vector3(0.35, 0.0, -0.2) * w)
-	# Tronco dobrado profundamente para frente em direção ao centro da erupção de chamas.
-	_add(off, "Torso", Vector3(-0.85, 0.25, 0.1) * w)
-	# Cabeça erguida com olhar feroz à frente (superando a inclinação do tronco).
-	_add(off, "Head", Vector3(0.65, -0.2, 0.0) * w)
-	# Braço Direito socando o chão à frente/centro (punho cravado na erupção).
-	_add(off, "UpperArm_R", Vector3(0.6, 0.0, 0.5) * w)
-	_add(off, "ForeArm_R", Vector3(1.1, 0.0, 0.0) * w)
-	# Braço Esquerdo flexionado para trás em equilíbrio dinâmico de chamas.
-	_add(off, "UpperArm_L", Vector3(-1.1, -0.3, -0.35) * w)
-	_add(off, "ForeArm_L", Vector3(0.15, 0.0, 0.0) * w)
 
 # POSE DE ESPIRAL NEGRA / KUROUZU (Yami Yami X): Levanta o braço direito diretamente à frente
 # para atrair e segurar a vítima firmemente no ar pela força da gravidade abissal.
-func _kurouzu_pose(off: Dictionary, w: float) -> void:
-	if w <= 0.001:
-		return
-	_add(off, "UpperArm_R", Vector3(1.55, 0.0, 0.2) * w)
-	_add(off, "ForeArm_R", Vector3(0.05, 0.0, 0.0) * w)
-	_add(off, "Torso", Vector3(-0.15, -0.25, 0.0) * w)
-	_add(off, "Thigh_L", Vector3(-0.25, 0.0, -0.2) * w)
-	_add(off, "Thigh_R", Vector3(0.35, 0.0, 0.2) * w)
-	_add(off, "Shin_L", Vector3(-0.4, 0.0, 0.0) * w)
 
 # POSE DO BARBA NEGRA / BLACK HOLE (Yami Yami C): Pernas afastadas em base firme e uma
 # mão para baixo direcionada ao solo gerando o pântano de trevas.
-func _black_hole_pose(off: Dictionary, w: float) -> void:
-	if w <= 0.001:
-		return
-	_add(off, "Thigh_L", Vector3(0.4, 0.0, -0.45) * w)
-	_add(off, "Thigh_R", Vector3(0.4, 0.0, 0.45) * w)
-	_add(off, "Shin_L", Vector3(-0.65, 0.0, 0.0) * w)
-	_add(off, "Shin_R", Vector3(-0.65, 0.0, 0.0) * w)
-	_add(off, "Torso", Vector3(-0.6, 0.3, 0.1) * w)
-	_add(off, "Head", Vector3(0.45, -0.25, 0.0) * w)
-	_add(off, "UpperArm_R", Vector3(0.4, 0.0, 0.4) * w)
-	_add(off, "ForeArm_R", Vector3(0.2, 0.0, 0.0) * w)
-	_add(off, "UpperArm_L", Vector3(-0.9, -0.2, -0.4) * w)

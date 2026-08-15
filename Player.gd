@@ -711,6 +711,14 @@ func _physics_process(delta: float) -> void:
 		_remote_process(delta)   # player de outro cliente: só reproduz o estado replicado
 		return
 	_etapa_estado_de_combate(delta)
+	# ⚠️ ANTES DO PORTÃO DE TRAVAMENTO, e isto NÃO é detalhe de ordem.
+	# O tranco de dano estava depois, e a paralisia (que ESTE contador desliga)
+	# faz `_etapa_travamento` devolver true — ou seja, o mecanismo que congela
+	# bloqueava o relógio que descongela. Medido: alvo seguia congelado em 1,5 s
+	# de uma paralisia de 1,2 s, e a pose nunca saía.
+	# Mesma classe do item 23 (morrer segurando a tecla travava o jogo para
+	# sempre): estado que só se apaga por um caminho que ele próprio fecha.
+	RecepcaoDeDano.tick(self, delta)
 	if _etapa_travamento(delta):
 		return
 	_etapa_locomocao(delta)
@@ -1140,6 +1148,13 @@ func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knock
 func _feedback_de_dano(amount: float) -> void:
 	FxUtil.flash_red(_char_model)
 	AudioFX.hurt(get_tree().current_scene, global_position + Vector3.UP * 1.0)
+	# ANIMAÇÃO DE RECEPÇÃO DE DANO (pedido do dono, 2026-08-14):
+	# "vai ocorrer sempre que o jogador receber dano".
+	# Fica AQUI, e não no `take_damage`, de propósito: este é o funil por onde
+	# passa todo dano visível em QUALQUER cópia — o do servidor e o que chega por
+	# `net_vida_do_servidor`. Pendurar no `take_damage` faria o adversário não ver
+	# você apanhar, que é exatamente o bug do item 20.
+	RecepcaoDeDano.aplicar(self)
 	FxUtil.damage_number(get_tree().current_scene, global_position + Vector3.UP * 1.7, amount, Color(1.0, 0.75, 0.2))
 	var hud := get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("on_player_damaged"):
@@ -1183,6 +1198,7 @@ func premiar_kill() -> void:
 # qualquer acerto matava o cliente na hora, pelo resto da rodada.
 func restaurar_vida_no_servidor() -> void:
 	_vida.restaurar()
+	RecepcaoDeDano.limpar(self)
 	# ⚠️ A recarga da Buki tem DOIS relógios: `_skill_cooldowns` no dono (zerado
 	# no `net_force_respawn`) e `_srv_recarga_ate` na cópia do servidor. Zerar só
 	# um deixaria o jogador vendo o slot livre e o servidor recusando em
@@ -1279,6 +1295,7 @@ func net_force_respawn() -> void:
 		_skill_cooldowns[slot_k] = 0.0
 
 	_vida.restaurar()
+	RecepcaoDeDano.limpar(self)
 	velocity = Vector3.ZERO
 	global_position = Scoreboard.RESPAWN   # centro da plataforma (zona sem buraco)
 
