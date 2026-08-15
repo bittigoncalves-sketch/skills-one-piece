@@ -288,19 +288,19 @@ func _idle(off: Dictionary, w: float) -> void:
 	_add(off, "Head", Vector3(0.02 * resp, 0.09 * giro - 0.03 * giro, 0) * w)
 
 	# pernas: uma sustenta, a outra relaxa — o joelho de apoio estica um pouco
-	_add(off, "Thigh_L", Vector3(0.02 * peso, 0, 0.02 * peso) * w)
-	_add(off, "Thigh_R", Vector3(-0.02 * peso, 0, 0.02 * peso) * w)
-	_add(off, "Shin_L", Vector3(-0.05 - 0.03 * maxf(peso, 0.0), 0, 0) * w)
-	_add(off, "Shin_R", Vector3(-0.05 - 0.03 * maxf(-peso, 0.0), 0, 0) * w)
+	_add(off, "Thigh_L", Vector3(-0.02 * peso, 0, 0.02 * peso) * w)
+	_add(off, "Thigh_R", Vector3(0.02 * peso, 0, 0.02 * peso) * w)
+	_add(off, "Shin_L", Vector3(-0.05 - 0.03 * maxf(-peso, 0.0), 0, 0) * w)
+	_add(off, "Shin_R", Vector3(-0.05 - 0.03 * maxf(peso, 0.0), 0, 0) * w)
 
 	# braços soltos, um pouco à frente e afastados: guarda baixa, não em posição
 	# de sentido. O `_gun_w` tira o balanço quando a pistola está erguida.
 	var arm_w: float = w * (1.0 - _gun_w)
 	var arm_r_w: float = arm_w * (1.0 - _gura_rush_w) # Isola o braço direito da animação normal
-	_add(off, "UpperArm_L", Vector3(0.10 + 0.05 * resp, 0, 0.13) * arm_w)
-	_add(off, "UpperArm_R", Vector3(0.10 - 0.05 * resp, 0, -0.13) * arm_r_w)
-	_add(off, "ForeArm_L", Vector3(0.34 + 0.05 * peso, 0, 0.10) * arm_w)
-	_add(off, "ForeArm_R", Vector3(0.34 - 0.05 * peso, 0, -0.10) * arm_r_w)
+	_add(off, "UpperArm_L", Vector3(0.10 - 0.05 * resp, 0, -0.13) * arm_w)
+	_add(off, "UpperArm_R", Vector3(0.10 + 0.05 * resp, 0, 0.13) * arm_r_w)
+	_add(off, "ForeArm_L", Vector3(0.34 - 0.05 * peso, 0, -0.10) * arm_w)
+	_add(off, "ForeArm_R", Vector3(0.34 + 0.05 * peso, 0, 0.10) * arm_r_w)
 	_add(off, "Torso", Vector3(0.04 + 0.02 * resp, 0, 0) * w)
 
 func _locomotion(off: Dictionary, w: float, phase: float, speed01: float, is_sprinting: bool) -> void:
@@ -332,8 +332,17 @@ func _locomotion(off: Dictionary, w: float, phase: float, speed01: float, is_spr
 	# passa por cima dele), e na balanço levanta num arco.
 	# `lean` entra porque as coxas são FILHAS do torso: sem devolver a inclinação,
 	# a perna herda o tombo do tronco e o pé plantado sobe/desce junto.
-	_perna_ik(off, "Thigh_L", "Shin_L", "Foot_L", phase, speed01, is_sprinting, w, lean)
-	_perna_ik(off, "Thigh_R", "Shin_R", "Foot_R", phase + PI, speed01, is_sprinting, w, lean)
+	# ⚠️ AS FASES ESTÃO TROCADAS DE PROPÓSITO (L recebe `phase + PI`).
+	# Quando o `base.scn` foi desespelhado (2026-08-14), o papel `_L` passou a
+	# apontar para o nó do lado −X, que antes se chamava `_R`. Todos os offsets de
+	# `_add` foram trocados junto para o resultado FÍSICO não mudar — mas a perna
+	# não vem de `_add`, vem daqui, da IK. Sem trocar a fase também, os braços
+	# passaram a balançar JUNTO com a perna do mesmo lado em vez de opostos, e o
+	# `test_walk_run` reprovou com "braço não está oposto à perna".
+	# Regra para quem mexer aqui: braço e perna do MESMO papel têm que estar em
+	# contra-fase. O teste mede isso por correlação (tem que ser negativa).
+	_perna_ik(off, "Thigh_L", "Shin_L", "Foot_L", phase + PI, speed01, is_sprinting, w, lean)
+	_perna_ik(off, "Thigh_R", "Shin_R", "Foot_R", phase, speed01, is_sprinting, w, lean)
 
 	# Braços SOLTOS, OPOSTOS às pernas (não balançam com pistola erguida, _gun_w).
 	# COSSENO, não seno: a perna agora vem da IK, cuja posição à frente é máxima
@@ -346,12 +355,12 @@ func _locomotion(off: Dictionary, w: float, phase: float, speed01: float, is_spr
 	var sR_lag := cos(phase + PI - 0.6)
 	var arm_w: float = w * (1.0 - _gun_w)
 	var arm_r_w: float = arm_w * (1.0 - _gura_rush_w) # Isola o braço direito
-	_add(off, "UpperArm_L", Vector3(-A_arm * cL, 0, 0.08 + arm_out) * arm_w)
-	_add(off, "UpperArm_R", Vector3(-A_arm * cR, 0, -0.08 - arm_out) * arm_r_w)
+	_add(off, "UpperArm_L", Vector3(-A_arm * cR, 0, -0.08 - arm_out) * arm_w)
+	_add(off, "UpperArm_R", Vector3(-A_arm * cL, 0, 0.08 + arm_out) * arm_r_w)
 	# Cotovelo: dobra um pouco mais quando o braço vem à frente (não fica esticado).
 	var A_elbow: float = lerpf(0.10, 0.25, t) * (2.0 if is_sprinting else 1.0)
-	_add(off, "ForeArm_L", Vector3(0.18 + A_elbow * maxf(sL_lag, 0.0), 0, 0.08) * arm_w)
-	_add(off, "ForeArm_R", Vector3(0.18 + A_elbow * maxf(sR_lag, 0.0), 0, -0.08) * arm_r_w)
+	_add(off, "ForeArm_L", Vector3(0.18 + A_elbow * maxf(sR_lag, 0.0), 0, -0.08) * arm_w)
+	_add(off, "ForeArm_R", Vector3(0.18 + A_elbow * maxf(sL_lag, 0.0), 0, 0.08) * arm_r_w)
 
 	# Torso inclina p/ FRENTE (-Z) + BALANÇO DOS OMBROS: giro no eixo Y (ombros gingam
 	# opostos ao passo) e leve rolamento no Z. rot.x+ joga o topo p/ +Z (trás), logo a
@@ -514,21 +523,25 @@ func _perna_ik(off: Dictionary, papel_coxa: String, papel_canela: String,
 func _air(off: Dictionary, w: float, vy: float) -> void:
 	if w <= 0.001:
 		return
+	# Mesma isolação do braço direito de `_idle`/`_locomotion`: a investida da
+	# Gura corre em cima de terreno qualquer, e ao passar por uma queda o `_air`
+	# puxaria o braço erguido de volta para baixo no meio do golpe.
+	var arm_r_w: float = w * (1.0 - _gura_rush_w)
 	var rising := vy > 0.0
 	if rising:
 		_add(off, "Thigh_L", Vector3(0.7, 0, 0) * w)
 		_add(off, "Thigh_R", Vector3(0.7, 0, 0) * w)
 		_add(off, "Shin_L", Vector3(-1.1, 0, 0) * w)
 		_add(off, "Shin_R", Vector3(-1.1, 0, 0) * w)
-		_add(off, "UpperArm_L", Vector3(-1.4, 0, 0.2) * w)
-		_add(off, "UpperArm_R", Vector3(-1.4, 0, -0.2) * w)
+		_add(off, "UpperArm_L", Vector3(-1.4, 0, -0.2) * w)
+		_add(off, "UpperArm_R", Vector3(-1.4, 0, 0.2) * arm_r_w)
 	else:
 		_add(off, "Thigh_L", Vector3(0.25, 0, 0) * w)
 		_add(off, "Thigh_R", Vector3(0.25, 0, 0) * w)
 		_add(off, "Shin_L", Vector3(-0.3, 0, 0) * w)
 		_add(off, "Shin_R", Vector3(-0.3, 0, 0) * w)
-		_add(off, "UpperArm_L", Vector3(0.2, 0, 0.5) * w)
-		_add(off, "UpperArm_R", Vector3(0.2, 0, -0.5) * w)
+		_add(off, "UpperArm_L", Vector3(0.2, 0, -0.5) * w)
+		_add(off, "UpperArm_R", Vector3(0.2, 0, 0.5) * arm_r_w)
 
 func _climb(off: Dictionary, w: float, phase: float) -> void:
 	# ESCALADA hand-over-hand REFEITA: coordenação CONTRALATERAL (mão de um lado sobe
@@ -550,20 +563,20 @@ func _climb(off: Dictionary, w: float, phase: float) -> void:
 
 	# --- BRAÇOS: alcançam BEM alto ao agarrar; dobram e PUXAM forte ao descer ---
 	# UpperArm x muito negativo = braço estendido pra cima (agarre alto); z abre o cotovelo.
-	_add(off, "UpperArm_L", Vector3(lerpf(-0.9, -3.0, reach_l), 0.0, lerpf(0.42, 0.06, reach_l)) * w)
-	_add(off, "UpperArm_R", Vector3(lerpf(-0.9, -3.0, reach_r), 0.0, -lerpf(0.42, 0.06, reach_r)) * w)
+	_add(off, "UpperArm_L", Vector3(lerpf(-0.9, -3.0, reach_r), 0.0, -lerpf(0.42, 0.06, reach_r)) * w)
+	_add(off, "UpperArm_R", Vector3(lerpf(-0.9, -3.0, reach_l), 0.0, lerpf(0.42, 0.06, reach_l)) * w)
 	# ForeArm: reto no topo (mão agarra), flexiona profundo na puxada — com follow-through.
-	_add(off, "ForeArm_L", Vector3(lerpf(1.75, 0.02, lag_l), 0.0, 0.05) * w)
-	_add(off, "ForeArm_R", Vector3(lerpf(1.75, 0.02, lag_r), 0.0, -0.05) * w)
+	_add(off, "ForeArm_L", Vector3(lerpf(1.75, 0.02, lag_r), 0.0, -0.05) * w)
+	_add(off, "ForeArm_R", Vector3(lerpf(1.75, 0.02, lag_l), 0.0, 0.05) * w)
 
 	# --- PERNAS: joelho sobe a um apoio novo e depois ESTENDE empurrando o corpo ---
-	_add(off, "Thigh_L", Vector3(lerpf(0.05, 1.78, knee_l), 0.0, 0.12) * w)
-	_add(off, "Thigh_R", Vector3(lerpf(0.05, 1.78, knee_r), 0.0, -0.12) * w)
-	_add(off, "Shin_L", Vector3(lerpf(-0.10, -1.7, knee_l), 0.0, 0.0) * w)
-	_add(off, "Shin_R", Vector3(lerpf(-0.10, -1.7, knee_r), 0.0, 0.0) * w)
+	_add(off, "Thigh_L", Vector3(lerpf(0.05, 1.78, knee_r), 0.0, -0.12) * w)
+	_add(off, "Thigh_R", Vector3(lerpf(0.05, 1.78, knee_l), 0.0, 0.12) * w)
+	_add(off, "Shin_L", Vector3(lerpf(-0.10, -1.7, knee_r), 0.0, 0.0) * w)
+	_add(off, "Shin_R", Vector3(lerpf(-0.10, -1.7, knee_l), 0.0, 0.0) * w)
 	# Pé aponta pra dentro da parede quando o joelho dobra (busca o apoio).
-	_add(off, "Foot_L", Vector3(lerpf(0.10, 0.65, knee_l), 0.0, 0.0) * w)
-	_add(off, "Foot_R", Vector3(lerpf(0.10, 0.65, knee_r), 0.0, 0.0) * w)
+	_add(off, "Foot_L", Vector3(lerpf(0.10, 0.65, knee_r), 0.0, 0.0) * w)
+	_add(off, "Foot_R", Vector3(lerpf(0.10, 0.65, knee_l), 0.0, 0.0) * w)
 
 	# --- TRONCO/CABEÇA: cola na parede + TRANSFERÊNCIA DE PESO (torção+rolagem) ---
 	# pitch pequeno p/ dentro; twist(Y) e roll(Z) seguem o lado que puxa dando swing ao corpo.
@@ -576,12 +589,12 @@ func _parkour(off: Dictionary, phase: float) -> void:
 	if _wallrun_w > 0.001:
 		var w := _wallrun_w
 		var s := sin(phase * 1.5)
-		_add(off, "Thigh_L", Vector3(1.1 * s, 0, 0) * w)
-		_add(off, "Thigh_R", Vector3(-1.1 * s, 0, 0) * w)
-		_add(off, "Shin_L", Vector3(-0.9 * clampf(s, 0.0, 1.0), 0, 0) * w)
-		_add(off, "Shin_R", Vector3(-0.9 * clampf(-s, 0.0, 1.0), 0, 0) * w)
-		_add(off, "UpperArm_L", Vector3(-1.5 * s, 0, 0.25) * w)
-		_add(off, "UpperArm_R", Vector3(1.5 * s, 0, -0.25) * w)
+		_add(off, "Thigh_L", Vector3(-1.1 * s, 0, 0) * w)
+		_add(off, "Thigh_R", Vector3(1.1 * s, 0, 0) * w)
+		_add(off, "Shin_L", Vector3(-0.9 * clampf(-s, 0.0, 1.0), 0, 0) * w)
+		_add(off, "Shin_R", Vector3(-0.9 * clampf(s, 0.0, 1.0), 0, 0) * w)
+		_add(off, "UpperArm_L", Vector3(1.5 * s, 0, -0.25) * w)
+		_add(off, "UpperArm_R", Vector3(-1.5 * s, 0, 0.25) * w)
 		_add(off, "ForeArm_L", Vector3(0.9, 0, 0) * w)
 		_add(off, "ForeArm_R", Vector3(0.9, 0, 0) * w)
 		_add(off, "Torso", Vector3(-0.4, 0, 0) * w)    # inclina forte p/ frente (-x = frente)
@@ -595,15 +608,15 @@ func _parkour(off: Dictionary, phase: float) -> void:
 		_add(off, "Shin_R", Vector3(-1.7, 0, 0) * w)
 		_add(off, "Torso", Vector3(-0.9, 0, 0) * w)    # dobra bem p/ frente
 		_add(off, "Head", Vector3(0.45, 0, 0) * w)     # queixo ao peito
-		_add(off, "UpperArm_L", Vector3(-0.8, 0, 0.6) * w)
-		_add(off, "UpperArm_R", Vector3(-0.8, 0, -0.6) * w)
+		_add(off, "UpperArm_L", Vector3(-0.8, 0, -0.6) * w)
+		_add(off, "UpperArm_R", Vector3(-0.8, 0, 0.6) * w)
 		_add(off, "ForeArm_L", Vector3(1.6, 0, 0) * w)
 		_add(off, "ForeArm_R", Vector3(1.6, 0, 0) * w)
 	# SALTO LONGO / VAULT (#1,#2): corpo estendido no ar — braços à frente, pernas atrás.
 	if _ljump_w > 0.001:
 		var w := _ljump_w
-		_add(off, "UpperArm_L", Vector3(-2.4, 0, 0.2) * w)
-		_add(off, "UpperArm_R", Vector3(-2.4, 0, -0.2) * w)
+		_add(off, "UpperArm_L", Vector3(-2.4, 0, -0.2) * w)
+		_add(off, "UpperArm_R", Vector3(-2.4, 0, 0.2) * w)
 		_add(off, "ForeArm_L", Vector3(0.1, 0, 0) * w)
 		_add(off, "ForeArm_R", Vector3(0.1, 0, 0) * w)
 		_add(off, "Thigh_L", Vector3(-0.5, 0, 0) * w)
@@ -624,28 +637,55 @@ func _finger_gun(off: Dictionary, w: float, pitch: float, gun_recoil: float) -> 
 	var kick := gun_recoil * 0.5                         # coice do disparo (muzzle sobe)
 	# AMBOS os braços estendidos à frente (akimbo) mirando as duas pistolas; cotovelos
 	# quase retos (canos) e ombros à frente com o coice.
-	_add(off, "UpperArm_R", Vector3(aim_x + kick, 0.0, -0.14) * w)
+	_add(off, "UpperArm_R", Vector3(aim_x + kick, 0.0, 0.14) * w)
 	_add(off, "ForeArm_R", Vector3(0.05, 0.0, 0.0) * w)
-	_add(off, "UpperArm_L", Vector3(aim_x + kick, 0.0, 0.14) * w)
+	_add(off, "UpperArm_L", Vector3(aim_x + kick, 0.0, -0.14) * w)
 	_add(off, "ForeArm_L", Vector3(0.05, 0.0, 0.0) * w)
 	# APENAS os braços empunhando as armas ficam fixos à frente! As pernas e o corpo ficam livres!
 	_add(off, "Head", Vector3(0.0, -pitch * 0.5, 0.0) * w)
 
-# Pose Especial Assimétrica: Gura Gura Z Rush (Apenas o braço direito reage)
+# INVESTIDA DA GURA GURA (Z): o Barba Branca avançando em MEIA T — o braço
+# DIREITO aberto PARA O LADO na altura do ombro, o ESQUERDO de fora da pose,
+# continuando o balanço da corrida. É pose ASSIMÉTRICA de propósito: só o braço
+# direito sai da marcha (ver `arm_r_w` em `_idle`/`_locomotion`/`_air`); tronco,
+# pernas e braço esquerdo seguem correndo, e é isso que faz a investida ler como
+# CORRIDA e não como pose parada deslizando pelo chão. Por isso `_gura_rush_w`
+# NÃO entra no `upper_free` lá em cima, ao contrário das outras poses especiais.
+#
+# ⚠️ QUAL EIXO ABRE O BRAÇO — a armadilha que esta pose tinha. O membro pende no
+# -Y local; girar +X leva a ponta para -Z (FRENTE, a convenção da IK da perna) e
+# girar Z leva a ponta para o LADO. São coisas diferentes:
+#     UpperArm_R.x ≈ 1,57  ->  braço apontando À FRENTE
+#     UpperArm_R.z ≈ -1,57 ->  braço aberto PARA O LADO DIREITO (o T)
+# A versão anterior usava `(1.4, 0.1, 0.3)`: 1,4 no eixo X é o braço quase
+# horizontal À FRENTE, e o +0,3 no Z ainda cruzava o braço por cima do peito.
+# Medido com `tools/dev_tests/medir_gura_rush.gd`: 93,2° do chão (a horizontal),
+# mas com o punho a 0,92 de alcance À FRENTE do ombro e 0,14 ABAIXO dele — ou
+# seja, socando, não abrindo. O comentário dela dizia "socando para a frente",
+# contradizendo o nome da variável (`braço direito levantado`) e o pedido.
+#
+# O "T" deste projeto já estava definido em `_gura_v_poses` (estado
+# `gura_v_tpose`): ombro em z = ±1,4 e cotovelo em x = -0,1. Reaproveitado aqui
+# de propósito, com o sinal do lado direito, para as duas poses não inventarem
+# cada uma o seu T. Medido, 1,4 rad dá 80° do chão — 10° abaixo da horizontal
+# exata; quem quiser o T no esquadro troca -1,4 por -1,5708 nos DOIS lugares.
 func _gura_rush_pose(off: Dictionary, w: float) -> void:
 	if w <= 0.001: return
-	
-	# Torso inclinado para frente e um pouco torcido para dar o "balanço do corpo"
-	_add(off, "Torso", Vector3(0.3, -0.2, 0) * w)
-	
-	# Braço direito socando/investindo para a frente (-Z = X positivo)
-	# e levemente aberto para a direita (+X = Z positivo)
-	_add(off, "UpperArm_R", Vector3(1.4, 0.1, 0.3) * w)
-	
-	# Cotovelo com leve flexão (ForeArm_R X = 0.5) para quebrar a rigidez total
-	_add(off, "ForeArm_R", Vector3(-0.4, 0.0, -0.2) * w)
-	
-	_add(off, "Head", Vector3(-0.1, 0.2, 0) * w)
+
+	# Tronco à FRENTE (x NEGATIVO é frente — x positivo joga o topo p/ trás, e a
+	# versão anterior usava +0,3, ou seja, corria de costas para o próprio avanço).
+	# Sem torção no Y: torcer o tronco tiraria o braço do perfil lateral limpo,
+	# que é justamente o que o T tem de leitura.
+	_add(off, "Torso", Vector3(-0.15, 0.0, 0.0) * w)
+
+	# BRAÇO DIREITO ABERTO PARA O LADO (metade do T). O braço ESQUERDO não recebe
+	# nada aqui — é o que separa esta pose do `gura_v_tpose`, que abre os dois.
+	_add(off, "UpperArm_R", Vector3(0.0, 0.0, 1.4) * w)
+	_add(off, "ForeArm_R", Vector3(-0.1, 0.0, 0.0) * w)
+
+	# Cabeça compensa a inclinação do tronco, para o olhar seguir no alvo em vez
+	# de acompanhar o peito para baixo.
+	_add(off, "Head", Vector3(0.18, 0.0, 0.0) * w)
 
 # Pose Especial de Carregamento: Gura Gura X (Captura Sísmica)
 func _gura_x_charge_pose(off: Dictionary, w: float) -> void:
@@ -654,7 +694,7 @@ func _gura_x_charge_pose(off: Dictionary, w: float) -> void:
 	# X = 1.5 aponta perfeitamente para frente (-Z).
 	var vib_y = sin(_t * 30.0) * 0.02
 	var vib_z = cos(_t * 35.0) * 0.02
-	_add(off, "UpperArm_R", Vector3(1.5 + vib_y, vib_y, 0.1 + vib_z) * w)
+	_add(off, "UpperArm_R", Vector3(1.5 + vib_y, -vib_y, -(0.1 + vib_z)) * w)
 	_add(off, "ForeArm_R", Vector3(-0.1 + vib_y, 0.0, 0.0) * w)
 	_add(off, "Torso", Vector3(0.1, 0.0, 0.0) * w)
 	_add(off, "Head", Vector3(0.1, 0.0, 0.0) * w)
@@ -668,29 +708,29 @@ func _gura_v_poses(off: Dictionary, w: float, state: String) -> void:
 		var resp = sin(_t * 3.0) * 0.05
 		_add(off, "Torso", Vector3(0.1 - resp, 0, 0) * w)
 		_add(off, "Head", Vector3(-0.1 + resp, 0, 0) * w)
-		_add(off, "UpperArm_L", Vector3(0.2, 0.0, 0.1) * w)
-		_add(off, "UpperArm_R", Vector3(0.2, 0.0, -0.1) * w)
+		_add(off, "UpperArm_L", Vector3(0.2, 0.0, -0.1) * w)
+		_add(off, "UpperArm_R", Vector3(0.2, 0.0, 0.1) * w)
 		
 	elif state == "gura_v_squat":
 		# Agachamento (1.0s): Flexiona joelhos, braços pra trás
-		_add(off, "Thigh_L", Vector3(0.8, 0.1, 0) * w)
-		_add(off, "Thigh_R", Vector3(0.8, -0.1, 0) * w)
+		_add(off, "Thigh_L", Vector3(0.8, -0.1, 0) * w)
+		_add(off, "Thigh_R", Vector3(0.8, 0.1, 0) * w)
 		_add(off, "Shin_L", Vector3(-1.0, 0, 0) * w)
 		_add(off, "Shin_R", Vector3(-1.0, 0, 0) * w)
 		_add(off, "Torso", Vector3(0.3, 0, 0) * w)
-		_add(off, "UpperArm_L", Vector3(-1.2, 0.0, 0.2) * w)
-		_add(off, "UpperArm_R", Vector3(-1.2, 0.0, -0.2) * w)
+		_add(off, "UpperArm_L", Vector3(-1.2, 0.0, -0.2) * w)
+		_add(off, "UpperArm_R", Vector3(-1.2, 0.0, 0.2) * w)
 		
 	elif state == "gura_v_gather":
 		# Reúne energia (2.0s): Agachado vibrando fortemente
 		var vib = sin(_t * 45.0) * 0.03
-		_add(off, "Thigh_L", Vector3(0.9, 0.1, 0) * w)
-		_add(off, "Thigh_R", Vector3(0.9, -0.1, 0) * w)
+		_add(off, "Thigh_L", Vector3(0.9, -0.1, 0) * w)
+		_add(off, "Thigh_R", Vector3(0.9, 0.1, 0) * w)
 		_add(off, "Shin_L", Vector3(-1.1, 0, 0) * w)
 		_add(off, "Shin_R", Vector3(-1.1, 0, 0) * w)
 		_add(off, "Torso", Vector3(0.4 + vib, 0, 0) * w)
-		_add(off, "UpperArm_L", Vector3(-1.3, 0.0, 0.3 + vib) * w)
-		_add(off, "UpperArm_R", Vector3(-1.3, 0.0, -0.3 - vib) * w)
+		_add(off, "UpperArm_L", Vector3(-1.3, 0.0, -0.3 - vib) * w)
+		_add(off, "UpperArm_R", Vector3(-1.3, 0.0, 0.3 + vib) * w)
 		_add(off, "ForeArm_L", Vector3(0.5, 0, 0) * w)
 		_add(off, "ForeArm_R", Vector3(0.5, 0, 0) * w)
 		
@@ -698,16 +738,16 @@ func _gura_v_poses(off: Dictionary, w: float, state: String) -> void:
 		# Levanta os braços (3.0s): Braços sobem lentamente
 		var vib = sin(_t * 30.0) * 0.02
 		_add(off, "Torso", Vector3(0.0, 0, 0) * w)
-		_add(off, "UpperArm_L", Vector3(0.0, 0.2, 0.8 + vib) * w)
-		_add(off, "UpperArm_R", Vector3(0.0, -0.2, -0.8 - vib) * w)
+		_add(off, "UpperArm_L", Vector3(0.0, -0.2, -0.8 - vib) * w)
+		_add(off, "UpperArm_R", Vector3(0.0, 0.2, 0.8 + vib) * w)
 		
 	elif state == "gura_v_tpose":
 		# Pose em T (4.0s): Braços totalmente horizontais, vibração máxima
 		var vib = sin(_t * 50.0) * 0.05
 		_add(off, "Torso", Vector3(-0.1, 0, 0) * w)
 		_add(off, "Head", Vector3(0.1, 0, 0) * w)
-		_add(off, "UpperArm_L", Vector3(0.0, 0.0, 1.4 + vib) * w)
-		_add(off, "UpperArm_R", Vector3(0.0, 0.0, -1.4 - vib) * w)
+		_add(off, "UpperArm_L", Vector3(0.0, 0.0, -1.4 - vib) * w)
+		_add(off, "UpperArm_R", Vector3(0.0, 0.0, 1.4 + vib) * w)
 		_add(off, "ForeArm_L", Vector3(-0.1, 0, 0) * w)
 		_add(off, "ForeArm_R", Vector3(-0.1, 0, 0) * w)
 
@@ -723,9 +763,9 @@ func _charge(off: Dictionary, w: float, slot: String) -> void:
 	if w <= 0.001:
 		return
 	if slot == "X":
-		_add(off, "UpperArm_R", Vector3(-1.8, 0, -0.4) * w)   
+		_add(off, "UpperArm_R", Vector3(-1.8, 0, 0.4) * w)   
 		_add(off, "ForeArm_R", Vector3(1.6, 0, 0) * w)          
-		_add(off, "UpperArm_L", Vector3(-1.8, 0, 0.4) * w)     
+		_add(off, "UpperArm_L", Vector3(-1.8, 0, -0.4) * w)     
 		_add(off, "ForeArm_L", Vector3(1.6, 0, 0) * w)         
 		_add(off, "Torso", Vector3(0.2, 0, 0) * w)            
 		_add(off, "Head", Vector3(-0.15, 0, 0) * w)
@@ -736,9 +776,9 @@ func _charge(off: Dictionary, w: float, slot: String) -> void:
 		_add(off, "Shin_L", Vector3(-0.6, 0, 0) * w)
 		_add(off, "Shin_R", Vector3(-0.6, 0, 0) * w)
 		_add(off, "Torso", Vector3(-0.25, 0, 0) * w)
-		_add(off, "UpperArm_R", Vector3(-1.4, 0, -0.2) * w)
+		_add(off, "UpperArm_R", Vector3(-1.4, 0, 0.2) * w)
 		_add(off, "ForeArm_R", Vector3(1.7, 0, 0) * w)
-		_add(off, "UpperArm_L", Vector3(-1.4, 0, 0.2) * w)
+		_add(off, "UpperArm_L", Vector3(-1.4, 0, -0.2) * w)
 		_add(off, "ForeArm_L", Vector3(1.7, 0, 0) * w)
 		_add(off, "Head", Vector3(0.25, 0, 0) * w)
 	elif slot == "V":
@@ -748,14 +788,14 @@ func _charge(off: Dictionary, w: float, slot: String) -> void:
 		_add(off, "Shin_L", Vector3(-0.7, 0, 0) * w)
 		_add(off, "Shin_R", Vector3(-0.7, 0, 0) * w)
 		_add(off, "Torso", Vector3(0.1, -0.4, 0) * w)
-		_add(off, "UpperArm_R", Vector3(-1.9, 0, -0.5) * w)
+		_add(off, "UpperArm_R", Vector3(0.4, 0, 0.3) * w)
 		_add(off, "ForeArm_R", Vector3(1.8, 0, 0) * w)
-		_add(off, "UpperArm_L", Vector3(0.4, 0, 0.3) * w)
+		_add(off, "UpperArm_L", Vector3(-1.9, 0, -0.5) * w)
 		_add(off, "Head", Vector3(0.1, 0.4, 0) * w)
 	else:
-		_add(off, "UpperArm_R", Vector3(-1.7, 0, -0.35) * w)   
+		_add(off, "UpperArm_R", Vector3(0.35, 0, 0.15) * w)   
 		_add(off, "ForeArm_R", Vector3(1.5, 0, 0) * w)          
-		_add(off, "UpperArm_L", Vector3(0.35, 0, 0.15) * w)     
+		_add(off, "UpperArm_L", Vector3(-1.7, 0, -0.35) * w)     
 		_add(off, "Torso", Vector3(0.06, -0.32, 0) * w)         
 		_add(off, "Head", Vector3(0, 0.26, 0) * w)              
 
@@ -815,33 +855,33 @@ func _hibashira_pose(off: Dictionary, w: float) -> void:
 	if w <= 0.001:
 		return
 	# Base de combate: pernas bem abertas lateralmente e joelhos flexionados firmes na terra.
-	_add(off, "Thigh_L", Vector3(0.5, 0.0, 0.45) * w)
-	_add(off, "Thigh_R", Vector3(0.5, 0.0, -0.45) * w)
+	_add(off, "Thigh_L", Vector3(0.5, 0.0, -0.45) * w)
+	_add(off, "Thigh_R", Vector3(0.5, 0.0, 0.45) * w)
 	_add(off, "Shin_L", Vector3(-0.85, 0.0, 0.0) * w)
 	_add(off, "Shin_R", Vector3(-0.85, 0.0, 0.0) * w)
-	_add(off, "Foot_L", Vector3(0.35, 0.0, -0.2) * w)
-	_add(off, "Foot_R", Vector3(0.35, 0.0, 0.2) * w)
+	_add(off, "Foot_L", Vector3(0.35, 0.0, 0.2) * w)
+	_add(off, "Foot_R", Vector3(0.35, 0.0, -0.2) * w)
 	# Tronco dobrado profundamente para frente em direção ao centro da erupção de chamas.
 	_add(off, "Torso", Vector3(-0.85, 0.25, 0.1) * w)
 	# Cabeça erguida com olhar feroz à frente (superando a inclinação do tronco).
 	_add(off, "Head", Vector3(0.65, -0.2, 0.0) * w)
 	# Braço Direito socando o chão à frente/centro (punho cravado na erupção).
-	_add(off, "UpperArm_R", Vector3(-1.1, -0.3, -0.35) * w)
-	_add(off, "ForeArm_R", Vector3(0.15, 0.0, 0.0) * w)
+	_add(off, "UpperArm_R", Vector3(0.6, 0.0, 0.5) * w)
+	_add(off, "ForeArm_R", Vector3(1.1, 0.0, 0.0) * w)
 	# Braço Esquerdo flexionado para trás em equilíbrio dinâmico de chamas.
-	_add(off, "UpperArm_L", Vector3(0.6, 0.0, 0.5) * w)
-	_add(off, "ForeArm_L", Vector3(1.1, 0.0, 0.0) * w)
+	_add(off, "UpperArm_L", Vector3(-1.1, -0.3, -0.35) * w)
+	_add(off, "ForeArm_L", Vector3(0.15, 0.0, 0.0) * w)
 
 # POSE DE ESPIRAL NEGRA / KUROUZU (Yami Yami X): Levanta o braço direito diretamente à frente
 # para atrair e segurar a vítima firmemente no ar pela força da gravidade abissal.
 func _kurouzu_pose(off: Dictionary, w: float) -> void:
 	if w <= 0.001:
 		return
-	_add(off, "UpperArm_R", Vector3(1.55, 0.0, -0.2) * w)
+	_add(off, "UpperArm_R", Vector3(1.55, 0.0, 0.2) * w)
 	_add(off, "ForeArm_R", Vector3(0.05, 0.0, 0.0) * w)
 	_add(off, "Torso", Vector3(-0.15, -0.25, 0.0) * w)
-	_add(off, "Thigh_L", Vector3(0.35, 0.0, 0.2) * w)
-	_add(off, "Thigh_R", Vector3(-0.25, 0.0, -0.2) * w)
+	_add(off, "Thigh_L", Vector3(-0.25, 0.0, -0.2) * w)
+	_add(off, "Thigh_R", Vector3(0.35, 0.0, 0.2) * w)
 	_add(off, "Shin_L", Vector3(-0.4, 0.0, 0.0) * w)
 
 # POSE DO BARBA NEGRA / BLACK HOLE (Yami Yami C): Pernas afastadas em base firme e uma
@@ -849,12 +889,12 @@ func _kurouzu_pose(off: Dictionary, w: float) -> void:
 func _black_hole_pose(off: Dictionary, w: float) -> void:
 	if w <= 0.001:
 		return
-	_add(off, "Thigh_L", Vector3(0.4, 0.0, 0.45) * w)
-	_add(off, "Thigh_R", Vector3(0.4, 0.0, -0.45) * w)
+	_add(off, "Thigh_L", Vector3(0.4, 0.0, -0.45) * w)
+	_add(off, "Thigh_R", Vector3(0.4, 0.0, 0.45) * w)
 	_add(off, "Shin_L", Vector3(-0.65, 0.0, 0.0) * w)
 	_add(off, "Shin_R", Vector3(-0.65, 0.0, 0.0) * w)
 	_add(off, "Torso", Vector3(-0.6, 0.3, 0.1) * w)
 	_add(off, "Head", Vector3(0.45, -0.25, 0.0) * w)
-	_add(off, "UpperArm_R", Vector3(-0.9, -0.2, -0.4) * w)
+	_add(off, "UpperArm_R", Vector3(0.4, 0.0, 0.4) * w)
 	_add(off, "ForeArm_R", Vector3(0.2, 0.0, 0.0) * w)
-	_add(off, "UpperArm_L", Vector3(0.4, 0.0, 0.4) * w)
+	_add(off, "UpperArm_L", Vector3(-0.9, -0.2, -0.4) * w)

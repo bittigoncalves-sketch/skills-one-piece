@@ -329,6 +329,69 @@ const ONDA_LABIO := 0.34           # raio do rolo de espuma no alto
 const ONDA_CRESCIMENTO := 0.26     # s pra onda subir do chão até a altura cheia
 const ONDA_DESMANCHE := 0.45       # s de dissolução no fim
 
+# ----------------------------------------------------------- PERFIL DE ONDA
+#
+#  POR QUE A CRISTA VIROU PARAMÉTRICA (2026-08-14)
+#
+#  A ultimate da Gura Gura precisa de tsunamis de dezenas de metros. A escolha
+#  era duplicar a crista (11 lamelas + lábio + espuma + borrifo) num arquivo
+#  novo, ou deixar as medidas entrarem por parâmetro. Duplicar significaria que
+#  toda melhoria de leitura da onda — e o lábio de espuma foi descoberto
+#  justamente ajustando ISTO — passaria a ter dois donos, e um deles ia ficar
+#  para trás em silêncio.
+#
+#  ⚠️ O C DO KARATÊ TRITÃO NÃO MUDA. Os `const` acima continuam sendo os
+#  valores de hoje, e `perfil_padrao()` é a única coisa que o `onda()` usa. Um
+#  perfil vazio reproduz byte a byte a onda de antes — é isso que torna a
+#  mudança provável por medição (dano do C continua 36 × 0.12 = 4,32).
+#
+#  ⚠️ O QUE O PERFIL *NÃO* CARREGA: hitbox, velocidade da `DamageZone` e vida.
+#  Isso é de propósito. A crista é DESENHO; quem decide o combate é quem a
+#  monta. O `onda()` monta uma esfera de raio 2,9 que viaja 26 m; a Gura monta
+#  uma CAIXA de 70 m de frente que atravessa o mapa. Amarrar os dois no mesmo
+#  objeto obrigaria o C a carregar campos que ele nunca usa.
+class PerfilDeOnda extends RefCounted:
+	var largura: float          # m de frente de onda
+	var altura: float           # m de crista
+	var espessura: float        # m de profundidade da parede
+	var lamelas: int            # colunas da crista (silhueta recortada)
+	var inclinacao: float       # graus que a crista tomba pra frente
+	var labio: float            # raio do rolo de espuma no alto
+	var labio_pedacos: int      # em quantos rolos o lábio é quebrado (1 = inteiro)
+	var cor_corpo: Color        # azul da massa de água
+	var alfa_corpo: float       # translucidez da massa
+	var emissao_corpo: float    # brilho próprio da água (0 = só luz de cena)
+	var escala_gota: float      # multiplicador dos respingos (espuma/borrifo)
+
+# Os valores de HOJE, num lugar só. Quem quiser uma onda diferente parte daqui e
+# muda o que precisa — o que não mexer continua sendo o Karatê Tritão.
+static func perfil_padrao() -> PerfilDeOnda:
+	var p := PerfilDeOnda.new()
+	p.largura = ONDA_LARGURA
+	p.altura = ONDA_ALTURA
+	p.espessura = ONDA_ESPESSURA
+	p.lamelas = ONDA_LAMELAS
+	p.inclinacao = ONDA_INCLINACAO
+	p.labio = ONDA_LABIO
+	p.labio_pedacos = 1        # o C sempre teve UM cilindro inteiro — não muda
+	p.cor_corpo = AGUA
+	p.alfa_corpo = 0.62
+	p.emissao_corpo = 1.4
+	p.escala_gota = 1.0
+	return p
+
+# A CRISTA como PEÇA PÚBLICA: devolve um `Node3D` pronto para ser filho de
+# qualquer coisa que ande (a `DamageZone` do C, a do tsunami da Gura). Os dois
+# materiais saem no meta `mats` porque quem monta precisa deles para dissolver a
+# onda no fim — devolver uma tupla seria mais bonito e menos usável.
+static func crista_de_onda(p: PerfilDeOnda) -> Node3D:
+	var mat_corpo := _mat_agua(p.cor_corpo, p.alfa_corpo, p.emissao_corpo)
+	mat_corpo.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var mat_labio := _mat_agua(ESPUMA, 0.80, 2.4)
+	var raiz := _crista(mat_corpo, mat_labio, p)
+	raiz.set_meta("mats", [mat_corpo, mat_labio])
+	return raiz
+
 static func onda(world: Node, origin: Vector3, fwd: Vector3, damage: float, caster: Node) -> void:
 	if not _mundo_vivo(world):
 		return
@@ -349,11 +412,11 @@ static func onda(world: Node, origin: Vector3, fwd: Vector3, damage: float, cast
 
 	# Um material compartilhado por TODAS as lamelas. É o que permite dissolver a
 	# onda inteira com um tween só, em vez de 11 tweens correndo em paralelo.
-	var mat_corpo := _mat_agua(AGUA, 0.62, 1.4)
-	mat_corpo.cull_mode = BaseMaterial3D.CULL_DISABLED
-	var mat_labio := _mat_agua(ESPUMA, 0.80, 2.4)
-
-	var crista := _crista(mat_corpo, mat_labio)
+	var perfil := perfil_padrao()
+	var crista := crista_de_onda(perfil)
+	var mats: Array = crista.get_meta("mats")
+	var mat_corpo: StandardMaterial3D = mats[0]
+	var mat_labio: StandardMaterial3D = mats[1]
 	crista.position = Vector3(0, -ONDA_ALTURA * 0.5, 0)   # base das lamelas no chão
 	zona.add_child(crista)
 
@@ -375,7 +438,7 @@ static func onda(world: Node, origin: Vector3, fwd: Vector3, damage: float, cast
 	tw.tween_property(mat_labio, "albedo_color:a", 0.0, ONDA_DESMANCHE) \
 		.set_delay(vida - ONDA_DESMANCHE)
 
-	_erupcao(world, berco, rumo)
+	_erupcao(world, berco, rumo, perfil.largura)
 	AudioFX.whoosh(world, berco, 0.55)      # grave = massa de água, não vento
 	AudioFX.impact(world, berco, 0.70)
 
@@ -383,57 +446,89 @@ static func onda(world: Node, origin: Vector3, fwd: Vector3, damage: float, cast
 # uma parede lisa aqui destoaria de tudo. A altura de cada lamela segue um arco
 # (`sin`) com ruído — o arco dá a forma de onda, o ruído impede que 11 caixas
 # iguais leiam como grade.
-static func _crista(mat_corpo: StandardMaterial3D, mat_labio: StandardMaterial3D) -> Node3D:
+static func _crista(mat_corpo: StandardMaterial3D, mat_labio: StandardMaterial3D,
+		p: PerfilDeOnda) -> Node3D:
 	var raiz := Node3D.new()
 	raiz.name = "Crista"
-	var passo := ONDA_LARGURA / float(ONDA_LAMELAS)
+	var passo := p.largura / float(p.lamelas)
 
-	for i in ONDA_LAMELAS:
-		var t := (float(i) + 0.5) / float(ONDA_LAMELAS)
+	for i in p.lamelas:
+		var t := (float(i) + 0.5) / float(p.lamelas)
 		var arco := sin(t * PI)
-		var alt: float = ONDA_ALTURA * (0.34 + 0.66 * arco) * randf_range(0.86, 1.14)
+		var alt: float = p.altura * (0.34 + 0.66 * arco) * randf_range(0.86, 1.14)
 		var mi := MeshInstance3D.new()
 		var bm := BoxMesh.new()
-		bm.size = Vector3(passo * 0.96, alt, ONDA_ESPESSURA * (0.7 + 0.5 * arco))
+		bm.size = Vector3(passo * 0.96, alt, p.espessura * (0.7 + 0.5 * arco))
 		mi.mesh = bm
 		mi.material_override = mat_corpo
-		mi.position = Vector3(-ONDA_LARGURA * 0.5 + passo * (float(i) + 0.5), alt * 0.5, 0.0)
+		mi.position = Vector3(-p.largura * 0.5 + passo * (float(i) + 0.5), alt * 0.5, 0.0)
 		# Tombar pra frente: a onda CAI pra onde vai. Quem está no meio (arco alto)
 		# tomba mais — é o que desenha o rolo.
-		mi.rotation_degrees.x = -ONDA_INCLINACAO * arco
+		mi.rotation_degrees.x = -p.inclinacao * arco
 		raiz.add_child(mi)
 
 	# LÁBIO: o rolo de espuma no alto. Um cilindro deitado no eixo X, empurrado
 	# pra frente. É a peça que faz a silhueta ler como "onda quebrando" e não como
 	# "muro azul" — sem ele o efeito parece um portão.
-	var labio := MeshInstance3D.new()
-	var cm := CylinderMesh.new()
-	cm.top_radius = ONDA_LABIO
-	cm.bottom_radius = ONDA_LABIO
-	cm.height = ONDA_LARGURA * 0.90
-	cm.radial_segments = 10
-	cm.rings = 1
-	labio.mesh = cm
-	labio.material_override = mat_labio
-	labio.rotation_degrees = Vector3(0, 0, 90)         # eixo +Y do cilindro -> eixo X
-	labio.position = Vector3(0, ONDA_ALTURA * 0.90, -ONDA_ESPESSURA * 0.55)
-	raiz.add_child(labio)
+	#
+	# ⚠️ EM ESCALA GIGANTE UM LÁBIO INTEIRO VIRA UMA RÉGUA. Num tsunami de 200 m
+	# de frente, o cilindro único desenha uma listra branca perfeitamente reta no
+	# horizonte — a única peça da onda que não acompanha o arco, e a que mais
+	# denuncia que aquilo é geometria. `labio_pedacos` quebra o rolo em pedaços
+	# que SOBEM E DESCEM com o mesmo arco das lamelas.
+	# Com `labio_pedacos = 1` (o padrão, e o que o C do Karatê Tritão usa) o
+	# resultado é EXATAMENTE o cilindro único de sempre: um pedaço, no centro,
+	# na altura de sempre.
+	var pedacos: int = maxi(p.labio_pedacos, 1)
+	for i in pedacos:
+		var t := (float(i) + 0.5) / float(pedacos)
+		var arco := 1.0 if pedacos == 1 else sin(t * PI)
+		var labio := MeshInstance3D.new()
+		var cm := CylinderMesh.new()
+		cm.top_radius = p.labio
+		cm.bottom_radius = p.labio
+		cm.height = (p.largura * 0.90) / float(pedacos)
+		cm.radial_segments = 10
+		cm.rings = 1
+		labio.mesh = cm
+		labio.material_override = mat_labio
+		labio.rotation_degrees = Vector3(0, 0, 90)     # eixo +Y do cilindro -> eixo X
+		var cx: float = 0.0 if pedacos == 1 \
+			else (t - 0.5) * p.largura * 0.90
+		# Acompanha a mesma curva das lamelas (0,34 + 0,66·arco), um pouco acima
+		# delas — é o rolo de espuma quebrando na crista.
+		# Ruído SÓ quando o lábio é quebrado: sem ele os pedaços do meio, onde o
+		# arco é quase plano, encostam num sarrafo branco único — o mesmo defeito
+		# que se estava tentando corrigir, só que menor. Com `pedacos == 1` a
+		# conta não é tocada, e o C sai idêntico ao de sempre.
+		var cy: float = p.altura * 0.90
+		if pedacos > 1:
+			cy *= (0.34 + 0.66 * arco) * randf_range(0.94, 1.10)
+		labio.position = Vector3(cx, cy, -p.espessura * 0.55)
+		raiz.add_child(labio)
 
 	# ESPUMA que VIAJA com a onda (`local_coords` ligado): é a crista borbulhando.
+	#
+	# ⚠️ O RESPINGO ESCALA JUNTO, e escala DIREITO. Gota, velocidade e gravidade
+	# são multiplicadas pelo mesmo `escala_gota`: o alcance balístico é v²/g, então
+	# multiplicar os dois por k multiplica o alcance por k — a espuma de um
+	# tsunami de 22 m sobe proporcionalmente à de uma onda de 3,2 m, em vez de
+	# virar uma poeirinha grudada na base.
+	var k: float = p.escala_gota
 	var pe := ParticleProcessMaterial.new()
 	pe.direction = Vector3(0, 0.6, -1.0)
 	pe.spread = 34.0
-	pe.initial_velocity_min = 1.5
-	pe.initial_velocity_max = 5.0
-	pe.gravity = Vector3(0, -9.0, 0)
-	pe.scale_min = 0.5
-	pe.scale_max = 1.6
+	pe.initial_velocity_min = 1.5 * k
+	pe.initial_velocity_max = 5.0 * k
+	pe.gravity = Vector3(0, -9.0 * k, 0)
+	pe.scale_min = 0.5 * k
+	pe.scale_max = 1.6 * k
 	pe.color_ramp = FxUtil.gradient(GOTAS)
 	pe.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	pe.emission_box_extents = Vector3(ONDA_LARGURA * 0.5, 0.25, ONDA_ESPESSURA * 0.4)
-	var espuma := FxUtil.particles(90, 0.55, false, pe, FxUtil.grain(0.30))
+	pe.emission_box_extents = Vector3(p.largura * 0.5, 0.25 * k, p.espessura * 0.4)
+	var espuma := FxUtil.particles(int(90.0 * k), 0.55, false, pe, FxUtil.grain(0.30 * k))
 	espuma.local_coords = true
-	espuma.position = Vector3(0, ONDA_ALTURA * 0.86, 0)
+	espuma.position = Vector3(0, p.altura * 0.86, 0)
 	raiz.add_child(espuma)
 
 	# BORRIFO que FICA para trás (mundo, o padrão): o rastro molhado que a onda
@@ -441,23 +536,23 @@ static func _crista(mat_corpo: StandardMaterial3D, mat_labio: StandardMaterial3D
 	var pb := ParticleProcessMaterial.new()
 	pb.direction = Vector3(0, 1.0, 0.4)
 	pb.spread = 55.0
-	pb.initial_velocity_min = 1.0
-	pb.initial_velocity_max = 4.5
-	pb.gravity = Vector3(0, -11.0, 0)
-	pb.scale_min = 0.4
-	pb.scale_max = 1.3
+	pb.initial_velocity_min = 1.0 * k
+	pb.initial_velocity_max = 4.5 * k
+	pb.gravity = Vector3(0, -11.0 * k, 0)
+	pb.scale_min = 0.4 * k
+	pb.scale_max = 1.3 * k
 	pb.color_ramp = FxUtil.gradient(GOTAS)
 	pb.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	pb.emission_box_extents = Vector3(ONDA_LARGURA * 0.45, 0.15, 0.2)
-	var borrifo := FxUtil.particles(70, 0.7, false, pb, FxUtil.grain(0.26))
-	borrifo.position = Vector3(0, 0.15, ONDA_ESPESSURA * 0.5)
+	pb.emission_box_extents = Vector3(p.largura * 0.45, 0.15 * k, 0.2 * k)
+	var borrifo := FxUtil.particles(int(70.0 * k), 0.7, false, pb, FxUtil.grain(0.26 * k))
+	borrifo.position = Vector3(0, 0.15, p.espessura * 0.5)
 	raiz.add_child(borrifo)
 
 	return raiz
 
 # O estouro do NASCIMENTO: a água arrebentando do chão à frente do jogador. Vale
 # como antecipação — o olho vê de onde a onda saiu antes de ela andar.
-static func _erupcao(world: Node, pos: Vector3, rumo: Vector3) -> void:
+static func _erupcao(world: Node, pos: Vector3, rumo: Vector3, largura: float = ONDA_LARGURA) -> void:
 	var pm := ParticleProcessMaterial.new()
 	pm.direction = Vector3(rumo.x * 0.4, 1.0, rumo.z * 0.4)
 	pm.spread = 45.0
@@ -468,7 +563,7 @@ static func _erupcao(world: Node, pos: Vector3, rumo: Vector3) -> void:
 	pm.scale_max = 2.0
 	pm.color_ramp = FxUtil.gradient(GOTAS)
 	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	pm.emission_box_extents = Vector3(ONDA_LARGURA * 0.45, 0.1, 0.3)
+	pm.emission_box_extents = Vector3(largura * 0.45, 0.1, 0.3)
 	var jato := FxUtil.particles(120, 0.8, true, pm, FxUtil.grain(0.34), 0.85)
 	world.add_child(jato)
 	jato.global_position = pos

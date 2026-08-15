@@ -3,7 +3,13 @@ extends Node
 ## Gera um mesh 3D procedural usando SurfaceTool que simula o ar "rachando" no impacto.
 ## É instanciado nos ataques da Gura Gura no Mi.
 
-static func spawn(parent: Node, pos: Vector3, scale_factor: float = 1.0) -> void:
+## `normal` (opcional) põe a teia num PLANO DE VIDRO em vez de deitada no chão:
+## a teia é gerada no plano XZ local, então basta alinhar o +Y local à normal
+## pedida. É isso que faz a rachadura da ultimate ler como "a tela do mundo
+## trincando na frente das mãos" e não como uma marca no piso. Sem o parâmetro
+## nada muda — os golpes Z/X/C continuam com a teia deitada.
+static func spawn(parent: Node, pos: Vector3, scale_factor: float = 1.0,
+		normal: Vector3 = Vector3.ZERO) -> void:
 	var mi := MeshInstance3D.new()
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_LINES)
@@ -47,9 +53,25 @@ static func spawn(parent: Node, pos: Vector3, scale_factor: float = 1.0) -> void
 	mat.emission_energy_multiplier = 2.0
 	mi.material_override = mat
 	
-	mi.global_position = pos
+	# ⚠️ POSIÇÃO SÓ DEPOIS DO `add_child` — a rachadura nascia no DOBRO do lugar.
+	#
+	# Fora da árvore, `global_position` escreve no transform LOCAL (não há pai
+	# para descontar). Como quem chama passa a posição JÁ EM MUNDO e o pai
+	# costuma ser a própria `DamageZone` do golpe, o local virava o mundo e o
+	# mundo virava `pai + pos` — ou seja, ~2× a posição pedida. Com o jogador a
+	# 40 m da origem a rachadura aparecia a 80 m, longe da câmera, e o golpe
+	# parecia não ter efeito nenhum.
 	parent.add_child(mi)
-	
+	mi.global_position = pos
+	if normal.length_squared() > 0.0001:
+		# Base ortonormal com +Y na normal: a teia (plano XZ) vira um vidro
+		# perpendicular a ela.
+		var eixo_y := normal.normalized()
+		var apoio := Vector3.UP if absf(eixo_y.dot(Vector3.UP)) < 0.95 else Vector3.RIGHT
+		var eixo_x := apoio.cross(eixo_y).normalized()
+		var eixo_z := eixo_x.cross(eixo_y).normalized()
+		mi.global_transform.basis = Basis(eixo_x, eixo_y, eixo_z)
+
 	var tw := mi.create_tween()
 	tw.set_parallel(true)
 	tw.tween_property(mi, "scale", Vector3.ONE * 1.5, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)

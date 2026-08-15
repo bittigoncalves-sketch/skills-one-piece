@@ -216,6 +216,15 @@ func _slot_em_uso() -> String:
 		return str(get_meta("active_skill", ""))
 	return ""
 
+func abort_gatling() -> void:
+	if not is_inside_tree():
+		return
+	var world = get_tree().current_scene
+	if world:
+		for child in world.get_children():
+			if child is GomuGatling and child._caster == self:
+				child.abort()
+
 # POSE DE ARMA (braço estendido, mirando): rajada Z, pistola da Yami e agora
 # qualquer arma de BRAÇO da Buki. O canhão-corpo (X) fica de fora — lá o modelo
 # está escondido, e mandar o rig fazer pose de pistoleiro seria trabalho à toa.

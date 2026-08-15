@@ -286,13 +286,19 @@ Aparece nas passivas e não corresponde a nenhuma fruta, árvore ou skill.
 *Detectado:* cruzamento entre `FruitPassiveSystem` (21 passivas) e `SkillSystem`
 (9 skills).
 
-### 6. 12 frutas têm passiva e descrição prontas, e nenhum golpe
+### 6. 11 frutas têm passiva e descrição prontas, e nenhum golpe
 `pika_pika`, `magu_magu`, `ope_ope`, `hana_hana`, `ito_ito`, `zushi_zushi`,
 `moku_moku`, `tori_tori_phoenix`, `neko_neko_leopard`, `hito_hito_nika`,
 `uo_uo_seiryu`. Três delas têm árvore desenhada, hoje filtrada do mapa.
 
 Não é bug — é o estoque a terminar, e a regra do dono é não criar fruta nova
 antes disso.
+
+> **Número corrigido em 2026-08-14: eram "12", são 11.** A conta batia
+> (21 passivas − 9 frutas com skill = 12), mas o 12º id é o órfão
+> `gura_gura_alt`, que já é o **item 5** desta lista e não é fruta nenhuma. A
+> lista de nomes aqui sempre teve 11 — o cabeçalho é que contava o órfão duas
+> vezes. Reconferido por leitura de `FruitPassiveSystem` × `SkillSystem`.
 
 ### 7. O campo da Ice Age não tem dano por tique — só a entrada
 Resolvido em parte: o campo **passou a causar dano** (30/s) em 2026-08-11. O que
@@ -415,6 +421,8 @@ efeitos usam, e a regra é não alterar fora do escopo sem sua ordem.
 
 ---
 
+---
+
 ## O que NÃO está nesta lista
 
 Nada testado **em rede com dois PCs de verdade** nem **visto na tela**. As
@@ -454,3 +462,242 @@ de combate.
 **Decisão pendente:** estender o `_srv_recarga_ate` da Buki para todo cast (era
 também o item 17, "o servidor não valida `origin`/`aim`"), ou aceitar enquanto o
 jogo for entre amigos?
+
+---
+
+## 🆕 Achados de 2026-08-14 — leitura para a documentação das frutas
+
+Os seis itens abaixo saíram de **leitura de código** durante a escrita de
+[`frutas/`](frutas/README.md). Nenhum foi corrigido (a tarefa era de
+documentação, e três dos arquivos envolvidos estavam sendo editados por outros
+agentes na mesma hora). Nenhum foi reproduzido jogando, exceto onde dito.
+
+### 31. `GuraShatterMesh` posiciona a rachadura ANTES de entrar na árvore
+`src/effects/GuraShatterMesh.gd:50-51`:
+
+```gdscript
+mi.global_position = pos      # nó ainda SEM pai
+parent.add_child(mi)          # só agora entra na árvore
+```
+
+Fora da árvore, `global_position` grava no transform **local**. Quando o nó
+entra como filho, esse local se soma ao do pai — e nos três chamadores de
+`GuraFX` o pai é a própria `DamageZone`, que já está em `pos`. Resultado: a teia
+de rachaduras nasce em **~2×** a posição pretendida, cada vez mais longe quanto
+mais longe da origem do mundo o golpe acontecer.
+
+O único chamador correto é `GuraVNode.gd:80`, onde o pai é a cena (origem).
+
+*Detectado:* leitura, 2026-08-14. **É exatamente a armadilha que a
+`AUDITORIA_FRUTAS.md` já registrava** ("`global_position` escrito antes do
+`add_child` fazia o efeito nascer em (0,0,0)") — a mesma família, com o sinal
+trocado. Conserto: `add_child` primeiro, `global_position` depois.
+
+### 32. O X da Gura Gura só funciona pelo caminho da carga
+`GuraFX.cast` trata o parâmetro `dir` da variante 1 como **posição absoluta do
+alvo** (`_shockwave(world, dir, …)`), e quem manda posição ali é o
+`GuraChargeNode.soltar()`. Qualquer outro caminho para o slot X —
+`cast_skill_slot("X")`, um `_net_cast` vindo de outro peer, uma sonda de teste —
+manda uma **direção unitária**, e a onda de choque nasce a ~1 m de **(0,0,0)**.
+
+O comentário na linha 13 do `GuraFX.gd` avisa que `dir` "carrega a posição
+absoluta", mas nada **verifica** isso.
+
+*Detectado:* leitura, 2026-08-14. **Decisão pendente:** passar posição e direção
+em campos separados no pedido de cast, ou marcar o golpe como "só carregável"
+e recusar os outros caminhos em voz alta?
+
+### 33. Duas tabelas de recarga, e a do `SkillSystem` está morta E errada
+`SkillSystem.get_fruit_skills()` normaliza `cooldown` para 5/7/10/**60** e
+`SkillSystem.get_slot_cooldown()` devolve os mesmos números. A recarga que o
+jogo aplica é `Player.RECARGA_POR_SLOT` = 5/7/10/**25**.
+
+Conferido por grep: **nenhum arquivo lê o campo `cooldown`** do dicionário, e
+`get_slot_cooldown` **não tem chamador**. Ou seja: é documentação embutida que
+contradiz o código, no arquivo onde alguém naturalmente procuraria a resposta.
+
+O item 14 desta lista já declarou `Player.RECARGA_POR_SLOT` como **fonte única**
+("duas cópias do mesmo número escritas à mão foi como o furo nasceu") — a
+segunda cópia continua lá.
+
+*Detectado:* leitura, 2026-08-14. Conserto barato: apagar o campo e a função, ou
+fazer o `SkillSystem` importar de `Player.RECARGA_POR_SLOT`.
+
+### 34. `set_character()` escreve `current_fruit_id` sem passar pelo `equip_fruit`
+`Player.gd:1003-1021` atribui a fruta direto por personagem (`ace` → `mera_mera`,
+`buggy` → `bara_bara`, …). Por esse caminho **não** roda nada do que o
+`equip_fruit` garante: a fruta não some da árvore, a anterior não volta ao mapa,
+a passiva não é aplicada, a arma da Buki não é guardada e a escala da Gura não é
+ligada nem desligada.
+
+É a mesma classe de bug que a **tarefa 4** de 2026-08-12 consertou ("a fruta some
+do mapa ao ser equipada por QUALQUER caminho"): aquela varreu três entradas e
+esta é uma quarta, que ninguém tinha mapeado.
+
+*Detectado:* leitura, 2026-08-14. **Não reproduzido** — hoje o elenco está
+trancado em `base`/`bluebuddy`, então só o ramo `_` (que dá `gomu_gomu`) roda.
+Vira bug de verdade no dia em que o elenco for liberado.
+
+### 35. A investida e a captura da Gura escrevem a posição de OUTRO corpo
+`Player.gd:1361` (investida do Z) e `cast_controller.gd:344` (captura do X)
+gravam `global_position` do alvo, todo quadro, **no cliente do atacante**. A
+posição de outro jogador é autoritária no cliente dele e chega pelo
+`MultiplayerSynchronizer`; em PvP o agarrão pode ser desfeito pelo próprio dono
+do corpo no quadro seguinte, ou "puxar" o adversário só na tela de quem atacou.
+
+*Detectado:* leitura, 2026-08-14. **Não testado em rede** — trate como mecanismo
+suspeito, não como bug medido. Contra bonecos e inimigos (sem autoridade
+própria) funciona.
+
+### 36. As passivas das frutas são texto: só `speed_mod` e `jump_mod` rodam
+`FruitPassiveSystem` descreve 21 passivas com efeitos ricos — cargas de chama da
+Mera, volt meter da Goro, cura por drenagem da Suna, esquiva por desmembramento
+da Bara, regeneração da fênix, −40% de knockback da Gomu. **`equip_fruit` lê
+dois campos e mais nada.**
+
+Conferido por grep: nenhum outro arquivo chama `get_all_passives`, e a API de
+instância da classe (`equip_fruit`, sinal `passive_triggered`, `charge_count`,
+`volt_meter`) **não tem chamador nenhum**.
+
+Caso à parte, e o mais enganoso: a "Supressão Abissal" da Yami Yami tem
+implementação escrita — `SkillSystem.apply_yami_suppression()`, aura de 8 m — e
+ela **também não tem chamador**. O silenciamento que existe no jogo vem dos
+golpes (X silencia 4 s, V silencia 10 s), não da aura.
+
+*Detectado:* leitura, 2026-08-14. **Não é bug de execução** — nada quebra. É
+armadilha de leitura: a descrição existe, tem número, tem nome bonito, e um
+balanceamento feito por cima dela estaria contando com efeitos que não rodam.
+
+**Decisão pendente:** implementar as passivas, ou marcar as descrições como
+"pretendido, não implementado" na própria tabela?
+
+### 37. 💀 O soco da Gura SEQUESTRA o rig por ~7 s (e o agarrão dura 0,5 s)
+`GuraFX._punch` toca o clipe assado a `0.4 / mult`. Com o `charge = 1.0` que a
+própria investida do Z manda, `mult = 1,667` e a velocidade vira **0,240**.
+
+O clipe `right_upper_hook_from_guard` tem **1,77 s** (medido em 2026-08-11, ver a
+tabela no topo de `src/combat/Melee.gd`). A 0,240× ele fica **7,37 s em tela**.
+
+E o `ProceduralAnimator.update()` faz, na linha 146:
+
+    if _baked != null:
+        _apply_baked(delta)
+        return
+
+ou seja, enquanto o clipe assado toca, **toda** a animação procedural morre —
+locomoção, pulo, idle, tudo. O agarrão da investida dura **0,50 s**. Sobram
+**6,87 segundos** com o jogador andando por aí congelado num gancho em câmera
+lenta.
+
+*Detectado:* pelo agente que fez a pose do Z, lendo o caminho da investida.
+Números reconferidos à mão a partir do comprimento de clipe já documentado.
+
+**Por que isso não apareceu antes:** o `_punch` só recebe `charge > 0` pelo
+caminho da INVESTIDA, que é novo. Pelo caminho antigo `charge = 0` → `mult = 1`
+→ velocidade 0,4 → 4,4 s. Ruim, mas menos visível.
+
+### 38. O dano do soco da Gura sai ~1,2 s ANTES do golpe animado começar
+Mesmo `_punch`: ele chama `play_baked(..., start = 0.0)`.
+
+O comentário do próprio `play_baked` documenta que esse clipe tem **0,392 s de
+guarda parada** na abertura (22% dele) e que o parâmetro `start` existe
+justamente para pular isso — o `Melee` usa (`"inicio": 0.20`).
+
+Com a velocidade de 0,240 do item 37, esses 0,392 s de clipe viram **1,63 s de
+estátua** antes de o braço se mexer. A hitbox nasce em `0.25 * mult` = **0,417 s**.
+
+O dano acontece **~1,2 s antes** de o soco animado começar. É a mesma classe de
+erro que o `Melee` corrigiu em 2026-08-11 ("a hitbox saía na retração, não no
+chute"), reaparecendo por um caminho novo que não herdou a lição.
+
+**Os dois itens são o mesmo `_punch` e devem ser consertados juntos:** mexer só
+na velocidade sem mexer no `start` troca um desencontro por outro.
+
+### 39. 🔴🔴 O MODELO VOXEL TEM OS BRAÇOS E PERNAS TROCADOS DE NOME
+Medido no `assets/models/base.scn`, no espaço local do modelo (frente = −Z,
+logo direita = +X):
+
+| nó | x local | lado REAL |
+|---|---|---|
+| `UpperArm_R` / `ForeArm_R` | **−0,375** | **esquerdo** |
+| `UpperArm_L` / `ForeArm_L` | **+0,375** | **direito** |
+| `Thigh_R` / `Foot_R` | **−0,125** | **esquerdo** |
+| `Thigh_L` / `Foot_L` | **+0,125** | **direito** |
+
+**O código está CERTO; o modelo é que está trocado.** `bake_mixamo.gd:51` assa
+`mixamorig_RightArm` na faixa `UpperArm_R`, e `SkeletonDriver.gd:46` mapeia
+`UpperArm_R` → `RightArm`. A convenção do projeto é `_R` = direita anatômica, e
+ela vale em todo o resto.
+
+**Consequência:** no personagem voxel, **as 29 animações do Mixamo tocam
+espelhadas** — o movimento do braço direito sai no braço esquerdo. E toda pose
+procedural de UM braço só sai no lado errado: `_finger_gun`, `_kurouzu_pose`,
+`_black_hole_pose`, `_gura_x_charge_pose`, el_thor, os socos do combo, o ponto de
+tiro do `GoroFXGrande._ponto_do_braco` e o do `WaterFX._ponto_da_mao`, e o
+arsenal da Buki, que o `PlayerRig` pendura em `ForeArm_R`.
+
+**Por que ficou tanto tempo invisível:** andar, correr e o combo de socos são
+quase simétricos, e a T-pose do V abre os DOIS braços com sinais opostos — numa
+pose simétrica a convenção de lado não tem como aparecer. O primeiro pedido que
+nomeia um lado ("o braço DIREITO levantado", 2026-08-14) foi também o primeiro
+capaz de detectar isto.
+
+*Detectado:* por um agente verificador CEGO, que recebeu só o comportamento
+esperado e nenhuma informação sobre o código. O agente que escreveu a pose mediu
+o ângulo certo e não mediu QUAL BRAÇO — mediu o sinal que ele próprio escolheu.
+Reconferido depois de forma independente, direto no `.scn`, sem a sonda dele.
+
+**Decisão pendente — e ela é grande.** Duas saídas, e elas não são equivalentes:
+
+1. **Consertar o `base.scn`** (trocar os nomes dos nós). Conserta as 29
+   animações, todas as poses, todos os pontos de encaixe e os dois modelos do
+   elenco de uma vez. Mas **inverte todo movimento assimétrico que hoje está em
+   tela**, e as poses ajustadas à mão contra o modelo espelhado vão precisar de
+   reconferência.
+2. **Trocar só a pose do Z para `_L`.** Resolve o pedido de hoje em duas linhas
+   e deixa o `bluebuddy` (rig skinnado, que NÃO é espelhado) com o braço errado —
+   a mesma pose sairia em lados opostos nos dois personagens do elenco. Também
+   cimenta a confusão: o código passaria a dizer `_L` para "direito".
+
+A (2) é mais barata hoje e cobra juros todo mês. A (1) é o conserto de verdade.
+
+### 40. `GuraFX._ring/_bubble/_debris` não recebem posição — a armadilha continua armada
+As três criam o nó e **nunca definem posição**: ficam em (0,0,0) *local do pai*.
+Se o chamador passa `world` como pai, o efeito nasce na **origem do mapa**.
+
+Foi a causa principal de o V antigo "não fazer nada" — bolha, 200 detritos e 3
+anéis apareciam no centro da arena enquanto o jogador estava noutro lugar.
+
+O V novo **contorna** com um nó-âncora já posicionado (`GuraVNode._ancora()`), em
+vez de mexer no `GuraFX`, que é compartilhado com Z, X e C. **A armadilha segue
+armada para o próximo chamador.**
+
+**Conserto sugerido:** dar um `pos: Vector3` às três. É o mesmo erro do item 21
+(`FireFX.gd:200`, `look_at` antes do `add_child`) e do item 31 (a
+`GuraShatterMesh`, esta já corrigida pelo V novo): **posicionar nó fora da
+árvore**. Três ocorrências da mesma classe já é padrão, não coincidência.
+
+### 41. Três `if` mortos com `Engine.has_singleton("ScreenShatterFX")`
+Em `GuraFX._punch`, `_shockwave` e `_eruption`. `Engine.has_singleton()` só
+enxerga singleton **nativo/GDExtension**; `ScreenShatterFX` é **autoload**
+(`project.godot:21`), então a condição é sempre falsa.
+
+**Inofensivos hoje** — cada um tem um `elif world.get_node_or_null("/root/ScreenShatterFX")`
+logo abaixo que funciona. São 3 ramos mortos, não 3 efeitos quebrados. O agente
+não os apagou para não arriscar três golpes numa tarefa que era do V; concordo.
+
+Mesmo bloco morto em `src/player/cast_controller.gd:330`.
+
+### 42. ⚠️ ARMADILHA DE GODOT 4 PARA TODA SONDA: objeto liberado compara IGUAL a `null`
+Custou um ciclo ao agente do V. A sonda dele checava `no == null` para saber se
+ainda estava procurando o nó do golpe. Quando a ultimate acabava e o nó era
+liberado, a comparação voltava a dar verdadeiro, o laço voltava a "procurar", e a
+sonda concluiu que **o golpe nunca tinha nascido** — logo depois de tê-lo
+cronometrado.
+
+**Regra:** toda sonda que espera um nó MORRER precisa de um booleano próprio
+("já vi nascer"), nunca de `== null`. Use `is_instance_valid()` para validade, e
+guarde o fato de ter encontrado numa variável à parte.
+
+Vale para as sondas que já existem em `tools/dev_tests/` — nenhuma foi auditada
+sob essa luz.

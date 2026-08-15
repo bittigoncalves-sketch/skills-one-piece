@@ -202,6 +202,13 @@ func comecar(slot_pedido: String) -> void:
 		_dono.trigger_skill_cooldown("Z")
 		_dono._disparo.iniciar_rajada()
 		return
+		
+	# GOMU GOMU GATLING (C): inicia a rajada imediatamente ao pressionar.
+	if slot_pedido == "C" and na_fruta and fruta == "gomu_gomu":
+		_dono.trigger_skill_cooldown("C")
+		_dono.gastar_energia(_dono.ENERGY_SKILL)
+		pedir_cast("C")
+		return
 	if _dono.combat_mode == "style" and _dono.estilo_atual() == "teste_animacao":
 		_dono.gastar_energia(_dono.ENERGY_SKILL)
 		pedir_cast(slot_pedido)
@@ -234,6 +241,12 @@ func soltar(slot_pedido: String) -> void:
 	# MERA MERA Z: soltar a tecla ENCERRA a rajada.
 	if _dono._disparo.rajada_ativa() and slot_pedido == "Z":
 		_dono._disparo.parar_rajada()
+		return
+		
+	# GOMU GOMU GATLING: soltar a tecla cancela a metralhadora no meio.
+	if slot_pedido == "C" and _dono.combat_mode == "fruit" and _dono.current_fruit_id == "gomu_gomu":
+		if _dono.has_method("abort_gatling"):
+			_dono.abort_gatling()
 		return
 	if not _carregando or _slot != slot_pedido:
 		return

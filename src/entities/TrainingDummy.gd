@@ -18,6 +18,8 @@ const FRICTION := 10.0
 var health := MAX_HP
 var _since_damage := 0.0
 var _model: Node3D
+var _ap: AnimationPlayer
+
 
 func _ready() -> void:
 	add_to_group("enemy")           # alvo das skills
@@ -33,6 +35,7 @@ func _ready() -> void:
 	var ap = built.get("anim_player")
 	if ap:
 		ap.active = false            # como o Player faz: sem AnimationPlayer brigando
+		_ap = ap
 	_fit_model()
 
 func _physics_process(delta: float) -> void:
@@ -75,6 +78,12 @@ func take_damage(amount: float, _from_pos: Vector3 = Vector3.ZERO, knockback: Ve
 		var kb := knockback
 		if not is_on_floor():
 			kb *= 2.0
+		# Correção de knockback: impede deslizamento absurdo se o golpe vier de cima
+		if kb.y < 0.0 and is_on_floor():
+			kb.y = 0.0
+			kb.x *= 0.2
+			kb.z *= 0.2
+		kb.y = clampf(kb.y, -30.0, 30.0)
 		velocity += kb
 	_since_damage = 0.0
 

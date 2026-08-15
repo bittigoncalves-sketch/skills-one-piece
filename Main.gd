@@ -80,6 +80,12 @@ func _start_server_content() -> void:
 	dummy.name = "TrainingDummy"
 	dummy.position = Vector3(0, 4, -8)   # À FRENTE do player (evita nascer um dentro do outro)
 	add_child(dummy)
+	
+	var auto_dummy := CharacterBody3D.new()
+	auto_dummy.set_script(load("res://src/entities/AutoDummy.gd"))
+	auto_dummy.name = "AutoDummy"
+	auto_dummy.position = Vector3(4, 4, -8)   # Ao lado do primeiro dummy
+	add_child(auto_dummy)
 
 func _spawn_player_for(id: int) -> void:
 	var data := {"id": id, "pos": [0, 4, 0]}   # clareira central

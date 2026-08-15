@@ -85,3 +85,9 @@ func _finish() -> void:
 		_on_recover.call()
 		
 	queue_free()
+
+func abort() -> void:
+	_max_punches = _punch_count
+	_t = _next_punch_t + 0.3
+	if _caster and _caster.has_method("lock_movement"):
+		_caster.lock_movement(0.0, "")

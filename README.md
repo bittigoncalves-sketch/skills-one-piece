@@ -116,22 +116,48 @@ Detalhes em [`docs/ANIMACOES_MIXAMO.md`](docs/ANIMACOES_MIXAMO.md).
 
 ## Documentação
 
+O índice está dividido em **três blocos**: as frutas (uma página por fruta), os
+documentos vivos (valem hoje) e o histórico por data (o *porquê* de decisões
+antigas — nada ali é apagado).
+
+### Akuma no Mi — uma página por fruta
+
+| Arquivo | Conteúdo |
+|---|---|
+| [`docs/frutas/README.md`](docs/frutas/README.md) | **comece aqui**: índice, estado de cada fruta, e o que vale para todas (caminho do cast, escala de dano, recarga real, passivas) |
+| [`docs/frutas/gura_gura.md`](docs/frutas/gura_gura.md) | tremor — investida do Z, captura do X, ultimate de 4 s, e a escala 2× |
+| [`docs/frutas/gomu_gomu.md`](docs/frutas/gomu_gomu.md) · [`bara_bara`](docs/frutas/bara_bara.md) · [`buki_buki`](docs/frutas/buki_buki.md) | Paramecias |
+| [`docs/frutas/mera_mera.md`](docs/frutas/mera_mera.md) · [`hie_hie`](docs/frutas/hie_hie.md) · [`goro_goro`](docs/frutas/goro_goro.md) · [`yami_yami`](docs/frutas/yami_yami.md) · [`suna_suna`](docs/frutas/suna_suna.md) | Logias |
+| [`docs/PLANO_FRUTAS.md`](docs/PLANO_FRUTAS.md) · [`docs/AUDITORIA_FRUTAS.md`](docs/AUDITORIA_FRUTAS.md) | critérios de fruta funcional e o placar medido em 2026-08-10 |
+
+### Documentos vivos
+
 | Arquivo | Conteúdo |
 |---|---|
 | [`docs/ANIMACOES_MIXAMO.md`](docs/ANIMACOES_MIXAMO.md) | pipeline, catálogo de clipes, limitações |
-| [`docs/erros.md`](docs/erros.md) | registro de bugs com causa raiz e correção |
 | [`docs/AGENTES.md`](docs/AGENTES.md) | como o trabalho é dividido entre agentes especializados |
 | [`docs/LIMITE_DE_TAMANHO.md`](docs/LIMITE_DE_TAMANHO.md) | limite de 900 linhas por script, o que já foi dividido e o plano do `Player.gd` |
 | [`docs/ARQUITETURA_PLAYER.md`](docs/ARQUITETURA_PLAYER.md) | **decisão de arquitetura**: componentes por domínio, 9 fases, e o princípio de posse de estado |
 | [`docs/RELATORIO_PLAYER.md`](docs/RELATORIO_PLAYER.md) | mapa do `Player.gd` por domínio, estado compartilhado e a medição que embasou a decisão |
 | [`docs/LISTA_DE_CORRECOES.md`](docs/LISTA_DE_CORRECOES.md) | bugs achados e **não** corrigidos, esperando decisão |
+| [`docs/VALIDACAO.md`](docs/VALIDACAO.md) | a bateria automática (`./validar.sh`) e as armadilhas que ela resolve |
+| [`docs/erros.md`](docs/erros.md) | registro de bugs com causa raiz e correção |
+| [`DOCUMENTACAO.md`](DOCUMENTACAO.md) | visão geral do projeto |
+| [`disabled/enemies/README.md`](disabled/enemies/README.md) | inimigos desligados do mapa e como religar |
+
+### Histórico por data — não apagar
+
+Registram *o porquê* de decisões antigas e as armadilhas já pagas. Para o estado
+**de hoje** de uma fruta, use `docs/frutas/`.
+
+| Arquivo | Conteúdo |
+|---|---|
 | [`docs/MUDANCAS_2026-08-06.md`](docs/MUDANCAS_2026-08-06.md) | rig único, conserto do pipeline, Buki Buki |
 | [`docs/MUDANCAS_2026-08-10.md`](docs/MUDANCAS_2026-08-10.md) | arena: buracos, placar, corpo a corpo, armas em .glb |
 | [`docs/MUDANCAS_2026-08-10_PARTE2.md`](docs/MUDANCAS_2026-08-10_PARTE2.md) | rig, rebake dos 28 clipes, personagem novo, multiplayer, LAN |
 | [`docs/MUDANCAS_2026-08-11.md`](docs/MUDANCAS_2026-08-11.md) | dash mais rápido; Buki Buki virou kit de FPS com munição |
-| [`docs/PLANO_FRUTAS.md`](docs/PLANO_FRUTAS.md) · [`docs/AUDITORIA_FRUTAS.md`](docs/AUDITORIA_FRUTAS.md) | critérios de fruta funcional e o placar medido |
-| [`disabled/enemies/README.md`](disabled/enemies/README.md) | inimigos desligados do mapa e como religar |
-| [`DOCUMENTACAO.md`](DOCUMENTACAO.md) | visão geral do projeto |
+| [`docs/PEDIDO_2026-08-12.md`](docs/PEDIDO_2026-08-12.md) | as 7 tarefas daquela sessão: charge-up, Goro repaginada, Black Hole nos pés, luneta, Karatê Tritão |
+| [`docs/AUDITORIA_FASE6.md`](docs/AUDITORIA_FASE6.md) | a fase que extraiu o cast do `Player.gd`, com as notas de execução |
 
 ## Testes
 

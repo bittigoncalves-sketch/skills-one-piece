@@ -108,6 +108,7 @@ Honestidade sobre o alcance da ferramenta:
 
 | arquivo | conteúdo |
 |---|---|
+| **`docs/frutas/`** | **o estado de HOJE, uma página por fruta** (criado em 2026-08-14) |
 | `docs/PLANO_FRUTAS.md` | este plano |
 | `docs/AUDITORIA_FRUTAS.md` | o resultado medido, fruta a fruta |
 | `docs/erros.md` | todo defeito achado, com causa e como detectar |

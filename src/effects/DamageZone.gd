@@ -13,16 +13,27 @@ var override_kb_dir: Vector3 = Vector3.ZERO
 var _hit: Dictionary = {}
 
 # Cria a colisão e a agenda de vida. Chamar logo após add_child.
-func setup(dmg: float, kb: float, velocity: Vector3, life: float, caster_node: Node, radius: float) -> void:
+#
+# `forma` é OPCIONAL e existe por um caso concreto: os tsunamis da ultimate da
+# Gura Gura têm 70 m de frente por 24 m de altura, e a esfera que cobrisse isso
+# teria 35 m de raio — ela acertaria quem estivesse 35 m ATRÁS da onda, que é o
+# oposto do que o olho promete. Quem passa uma `forma` manda nela; quem não
+# passa (todo o resto do jogo, inclusive o C do Karatê Tritão) continua com a
+# esfera de `radius`, exatamente como antes.
+func setup(dmg: float, kb: float, velocity: Vector3, life: float, caster_node: Node,
+		radius: float, forma: Shape3D = null) -> void:
 	damage = dmg
 	knockback = kb
 	vel = velocity
 	caster = caster_node
 
 	var col := CollisionShape3D.new()
-	var shape := SphereShape3D.new()
-	shape.radius = radius
-	col.shape = shape
+	if forma != null:
+		col.shape = forma
+	else:
+		var shape := SphereShape3D.new()
+		shape.radius = radius
+		col.shape = shape
 	add_child(col)
 
 	body_entered.connect(_on_body)

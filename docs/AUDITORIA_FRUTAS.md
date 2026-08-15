@@ -1,5 +1,12 @@
 # Auditoria das Akuma no Mi — 2026-08-10
 
+> 📌 **Este documento é a MEDIÇÃO de 2026-08-10, e continua valendo como tal.**
+> Para saber **como uma fruta funciona hoje** — teclas, números, onde mora cada
+> parte, o que está quebrado nela — vá em [`frutas/`](frutas/README.md), uma
+> página por fruta. Dois números daqui já envelheceram de propósito: as *8
+> árvores plantadas* viraram **9** (a `gura_gura` ganhou a dela) e as *"12
+> frutas sem golpe"* são **11 + o id órfão `gura_gura_alt`**.
+
 Resultado **medido** por `tools/dev_tests/test_frutas.gd`, com o jogo de verdade
 rodando. Critérios e método em [`PLANO_FRUTAS.md`](PLANO_FRUTAS.md).
 
