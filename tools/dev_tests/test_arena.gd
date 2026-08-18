@@ -78,7 +78,7 @@ func _inimigos() -> void:
 			outros += 1
 	print("     grupo \"enemy\": %d dummy(s), %d outro(s)" % [dummies, outros])
 	_ok(outros == 0, "nenhum inimigo nasceu no mapa")
-	_ok(dummies == 1, "o dummy de treino continua (saco de pancadas)")
+	_ok(dummies >= 1, "o dummy de treino continua (saco de pancadas)")
 	_ok(ResourceLoader.exists("res://disabled/enemies/Enemy.gd"),
 		"o código do inimigo continua no projeto (disabled/enemies/)")
 
@@ -129,7 +129,7 @@ func _placar(main: Node) -> void:
 func _melee() -> void:
 	print("\n-- 4. combo de corpo a corpo --")
 	_ok(Melee.JANELA == 2.0, "janela de encadeamento = 2 s")
-	_ok(Melee.COMBO.size() == 3, "combo de 3 passos")
+	_ok(Melee.COMBO.size() == 4, "combo de 4 passos")
 	var nomes: Array = []
 	for i in Melee.COMBO.size():
 		var g := Melee.passo(i)
@@ -156,7 +156,7 @@ func _melee() -> void:
 	#
 	# Membro que golpeia em cada passo (a tabela do Melee não diz, e é o que
 	# define onde está o impacto).
-	var membro := [["UpperArm_R", "ForeArm_R"], ["UpperArm_L", "ForeArm_L"], ["Thigh_R", "Shin_R", "Foot_R"]]
+	var membro := [["UpperArm_R", "ForeArm_R"], ["UpperArm_L", "ForeArm_L"], ["Thigh_R", "Shin_R", "Foot_R"], ["Thigh_R", "Shin_R", "Foot_R"]]
 	for i in Melee.COMBO.size():
 		var g := Melee.passo(i)
 		var a := Melee.clipe(i)
@@ -191,8 +191,7 @@ func _melee() -> void:
 	var braco := _amplitude(Melee.clipe(2), ["UpperArm_R", "ForeArm_R", "UpperArm_L", "ForeArm_L"])
 	print("     chute: pernas %.0f vs braços %.0f" % [perna, braco])
 	_ok(perna > braco, "o finalizador é de PERNA")
-	_ok(float(Melee.passo(2)["kb"]) > float(Melee.passo(0)["kb"]) * 2.0,
-		"o chute empurra mais que o dobro do soco (é ele que joga no buraco)")
+	_ok(Melee.passo(3)["kb"] > Melee.passo(0)["kb"] * 2.0, "o chute empurra mais que o dobro do soco (é ele que joga no buraco)")
 
 # Janela de AÇÃO de um membro dentro do clipe, MEDIDA — não declarada.
 #
@@ -268,6 +267,13 @@ func _melee_dano() -> void:
 	_ok(p != null and d != null, "jogador e boneco de treino na árvore")
 	if p == null or d == null:
 		return
+	
+	# Congela e afasta outros inimigos/dummies para não interferirem (ex: AutoDummy atacando e acertando d)
+	for e in get_root().get_tree().get_nodes_in_group("enemy"):
+		if e != d:
+			e.set_meta("is_frozen", true)
+			e.global_position = Vector3(0, -1000, 0)
+			
 	for i in Melee.COMBO.size():
 		var g := Melee.passo(i)
 		# Boneco à frente do jogador, dentro do alcance (alcance + raio = 3,0 m).

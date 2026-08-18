@@ -52,9 +52,30 @@ var is_suppressed: bool:
 var suppression_timer: float:
 	get: return _cast.tempo_de_silencio()
 
-var combat_mode: String = "fruit" # "fruit" ou "style"
+var combat_mode: String = "fruit"
 var current_style_idx: int = 0
 const STYLES_LIST: Array[String] = ["karate_tritao", "pacifista", "mink", "boxe", "cyborg", "teste_animacao"]
+
+# ---- FSM DE COMBATE E INPUT BUFFER (Fase Nova) ----
+var _fsm: PlayerStateMachine
+var _input_buffer: Array = []
+const BUFFER_WINDOW_MS = 400
+
+func _add_input_to_buffer(action: String) -> void:
+	_input_buffer.push_back({"action": action, "time": Time.get_ticks_msec()})
+	if _input_buffer.size() > 10:
+		_input_buffer.pop_front()
+
+func _consume_input(action: String) -> bool:
+	var current_time = Time.get_ticks_msec()
+	_input_buffer = _input_buffer.filter(func(i): return current_time - i["time"] <= BUFFER_WINDOW_MS)
+	for i in range(_input_buffer.size()):
+		if _input_buffer[i]["action"] == action:
+			_input_buffer.remove_at(i)
+			return true
+	return false
+
+var hit_confirmed: bool = false
 
 # O cast vive em src/player/cast_controller.gd (passo 6c). Aqui só as VISTAS —
 # `_charging` é lido por 5 arquivos de fora.
@@ -70,7 +91,7 @@ var _charge_slot: String:
 # "cast interrompido" e engolia a skill seguinte.
 var _cast_token: int:
 	get: return _cast.token()
-var _movement_locked_timer: float = 0.0
+	# _movement_locked_timer removido (FSM gerencia)
 # IMPULSO EXTERNO (knockback). NÃO pode viver dentro de `velocity`: o bloco de
 # locomoção faz `velocity.x = dir.x * speed` — ATRIBUIÇÃO, não soma — e apagaria
 # o empurrão no quadro seguinte. Foi exatamente isso que fez ninguém tomar
@@ -183,6 +204,7 @@ var _buki_armas: Dictionary:        # slot -> Node3D pré-construído (oculto)
 var _buki_pivot: Node3D:            # pivô do canhão-corpo (X): gira com a mira
 	get: return _rig.pivo_buki() if _rig else null
 var _skill_cooldowns: Dictionary = {"Z": 0.0, "X": 0.0, "C": 0.0, "V": 0.0}
+var _combo_breaker_cooldown: float = 0.0
 var aim_assist: bool = false   # assistência de mira (liga/desliga no E)
 var _gura_rush_active := false
 var _gura_rush_timer := 0.0
@@ -212,7 +234,8 @@ func _slot_em_uso() -> String:
 		var s := str(get_meta("active_skill", ""))
 		if s != "":
 			return s
-	if _movement_locked_timer > 0.0:
+	var combat_locked = _fsm and _fsm.state and _fsm.state.name in ["Attacking", "Casting", "Stunned"]
+	if combat_locked:
 		return str(get_meta("active_skill", ""))
 	return ""
 
@@ -318,6 +341,8 @@ static func local_player(tree: SceneTree) -> Node:
 	# Sem autoridade nenhuma (corpo ainda não spawnado): melhor nada que o errado.
 	return null
 
+var _hitstop_timer: float = 0.0
+
 @export var net_velocity: Vector3 = Vector3.ZERO   # replicado (autoridade -> demais)
 @export var net_facing: float = 0.0
 @export var net_on_floor: bool = true
@@ -333,6 +358,25 @@ func _ready() -> void:
 	add_child(_rig)
 	_rig.montar_em(self)
 	_dash.montar_em(self)
+
+	_fsm = PlayerStateMachine.new()
+	_fsm.name = "CombatFSM"
+	_fsm.set_physics_process(false)
+	add_child(_fsm)
+	
+	var state_idle = CombatStateIdle.new()
+	state_idle.name = "Idle"
+	_fsm.add_child(state_idle)
+	
+	var state_attacking = CombatStateAttacking.new()
+	state_attacking.name = "Attacking"
+	_fsm.add_child(state_attacking)
+	
+	var state_dashing = CombatStateDashing.new()
+	state_dashing.name = "Dashing"
+	_fsm.add_child(state_dashing)
+	
+	_fsm.initial_state = state_idle.get_path()
 	_buki.montar_em(self, _rig)
 	_disparo.montar_em(self)
 	_cast.montar_em(self)
@@ -429,6 +473,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			hud.set_aim_assist(aim_assist)
 		if Engine.has_singleton("ScreenFX") or get_node_or_null("/root/ScreenFX"):
 			get_node("/root/ScreenFX").set_aim_assist(aim_assist, self)
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_G:
+		_request_combo_breaker()
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		if event.echo:
 			get_tree().quit()
@@ -690,7 +736,29 @@ func _process(delta: float) -> void:
 	# é o que mantém a fronteira honesta e permite testá-lo sozinho.
 	_camera.atualizar(delta, velocity, SPEED, is_on_floor(), _is_sprinting(), _yaw, _buki_scope)
 
+# (Antiga função _processar_estados_de_combate removida, lógica movida para os States)
+
 func _physics_process(delta: float) -> void:
+	# HITSTOP LOCAL: Personagem congela e treme após um golpe, segurando o knockback
+	if _hitstop_timer > 0.0:
+		if _animator and _animator.animation_player:
+			_animator.animation_player.speed_scale = 0.0
+		_hitstop_timer -= delta
+		if _char_model:
+			_char_model.position.x = randf_range(-0.06, 0.06)
+			_char_model.position.z = randf_range(-0.06, 0.06)
+		if _hitstop_timer <= 0.0:
+			if _char_model:
+				_char_model.position.x = 0.0
+				_char_model.position.z = 0.0
+			if _animator and _animator.animation_player:
+				_animator.animation_player.speed_scale = 1.0
+		_etapa_publicar_rede()
+		return # Ignora o movimento, mas agora a rede continua sendo enviada
+
+	if _fsm:
+		_fsm._physics_process(delta)
+
 	# ETAPAS NOMEADAS (Fase 1 da arquitetura, 2026-08-11).
 	#
 	# Este método tinha 291 linhas e misturava movimento, parkour, dash,
@@ -718,7 +786,9 @@ func _physics_process(delta: float) -> void:
 	# de uma paralisia de 1,2 s, e a pose nunca saía.
 	# Mesma classe do item 23 (morrer segurando a tecla travava o jogo para
 	# sempre): estado que só se apaga por um caminho que ele próprio fecha.
-	RecepcaoDeDano.tick(self, delta)
+	var _hitstun_ativo = RecepcaoDeDano.tick(self, delta)
+	if not _hitstun_ativo and _fsm and _fsm.state and _fsm.state.name == "Stunned":
+		_fsm.transition_to("Idle")
 	if _etapa_travamento(delta):
 		return
 	_etapa_locomocao(delta)
@@ -747,6 +817,8 @@ func _etapa_estado_de_combate(delta: float) -> void:
 		if em_uso != "" and slot_k != em_uso:
 			continue                       # congelado: outra habilidade está ativa
 		_skill_cooldowns[slot_k] = maxf(_skill_cooldowns[slot_k] - delta, 0.0)
+	if _combo_breaker_cooldown > 0.0:
+		_combo_breaker_cooldown = maxf(_combo_breaker_cooldown - delta, 0.0)
 	if _yami_pistol_active:
 		_disparo.atualizar_yami(delta, _yaw, _pitch)
 	if _buki.empunhando():
@@ -762,11 +834,20 @@ func _etapa_travamento(delta: float) -> bool:
 	# HOLD-TO-CAST / RAJADA Z: enquanto a tecla está SEGURADA (ou a rajada Z ativa), o
 	# personagem fica PARADO — inclusive NO AR, sem gravidade — até soltar a tecla ou
 	# as balas acabarem. Só a câmera continua livre (mira). A rajada dispara aqui.
-	if _charging or _rapid_fire or _movement_locked_timer > 0.0 or (has_meta("is_frozen") and get_meta("is_frozen")) or (has_meta("in_vortex") and get_meta("in_vortex")) or (has_meta("in_kurouzu") and get_meta("in_kurouzu")) or (has_meta("in_black_hole") and get_meta("in_black_hole")):
+	var combat_locked = _fsm and _fsm.state and _fsm.state.name in ["Attacking", "Casting", "Stunned"]
+	if _charging or _rapid_fire or combat_locked or (has_meta("is_frozen") and get_meta("is_frozen")) or (has_meta("in_vortex") and get_meta("in_vortex")) or (has_meta("in_kurouzu") and get_meta("in_kurouzu")) or (has_meta("in_black_hole") and get_meta("in_black_hole")):
 		if _charging and not (has_meta("is_casting") and get_meta("is_casting")):
 			_cast.abortar()            # cast foi interrompido (ex.: dano) -> destrava
 		else:
-			velocity = Vector3.ZERO    # congela no lugar (sem gravidade)
+			if not combat_locked:
+				velocity = Vector3.ZERO    # congela no lugar (sem gravidade)
+			else:
+				# Em estados de combate aplicamos gravidade e fricção agressiva (para suavizar avanços/lunge)
+				if not is_on_floor():
+					velocity.y -= GRAVITY * delta
+				else:
+					velocity.x = move_toward(velocity.x, 0.0, 80.0 * delta)
+					velocity.z = move_toward(velocity.z, 0.0, 80.0 * delta)
 			if _breath:
 				_breath.set_running(false)
 			# Rajada Z: vira o corpo p/ a direção da mira (pose de pistoleiro) + coice decai.
@@ -782,10 +863,22 @@ func _etapa_travamento(delta: float) -> bool:
 			move_and_slide()
 			_disparo.tick_rajada(delta, ENERGY_BULLET)    # dispara as balas de fogo/gelo enquanto a rajada dura
 
-			if _movement_locked_timer > 0.0:
-				_movement_locked_timer -= delta
-				
-				return true
+			# ⚠️ ESTE `return true` FICA NO NÍVEL DO `else`, NÃO DENTRO DO `if`
+			# ACIMA. Ele estava um nível mais fundo, e essa única tabulação era o
+			# bug de "dá para andar segurando um ataque":
+			#
+			#   • cast com `lock_movement` (timer > 0) -> devolvia true -> congelava;
+			#   • tecla SEGURADA (`_charging`) sem timer -> caía no `return false`.
+			#
+			# No segundo caso o quadro NÃO era cortado: o `velocity = Vector3.ZERO`
+			# daqui de cima acontecia, o `_etapa_locomocao` rodava logo em seguida e
+			# reescrevia a velocidade a partir do teclado. O congelamento existia e
+			# era desfeito 3 linhas depois, no mesmo quadro.
+			#
+			# Quem chegou aqui está travado por definição — é o que o cabeçalho
+			# desta função promete ("fica PARADO até soltar a tecla"). O quadro
+			# acaba aqui para TODOS os motivos de trava, não só para o cronometrado.
+			return true
 	return false
 
 # O CICLO FÍSICO — quem manda na velocidade deste quadro.
@@ -829,9 +922,35 @@ func _etapa_locomocao(delta: float) -> void:
 
 	# ESQUIVA (Q) -> src/player/dash_controller.gd. Ele cuida de mira, recarga,
 	# direção travada e tempo restante; aqui só se pergunta o que ele quer.
-	# `bloqueado`: o combate está usando o corpo, não dá pra armar a esquiva.
-	_dash.atualizar(delta, q, _charging or _rapid_fire or _yami_pistol_active)
+	var dash_bloqueado := _charging or _rapid_fire or _yami_pistol_active
+	if _fsm and _fsm.state and _fsm.state.name != "Idle":
+		if _fsm.state.name == "Attacking" and get("hit_confirmed"):
+			dash_bloqueado = false # Dash cancel liberado!
+		else:
+			dash_bloqueado = true
+			
+	_dash.atualizar(delta, q, dash_bloqueado)
+	
+	if _dash.ativo() and _fsm and _fsm.state and _fsm.state.name != "Idle":
+		_fsm.transition_to("Idle") # Quebra o estado de combate se o dash conseguiu disparar
 
+	# GOLPE EM CURSO: o corpo fica plantado até a animação acabar (2026-08-15).
+	#
+	# É DEPOIS do dash de propósito — a esquiva lê `q.dir` para saber para onde ir,
+	# e ela é o cancelamento legítimo do combo. É ANTES do `aplicar_pulos` também
+	# de propósito: é o que impede o pulo de cancelar o golpe de graça.
+	#
+	# ⚠️ POR QUE NÃO `lock_movement()`, que já existe: aquela trava é a dos casts e
+	# zera a velocidade INTEIRA, sem gravidade ("fica parado inclusive NO AR", ver
+	# `_etapa_travamento`). Usá-la aqui faria quem clicasse no ar ficar boiando
+	# 1,5 s. Aqui só o horizontal morre; a gravidade segue e o jogador cai normal.
+	#
+	# Levar tranco tem precedência: sob hitstun o corpo é do knockback, não do
+	# golpe — senão atacar viraria imunidade a empurrão.
+	var is_stunned_now = _fsm and _fsm.state and _fsm.state.name == "Stunned"
+	var golpe_prende: bool = _melee.trava() > 0.0 and not is_stunned_now
+	if golpe_prende:
+		q.travar_golpe()
 
 	# `bonus_velocidade` é o impulso horizontal do salto longo / vault: o parkour
 	# devolve o FATOR e quem multiplica é a etapa. Componente não escreve na
@@ -937,6 +1056,15 @@ func _etapa_mover(delta: float) -> void:
 	if empurrao != Vector3.ZERO:
 		velocity += empurrao
 	move_and_slide()
+	
+	if _fsm and _fsm.state and _fsm.state.name == "Stunned":
+		if is_on_wall() and empurrao.length_squared() > 4.0:
+			var col = get_slide_collision(0)
+			if col:
+				var normal = col.get_normal()
+				var bounce_vel = empurrao.bounce(normal) * 0.8 # Conserva 80% do momento
+				_vida._empurrao = bounce_vel
+				print("💥 Wall Bounce! Momentum: ", bounce_vel)
 
 ## Posiciona o VFX de fôlego na frente da boca (segue cabeça + facing -Z) e regula
 ## a intensidade pela velocidade. Só "respira forte" correndo no chão.
@@ -1077,7 +1205,7 @@ func _atualizar_visibilidade_corpo() -> void:
 	_char_model.visible = (_camera == null or not _camera.em_primeira_pessoa()) and _buki_visual != "X"
 
 # ---------------------------------------------------------------- combate ---
-func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knockback: Vector3 = Vector3.ZERO) -> void:
+func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knockback: Vector3 = Vector3.ZERO, hitstun_duration: float = 0.3) -> void:
 	# `in_black_hole` entrou aqui em 2026-08-11: o Black Hole da Yami é CONTROLE
 	# PURO — puxa, afunda e silencia, e quem mata é o buraco do mapa depois.
 	# `TrainingDummy.gd:64` e `disabled/enemies/Enemy.gd` já recusavam dano de
@@ -1102,7 +1230,7 @@ func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knock
 		_skel_anim.play_one_shot("damage")
 
 	var morreu := _vida.sofrer_dano(amount)
-	_feedback_de_dano(amount)
+	_feedback_de_dano(amount, hitstun_duration)
 
 	# ⚠️ A VIDA É DO SERVIDOR — e ela precisa ATRAVESSAR a rede.
 	#
@@ -1139,13 +1267,18 @@ func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knock
 				net_apply_knockback.rpc_id(dono, base_knockback)
 			return
 		_aplicar_knockback(base_knockback)
+		
+	var hitstop_dur := clampf(amount * 0.003 + 0.06, 0.06, 0.16)
+	_hitstop_timer = hitstop_dur
+	velocity = Vector3.ZERO # Impact Frame Hold
+
 
 	if morreu:
 		die_and_respawn()
 
 # Pisca vermelho, som de recepção e número flutuante. Roda em QUALQUER cópia que
 # souber do dano — é o que faz o adversário te ver apanhar.
-func _feedback_de_dano(amount: float) -> void:
+func _feedback_de_dano(amount: float, hitstun_duration: float = 0.3) -> void:
 	FxUtil.flash_red(_char_model)
 	AudioFX.hurt(get_tree().current_scene, global_position + Vector3.UP * 1.0)
 	# ANIMAÇÃO DE RECEPÇÃO DE DANO (pedido do dono, 2026-08-14):
@@ -1154,7 +1287,9 @@ func _feedback_de_dano(amount: float) -> void:
 	# passa todo dano visível em QUALQUER cópia — o do servidor e o que chega por
 	# `net_vida_do_servidor`. Pendurar no `take_damage` faria o adversário não ver
 	# você apanhar, que é exatamente o bug do item 20.
-	RecepcaoDeDano.aplicar(self)
+	RecepcaoDeDano.aplicar(self, hitstun_duration)
+	if _fsm:
+		_fsm.transition_to("Stunned")
 	FxUtil.damage_number(get_tree().current_scene, global_position + Vector3.UP * 1.7, amount, Color(1.0, 0.75, 0.2))
 	var hud := get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("on_player_damaged"):
@@ -1175,7 +1310,7 @@ func net_vida_do_servidor(nova_vida: float, dano: float) -> void:
 			return                      # só o servidor manda na vida
 	_vida.vida = nova_vida
 	if dano > 0.0:
-		_feedback_de_dano(dano)
+		_feedback_de_dano(dano) # Usa o hitstun padrão na cópia remota (ou poderíamos enviar pelo RPC também)
 
 # O SERVIDOR premia quem matou: 30 s de regeneração acelerada.
 #
@@ -1283,7 +1418,7 @@ func net_force_respawn() -> void:
 	set_meta("is_casting", false)
 	set_meta("active_skill", "")
 	set_meta("yami_black_hole_active", false)
-	_movement_locked_timer = 0.0
+	# timer removido
 	_disparo.parar_rajada()
 	_disparo.desligar_yami()
 
@@ -1303,7 +1438,7 @@ func suppress_skills_temporarily(duration: float) -> void:
 	_cast.suprimir(duration)
 
 func lock_movement(duration: float, skill_id: String = "") -> void:
-	_movement_locked_timer = maxf(_movement_locked_timer, duration)
+	# Ignora o timer (FSM cuida), mas mantém metadata
 	set_meta("active_skill", skill_id)
 
 # CAST — a decisão mora em src/player/cast_controller.gd (passo 6c). Aqui ficam
@@ -1331,11 +1466,155 @@ func _net_cast(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.0)
 		_do_server_cast(slot, aim, origin, charge)
 
 # ======================= CORPO A CORPO (botão esquerdo) =======================
+
+# ----------------- SOFT LOCK-ON E LUNGE -----------------
+func find_best_melee_target(radius: float = 12.0) -> Node3D:
+	var best_target: Node3D = null
+	var highest_score: float = -9999.0
+	
+	var candidates = get_tree().get_nodes_in_group("enemy") + get_tree().get_nodes_in_group("player")
+	for c in candidates:
+		if c == self or not is_instance_valid(c):
+			continue
+
+		var dist = global_position.distance_to(c.global_position)
+		if dist > radius:
+			continue
+			
+		var dir_to_target = (c.global_position - global_position).normalized()
+		var forward = -Vector3.FORWARD.rotated(Vector3.UP, _yaw)
+		
+		var dot_prod = forward.dot(dir_to_target)
+		
+		# Cone frontal (dot > 0.0 significa à frente do jogador)
+		if dot_prod > 0.0:
+			var score = (dot_prod * 15.0) - dist
+			if score > highest_score:
+				highest_score = score
+				best_target = c
+				
+	return best_target
+
+func perform_melee_lunge(target: Node3D, lunge_force: float = 18.0) -> void:
+	if not is_instance_valid(target):
+		return
+		
+	# 1. Soft-Lock (Rodar para encarar)
+	var dir = (target.global_position - global_position).normalized()
+	dir.y = 0 
+	if dir.length_squared() > 0.001:
+		_yaw = atan2(-dir.x, -dir.z)
+		if _char_model:
+			_char_model.rotation.y = _yaw
+			
+	# 2. Lunge (Impulso Frontal Instantâneo)
+	var forward = -Vector3.FORWARD.rotated(Vector3.UP, _yaw)
+	velocity = forward * lunge_force
+
+# ----------------- COMBO BREAKER -----------------
+func _request_combo_breaker() -> void:
+	if _combo_breaker_cooldown > 0.0:
+		print("Combo Breaker em cooldown (", snapped(_combo_breaker_cooldown, 0.1), "s restantes)")
+		return
+	
+	# Só pode ativar se estiver tomando dano/hitstun (Stunned)
+	var is_stunned = (_hitstop_timer > 0.0) or (_fsm and _fsm.state and _fsm.state.name == "Stunned")
+	if is_stunned:
+		print("💥 COMBO BREAKER ATIVADO!")
+		_combo_breaker_cooldown = 45.0 # Cooldown longo punitivo
+		
+		# Destrava hitstop imediatamente
+		if _hitstop_timer > 0.0:
+			if _char_model:
+				_char_model.position.x = 0.0
+				_char_model.position.z = 0.0
+			if _animator and _animator.animation_player:
+				_animator.animation_player.speed_scale = 1.0
+		_hitstop_timer = 0.0
+		RecepcaoDeDano.limpar(self)
+		
+		# Limpa debuffs de stun
+		if has_meta("is_frozen"): set_meta("is_frozen", false)
+		if has_meta("in_vortex"): set_meta("in_vortex", false)
+		if has_meta("in_black_hole"): set_meta("in_black_hole", false)
+		if has_meta("in_kurouzu"): set_meta("in_kurouzu", false)
+		if _fsm:
+			_fsm.transition_to("Dashing") # Usa o estado de Dashing para fugir e ganhar invulnerabilidade
+			
+		# Feedback visual e knockback em área para afastar inimigos
+		if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
+			_do_server_combo_breaker(global_position)
+		else:
+			_net_combo_breaker.rpc_id(1, global_position)
+
+@rpc("any_peer", "reliable")
+func _net_combo_breaker(pos: Vector3) -> void:
+	if multiplayer.is_server():
+		_do_server_combo_breaker(pos)
+
+func _do_server_combo_breaker(pos: Vector3) -> void:
+	if multiplayer.has_multiplayer_peer():
+		_net_play_combo_breaker.rpc(pos)
+	else:
+		_net_play_combo_breaker(pos)
+
+@rpc("any_peer", "call_local", "reliable")
+func _net_play_combo_breaker(pos: Vector3) -> void:
+	# Efeito visual de Explosão de Ki/Burst
+	var vfx := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 1.0
+	sphere.height = 2.0
+	vfx.mesh = sphere
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.2, 0.6, 1.0, 0.8) # Azul claro
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.emission_enabled = true
+	m.emission = Color(0.2, 0.6, 1.0)
+	m.emission_energy_multiplier = 3.0
+	vfx.material_override = m
+	vfx.position = pos
+	var current_scene = get_tree().current_scene
+	if current_scene: current_scene.add_child(vfx)
+	
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(vfx, "scale", Vector3.ONE * 6.0, 0.3)
+	tw.tween_property(m, "albedo_color:a", 0.0, 0.3)
+	tw.set_parallel(false)
+	tw.tween_callback(vfx.queue_free)
+	
+	if current_scene and AudioFX: AudioFX.hurt(current_scene, pos) # Som placeholder
+	
+	# Empurra inimigos próximos (só o servidor empurra)
+	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
+		var espaco = get_world_3d().direct_space_state
+		var par = PhysicsShapeQueryParameters3D.new()
+		var shape_cast = SphereShape3D.new()
+		shape_cast.radius = 6.0
+		par.shape = shape_cast
+		par.transform = Transform3D(Basis(), pos)
+		par.collide_with_areas = false
+		par.collide_with_bodies = true
+		if self is CollisionObject3D: par.exclude = [get_rid()]
+		
+		var hits = espaco.intersect_shape(par)
+		for h in hits:
+			var col = h.get("collider")
+			if col != self and col is Node3D and col.has_method("take_damage"):
+				var dir = (col.global_position - pos).normalized()
+				dir.y = 0.5
+				col.take_damage(0.0, pos, dir * 25.0, 0.5) # Zero dano, forte knockback
+
+# --------------------------------------------------------
+
 # Combo: soco DIREITO -> soco ESQUERDO -> CHUTE, encadeáveis dentro de
 # Melee.JANELA (2 s). Segue o MESMO trajeto de rede das skills: o dono pede, o
 # servidor cria a hitbox, todo mundo reproduz a animação.
 func _request_melee() -> void:
-	_melee.pedir(_yaw)
+	if _fsm and _fsm.state and _fsm.state.name == "Stunned":
+		return # Não faz buffer se estiver atordoado
+	_add_input_to_buffer("attack")
 
 @rpc("any_peer", "call_remote", "reliable")
 func _net_melee(passo: int, origem: Vector3, fwd: Vector3) -> void:
@@ -1353,10 +1632,21 @@ func _do_server_melee(passo: int, origem: Vector3, fwd: Vector3) -> void:
 
 @rpc("any_peer", "call_local", "reliable")
 func _net_play_melee(passo: int) -> void:
-	var clipe := Melee.clipe(passo)
-	if clipe and _proc_anim:
-		var g := Melee.passo(passo)
-		_proc_anim.play_baked(clipe, float(g["vel"]), float(g.get("inicio", 0.0)))
+	if not _proc_anim:
+		return
+	
+	if equipped_weapon == "sword":
+		# Para espada, tocar animação procedural no torso e braços para liberar pernas
+		var g := Melee.passo(passo, equipped_weapon)
+		var duracao = Melee.duracao_tocada(passo, equipped_weapon)
+		var speed = 1.0 / maxf(duracao, 0.1) # Normalizado para 1.0s = fim da duração
+		_proc_anim.play_procedural_slash(passo, speed)
+	else:
+		# Para normal, tocar clipe (.res) retargetado
+		var clipe := Melee.clipe(passo, equipped_weapon)
+		if clipe:
+			var g := Melee.passo(passo, equipped_weapon)
+			_proc_anim.play_baked(clipe, float(g["vel"]), float(g.get("inicio", 0.0)))
 
 # --- GURA GURA Z: INVESTIDA FÍSICA ---
 func start_gura_rush(aim_dir: Vector3) -> void:
@@ -1728,3 +2018,26 @@ func _net_buki_guardar() -> void:
 
 func _buki_apontar_canhao() -> void:
 	_buki.apontar_canhao(_is_authority, _pitch, _yaw, net_facing)
+
+var equipped_weapon: String = ""
+
+# ============================================================================
+#  SISTEMA DE ITENS / EQUIPAMENTOS
+# ============================================================================
+
+func equip_item(item_node: Node3D) -> void:
+	if item_node == null: return
+	if _rig.item_handle == null: return
+	
+	var p = item_node.get_parent()
+	if p:
+		p.remove_child(item_node)
+	
+	_rig.item_handle.add_child(item_node)
+	item_node.position = Vector3.ZERO
+	item_node.rotation = Vector3.ZERO
+	
+	if item_node is SwordPickup:
+		equipped_weapon = "sword"
+		print("[Player] Arma equipada: sword")
+
