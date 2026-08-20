@@ -18,7 +18,8 @@ find . -name "*.gd" -not -path "./.godot/*" | xargs wc -l | sort -rn | head
 | `Player.gd` | **1.498** | 🟡 **1.498 por `wc -l`, mas 890 de código** — ver o veredito da Fase 9 em [`ARQUITETURA_PLAYER.md`](ARQUITETURA_PLAYER.md) |
 | `src/effects/FireFXGrande.gd` | 553 | ✅ criado no corte de 2026-08-11 |
 | `src/effects/BukiFX.gd` | 537 | ✅ |
-| `src/anim/ProceduralAnimator.gd` | 762 | ⚠️ na mira |
+| `src/anim/ProceduralAnimator.gd` | **873** | 🔴 **27 do teto** — o próximo bloco não cabe, extraia antes |
+| `src/anim/GuraPoses.gd` | 445 | ✅ criado em 2026-08-15 (as animações dos 4 golpes da Gura) |
 | `src/effects/YamiFX.gd` | 811 | ⚠️ na mira |
 | `src/effects/FireFX.gd` | 382 | ✅ (era 916) |
 

@@ -18,6 +18,17 @@ func _init() -> void:
 	if p == null:
 		print("❌ sem jogador"); quit(1); return
 	p.combat_mode = "fruit"; p.equip_fruit("goro_goro"); p.energy = p.max_energy
+	# ⚠️ TIRA OS BONECOS DO CAMINHO. O `AutoDummy` persegue e ATACA sozinho, e um
+	# golpe dele durante a carga INTERROMPE o cast por dano — que é o
+	# comportamento correto do jogo e o falso negativo perfeito para este teste
+	# ("o efeito nasceu ainda com a tecla pressionada" falhava sem nada de errado
+	# no charge-up). Só apareceu quando o `AutoDummy` voltou a compilar em
+	# 2026-08-15 e, portanto, a existir. Mesma limpeza do `test_arena`.
+	for e in get_nodes_in_group("enemy"):
+		if e is Node3D:
+			e.set_meta("is_frozen", true)
+			e.set_meta("damage_immune", true)
+			(e as Node3D).global_position = Vector3(0, -1000, 0)
 	await _w(1.0)
 	print("===== CHARGE-UP =====")
 

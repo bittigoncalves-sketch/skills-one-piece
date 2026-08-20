@@ -56,6 +56,7 @@ var _head_node: Node3D = null               # cabeça do modelo (âncora do fôl
 var _pistols: Array = []                    # pistolas nas DUAS mãos
 var _buki_armas: Dictionary = {}            # slot -> Node3D pré-construído (oculto)
 var _buki_pivot: Node3D = null              # pivô do canhão-corpo (X)
+var item_handle: Node3D = null              # ponto de ancoragem para itens segurados na mão direita
 
 func montar_em(dono: Node3D) -> void:
 	_dono = dono
@@ -137,9 +138,11 @@ func montar(cid: String) -> void:
 		# osso. Mesma limitação das armas da Buki Buki.
 		_attach_pistol(_char_model)
 		_attach_buki_arsenal(_char_model)   # arsenal da Buki (oculto até empunhar)
+		_attach_item_handle(_char_model)
 		return
 
 	_attach_pistol(_char_model)   # pistola na mão direita (oculta até a rajada Z)
+	_attach_item_handle(_char_model)
 	_attach_buki_arsenal(_char_model)   # arsenal da Buki (oculto até empunhar)
 
 	# Marcador Visual de COSTAS: Mochila Dourada Emissiva em z = -0.35
@@ -224,8 +227,10 @@ func _fit_model_to_body() -> void:
 		ky = target_h / ab.size.y
 	# Voxel: engrossa o eixo Z (1.85x). SKINNADO (Skeleton3D): escala UNIFORME —
 	# escala não-uniforme num skeleton corrompe o skinning (transform NaN -> tela cinza).
-	var zscale := ky if _is_skinned else ky * 1.85
-	_char_model.scale = Vector3(ky, ky, zscale)
+	_char_model.scale = Vector3(ky, ky, ky)
+	if not _is_skinned:
+		PlayerModelKit.bake_depth(_char_model, 1.85)
+		
 	# pés (base da AABB) no fundo da colisão
 	_char_model.position.y = FEET_Y - ky * ab.position.y
 
@@ -245,6 +250,27 @@ func _attach_pistol(model: Node3D) -> void:
 		gun.visible = false
 		(arm as Node3D).add_child(gun)
 		_pistols.append(gun)
+
+# Ponto de ancoragem para itens (como a espada). No voxel vai no braço,
+# no esqueleto usamos BoneAttachment3D para herdar posição E rotação.
+func _attach_item_handle(model: Node3D) -> void:
+	if model == null:
+		return
+	if _is_skinned:
+		var skel := BodyScanner._find_skeleton(model)
+		if skel:
+			var ba := BoneAttachment3D.new()
+			ba.bone_name = "ForeArm_R"
+			skel.add_child(ba)
+			item_handle = Node3D.new()
+			item_handle.position = Vector3(0, 0.36, 0.0) # Ponta do osso
+			ba.add_child(item_handle)
+	else:
+		var arm := model.find_child("ForeArm_R", true, false)
+		if arm is Node3D:
+			item_handle = Node3D.new()
+			item_handle.position = Vector3(0, -0.36, 0.02)
+			arm.add_child(item_handle)
 
 # ---------------------------------------------------------------- BUKI BUKI ---
 # Constrói as QUATRO armas da fruta UMA VEZ, ocultas, junto com o personagem —

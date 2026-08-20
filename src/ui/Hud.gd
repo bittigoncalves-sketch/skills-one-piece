@@ -32,11 +32,6 @@ func _ready() -> void:
 	_inv.name = "Inventory"
 	add_child(_inv)
 
-	_main_menu = MainMenuClass.new()
-	_main_menu.name = "MainMenu"
-	_main_menu.setup(self)
-	add_child(_main_menu)
-
 	_stats = StatsHudClass.new()
 	_stats.name = "StatsHud"
 	add_child(_stats)
@@ -67,6 +62,14 @@ func _ready() -> void:
 	_inv.add_item({"nome": "Mera Mera no Mi", "tipo": "Logia", "cor": Color(1.0, 0.42, 0.12)})
 
 func toggle_main_menu() -> void:
+	if _main_menu == null:
+		_main_menu = MainMenuClass.new()
+		_main_menu.name = "MainMenu"
+		_main_menu.setup(self)
+		add_child(_main_menu)
+		_main_menu.open_menu()
+		return
+
 	if _main_menu:
 		_main_menu.toggle()
 

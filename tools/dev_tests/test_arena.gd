@@ -155,8 +155,10 @@ func _melee() -> void:
 	# ele não confere o número escrito, confere o número contra a ANIMAÇÃO.
 	#
 	# Membro que golpeia em cada passo (a tabela do Melee não diz, e é o que
-	# define onde está o impacto).
-	var membro := [["UpperArm_R", "ForeArm_R"], ["UpperArm_L", "ForeArm_L"], ["Thigh_R", "Shin_R", "Foot_R"], ["Thigh_R", "Shin_R", "Foot_R"]]
+	# define onde está o impacto). Passo 2 é perna ESQUERDA desde que o chute
+	# virou lateral (`roundhouse_kick`, 2026-08-18) — ver a nota no cabeçalho
+	# do `Melee.gd`; o passo 3 (finalizador) não mudou, continua perna D aqui.
+	var membro := [["UpperArm_R", "ForeArm_R"], ["UpperArm_L", "ForeArm_L"], ["Thigh_L", "Shin_L", "Foot_L"], ["Thigh_R", "Shin_R", "Foot_R"]]
 	for i in Melee.COMBO.size():
 		var g := Melee.passo(i)
 		var a := Melee.clipe(i)
@@ -174,23 +176,49 @@ func _melee() -> void:
 		_ok(j[3] >= 0.9,
 			"passo %d (%s): no instante da hitbox o membro está a %.0f%% da extensão máxima"
 				% [i, g["nome"], 100.0 * j[3]])
-		# Depois do impacto o golpe precisa FICAR em tela. Com `recuo` colado no
+		# Depois do impacto o golpe precisa FICAR em tela. Com o recuo colado no
 		# `atraso` o clique seguinte troca o clipe 2 quadros depois do soco, e os
 		# dois socos viram a mesma coisa: só a pose de guarda, que é idêntica nos
 		# dois clipes. 0,15 s = 9 quadros a 60 fps.
-		_ok(float(g["recuo"]) >= float(g["atraso"]) + 0.15,
+		#
+		# ⚠️ Desde 2026-08-15 o recuo NÃO é mais chave da tabela — ele é derivado
+		# da duração da animação (`Melee.recuo()`), que é o que trava o clique E o
+		# corpo. A asserção continua valendo: ela agora confere o PISO da conta.
+		var rec: float = Melee.recuo(i)
+		_ok(rec >= float(g["atraso"]) + 0.15,
 			"passo %d (%s): %.0f ms de golpe em tela DEPOIS do impacto (recuo %.2f, impacto %.2f)"
-				% [i, g["nome"], 1000.0 * (float(g["recuo"]) - float(g["atraso"])),
-					float(g["recuo"]), float(g["atraso"])])
+				% [i, g["nome"], 1000.0 * (rec - float(g["atraso"])), rec, float(g["atraso"])])
+		# A trava é a animação: o clique seguinte não pode abrir antes do fim.
+		_ok(absf(rec - tocada) < 0.02 or rec > tocada,
+			"passo %d (%s): a trava (%.2f s) cobre a animação inteira (%.2f s)"
+				% [i, g["nome"], rec, tocada])
 	# Ritmo: os dois socos não podem ter a mesma cadência, senão leem igual mesmo
 	# sendo braços opostos (foi o relato do dono em 2026-08-11).
 	_ok(absf(float(Melee.passo(0)["atraso"]) - float(Melee.passo(1)["atraso"])) >= 0.05,
 		"os dois socos conectam em tempos DIFERENTES (%.2f s x %.2f s)"
 			% [float(Melee.passo(0)["atraso"]), float(Melee.passo(1)["atraso"])])
-	var perna := _amplitude(Melee.clipe(2), ["Thigh_R", "Shin_R", "Thigh_L", "Shin_L"])
-	var braco := _amplitude(Melee.clipe(2), ["UpperArm_R", "ForeArm_R", "UpperArm_L", "ForeArm_L"])
-	print("     chute: pernas %.0f vs braços %.0f" % [perna, braco])
-	_ok(perna > braco, "o finalizador é de PERNA")
+	# Perna que golpeia no passo 2 (lê de `melee_guarda`, ver Melee.gd) contra
+	# CADA braço isoladamente — não a soma dos dois. Chute giratório/lateral de
+	# verdade (ex: `roundhouse_kick`) balança os DOIS braços pra compensar a
+	# rotação do quadril, e a soma deles pode superar a soma das pernas sem que
+	# o golpe deixe de ser um chute (medido: braços somados 369° > pernas
+	# somadas 344° no `roundhouse_kick`, mas a perna que soca sozinha, 223°,
+	# ainda bate cada braço isolado, 202° e 167°). Comparar perna-que-soca
+	# contra braço isolado é o que sobra pra pegar de fato um clipe trocado
+	# (ex: um soco entrando no lugar do chute).
+	var perna_g := String(Melee.passo(2).get("melee_guarda", "")).trim_prefix("perna_")
+	var perna: float
+	var braco: float
+	if perna_g in ["R", "L"]:
+		perna = _amplitude(Melee.clipe(2), ["Thigh_%s" % perna_g, "Shin_%s" % perna_g])
+		var braco_r := _amplitude(Melee.clipe(2), ["UpperArm_R", "ForeArm_R"])
+		var braco_l := _amplitude(Melee.clipe(2), ["UpperArm_L", "ForeArm_L"])
+		braco = maxf(braco_r, braco_l)
+	else:
+		perna = _amplitude(Melee.clipe(2), ["Thigh_R", "Shin_R", "Thigh_L", "Shin_L"])
+		braco = _amplitude(Melee.clipe(2), ["UpperArm_R", "ForeArm_R", "UpperArm_L", "ForeArm_L"])
+	print("     chute (perna %s): perna-que-soca %.0f vs braço isolado mais forte %.0f" % [perna_g, perna, braco])
+	_ok(perna > braco, "o chute (passo 2) é de PERNA")
 	_ok(Melee.passo(3)["kb"] > Melee.passo(0)["kb"] * 2.0, "o chute empurra mais que o dobro do soco (é ele que joga no buraco)")
 
 # Janela de AÇÃO de um membro dentro do clipe, MEDIDA — não declarada.

@@ -25,9 +25,11 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_ui()
 	if _hud_ref == null:
+		# Estamos na cena principal (MainMenu.tscn)
 		call_deferred("open_menu")
 	else:
-		close_menu()
+		# Fomos instanciados pela HUD, o HUD que chama open_menu
+		visible = false
 
 func setup(hud: Node) -> void:
 	_hud_ref = hud
@@ -490,11 +492,13 @@ func _on_join_pressed() -> void:
 		return
 	GameFlow.join_room(id)
 
-func _on_config_pressed() -> void:
-	print("[Menu] Configurações — em breve (fase futura)")
+
 
 func _on_play_pressed() -> void:
 	close_menu()
 
+func _on_config_pressed() -> void:
+	print("Settings not implemented yet.")
+
 func _on_quit_pressed() -> void:
-	GameFlow.quit_game()
+	get_tree().quit()

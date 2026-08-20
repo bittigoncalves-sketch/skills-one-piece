@@ -1,4 +1,11 @@
+class_name Player
 extends CharacterBody3D
+
+signal player_damaged(amount: float, hp: float, mhp: float)
+signal aim_assist_changed(on: bool)
+signal combat_mode_updated(mode: String, style_id: String, fruit_id: String)
+signal anim_name_shown(text: String)
+
 # ============================================================================
 #  Jogador = um bloco cinza. Anda (WASD / setas), pula (Espaco).
 #  F5 alterna 1a <-> 3a pessoa. Mouse olha. ESC solta o mouse; segure pra sair.
@@ -15,7 +22,9 @@ const MOUSE_SENS := 0.0035
 # dono do tremor, do soco de FOV, do balanço, da perspectiva e da distância;
 # aqui só sobra a referência a ele e o `_cam` de conveniência para a mira.
 
-var current_fruit_id: String = "gura_gura"
+var current_fruit_id: String = "bara_bara"
+var active_style: String = "basic"
+var combat_mode: String = "fruit" # "fruit" ou "style"
 var speed_multiplier: float = 1.0
 var jump_multiplier: float = 1.0
 
@@ -52,7 +61,6 @@ var is_suppressed: bool:
 var suppression_timer: float:
 	get: return _cast.tempo_de_silencio()
 
-var combat_mode: String = "fruit"
 var current_style_idx: int = 0
 const STYLES_LIST: Array[String] = ["karate_tritao", "pacifista", "mink", "boxe", "cyborg", "teste_animacao"]
 
@@ -348,8 +356,10 @@ var _hitstop_timer: float = 0.0
 @export var net_on_floor: bool = true
 
 func _ready() -> void:
-	add_to_group("player")   # o HUD encontra o jogador por este grupo
-	_is_authority = is_multiplayer_authority()   # SP: host=autoridade -> true
+	add_to_group("player")
+	# Autoridade = eu sou dono desse player (mesmo em singleplayer, id 1 é meu)
+	_is_authority = is_multiplayer_authority()
+	print("[Player] _ready! name=", name, " authority=", get_multiplayer_authority(), " is_auth=", _is_authority, " peer=", multiplayer.get_unique_id())   # SP: host=autoridade -> true
 
 	# RIG E MODELO — componente próprio desde a Fase 3. Precisa existir ANTES do
 	# set_character, que é justamente quem manda o rig montar o corpo.
@@ -362,7 +372,6 @@ func _ready() -> void:
 	_fsm = PlayerStateMachine.new()
 	_fsm.name = "CombatFSM"
 	_fsm.set_physics_process(false)
-	add_child(_fsm)
 	
 	var state_idle = CombatStateIdle.new()
 	state_idle.name = "Idle"
@@ -376,7 +385,8 @@ func _ready() -> void:
 	state_dashing.name = "Dashing"
 	_fsm.add_child(state_dashing)
 	
-	_fsm.initial_state = state_idle.get_path()
+	add_child(_fsm)
+	_fsm.init(self, state_idle.get_path())
 	_buki.montar_em(self, _rig)
 	_disparo.montar_em(self)
 	_cast.montar_em(self)
@@ -447,6 +457,14 @@ func _input(event: InputEvent) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not _is_authority:
 		return
+		
+	# Se clicar na tela com o mouse solto (ex: após alt-tab), recaptura ele.
+	# Menus abertos consomem o input antes, então isso só roda no jogo limpo.
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+			return
+
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F5:
 		# Alterna 1a <-> 3a pessoa.
 		if _camera:
@@ -476,9 +494,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_G:
 		_request_combo_breaker()
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		if event.echo:
-			get_tree().quit()
-		else:
+		if not event.echo:
 			var hud := get_tree().get_first_node_in_group("hud")
 			if hud and hud.has_method("toggle_main_menu"):
 				hud.toggle_main_menu()
@@ -612,6 +628,46 @@ func pedir_cast_no_servidor(slot: String, aim: Vector3, origem: Vector3, charge:
 		_do_server_cast(slot, aim, origem, charge)
 	else:
 		_net_cast.rpc_id(1, slot, aim, origem, charge)
+
+func pedir_iniciar_hold(slot: String, fruit: String) -> void:
+	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
+		_net_start_hold(slot, fruit)
+	else:
+		_net_start_hold.rpc_id(1, slot, fruit)
+
+@rpc("any_peer", "call_local", "reliable")
+func _net_start_hold(slot: String, fruit: String) -> void:
+	var cid = multiplayer.get_remote_sender_id()
+	if cid != 0 and cid != get_multiplayer_authority() and multiplayer.is_server():
+		return
+	if fruit == "yami_yami":
+		if slot == "C":
+			set_meta("yami_black_hole_active", true)
+		elif slot == "X":
+			set_meta("yami_kurouzu_active", true)
+	elif fruit == "bara_bara":
+		if slot == "C":
+			set_meta("bara_cleave_active", true)
+
+func pedir_cancelar_hold(slot: String, fruit: String) -> void:
+	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
+		_net_cancel_hold(slot, fruit)
+	else:
+		_net_cancel_hold.rpc(slot, fruit)
+
+@rpc("any_peer", "call_local", "reliable")
+func _net_cancel_hold(slot: String, fruit: String) -> void:
+	var cid = multiplayer.get_remote_sender_id()
+	if cid != 0 and cid != get_multiplayer_authority() and multiplayer.is_server():
+		return
+	if fruit == "yami_yami":
+		if slot == "C":
+			set_meta("yami_black_hole_active", false)
+		elif slot == "X":
+			set_meta("yami_kurouzu_active", false)
+	elif fruit == "bara_bara":
+		if slot == "C":
+			set_meta("bara_cleave_active", false)
 
 # Carregar um golpe PRENDE o corpo no lugar. `velocity` é do domínio de
 # movimento — por isso é pedido, não escrita.
@@ -834,20 +890,12 @@ func _etapa_travamento(delta: float) -> bool:
 	# HOLD-TO-CAST / RAJADA Z: enquanto a tecla está SEGURADA (ou a rajada Z ativa), o
 	# personagem fica PARADO — inclusive NO AR, sem gravidade — até soltar a tecla ou
 	# as balas acabarem. Só a câmera continua livre (mira). A rajada dispara aqui.
-	var combat_locked = _fsm and _fsm.state and _fsm.state.name in ["Attacking", "Casting", "Stunned"]
-	if _charging or _rapid_fire or combat_locked or (has_meta("is_frozen") and get_meta("is_frozen")) or (has_meta("in_vortex") and get_meta("in_vortex")) or (has_meta("in_kurouzu") and get_meta("in_kurouzu")) or (has_meta("in_black_hole") and get_meta("in_black_hole")):
+	if _charging or _rapid_fire or (has_meta("is_frozen") and get_meta("is_frozen")) or (has_meta("in_vortex") and get_meta("in_vortex")) or (has_meta("in_kurouzu") and get_meta("in_kurouzu")) or (has_meta("in_black_hole") and get_meta("in_black_hole")):
 		if _charging and not (has_meta("is_casting") and get_meta("is_casting")):
 			_cast.abortar()            # cast foi interrompido (ex.: dano) -> destrava
 		else:
-			if not combat_locked:
-				velocity = Vector3.ZERO    # congela no lugar (sem gravidade)
-			else:
-				# Em estados de combate aplicamos gravidade e fricção agressiva (para suavizar avanços/lunge)
-				if not is_on_floor():
-					velocity.y -= GRAVITY * delta
-				else:
-					velocity.x = move_toward(velocity.x, 0.0, 80.0 * delta)
-					velocity.z = move_toward(velocity.z, 0.0, 80.0 * delta)
+			velocity = Vector3.ZERO    # congela no lugar (sem gravidade)
+			
 			if _breath:
 				_breath.set_running(false)
 			# Rajada Z: vira o corpo p/ a direção da mira (pose de pistoleiro) + coice decai.
@@ -862,22 +910,9 @@ func _etapa_travamento(delta: float) -> bool:
 				_proc_anim.update(velocity, is_on_floor(), false, delta, _pitch, false, _charging, slot_to_pass, "", _pose_de_arma(), _gun_recoil)
 			move_and_slide()
 			_disparo.tick_rajada(delta, ENERGY_BULLET)    # dispara as balas de fogo/gelo enquanto a rajada dura
-
-			# ⚠️ ESTE `return true` FICA NO NÍVEL DO `else`, NÃO DENTRO DO `if`
-			# ACIMA. Ele estava um nível mais fundo, e essa única tabulação era o
-			# bug de "dá para andar segurando um ataque":
-			#
-			#   • cast com `lock_movement` (timer > 0) -> devolvia true -> congelava;
-			#   • tecla SEGURADA (`_charging`) sem timer -> caía no `return false`.
-			#
-			# No segundo caso o quadro NÃO era cortado: o `velocity = Vector3.ZERO`
-			# daqui de cima acontecia, o `_etapa_locomocao` rodava logo em seguida e
-			# reescrevia a velocidade a partir do teclado. O congelamento existia e
-			# era desfeito 3 linhas depois, no mesmo quadro.
-			#
-			# Quem chegou aqui está travado por definição — é o que o cabeçalho
-			# desta função promete ("fica PARADO até soltar a tecla"). O quadro
-			# acaba aqui para TODOS os motivos de trava, não só para o cronometrado.
+			
+			# ⚠️ Quem chegou aqui está travado por definição. O quadro
+			# acaba aqui para TODOS os motivos de trava.
 			return true
 	return false
 
@@ -905,7 +940,12 @@ func _etapa_locomocao(delta: float) -> void:
 	# `_etapa_travamento` corta o quadro, a borda do Espaço NÃO avança — mesmo
 	# comportamento de quando `_space_was` era campo do Player.
 	var q := _quadro
-	q.ler(_yaw)
+	var menu_aberto := false
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("is_menu_open"):
+		menu_aberto = hud.is_menu_open()
+		
+	q.ler(_yaw, not menu_aberto)
 	# Rajada (Mera/Hie Z): fica PARADO enquanto atira; só a câmera gira. Volta a
 	# andar ao soltar o botão ou acabar as balas (release_charge zera _rapid_fire).
 	if _rapid_fire:
@@ -1310,7 +1350,9 @@ func net_vida_do_servidor(nova_vida: float, dano: float) -> void:
 			return                      # só o servidor manda na vida
 	_vida.vida = nova_vida
 	if dano > 0.0:
-		_feedback_de_dano(dano) # Usa o hitstun padrão na cópia remota (ou poderíamos enviar pelo RPC também)
+		_feedback_de_dano(dano)
+		_cast.liberar_por_dano()
+		SkillSystem.interrupt_casting(self) # Usa o hitstun padrão na cópia remota (ou poderíamos enviar pelo RPC também)
 
 # O SERVIDOR premia quem matou: 30 s de regeneração acelerada.
 #
@@ -1392,7 +1434,7 @@ func net_force_respawn() -> void:
 
 	# Se o jogador possuía uma fruta, devolve a fruta para a sua árvore
 	if current_fruit_id != "":
-		TreeAndFruitGenerator.respawn_fruit(current_fruit_id)
+		FruitNet.respawn(current_fruit_id)
 		current_fruit_id = ""
 		speed_multiplier = 1.0
 		jump_multiplier = 1.0
@@ -1418,9 +1460,22 @@ func net_force_respawn() -> void:
 	set_meta("is_casting", false)
 	set_meta("active_skill", "")
 	set_meta("yami_black_hole_active", false)
+	set_meta("yami_kurouzu_active", false)
+	set_meta("is_frozen", false)
+	remove_meta("custom_pose")
+	_gura_rush_active = false
+	_gura_grab_timer = 0.0
+	_gura_rush_timer = 0.0
+	if is_instance_valid(_gura_rush_target):
+		_gura_rush_target.set_meta("is_frozen", false)
+		_gura_rush_target = null
 	# timer removido
 	_disparo.parar_rajada()
 	_disparo.desligar_yami()
+
+	# Volta a máquina de estados para o básico para destravar o jogador
+	if _fsm:
+		_fsm.transition_to("Idle")
 
 	# MORRER ZERA AS RECARGAS (decisão do dono, 2026-08-12). Antes elas
 	# atravessavam a morte — medido: cast de C (10 s), morte com 7,967 s
@@ -1463,6 +1518,8 @@ func _request_cast(slot: String) -> void:
 @rpc("any_peer", "reliable")
 func _net_cast(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.0) -> void:
 	if multiplayer.is_server():
+		var cid = multiplayer.get_remote_sender_id()
+		if cid != 0 and cid != get_multiplayer_authority(): return
 		_do_server_cast(slot, aim, origin, charge)
 
 # ======================= CORPO A CORPO (botão esquerdo) =======================
@@ -1596,6 +1653,7 @@ func _net_play_combo_breaker(pos: Vector3) -> void:
 		par.transform = Transform3D(Basis(), pos)
 		par.collide_with_areas = false
 		par.collide_with_bodies = true
+		par.collision_mask = 15
 		if self is CollisionObject3D: par.exclude = [get_rid()]
 		
 		var hits = espaco.intersect_shape(par)
@@ -1604,7 +1662,10 @@ func _net_play_combo_breaker(pos: Vector3) -> void:
 			if col != self and col is Node3D and col.has_method("take_damage"):
 				var dir = (col.global_position - pos).normalized()
 				dir.y = 0.5
-				col.take_damage(0.0, pos, dir * 25.0, 0.5) # Zero dano, forte knockback
+				col.take_damage(0.0, pos, dir * 25.0, 0.5)
+				var placar = get_tree().get_first_node_in_group("scoreboard")
+				if placar and placar.has_method("register_hit"):
+					placar.register_hit(col, self) # Zero dano, forte knockback
 
 # --------------------------------------------------------
 
@@ -1619,6 +1680,8 @@ func _request_melee() -> void:
 @rpc("any_peer", "call_remote", "reliable")
 func _net_melee(passo: int, origem: Vector3, fwd: Vector3) -> void:
 	if multiplayer.is_server():
+		var cid = multiplayer.get_remote_sender_id()
+		if cid != 0 and cid != get_multiplayer_authority(): return
 		_do_server_melee(passo, origem, fwd)
 
 # SERVIDOR: cria a hitbox (a DamageZone só machuca no servidor) e manda todos
@@ -1632,6 +1695,9 @@ func _do_server_melee(passo: int, origem: Vector3, fwd: Vector3) -> void:
 
 @rpc("any_peer", "call_local", "reliable")
 func _net_play_melee(passo: int) -> void:
+	if multiplayer.has_multiplayer_peer():
+		var sender = multiplayer.get_remote_sender_id()
+		if sender != 0 and sender != 1: return
 	if not _proc_anim:
 		return
 	
@@ -1646,7 +1712,7 @@ func _net_play_melee(passo: int) -> void:
 		var clipe := Melee.clipe(passo, equipped_weapon)
 		if clipe:
 			var g := Melee.passo(passo, equipped_weapon)
-			_proc_anim.play_baked(clipe, float(g["vel"]), float(g.get("inicio", 0.0)))
+			_proc_anim.play_baked(clipe, float(g["vel"]), float(g.get("inicio", 0.0)), String(g.get("melee_guarda", "")))
 
 # --- GURA GURA Z: INVESTIDA FÍSICA ---
 func start_gura_rush(aim_dir: Vector3) -> void:
@@ -1692,6 +1758,7 @@ func _process_gura_rush(delta: float) -> void:
 	par.transform = Transform3D(Basis(), global_position + Vector3.UP * 1.0 + _gura_rush_dir * 1.5)
 	par.collide_with_areas = true
 	par.collide_with_bodies = true
+	par.collision_mask = 15
 	if self is CollisionObject3D: par.exclude = [get_rid()]
 	
 	var hits = mundo.direct_space_state.intersect_shape(par)
@@ -1736,6 +1803,8 @@ func _aim_assist_target(cam_pos: Vector3, fwd: Vector3) -> Node3D:
 @rpc("any_peer", "reliable")
 func _net_bullet_req(aim: Vector3, origin: Vector3, arma: String) -> void:
 	if multiplayer.is_server():
+		var cid = multiplayer.get_remote_sender_id()
+		if cid != 0 and cid != get_multiplayer_authority(): return
 		_do_server_bullet(aim, origin, arma)
 
 # `arma` != "" -> é um tiro da Buki Buki, e aí o SERVIDOR é quem manda na munição.
@@ -1752,6 +1821,9 @@ func _do_server_bullet(aim: Vector3, origin: Vector3, arma: String = "") -> void
 
 @rpc("any_peer", "call_local", "reliable")
 func _net_bullet_play(aim: Vector3, origin: Vector3, arma: String) -> void:
+	if multiplayer.has_multiplayer_peer():
+		var sender = multiplayer.get_remote_sender_id()
+		if sender != 0 and sender != 1: return
 	if arma != "":
 		# BUKI: o disparo tem cara de arma (fogacho, cápsula, projétil) e o dano
 		# por bala vem do SkillSystem — a arma é escolhida pelo slot.
@@ -1772,6 +1844,9 @@ func _net_bullet_play(aim: Vector3, origin: Vector3, arma: String) -> void:
 
 @rpc("any_peer", "call_local", "reliable")
 func _net_play_cast(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.0) -> void:
+	if multiplayer.has_multiplayer_peer():
+		var sender = multiplayer.get_remote_sender_id()
+		if sender != 0 and sender != 1: return
 	_fire_skill(slot, aim, origin, charge)
 
 # Presentation da skill (roda em todos): VFX pela fruta/estilo. A DamageZone criada
@@ -1924,6 +1999,7 @@ func equip_fruit(fruit_id: String) -> void:
 	_buki_guardar()
 	_buki_mostrar_arma("")
 	set_meta("yami_black_hole_active", false)
+	set_meta("yami_kurouzu_active", false)
 	var all_passives := FruitPassiveSystem.get_all_passives()
 	if all_passives.has(fruit_id):
 		var p_data: Dictionary = all_passives[fruit_id]
@@ -1982,6 +2058,8 @@ func _buki_guardar() -> void:
 @rpc("any_peer", "reliable")
 func _net_buki_sacar_req(slot: String) -> void:
 	if multiplayer.is_server():
+		var cid = multiplayer.get_remote_sender_id()
+		if cid != 0 and cid != get_multiplayer_authority(): return
 		_do_server_buki_sacar(slot)
 
 # SERVIDOR: guarda qual arma este corpo empunha e com quanta munição, e manda
@@ -1996,11 +2074,16 @@ func _do_server_buki_sacar(slot: String) -> void:
 
 @rpc("any_peer", "call_local", "reliable")
 func _net_buki_sacar(slot: String) -> void:
+	if multiplayer.has_multiplayer_peer():
+		var sender = multiplayer.get_remote_sender_id()
+		if sender != 0 and sender != 1: return
 	_buki_mostrar_arma(slot)
 
 @rpc("any_peer", "reliable")
 func _net_buki_guardar_req() -> void:
 	if multiplayer.is_server():
+		var cid = multiplayer.get_remote_sender_id()
+		if cid != 0 and cid != get_multiplayer_authority(): return
 		_do_server_buki_guardar()
 
 # SERVIDOR: zera a munição autoritativa (nenhum tiro mais é aceito) e manda todo

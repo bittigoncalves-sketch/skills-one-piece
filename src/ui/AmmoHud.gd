@@ -66,7 +66,7 @@ func _ready() -> void:
 
 func _process(_dt: float) -> void:
 	var eu := PlayerScript.local_player(get_tree())
-	if eu == null or not eu.has_method("buki_arma") or not _com_a_fruta(eu):
+	if not is_instance_valid(eu) or not eu.has_method("buki_arma") or not _com_a_fruta(eu):
 		visible = false
 		return
 	visible = true

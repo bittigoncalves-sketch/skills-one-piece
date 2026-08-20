@@ -67,7 +67,12 @@ extends Node3D
 # ============================================================================
 
 # ---- tempo (s a partir do disparo) ----
-const T_SOCO := 0.45          # a pose SNAP de `gura_v_lift` -> `gura_v_tpose`
+const T_SOCO := 0.45          # entra a pose de T (que ABRE pelo recuo do soco)
+# O PUNHO CHEGA aqui, não em `T_SOCO`. A pose de T começa recuando os braços
+# (primeiro tempo do soco) e só estala para fora em `GuraPoses.V_GOLPE_ATE`.
+# As rachaduras nascem NESTE instante — antes disso elas apareceriam com os
+# braços ainda voltando, que é o efeito chegando antes da causa.
+const T_IMPACTO := T_SOCO + GuraPoses.V_GOLPE_ATE
 const T_TSUNAMI := 0.90       # as ondas nascem; o jogador recupera o controle
 const TETO_TRAVESSIA := 6.0   # rede de segurança: nunca viver além disto
 
@@ -86,7 +91,7 @@ const FOLGA_ENCONTRO := 8.0                      # m entre as frentes = "colidir
 var _caster: Node
 var _damage: float
 var _t := 0.0
-var _fase := 0                # 0 armar, 1 soco, 2 travessia, 3 acabou
+var _fase := 0                # 0 armar, 1 recuo do soco, 2 impacto, 3 travessia, 4 acabou
 var _eixo := Vector3.RIGHT    # eixo em que as ondas viajam (cardeal)
 var _ondas: Array[DamageZone] = []
 
@@ -102,19 +107,20 @@ func _ready() -> void:
 #  TEMPO 1 — A POSE DE T SOCANDO O AR
 # ============================================================================
 #
-#  ⚠️ NENHUMA pose nova foi escrita: o `ProceduralAnimator` está a 9 linhas do
-#  teto de 900 e acabou de passar por uma cirurgia de rig. O "soco" é feito com
-#  as DUAS poses que já existem e já foram medidas:
+#  ⚠️ REESCRITO EM 2026-08-15. Até aqui NENHUMA pose nova tinha sido escrita: o
+#  `ProceduralAnimator` estava a 9 linhas do teto de 900, e o "soco" era um SALTO
+#  de um quadro de `gura_v_lift` (ombros em z=±0,8) para `gura_v_tpose` (z=±1,4),
+#  contando com o filtro de rigidez para borrar a troca.
 #
-#     `gura_v_lift`  — ombros em z = ±0,8, braços SUBINDO e vibrando  (armar)
-#     `gura_v_tpose` — ombros em z = ±1,4, os dois braços na horizontal
-#                      (medido: elevação 78,2° / 78,1°, deslocamento +0,550
-#                      para FORA nos dois lados)
+#  Aquilo dava um braço que SOBE E PARA — a leitura é "levantou os braços", não
+#  "socou". Um soco tem três tempos e faltavam dois. Agora `gura_v_tpose` é uma
+#  animação de verdade (`src/anim/GuraPoses.gd`), com RECUO, GOLPE que passa do
+#  alvo (z=±1,55 contra o T de ±1,40) e ASSENTAMENTO no T exato, que é a pose
+#  obrigatória do pedido e onde o corpo fica tremendo enquanto as ondas viajam.
 #
-#  A troca de uma para a outra em um quadro é um salto de 0,6 rad em cada
-#  ombro, filtrado pela rigidez do animador: o olho lê exatamente um SOCO
-#  simultâneo dos dois braços para fora. É o "T socando o ar" sem uma linha
-#  nova no arquivo proibido.
+#  O que isto exigiu deste arquivo: as rachaduras deixaram de nascer em `T_SOCO`
+#  e passaram para `T_IMPACTO` — senão o vidro trincava com os braços ainda
+#  voltando.
 func _armar() -> void:
 	if not _e_valido():
 		return
@@ -129,10 +135,19 @@ func _armar() -> void:
 		_caster.add_camera_shake(0.5)
 	AudioFX.whoosh(_mundo(), _pos_do_caster(), 0.45)   # grave = massa se juntando
 
+# Entra a pose de T. Ela ABRE recuando os braços — o golpe ainda não saiu, então
+# aqui só há o tranco leve de antecipação. Quem sacode a tela é o `_impacto()`.
 func _socar() -> void:
 	if not _e_valido():
 		return
 	_caster.set_meta("custom_pose", "gura_v_tpose")
+	if _caster.has_method("add_camera_shake"):
+		_caster.add_camera_shake(0.35)
+
+# O PUNHO CHEGA. Todo o estrago do tempo 2 é daqui.
+func _impacto() -> void:
+	if not _e_valido():
+		return
 	if _caster.has_method("add_camera_shake"):
 		_caster.add_camera_shake(1.6)
 	if _caster.has_method("pedir_soco_de_fov"):
@@ -242,7 +257,7 @@ func _um_tsunami(sinal: int) -> DamageZone:
 	# Knockback FIXO no rumo da onda + viés forte para cima. O radial padrão da
 	# `DamageZone` mede alvo − centro da zona: numa parede de 200 m, o centro
 	# está a até 100 m de lado, e o alvo sairia empurrado LATERALMENTE.
-	zona.override_kb_dir = (rumo + Vector3.UP * 0.8).normalized()
+	zona.override_kb_dir = rumo
 	zona.setup(_damage, KB, rumo * VEL, vida, _caster, ALTURA * 0.5, caixa)
 
 	# A onda SOBE do chão em vez de aparecer inteira (mesma ideia do C).
@@ -284,7 +299,7 @@ func _perfil() -> WaterFX.PerfilDeOnda:
 #  onda fosse destruída, atrasada ou se o `VEL` mudasse — a pergunta do dono é
 #  "quando COLIDIREM", e isso é geometria.
 func _process(delta: float) -> void:
-	if _fase == 3:
+	if _fase == 4:
 		return
 	if not _e_valido():
 		_encerrar()
@@ -301,12 +316,15 @@ func _process(delta: float) -> void:
 	if _fase == 0 and antes < T_SOCO and _t >= T_SOCO:
 		_fase = 1
 		_socar()
-	elif _fase == 1 and antes < T_TSUNAMI and _t >= T_TSUNAMI:
+	elif _fase == 1 and antes < T_IMPACTO and _t >= T_IMPACTO:
 		_fase = 2
+		_impacto()
+	elif _fase == 2 and antes < T_TSUNAMI and _t >= T_TSUNAMI:
+		_fase = 3
 		_lancar_tsunamis()
 		_soltar_o_corpo()
 
-	if _fase != 2:
+	if _fase != 3:
 		return
 
 	# Rede de segurança: onda perdida (cena trocada, free externo) encerra.
@@ -329,7 +347,7 @@ func _process(delta: float) -> void:
 # POSICIONADA no ponto de encontro — era exatamente isto que faltava no golpe
 # antigo, onde os mesmos efeitos apareciam na origem do mapa.
 func _encontro(ponto: Vector3) -> void:
-	_fase = 3
+	_fase = 4
 	var mundo := _mundo()
 	var chao := Vector3(ponto.x, CHAO + 0.15, ponto.z)
 

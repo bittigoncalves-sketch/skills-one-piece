@@ -143,6 +143,13 @@ for arq in tools/dev_tests/test_*.gd; do
 	# procura. Rodado sozinho ele "falha" sempre, porque não há ninguém
 	# anunciando — falso positivo que escondia o resultado de verdade.
 	[ "$nome" = "test_lan_discovery" ] && continue
+	# A trava do corpo a corpo mede DISTÂNCIA percorrida segurando W, e o
+	# `MoveFrame.ler()` ignora o teclado sem o mouse capturado. Headless ele
+	# mediria zero em tudo — inclusive no controle — e "passaria" medindo o
+	# vazio. Roda no bloco com tela, lá embaixo.
+	[ "$nome" = "test_melee_trava" ] && continue
+	# Mesma razão: mede a distância andada com a tecla do golpe SEGURADA.
+	[ "$nome" = "test_segurar_ataque" ] && continue
 	if [ $RAPIDO -eq 1 ] && [[ " $LENTOS " == *" $nome "* ]]; then
 		printf '  %-24s %s\n' "$nome" "$(amarelo pulado)"; PULADO=$((PULADO+1)); continue
 	fi
@@ -214,6 +221,32 @@ fi
 # referência commitado. É o que pega "o personagem não anda" / "atravessa
 # parede" — que nenhum teste headless acusa. Precisa de tela: a locomoção só lê
 # teclado com o mouse capturado.
+# TRAVA DO CORPO A CORPO — precisa de tela pelo mesmo motivo do traço: a
+# medição é a DISTÂNCIA andada com W segurado, e sem mouse capturado o
+# `MoveFrame` não lê tecla nenhuma.
+if quer "melee" || quer "trava"; then
+	if [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ]; then
+		printf '  %-24s %s\n' "test_melee_trava" "$(amarelo 'pulado — sem tela')"
+		PULADO=$((PULADO+1))
+	else
+		roda "test_melee_trava" "$GODOT" --path "$PROJ" \
+			--script tools/dev_tests/test_melee_trava.gd
+	fi
+fi
+
+# SEGURAR UM ATAQUE NÃO PODE DEIXAR ANDAR — varre as 9 frutas × 4 slots.
+# Pega a classe de bug que uma tabulação errada no `_etapa_travamento` causou:
+# o quadro não era cortado e a locomoção reescrevia a velocidade congelada.
+if quer "segurar" || quer "ataque"; then
+	if [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ]; then
+		printf '  %-24s %s\n' "test_segurar_ataque" "$(amarelo 'pulado — sem tela')"
+		PULADO=$((PULADO+1))
+	else
+		roda "test_segurar_ataque" "$GODOT" --path "$PROJ" \
+			--script tools/dev_tests/test_segurar_ataque.gd
+	fi
+fi
+
 ESPERADO="$PROJ/tools/dev_tests/traco_esperado.txt"
 if quer "traco" && [ $RAPIDO -eq 0 ]; then
 	echo

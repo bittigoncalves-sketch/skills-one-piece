@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://c8d0cu511arc5"
-path="res://.godot/imported/bluebuddy.glb-d6083b232726ef9ffa1affc713801d4f.scn"
+uid="uid://bofoe1tv1scsc"
+path="res://.godot/imported/yami_blackhole.glb-8fe8551d2fa0b8205d61f845b02f7afe.scn"
 
 [deps]
 
-source_file="res://assets/models/meshy_bluebuddy/bluebuddy.glb"
-dest_files=["res://.godot/imported/bluebuddy.glb-d6083b232726ef9ffa1affc713801d4f.scn"]
+source_file="res://assets/models/yami_blackhole.glb"
+dest_files=["res://.godot/imported/yami_blackhole.glb-8fe8551d2fa0b8205d61f845b02f7afe.scn"]
 
 [params]
 

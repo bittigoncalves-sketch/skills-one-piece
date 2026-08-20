@@ -45,13 +45,37 @@ menor dano nominal do jogo (20/25/30/85) sem ser a fruta mais fraca.
 | `src/effects/GuraFX.gd` | os quatro efeitos + os blocos visuais (`_ring`, `_bubble`, `_debris`) |
 | `src/effects/GuraVNode.gd` | o nó gerenciador da ultimate (V), com a linha do tempo de 4 s |
 | `src/effects/GuraShatterMesh.gd` | o "ar rachando" — teia de linhas procedural (`SurfaceTool`) |
-| `src/anim/ProceduralAnimator.gd:635-712` | as poses (`_gura_rush_pose`, `_gura_x_charge_pose`, `_gura_v_poses`) |
+| `src/anim/GuraPoses.gd` | **as animações autorais dos 4 golpes** (Z/X/C/V), em quadros-chave |
+| `src/anim/FruitPoses.gd` | as duas poses SUSTENTADAS: `gura_rush_pose` e `gura_x_charge_pose` |
+| `tools/dev_tests/test_gura_animacoes.gd` | trava a pose de T e os três tempos do soco em número |
+| `tools/dev_tests/captura_gura.gd` | filma a linha do tempo de um golpe em PNGs, para julgar com o olho |
 
 **Contrato entre golpe e animação:** o efeito **não** toca animação. Ele escreve
 `caster.set_meta("custom_pose", <nome>)` e o `ProceduralAnimator` faz o resto,
-com peso interpolado. Os nomes válidos hoje são
-`gura_rush`, `gura_x_charge`, `gura_v_prep`, `gura_v_squat`, `gura_v_gather`,
-`gura_v_lift`, `gura_v_tpose`.
+com peso interpolado. Os nomes válidos hoje são:
+
+| nome | quem escreve | o que é |
+|---|---|---|
+| `gura_rush` | `Player.start_gura_rush` | pose **sustentada** da investida (meia-T) |
+| `gura_x_charge` | `cast_controller` | pose **sustentada** da captura sísmica |
+| `gura_z_soco` | `GuraFX._punch` | o soco que fecha a investida |
+| `gura_x_arremesso` | `GuraFX._shockwave` | o arremesso da esfera |
+| `gura_c_kabutsuchi` | `GuraFX._eruption` | o golpe de cima para baixo |
+| `gura_v_lift` | `GuraVNode._armar` | armar a ultimate |
+| `gura_v_tpose` | `GuraVNode._socar` | **a pose de T socando o ar** (obrigatória) |
+
+> 🔄 **Mudou em 2026-08-15.** Z, X e C tocavam clipes **genéricos do Mixamo** por
+> `play_baked` (`right_upper_hook_from_guard`, `punching`,
+> `left_uppercut_from_guard`) — animação de boxeador, e o `play_baked` **sobrepõe
+> o corpo inteiro**, apagando locomoção, parkour e mira enquanto o clipe rodava.
+> Agora os cinco golpes são autorais, em `GuraPoses`, e **somam**.
+>
+> Os estados `gura_v_prep`, `gura_v_squat` e `gura_v_gather` foram **apagados**:
+> nenhum efeito jamais os escreveu: eram código morto desde que nasceram.
+
+Os nomes de golpe (os cinco de baixo) vivem em `GuraPoses.GOLPES` — o animador
+não os conhece um a um, ele pergunta `GuraPoses.e_golpe(nome)`. É o único lugar
+onde o acoplamento por string é conferido.
 
 Por que assim: a pose precisa **somar** com locomoção, parkour e mira, que já
 estão no animador. Um `AnimationPlayer` por golpe substituiria o corpo inteiro e

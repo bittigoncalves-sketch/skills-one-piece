@@ -81,11 +81,23 @@ var _gura_x_charge_w := 0.0 # pose de carregamento da Skill X (braço direito es
 var _gura_rush_w := 0.0     # pose assimétrica de investida do Barba Branca (braço direito levantado)
 var _kurouzu_w := 0.0       # pose de atração do Kurouzu (braço à frente)
 var _black_hole_w := 0.0    # pose do Barba Negra no Black Hole (pernas abertas, mão pro chão)
-var _gura_v_w := 0.0        # peso da ultimate V da Gura Gura
-var _gura_v_state := ""     # estado interno da ultimate V
+var _gura_golpe_w := 0.0    # peso do golpe autoral da Gura (src/anim/GuraPoses.gd)
+var _gura_golpe_state := "" # QUAL golpe está tocando — nomes em GuraPoses.GOLPES
+var _gura_golpe_t := 0.0    # segundos desde a troca de estado = a FASE da animação
+var _sword_w := 0.0         # peso da pose da espada de duas mãos
+var _melee_stance_w := 0.0  # peso da postura de combate (pernas em V + guarda) durante o combo desarmado
+var _melee_guarda: String = ""  # "" | "R" | "L" | "perna_R" | "perna_L" — ver play_baked()
 var _dano_w := 0.0          # tranco de recepção de dano (src/mechanics/RecepcaoDeDano.gd)
 var _recovery_t := 0.0      # timer do tranco elástico de recepção (chicote)
 var _t := 0.0
+
+var _hitstop_timer: float = 0.0
+var _hitstop_shake: float = 0.0
+
+func trigger_hitstop(duration: float, shake_intensity: float = 0.04) -> void:
+	_hitstop_timer = duration
+	_hitstop_shake = shake_intensity
+
 
 # Clipe BAKED (ex.: Mixamo retargetado): dirige os nós por role, sobrepondo a
 # animação procedural enquanto toca. Cada faixa tem path "<Role>:rotation".
@@ -95,6 +107,9 @@ var _baked_speed := 1.0
 
 # Presente só em personagens SKINNADOS: espelha os proxies nos ossos.
 var _driver: SkeletonDriver = null
+
+var _trail: WeaponTrail3D = null
+var _trail_tip: Node3D = null
 
 const REC_DUR := 0.35       # duração da recepção (recovery)
 
@@ -107,10 +122,22 @@ const REC_DUR := 0.35       # duração da recepção (recovery)
 # 22% do clipe é pose de espera). Sem isso a única forma de o soco CONECTAR rápido
 # é acelerar o clipe inteiro, e é a aceleração que borra qual braço saiu. Cortar a
 # espera e tocar o golpe MAIS DEVAGAR dá as duas coisas: resposta e leitura.
-func play_baked(anim: Animation, speed: float = 1.0, start: float = 0.0) -> void:
+var _sword_slash_type: int = -1
+var _sword_slash_t: float = 0.0
+var _sword_slash_speed: float = 1.0
+
+func play_procedural_slash(type: int, speed: float = 1.0) -> void:
+	_sword_slash_type = type
+	_sword_slash_t = 0.0
+	_sword_slash_speed = maxf(speed, 0.01)
+	_baked = null # Cancela baked clip para liberar as pernas
+
+func play_baked(anim: Animation, speed: float = 1.0, start: float = 0.0, melee_guarda: String = "") -> void:
 	_baked = anim
 	_baked_t = 0.0 if anim == null else clampf(start, 0.0, maxf(anim.length - 0.01, 0.0))
 	_baked_speed = maxf(speed, 0.01)
+	_sword_slash_type = -1 # Cancela procedural
+	_melee_guarda = melee_guarda
 
 func is_playing_baked() -> bool:
 	return _baked != null
@@ -123,6 +150,29 @@ func _apply_baked(delta: float) -> void:
 			var euler = _baked.value_track_interpolate(i, _baked_t)
 			if euler is Vector3:
 				(_n[role] as Node3D).rotation = euler
+	# Postura do combo desarmado (pernas em V + guarda + balanço de peso). É um
+	# OVERRIDE sobre o clipe recém-copiado acima, e tem que rodar ANTES do
+	# `_driver.push()` — senão nos personagens skinnados (Meshy) a postura nunca
+	# chega aos ossos, só aparece nos voxel. Ver o cabeçalho de `MeleePoses.gd`
+	# para o porquê deste bloco não usar o padrão `add.call(off, ...)`.
+	if _melee_stance_w > 0.001 and _melee_guarda != "":
+		var e_chute := _melee_guarda.begins_with("perna")
+		var perna_ativa := _melee_guarda.get_slice("_", 1) if e_chute else ""
+		var lado_guarda := "perna" if e_chute else _melee_guarda
+		var pernas := MeleePoses.pernas_v(perna_ativa)
+		var bracos := MeleePoses.guarda_bracos(lado_guarda)
+		for papel in pernas:
+			if _n.has(papel):
+				var no := _n[papel] as Node3D
+				no.rotation = no.rotation.lerp(_rest.get(papel, Vector3.ZERO) + pernas[papel], _melee_stance_w)
+		for papel in bracos:
+			if _n.has(papel):
+				var no := _n[papel] as Node3D
+				no.rotation = no.rotation.lerp(_rest.get(papel, Vector3.ZERO) + bracos[papel], _melee_stance_w)
+		if _n.has("Torso"):
+			var t_progresso := clampf(_baked_t / maxf(_baked.length, 0.001), 0.0, 1.0)
+			var lado := 1.0 if _melee_guarda in ["R", "perna_R"] else -1.0
+			(_n["Torso"] as Node3D).rotation += MeleePoses.balanco_torso(t_progresso, lado) * _melee_stance_w
 	if _driver:
 		_driver.push()
 	if _baked_t >= _baked.length:
@@ -139,13 +189,36 @@ func setup(profile: Dictionary) -> void:
 		_rest_torso_pos = (_n["Torso"] as Node3D).position
 		if _driver:
 			_driver.set_torso_rest(_rest_torso_pos)
+			
+	if _n.has("ForeArm_R"):
+		if _trail == null:
+			_trail = load("res://src/fx/WeaponTrail3D.gd").new()
+			add_child(_trail)
+		if _trail_tip == null:
+			_trail_tip = Node3D.new()
+			_n["ForeArm_R"].add_child(_trail_tip)
+			_trail_tip.position = Vector3(0, -1.8, 0) # Ponta da espada presumida em Y negativo a partir da mão
+		
+		_trail.target_base = _n["ForeArm_R"]
+		_trail.target_tip = _trail_tip
+		_trail.life_time = 0.25
+		_trail.startColor = Color(1.0, 1.0, 1.0, 0.6)
+		_trail.endColor = Color(1.0, 1.0, 1.0, 0.0)
 
 # Chamado todo frame pelo Player (suporta is_sprinting pelo Shift).
 func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pitch: float, is_sprinting: bool = false, charging: bool = false, charge_slot: String = "", parkour: String = "", aim_gun: bool = false, gun_recoil: float = 0.0) -> void:
+	var real_delta := delta
+	if _hitstop_timer > 0.0:
+		_hitstop_timer -= real_delta
+		delta = 0.0
+	
 	_t += delta
 	# Clipe retargetado (Mixamo) sobrepõe TUDO enquanto toca.
 	if _baked != null:
+		_melee_stance_w = lerpf(_melee_stance_w, 1.0 if _melee_guarda != "" else 0.0, 1.0 - exp(-20.0 * delta))
 		_apply_baked(delta)
+		if _hitstop_timer > 0.0 and _hitstop_shake > 0.0 and _n.has("Torso"):
+			(_n["Torso"] as Node3D).rotation += Vector3(randf_range(-1,1), randf_range(-1,1), randf_range(-1,1)) * _hitstop_shake
 		return
 	var planar := Vector2(velocity.x, velocity.z).length()
 	var speed01: float = clampf(planar / SPEED_REF, 0.0, 1.8)
@@ -178,14 +251,30 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	_dano_w = lerpf(_dano_w, 1.0 if _quer_dano else 0.0,
 		1.0 - exp(-(RecepcaoDeDano.RIGIDEZ_ENTRA if _quer_dano else RecepcaoDeDano.RIGIDEZ_SAI) * delta))
 	
-	if custom_pose.begins_with("gura_v_"):
-		_gura_v_state = custom_pose
-		_gura_v_w = lerpf(_gura_v_w, 1.0, 1.0 - exp(-15.0 * delta))
+	# GOLPES AUTORAIS DA GURA (Z/X/C/V) — `src/anim/GuraPoses.gd`.
+	# `_gura_golpe_t` é a FASE da animação: quem desenha interpola quadros-chave
+	# com ela, então trocar de estado TEM que zerá-la. Sem isso o golpe seguinte
+	# nasceria no fim da própria linha do tempo e o recuo do soco (o primeiro
+	# tempo, o que faz o olho ler "soco" em vez de "braço subiu") nunca apareceria.
+	if GuraPoses.e_golpe(custom_pose):
+		if custom_pose != _gura_golpe_state:
+			_gura_golpe_state = custom_pose
+			_gura_golpe_t = 0.0
+		_gura_golpe_t += delta
+		_gura_golpe_w = lerpf(_gura_golpe_w, 1.0, 1.0 - exp(-15.0 * delta))
 	else:
-		_gura_v_w = lerpf(_gura_v_w, 0.0, 1.0 - exp(-15.0 * delta))
+		_gura_golpe_w = lerpf(_gura_golpe_w, 0.0, 1.0 - exp(-15.0 * delta))
+	
+	var parent = get_parent()
+	var weapon = parent.equipped_weapon if parent and "equipped_weapon" in parent else ""
+	_sword_w = lerpf(_sword_w, 1.0 if weapon == "sword" else 0.0, 1.0 - exp(-10.0 * delta))
 		
 	var parkour_w: float = maxf(_wallrun_w, maxf(_roll_w, _ljump_w))
-	var upper_free: float = (1.0 - parkour_w) * (1.0 - _hibashira_w) * (1.0 - _kurouzu_w) * (1.0 - _black_hole_w) * (1.0 - _gura_v_w)   # as poses especiais assumem o corpo todo (exceto mira Z no _gun_w!)
+	# as poses especiais assumem o corpo todo
+	# ...mas nem todo golpe da Gura faz isso: o soco do Z fecha uma CORRIDA e as
+	# pernas têm que continuar correndo por baixo dele (ver GuraPoses.CORPO_INTEIRO).
+	var gura_corpo: float = _gura_golpe_w if GuraPoses.toma_o_corpo(_gura_golpe_state) else 0.0
+	var upper_free: float = (1.0 - parkour_w) * (1.0 - _hibashira_w) * (1.0 - _kurouzu_w) * (1.0 - _black_hole_w) * (1.0 - gura_corpo)
 
 	var ground_w := (1.0 - _air_w) * (1.0 - _climb_w)
 	var loco_w: float = ground_w * smoothstep(0.05, 0.35, speed01) * upper_free
@@ -217,12 +306,29 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	_air(off, _air_w * upper_free, velocity.y)
 	_parkour(off, _phase)
 	_finger_gun(off, _gun_w, pitch, gun_recoil)
+	WeaponPoses.two_handed_sword_idle(_add, off, _sword_w, _t)
+	if _sword_slash_type >= 0:
+		WeaponPoses.two_handed_sword_slash(_add, off, _sword_w, _sword_slash_t, _sword_slash_type)
+		_sword_slash_t += delta * _sword_slash_speed
+		
+		# Emite o rastro apenas na parte veloz do golpe (durante a fase de strike)
+		if _trail:
+			if _sword_slash_t >= 0.18 and _sword_slash_t <= 0.32:
+				_trail.emit(true)
+			else:
+				_trail.emit(false)
+		
+		if _sword_slash_t >= 1.0:
+			_sword_slash_type = -1
+			if _trail:
+				_trail.emit(false)
+			
 	FruitPoses.hibashira_pose(_add, off, _hibashira_w, _t)
 	FruitPoses.kurouzu_pose(_add, off, _kurouzu_w, _t)
 	FruitPoses.black_hole_pose(_add, off, _black_hole_w, _t)
 	FruitPoses.gura_rush_pose(_add, off, _gura_rush_w, _t) # Pose assimetrica sobreposta
 	FruitPoses.gura_x_charge_pose(_add, off, _gura_x_charge_w, _t)
-	FruitPoses.gura_v_poses(_add, off, _gura_v_w, _t, _gura_v_state)
+	GuraPoses.golpe(_add, off, _gura_golpe_w, _t, _gura_golpe_t, _gura_golpe_state)
 	# POR ÚLTIMO entre as poses: o tranco de dano SOMA por cima do que o corpo já
 	# estava fazendo. É o que faz levar um tiro correndo continuar lendo como corrida.
 	RecepcaoDeDano.pose(_add, off, _dano_w, _t)
@@ -237,8 +343,13 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	_recovery(off, delta)
 	_lookat(off, pitch, ground_w * (1.0 - _charge_w))
 
+	if _hitstop_timer > 0.0 and _hitstop_shake > 0.0:
+		_add(off, "Torso", Vector3(randf_range(-1,1), randf_range(-1,1), randf_range(-1,1)) * _hitstop_shake)
+		_add(off, "UpperArm_R", Vector3(randf_range(-1,1), randf_range(-1,1), randf_range(-1,1)) * _hitstop_shake)
+		_add(off, "UpperArm_L", Vector3(randf_range(-1,1), randf_range(-1,1), randf_range(-1,1)) * _hitstop_shake)
+
 	# ---- aplica rotação (lerp suave) ----
-	var a: float = 1.0 - exp(-STIFFNESS * delta)
+	var a: float = 1.0 - exp(-STIFFNESS * real_delta)
 	for role in _n:
 		var target: Vector3 = _rest.get(role, Vector3.ZERO) + off.get(role, Vector3.ZERO)
 		var node: Node3D = _n[role]
@@ -674,15 +785,12 @@ func _finger_gun(off: Dictionary, w: float, pitch: float, gun_recoil: float) -> 
 # seja, socando, não abrindo. O comentário dela dizia "socando para a frente",
 # contradizendo o nome da variável (`braço direito levantado`) e o pedido.
 #
-# O "T" deste projeto já estava definido em `_gura_v_poses` (estado
-# `gura_v_tpose`): ombro em z = ±1,4 e cotovelo em x = -0,1. Reaproveitado aqui
-# de propósito, com o sinal do lado direito, para as duas poses não inventarem
-# cada uma o seu T. Medido, 1,4 rad dá 80° do chão — 10° abaixo da horizontal
-# exata; quem quiser o T no esquadro troca -1,4 por -1,5708 nos DOIS lugares.
-
-# Pose Especial de Carregamento: Gura Gura X (Captura Sísmica)
-
-# --- Poses da Ultimate V da Gura Gura (Sequência de 4s) ---
+# O "T" deste projeto mora hoje em `src/anim/GuraPoses.gd` (tabela `_V_T`, do
+# estado `gura_v_tpose`): ombro em z = ±1,4 e cotovelo em x = -0,08. Reaproveitado
+# aqui de propósito, com o sinal do lado direito, para as duas poses não
+# inventarem cada uma o seu T. Medido, 1,4 rad dá 80° do chão — 10° abaixo da
+# horizontal exata; quem quiser o T no esquadro troca por ±1,5708 nos DOIS lugares.
+# O `tools/dev_tests/test_gura_animacoes.gd` trava esses números.
 
 func _lookat(off: Dictionary, pitch: float, w: float) -> void:
 	if w <= 0.001:

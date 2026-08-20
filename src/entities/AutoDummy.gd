@@ -66,27 +66,50 @@ func _find_target() -> void:
 			break
 
 func _attack() -> void:
-	if _melee_janela <= 0.0 or _melee_passo >= Melee.COMBO.size():
+	# ⚠️ `self.get(...)` e não o identificador nu. O guarda `"x" in self` é uma
+	# checagem de RUNTIME, mas `equipped_weapon` ainda precisa resolver em tempo
+	# de PARSE — e o `AutoDummy` não declara essa propriedade (o `TrainingDummy`
+	# também não). Escrito direto, o arquivo inteiro deixava de compilar, e como
+	# o `Main.gd` carrega o dummy em toda partida, o erro entrava no log de
+	# TODOS os testes e derrubava a suíte inteira.
+	var w: String = str(self.get("equipped_weapon")) if "equipped_weapon" in self else ""
+	var combo_len = Melee.COMBO_SWORD.size() if w == "sword" else Melee.COMBO.size()
+	
+	if _melee_janela <= 0.0 or _melee_passo >= combo_len:
 		_melee_passo = 0
 		
-	var g = Melee.passo(_melee_passo)
-	_trava = float(g["recuo"]) + 0.8  # Mais lento para permitir treino de esquiva
+	var s := 1.0
+	if "scale" in self:
+		s = scale.y
+
+	var g = Melee.passo(_melee_passo, w)
+	# O `recuo` deixou de ser chave da tabela em 2026-08-15: virou conta derivada
+	# da duração da animação (`Melee.recuo()`). O `+ 0,8` é intenção deste dummy e
+	# fica — ele ataca de propósito mais devagar que um jogador, para dar tempo de
+	# treinar esquiva. O `* s` saiu junto com o do jogador: o clipe toca no mesmo
+	# `vel` seja qual for o porte, então a trava não tem por que crescer com ele.
+	_trava = Melee.recuo(_melee_passo, w) + 0.8
 	_melee_janela = Melee.JANELA
 	
-	var clipe = Melee.clipe(_melee_passo)
+	var clipe = Melee.clipe(_melee_passo, w)
 	if _rig and _rig.animador() and _rig.procedural():
-		_rig.procedural().play_baked(clipe, float(g["vel"]), float(g.get("inicio", 0.0)))
+		_rig.procedural().play_baked(clipe, float(g["vel"]) / s, float(g.get("inicio", 0.0)))
 		
 	var fwd = -global_transform.basis.z
 	if _model:
 		fwd = -_model.global_transform.basis.z
 		
-	Melee.golpear(get_tree().current_scene, self, _melee_passo, global_position + Vector3.UP * 1.0, fwd)
+	Melee.golpear(get_tree().current_scene, self, _melee_passo, global_position + Vector3.UP * (1.0 * s), fwd)
 	
 	_melee_passo += 1
 
-func take_damage(amount: float, from_pos: Vector3 = Vector3.ZERO, knockback: Vector3 = Vector3.ZERO) -> void:
-	super.take_damage(amount, from_pos, knockback)
+# A assinatura tem que bater com a do `TrainingDummy` — 4 parâmetros. Faltava o
+# `hitstun`, e sem ele o GDScript recusa o arquivo inteiro ("doesn't match the
+# parent"). Repassado ao `super` em vez de descartado: quem bate no dummy define
+# quanto tempo ele fica atordoado, e engolir o valor aqui faria o dummy ignorar
+# o hitstun de todo golpe do jogo.
+func take_damage(amount: float, from_pos: Vector3 = Vector3.ZERO, knockback: Vector3 = Vector3.ZERO, hitstun: float = 0.0) -> void:
+	super.take_damage(amount, from_pos, knockback, hitstun)
 	if _ap and health > 0:
 		_ap.play("damage")
 

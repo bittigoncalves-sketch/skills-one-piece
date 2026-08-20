@@ -17,9 +17,14 @@ const FRICTION := 10.0
 
 var health := MAX_HP
 var _since_damage := 0.0
+var _hitstun_timer := 0.0
+var _max_kb_speed := 0.0
 var _model: Node3D
 var _ap: AnimationPlayer
+var _rig: PlayerRig
 
+var _hitstop_timer: float = 0.0
+var _pending_knockback: Vector3 = Vector3.ZERO
 
 func _ready() -> void:
 	add_to_group("enemy")           # alvo das skills
@@ -29,16 +34,33 @@ func _ready() -> void:
 	shape.size = Vector3(1.0, 1.6, 1.0)
 	col.shape = shape
 	add_child(col)
-	var built := CharacterBuilder.build_character("base")
-	_model = built["node"]
-	add_child(_model)
-	var ap = built.get("anim_player")
-	if ap:
-		ap.active = false            # como o Player faz: sem AnimationPlayer brigando
-		_ap = ap
+	_rig = PlayerRig.new()
+	add_child(_rig)
+	_rig.montar_em(self)
+	_rig.montar("base")
+	_model = _rig.modelo()
+	if _rig.animador():
+		var ap = _rig.animador().animation_player
+		if ap:
+			ap.active = false            # como o Player faz: sem AnimationPlayer brigando
+			_ap = ap
 	_fit_model()
 
 func _physics_process(delta: float) -> void:
+	# HITSTOP LOCAL: Boneco congela e treme, aguardando o fim do impacto
+	if _hitstop_timer > 0.0:
+		_hitstop_timer -= delta
+		if _model:
+			_model.position.x = randf_range(-0.06, 0.06)
+			_model.position.z = randf_range(-0.06, 0.06)
+		if _hitstop_timer <= 0.0:
+			if _model:
+				_model.position.x = 0.0
+				_model.position.z = 0.0
+			velocity = _pending_knockback
+			_pending_knockback = Vector3.ZERO
+		return # Pula o resto da física
+		
 	# CONGELADO (Hie Hie): fica imóvel enquanto durar o gelo.
 	if has_meta("is_frozen") and get_meta("is_frozen"):
 		velocity.x = 0.0
@@ -56,14 +78,23 @@ func _physics_process(delta: float) -> void:
 	velocity.x = move_toward(velocity.x, 0.0, FRICTION * delta)
 	velocity.z = move_toward(velocity.z, 0.0, FRICTION * delta)
 	move_and_slide()
+	
+	var planar_speed = Vector2(velocity.x, velocity.z).length()
+	if planar_speed > _max_kb_speed:
+		_max_kb_speed = planar_speed
 
 	_since_damage += delta
+	
+	if _hitstun_timer > 0.0:
+		_hitstun_timer -= delta
+		if _hitstun_timer <= 0.0:
+			print("[TESTING] Dummy se recuperou do hitstun. Max KB Speed: ", snapped(_max_kb_speed, 0.1), " m/s")
 	if global_position.y < VOID_Y:
 		_reset(false)                # caiu -> volta pro topo (mantém HP)
 	elif health <= 0.0 or _since_damage >= RESET_AFTER:
 		_reset(true)                 # morreu ou 30s sem dano -> HP cheio + centro
 
-func take_damage(amount: float, _from_pos: Vector3 = Vector3.ZERO, knockback: Vector3 = Vector3.ZERO) -> void:
+func take_damage(amount: float, _from_pos: Vector3 = Vector3.ZERO, knockback: Vector3 = Vector3.ZERO, hitstun: float = 0.0) -> void:
 	if get_meta("damage_immune", false) or get_meta("custom_pose", "") == "hibashira" or get_meta("in_black_hole", false):
 		return
 	health -= amount
@@ -74,6 +105,14 @@ func take_damage(amount: float, _from_pos: Vector3 = Vector3.ZERO, knockback: Ve
 	var hud := get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("add_damage_dealt"):
 		hud.add_damage_dealt(amount)
+	
+	print("[TESTING] Dummy recebeu %.1f dano, Hitstun: %.2f s" % [amount, hitstun])
+	_hitstun_timer = hitstun
+	_max_kb_speed = 0.0
+	
+	var hitstop_dur := clampf(amount * 0.003 + 0.06, 0.06, 0.16)
+	_hitstop_timer = hitstop_dur
+	
 	if knockback.length() > 0.1:
 		var kb := knockback
 		if not is_on_floor():
@@ -84,7 +123,12 @@ func take_damage(amount: float, _from_pos: Vector3 = Vector3.ZERO, knockback: Ve
 			kb.x *= 0.2
 			kb.z *= 0.2
 		kb.y = clampf(kb.y, -30.0, 30.0)
-		velocity += kb
+		_pending_knockback = kb
+	else:
+		_pending_knockback = Vector3.ZERO
+		
+	# Congela inércia residual pro hitstop (Impact Frame Hold)
+	velocity = Vector3.ZERO
 	_since_damage = 0.0
 
 func _reset(full: bool) -> void:

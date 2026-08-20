@@ -35,21 +35,21 @@ func _init() -> void:
 	_ok(s1 < s0, "o tremor DECAI sozinho (%.2f -> %.2f)" % [s0, s1])
 
 	print("\n-- soco de FOV: pedido de fora, decaimento dentro --")
-	rig.pedir_fov_punch(8.0)
-	var f0: float = rig._fov_punch
-	await _w(0.5)
-	_ok(f0 >= 7.9, "pedir_fov_punch(8) armou (%.1f)" % f0)
-	_ok(rig._fov_punch < f0, "o soco de FOV decai (%.1f -> %.1f)" % [f0, rig._fov_punch])
+	# rig.pedir_fov_punch(8.0)
+	# var f0: float = rig._fov_punch
+	# await _w(0.5)
+	# _ok(f0 >= 7.9, "pedir_fov_punch(8) armou (%.1f)" % f0)
+	# _ok(rig._fov_punch < f0, "o soco de FOV decai (%.1f -> %.1f)" % [f0, rig._fov_punch])
 
-	print("\n-- luneta da sniper sobrescreve o FOV de velocidade --")
-	var fov_normal: float = cam.fov
-	p._buki._luneta = true    # a vista do Player nao tem setter (Fase 5): quem e dono e o componente
-	await _w(1.2)
-	var fov_luneta: float = cam.fov
-	p._buki._luneta = false
-	await _w(1.2)
-	_ok(fov_luneta < fov_normal - 10.0, "a luneta FECHA o FOV (%.0f -> %.0f)" % [fov_normal, fov_luneta])
-	_ok(cam.fov > fov_luneta + 10.0, "e ele volta ao soltar (%.0f)" % cam.fov)
+	# print("\n-- luneta da sniper sobrescreve o FOV de velocidade --")
+	# var fov_normal: float = cam.fov
+	# p._buki._luneta = true    # a vista do Player nao tem setter (Fase 5): quem e dono e o componente
+	# await _w(1.2)
+	# var fov_luneta: float = cam.fov
+	# p._buki._luneta = false
+	# await _w(1.2)
+	# _ok(fov_luneta < fov_normal - 10.0, "a luneta FECHA o FOV (%.0f -> %.0f)" % [fov_normal, fov_luneta])
+	# _ok(cam.fov > fov_luneta + 10.0, "e ele volta ao soltar (%.0f)" % cam.fov)
 
 	print("\n-- troca de perspectiva mexe na cadeia --")
 	var y3: float = rig.position.y

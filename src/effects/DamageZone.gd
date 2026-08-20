@@ -3,14 +3,20 @@ extends Area3D
 # Área de dano móvel: aplica dano + knockback em corpos com take_damage() (menos
 # o próprio caster). Já pronta para inimigos futuros; hoje só não acha alvos.
 
+signal hit_landed(target: Node)
+
 const DAMAGE_SCALE := 0.12   # foco é knockback, não dano -> dano bem baixo
 
 var damage: float = 0.0
 var knockback: float = 0.0
+var hitstun: float = 0.3
 var vel: Vector3 = Vector3.ZERO
 var caster: Node = null
 var override_kb_dir: Vector3 = Vector3.ZERO
 var _hit: Dictionary = {}
+var is_weapon_swing: bool = false
+var is_projectile: bool = false
+var _clashed: bool = false
 
 # Cria a colisão e a agenda de vida. Chamar logo após add_child.
 #
@@ -21,9 +27,10 @@ var _hit: Dictionary = {}
 # passa (todo o resto do jogo, inclusive o C do Karatê Tritão) continua com a
 # esfera de `radius`, exatamente como antes.
 func setup(dmg: float, kb: float, velocity: Vector3, life: float, caster_node: Node,
-		radius: float, forma: Shape3D = null) -> void:
+		radius: float, forma: Shape3D = null, hitstun_dur: float = 0.3) -> void:
 	damage = dmg
 	knockback = kb
+	hitstun = hitstun_dur
 	vel = velocity
 	caster = caster_node
 
@@ -37,6 +44,7 @@ func setup(dmg: float, kb: float, velocity: Vector3, life: float, caster_node: N
 	add_child(col)
 
 	body_entered.connect(_on_body)
+	area_entered.connect(_on_area)
 	FxUtil.autofree(self, life)
 
 # PARALISIA opcional: > 0 = o alvo congela por esse tempo em vez de ser
@@ -73,16 +81,57 @@ func _varrer_caminho(de: Vector3, ate: Vector3) -> void:
 	if mundo == null:
 		return
 	var par := PhysicsRayQueryParameters3D.create(de, ate)
-	par.collide_with_areas = false
+	par.collide_with_areas = is_projectile # Projéteis varrem áreas para serem cortados
 	par.collide_with_bodies = true
+	par.collision_mask = 15
 	if is_instance_valid(caster) and caster is CollisionObject3D:
 		par.exclude = [(caster as CollisionObject3D).get_rid()]
 	var hit := mundo.direct_space_state.intersect_ray(par)
 	if hit.is_empty():
 		return
 	var corpo = hit.get("collider")
-	if corpo is Node3D and not _hit.has(corpo):
+	if corpo is Area3D:
+		_on_area(corpo as Area3D)
+	elif corpo is Node3D and not _hit.has(corpo):
 		_on_body(corpo as Node3D)
+
+func _on_area(area: Area3D) -> void:
+	if _clashed or not multiplayer.is_server(): return
+	if area is DamageZone and area != self and area.caster != caster:
+		if is_weapon_swing:
+			if area.is_weapon_swing and not area._clashed:
+				# Clash (Espada vs Espada)
+				_clashed = true
+				area._clashed = true
+				set_deferred("monitoring", false)
+				area.set_deferred("monitoring", false)
+				_do_clash_effects()
+				queue_free()
+				area.queue_free()
+			elif area.is_projectile and not area._clashed:
+				# Deflexão/Corte (Espada vs Projétil)
+				area._clashed = true
+				area.set_deferred("monitoring", false)
+				_do_deflect_effects()
+				area.queue_free()
+
+@rpc("call_local", "reliable")
+func _net_clash_effects() -> void:
+	var gf := get_node_or_null("/root/GameFlow")
+	if gf and gf.has_method("hit_stop"): gf.hit_stop()
+	var sfx := get_node_or_null("/root/ScreenFX")
+	if sfx and sfx.has_method("flash"): sfx.flash(Color(1.0, 0.9, 0.6), 0.1)
+	# TODO: Spawnar sparks de metal
+
+func _do_clash_effects() -> void:
+	if multiplayer.has_multiplayer_peer():
+		rpc("_net_clash_effects")
+	else:
+		_net_clash_effects()
+
+func _do_deflect_effects() -> void:
+	# O corte de projétil pode ter efeitos menores
+	_do_clash_effects()
 
 func _on_body(body: Node3D) -> void:
 	# Autoridade de combate: só o SERVIDOR aplica dano/knockback. Em clientes a zona
@@ -115,7 +164,8 @@ func _on_body(body: Node3D) -> void:
 				if is_instance_valid(body):
 					body.set_meta("is_frozen", false))
 		# Dano BAIXO de propósito: o foco é o KNOCKBACK jogar o alvo pra fora do mapa.
-		body.take_damage(damage * DAMAGE_SCALE, global_position, kb)
+		body.take_damage(damage * DAMAGE_SCALE, global_position, kb, hitstun)
+		hit_landed.emit(body)
 		# Crédito de kill: registra quem bateu por último em quem. Se o alvo cair
 		# do mapa nos próximos segundos, a kill é de quem empurrou.
 		var placar := get_tree().get_first_node_in_group("scoreboard")

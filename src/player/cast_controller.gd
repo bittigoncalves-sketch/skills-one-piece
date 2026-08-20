@@ -142,19 +142,32 @@ func comecar(slot_pedido: String) -> void:
 	var fruta: String = _dono.current_fruit_id
 	var na_fruta: bool = _dono.combat_mode == "fruit"
 
-	if slot_pedido == "C" and na_fruta and fruta == "yami_yami" and not _dono.is_on_floor():
-		print("❌ Black Hole requer contato com o solo!")
-		return
 	if slot_pedido == "Z" and na_fruta and fruta == "yami_yami":
 		print("🌑 Yami Pistol: ", "EMPUNHADA (Bt Dir=Mirar / Bt Esq=Atirar)"
 			if _dono._disparo.alternar_yami() else "GUARDADA")
 		return
-	if slot_pedido == "C" and na_fruta and fruta == "yami_yami":
-		_dono.set_meta("yami_black_hole_active", true)
+	if (slot_pedido == "C" or slot_pedido == "X") and na_fruta and fruta == "yami_yami":
+		if slot_pedido == "C":
+			if not _dono.is_on_floor():
+				print("❌ Black Hole requer contato com o solo!")
+				return
+		if _dono.has_method("pedir_iniciar_hold"):
+			_dono.pedir_iniciar_hold(slot_pedido, fruta)
 		_carregando = true
-		_slot = "C"
+		_slot = slot_pedido
+		_token += 1
+		_dono.set_meta("is_casting", true)
 		_dono.congelar_para_cast()
-		pedir_cast("C")
+		pedir_cast(slot_pedido)
+		return
+	if slot_pedido == "C" and na_fruta and fruta == "bara_bara":
+		if _dono.has_method("pedir_iniciar_hold"):
+			_dono.pedir_iniciar_hold(slot_pedido, fruta)
+		_carregando = true
+		_slot = slot_pedido
+		_token += 1
+		_dono.set_meta("is_casting", true)
+		pedir_cast(slot_pedido)
 		return
 	# EL THOR (X da Goro): o raio que sobe do BRAÇO é o GATILHO da reação
 	if slot_pedido == "X" and na_fruta and fruta == "goro_goro":
@@ -204,8 +217,16 @@ func comecar(slot_pedido: String) -> void:
 		return
 		
 	# GOMU GOMU GATLING (C): inicia a rajada imediatamente ao pressionar.
+	#
+	# ⚠️ NÃO chame `trigger_skill_cooldown("C")` aqui: `pedir_cast()`, chamado
+	# duas linhas abaixo, JÁ coloca a recarga — e ele também É O GATE que lê
+	# essa mesma recarga (`if _skill_cooldowns.get(slot, 0.0) > 0.0: return`,
+	# bem no início da função). Chamar aqui primeiro travava a skill contra
+	# ela mesma: a recarga entrava em 10s e, no MESMO quadro, `pedir_cast`
+	# via a recarga > 0 e desistia sem nunca chegar a `pedir_cast_no_servidor`
+	# — o Gatling nunca nascia, nem segurando a tecla pelos 2,2s inteiros
+	# (medido em 2026-08-18 com `tools/dev_tests/probe_gomu_c.gd`).
 	if slot_pedido == "C" and na_fruta and fruta == "gomu_gomu":
-		_dono.trigger_skill_cooldown("C")
 		_dono.gastar_energia(_dono.ENERGY_SKILL)
 		pedir_cast("C")
 		return
@@ -232,11 +253,27 @@ func soltar(slot_pedido: String) -> void:
 
 	if _dono.combat_mode == "style" and _dono.estilo_atual() == "teste_animacao":
 		return
-	if slot_pedido == "C" and _dono.combat_mode == "fruit" and _dono.current_fruit_id == "yami_yami":
-		if _dono.has_meta("yami_black_hole_active"):
-			_dono.set_meta("yami_black_hole_active", false)
+	if (slot_pedido == "C" or slot_pedido == "X") and _dono.combat_mode == "fruit" and _dono.current_fruit_id == "yami_yami":
+		if slot_pedido == "C":
+			if _dono.has_meta("yami_black_hole_active"):
+				_dono.set_meta("yami_black_hole_active", false)
+		else:
+			if _dono.has_meta("yami_kurouzu_active"):
+				_dono.set_meta("yami_kurouzu_active", false)
+		if _dono.has_method("pedir_cancelar_hold"):
+			_dono.pedir_cancelar_hold(slot_pedido, "yami_yami")
 		_carregando = false
 		_slot = ""
+		_dono.set_meta("is_casting", false)
+		return
+	if slot_pedido == "C" and _dono.combat_mode == "fruit" and _dono.current_fruit_id == "bara_bara":
+		if _dono.has_meta("bara_cleave_active"):
+			_dono.set_meta("bara_cleave_active", false)
+		if _dono.has_method("pedir_cancelar_hold"):
+			_dono.pedir_cancelar_hold(slot_pedido, "bara_bara")
+		_carregando = false
+		_slot = ""
+		_dono.set_meta("is_casting", false)
 		return
 	# MERA MERA Z: soltar a tecla ENCERRA a rajada.
 	if _dono._disparo.rajada_ativa() and slot_pedido == "Z":
@@ -292,8 +329,10 @@ func conjurar_direto(slot_pedido: String) -> void:
 # Calcula a mira e entrega ao Player, que fala com a rede.
 func pedir_cast(slot_pedido: String) -> void:
 	if not _dono._is_authority or _suprimido:
+		_dono.set_meta("is_casting", false)
 		return
 	if _dono._skill_cooldowns.get(slot_pedido, 0.0) > 0.0:
+		_dono.set_meta("is_casting", false)
 		return
 	# ⚠️ BUKI BUKI: aqui o slot está sendo EMPUNHADO, não gasto. A recarga dele só
 	# começa quando a arma é LARGADA (troca, desistência ou munição zerada). Ligar
@@ -320,28 +359,20 @@ class GuraChargeNode extends Node:
 	var _dono: Node
 	var _slot: String
 	var _tempo: float = 0.0
-	var _target: Node3D = null
+	var _orb: Node3D = null
 	
 	func _init(dono: Node, slot: String) -> void:
 		_dono = dono
 		_slot = slot
-		# CAPTURA SÍSMICA (X): Tenta prender um alvo ao redor da mira
 		if _slot == "X":
-			var mira := _dono.mira_do_cast() as Dictionary
-			var mundo = _dono.get_world_3d()
-			var par = PhysicsRayQueryParameters3D.create(mira["origem"], mira["origem"] + mira["aim"] * 30.0)
-			par.collide_with_areas = false
-			par.collide_with_bodies = true
-			if _dono is CollisionObject3D:
-				par.exclude = [_dono.get_rid()]
-			var hit = mundo.direct_space_state.intersect_ray(par)
-			if not hit.is_empty() and hit.get("collider") is Node3D and hit.get("collider").has_method("take_damage"):
-				_target = hit.get("collider")
-				_target.set_meta("is_frozen", true)
-				StatusFX.aplicar(_target, StatusFX.CONGELADO, 4.0)
-				# Inicia o VFX de Captura na autoridade visual
-				if _dono.has_method("get_tree") and Engine.has_singleton("GuraFX") == false:
-					pass # Poderíamos chamar um GuraFX.capture_vfx(_target, self) aqui
+			# Cria a orb visual na mão do jogador
+			if _dono.has_node("_char_model"):
+				var model: Node = _dono.get_node("_char_model")
+				var arm: Node = model.find_child("*ForeArm_R*", true, false)
+				if arm and arm is Node3D:
+					_orb = load("res://src/effects/SeismicOrb.gd").new()
+					arm.add_child(_orb)
+					_orb.position = Vector3(0, -0.3, 0) # Offset para a ponta do braço
 				
 	func _process(delta: float) -> void:
 		_tempo = minf(_tempo + delta, 3.0) # MAX_CHARGE = 3.0
@@ -349,19 +380,14 @@ class GuraChargeNode extends Node:
 		if is_instance_valid(_dono) and _dono.has_method("add_camera_shake"):
 			_dono.add_camera_shake(minf(_tempo * 0.8, 2.5))
 			
-		if _slot == "X" and is_instance_valid(_target) and is_instance_valid(_dono):
-			# Posicionamento Relativo Rigoroso (Evita jitter e colisão cega)
-			# O inimigo fica suspenso exatamente a 5m de distância na frente do jogador, e 2.5m de altura
-			var fwd = -_dono.global_transform.basis.z.normalized()
-			var ideal_pos = _dono.global_position + fwd * 5.0 + Vector3.UP * 2.5
-			_target.global_position = _target.global_position.lerp(ideal_pos, 10.0 * delta)
+		if is_instance_valid(_orb):
+			_orb.charge = _tempo
 			
 	func _exit_tree() -> void:
 		if is_instance_valid(_dono) and _dono.has_meta("custom_pose") and _dono.get_meta("custom_pose") == "gura_x_charge":
 			_dono.remove_meta("custom_pose")
-		# CLEANUP GARANTIDO: Restaura o inimigo se a skill for abortada por dano/morte
-		if is_instance_valid(_target) and _target.has_meta("is_frozen") and _target.get_meta("is_frozen"):
-			_target.set_meta("is_frozen", false)
+		if is_instance_valid(_orb):
+			_orb.queue_free()
 			
 	func soltar(aim: Vector3) -> void:
 		if is_instance_valid(_dono):
@@ -371,13 +397,11 @@ class GuraChargeNode extends Node:
 				Engine.get_singleton("ScreenFX").chromatic_pulse(0.4)
 				
 			var mira := _dono.mira_do_cast() as Dictionary
+			
 			if _slot == "X":
-				if is_instance_valid(_target):
-					# Em vez de soltar instantaneamente, deixamos _exit_tree cuidar disso após o RPC.
-					# Isso garante que ele fique preso durante o delay inicial da animação da explosão.
-					_dono.pedir_cast_no_servidor(_slot, _target.global_position, mira["origem"], _tempo)
-				else:
-					_dono.pedir_cast_no_servidor(_slot, mira["origem"] + aim * 8.0, mira["origem"], _tempo)
+				# O aim que chega é a direção, e o servidor vai processar como projétil
+				# Passamos origin + aim como 'target pos' para direcionar o projétil
+				_dono.pedir_cast_no_servidor(_slot, mira["origem"] + aim * 100.0, mira["origem"], _tempo)
 			else:
 				_dono.pedir_cast_no_servidor(_slot, aim, mira["origem"], _tempo)
 		queue_free()

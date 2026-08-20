@@ -18,14 +18,14 @@ func respawn(fruit_id: String) -> void:
 	else:
 		_apply_respawn(fruit_id)
 
-@rpc("any_peer", "call_local", "reliable")
+@rpc("authority", "call_local", "reliable")
 func _apply_pickup(fruit_id: String, peer_id: int) -> void:
 	TreeAndFruitGenerator.hide_fruit(fruit_id)   # some em todos
 	var p := _find_player(peer_id)
 	if p and p.has_method("equip_fruit"):
 		p.equip_fruit(fruit_id)                   # equipa no player certo (state replica p/ os demais)
 
-@rpc("any_peer", "call_local", "reliable")
+@rpc("authority", "call_local", "reliable")
 func _apply_respawn(fruit_id: String) -> void:
 	TreeAndFruitGenerator.respawn_fruit(fruit_id)
 

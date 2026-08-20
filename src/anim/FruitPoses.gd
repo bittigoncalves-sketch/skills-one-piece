@@ -98,53 +98,15 @@ static func gura_x_charge_pose(add: Callable, off: Dictionary, w: float, t: floa
 	add.call(off, "Torso", Vector3(0.1, 0.0, 0.0) * w)
 	add.call(off, "Head", Vector3(0.1, 0.0, 0.0) * w)
 
-static func gura_v_poses(add: Callable, off: Dictionary, w: float, t: float, state: String) -> void:
-	if w <= 0.001: return
-	
-	if state == "gura_v_prep":
-		# Preparação (0.0s): Postura firme, respira fundo
-		var resp = sin(t * 3.0) * 0.05
-		add.call(off, "Torso", Vector3(0.1 - resp, 0, 0) * w)
-		add.call(off, "Head", Vector3(-0.1 + resp, 0, 0) * w)
-		add.call(off, "UpperArm_L", Vector3(0.2, 0.0, -0.1) * w)
-		add.call(off, "UpperArm_R", Vector3(0.2, 0.0, 0.1) * w)
-		
-	elif state == "gura_v_squat":
-		# Agachamento (1.0s): Flexiona joelhos, braços pra trás
-		add.call(off, "Thigh_L", Vector3(0.8, -0.1, 0) * w)
-		add.call(off, "Thigh_R", Vector3(0.8, 0.1, 0) * w)
-		add.call(off, "Shin_L", Vector3(-1.0, 0, 0) * w)
-		add.call(off, "Shin_R", Vector3(-1.0, 0, 0) * w)
-		add.call(off, "Torso", Vector3(0.3, 0, 0) * w)
-		add.call(off, "UpperArm_L", Vector3(-1.2, 0.0, -0.2) * w)
-		add.call(off, "UpperArm_R", Vector3(-1.2, 0.0, 0.2) * w)
-		
-	elif state == "gura_v_gather":
-		# Reúne energia (2.0s): Agachado vibrando fortemente
-		var vib = sin(t * 45.0) * 0.03
-		add.call(off, "Thigh_L", Vector3(0.9, -0.1, 0) * w)
-		add.call(off, "Thigh_R", Vector3(0.9, 0.1, 0) * w)
-		add.call(off, "Shin_L", Vector3(-1.1, 0, 0) * w)
-		add.call(off, "Shin_R", Vector3(-1.1, 0, 0) * w)
-		add.call(off, "Torso", Vector3(0.4 + vib, 0, 0) * w)
-		add.call(off, "UpperArm_L", Vector3(-1.3, 0.0, -0.3 - vib) * w)
-		add.call(off, "UpperArm_R", Vector3(-1.3, 0.0, 0.3 + vib) * w)
-		add.call(off, "ForeArm_L", Vector3(0.5, 0, 0) * w)
-		add.call(off, "ForeArm_R", Vector3(0.5, 0, 0) * w)
-		
-	elif state == "gura_v_lift":
-		# Levanta os braços (3.0s): Braços sobem lentamente
-		var vib = sin(t * 30.0) * 0.02
-		add.call(off, "Torso", Vector3(0.0, 0, 0) * w)
-		add.call(off, "UpperArm_L", Vector3(0.0, -0.2, -0.8 - vib) * w)
-		add.call(off, "UpperArm_R", Vector3(0.0, 0.2, 0.8 + vib) * w)
-		
-	elif state == "gura_v_tpose":
-		# Pose em T (4.0s): Braços totalmente horizontais, vibração máxima
-		var vib = sin(t * 50.0) * 0.05
-		add.call(off, "Torso", Vector3(-0.1, 0, 0) * w)
-		add.call(off, "Head", Vector3(0.1, 0, 0) * w)
-		add.call(off, "UpperArm_L", Vector3(0.0, 0.0, -1.4 - vib) * w)
-		add.call(off, "UpperArm_R", Vector3(0.0, 0.0, 1.4 + vib) * w)
-		add.call(off, "ForeArm_L", Vector3(-0.1, 0, 0) * w)
-		add.call(off, "ForeArm_R", Vector3(-0.1, 0, 0) * w)
+# ⚠️ AS POSES DE GOLPE DA GURA GURA SAÍRAM DAQUI em 2026-08-15, para
+# `src/anim/GuraPoses.gd`. O motivo é o mesmo que criou este arquivo: a Gura é a
+# única fruta com animação autoral nos quatro slots e sozinha era maior que as
+# seis poses das outras frutas somadas.
+#
+# O que foi junto: `gura_v_poses` (a ultimate). O que ficou aqui: `gura_rush_pose`
+# e `gura_x_charge_pose`, que são poses SUSTENTADAS (o jogador as segura) e têm
+# peso próprio no animador — as de lá são golpes com linha do tempo.
+#
+# Os três estados `gura_v_prep`, `gura_v_squat` e `gura_v_gather` foram apagados
+# em vez de migrados: NENHUM efeito jamais os escreveu em `custom_pose` (o
+# `GuraVNode` só usa `lift` e `tpose`). Eram código morto desde que nasceram.

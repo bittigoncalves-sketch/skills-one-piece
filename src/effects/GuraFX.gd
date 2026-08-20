@@ -18,6 +18,40 @@ static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damag
 static func _self_pos(caster: Node) -> Vector3:
 	return (caster as Node3D).global_position + Vector3.UP * 1.0 if caster is Node3D else Vector3.ZERO
 
+# Escreve a `custom_pose` do golpe e a apaga sozinha no fim.
+#
+# É o CONTRATO do projeto (`docs/frutas/gura_gura.md`): o efeito não toca
+# animação, ele NOMEIA uma pose e o `ProceduralAnimator` desenha. Foi o que
+# substituiu, em 2026-08-15, os três `play_baked` de clipes do Mixamo — e a troca
+# não é de gosto: `_apply_baked` escreve a rotação de TODOS os papéis todo
+# quadro e sai cedo da `update`, então durante o clipe a locomoção, o parkour, a
+# mira e a recepção de dano simplesmente não existiam.
+#
+# `atraso` existe porque o estrago de alguns golpes é AGENDADO (tween de 0,25 ×
+# mult no Z, 0,4 s no C): a pose precisa começar antes para o punho chegar junto
+# com a onda. Ver `GuraPoses.Z_IMPACTO_EM`.
+static func _pose(caster: Node, nome: String, duracao: float, atraso: float = 0.0) -> void:
+	if not is_instance_valid(caster):
+		return
+	var arv := (caster as Node).get_tree()
+	if arv == null:
+		return
+	var por := func() -> void:
+		if not is_instance_valid(caster):
+			return
+		caster.set_meta("custom_pose", nome)
+		arv.create_timer(duracao).timeout.connect(func() -> void:
+			# ⚠️ SÓ limpa se a pose ainda for A NOSSA. O jogador encadeia golpes
+			# (Z e depois C), e apagar a meta de quem entrou depois largaria o
+			# corpo na pose errada — no limite, tiraria o T do V no meio da
+			# ultimate. É a mesma guarda que o `YamiFX` usa no Kurouzu.
+			if is_instance_valid(caster) and caster.get_meta("custom_pose", "") == nome:
+				caster.remove_meta("custom_pose"))
+	if atraso <= 0.0:
+		por.call()
+	else:
+		arv.create_timer(atraso).timeout.connect(por)
+
 static func _ground(caster: Node, dir: Vector3, dist: float) -> Vector3:
 	var flat := Vector3(dir.x, 0.0, dir.z)
 	flat = Vector3.FORWARD if flat.length_squared() < 0.001 else flat.normalized()
@@ -86,18 +120,10 @@ static func _debris(parent: Node, up_bias: float, amount: int) -> void:
 static func _punch(world: Node, origin: Vector3, fwd: Vector3, damage: float, caster: Node, charge: float = 0.0) -> void:
 	var mult: float = 1.0 + clampf(charge / 1.5, 0.0, 3.0)
 	
-	if is_instance_valid(caster) and caster.has_method("get_node"):
-		var proc = caster.get_node_or_null("ProceduralAnimator")
-		if proc and proc.has_method("play_baked"):
-			var anim_res = load("res://assets/animations/right_upper_hook_from_guard.res")
-			if anim_res:
-				# Toca a animação nativa (sem distorções procedurais e sem espelhamentos acidentais).
-				# A animação é estritamente direita (mixamorig_RightArm).
-				proc.play_baked(anim_res, 0.4 / mult, 0.0) # Animação muito lenta com o charge
-		elif caster.has_method("trigger_recovery_anim"):
-			caster.trigger_recovery_anim("Z")
-			
 	var delay: float = 0.25 * mult
+	# O SOCO AUTORAL (`GuraPoses._z_soco`) no lugar do `right_upper_hook_from_guard`
+	# do Mixamo. Começa ANTES do estrago, para o punho chegar junto com a onda.
+	_pose(caster, "gura_z_soco", GuraPoses.Z_DURACAO, delay - GuraPoses.Z_IMPACTO_EM)
 	var tw := world.create_tween()
 	tw.tween_interval(delay)
 	
@@ -120,10 +146,11 @@ static func _punch(world: Node, origin: Vector3, fwd: Vector3, damage: float, ca
 		# PASSO 5: Efeitos de Câmera (Leve zoom in no impacto, Desfoque Radial)
 		var cam = world.get_viewport().get_camera_3d()
 		if cam:
-			var orig_fov = cam.fov
-			cam.fov -= 12.0 # Leve zoom in
-			var tw_cam = cam.create_tween()
-			tw_cam.tween_property(cam, "fov", orig_fov, 0.4).set_trans(Tween.TRANS_EXPO)
+			pass
+			# var orig_fov = cam.fov
+			# cam.fov -= 12.0 # Leve zoom in
+			# var tw_cam = cam.create_tween()
+			# tw_cam.tween_property(cam, "fov", orig_fov, 0.4).set_trans(Tween.TRANS_EXPO)
 			
 		var sfx := world.get_node_or_null("/root/ScreenFX")
 		if sfx and sfx.has_method("chromatic_pulse"):
@@ -133,72 +160,93 @@ static func _punch(world: Node, origin: Vector3, fwd: Vector3, damage: float, ca
 			var tw_fx = sfx.create_tween()
 			tw_fx.tween_method(sfx.set_borrao, 0.8 * mult, 0.0, 0.4)
 			
-		zone.override_kb_dir = Vector3.UP
+		zone.override_kb_dir = fwd
 		zone.setup(damage * mult, 30.0 * mult, fwd * 22.0, 0.5, caster, 1.8 * mult)   # viaja + knockback ALTO
 	)
 
-# ---------- X: Shockwave — onda de choque radial ----------
-static func _shockwave(world: Node, pos: Vector3, damage: float, caster: Node, charge: float = 0.0) -> void:
-	if is_instance_valid(caster) and caster.has_method("get_node"):
-		var proc = caster.get_node_or_null("ProceduralAnimator")
-		if proc and proc.has_method("play_baked"):
-			var anim_res = load("res://assets/animations/smash.res")
-			if not anim_res:
-				anim_res = load("res://assets/animations/punching.res")
-			if anim_res:
-				proc.play_baked(anim_res, 0.5, 0.0)
-		elif caster.has_method("trigger_recovery_anim"):
-			caster.trigger_recovery_anim("X")
+# ---------- X: Esfera Sísmica (Projétil que explode no impacto) ----------
+static func _shockwave(world: Node, target_pos: Vector3, damage: float, caster: Node, charge: float = 0.0) -> void:
+	# O ARREMESSO AUTORAL no lugar do `punching.res` do Mixamo. A esfera nasce no
+	# mesmo quadro do cast, então a pose começa já no arremesso (sem antecipação):
+	# a puxada por cima do ombro é a CARGA, e ela já aconteceu no `gura_x_charge`.
+	_pose(caster, "gura_x_arremesso", GuraPoses.X_DURACAO, 0.0)
 
 	var mult: float = 1.0 + clampf(charge / 1.5, 0.0, 3.0)
-	var delay: float = 0.3
-	var tw := world.create_tween()
-	tw.tween_interval(delay)
-	tw.tween_callback(func():
-		if not is_instance_valid(world): return
-		var zone := DamageZone.new()
-		world.add_child(zone)
-		zone.global_position = pos
+	var fwd := Vector3.FORWARD
+	var origin_pos := Vector3.ZERO
+	if caster is Node3D:
+		origin_pos = caster.global_position + Vector3.UP * 1.5
+		fwd = (target_pos - origin_pos).normalized()
+	
+	# Cria a zona de dano atuando como projétil
+	var proj := DamageZone.new()
+	proj.is_projectile = true
+	world.add_child(proj)
+	var spawn_pos := origin_pos + fwd * 1.5
+	proj.global_position = spawn_pos
+	if fwd != Vector3.ZERO:
+		proj.look_at(spawn_pos + fwd, Vector3.UP)
 		
-		# PASSO 5: Zoom OUT na Explosão e Tremor Forte
-		var cam = world.get_viewport().get_camera_3d()
-		if cam:
-			var orig_fov = cam.fov
-			cam.fov += 10.0 # Zoom out (expande a visão pra mostrar a enorme área)
-			var tw_cam = cam.create_tween()
-			tw_cam.tween_property(cam, "fov", orig_fov, 0.6).set_trans(Tween.TRANS_EXPO)
+	# Spawn shatter effect vertically at the player's arm during launch
+	GuraShatterMesh.spawn(world, spawn_pos, 1.5 * mult, fwd)
+		
+	# Adiciona o visual da esfera
+	var orb = load("res://src/effects/SeismicOrb.gd").new()
+	orb.charge = charge
+	proj.add_child(orb)
+	
+	# Configura a hitbox móvel
+	proj.setup(0.0, 0.0, fwd * 25.0, 4.0, caster, 3.2) # Raio do projétil dobrado
+	
+	# Intercepta colisões conectando ao sinal nativo `body_entered` para explodir
+	proj.body_entered.connect(func(body: Node3D):
+		if body == caster: return
+		if not is_instance_valid(proj) or proj.vel == Vector3.ZERO: return
+		
+		# Parar o projétil
+		proj.vel = Vector3.ZERO
+		
+		# Treme a esfera antes de explodir
+		var tw = proj.create_tween()
+		var s_mat = orb._orb_mesh.material_override as StandardMaterial3D
+		if s_mat: tw.tween_property(s_mat, "albedo_color:a", 0.9, 0.15)
+		tw.tween_interval(0.15)
+		tw.tween_callback(func():
+			if not is_instance_valid(world): return
+			var pos = proj.global_position
+			proj.queue_free() # Destroi o projétil
 			
-		var sfx := world.get_node_or_null("/root/ScreenFX")
-		if sfx and sfx.has_method("chromatic_pulse"):
-			sfx.chromatic_pulse(1.2 * mult)
+			var zone := DamageZone.new()
+			world.add_child(zone)
+			zone.global_position = pos
 			
-		_ring(zone, 0.8 * mult, 9.0 * mult, QUAKE, 0.55)
-		_ring(zone, 0.4 * mult, 6.0 * mult, Color(1, 1, 1), 0.4)
-		_debris(zone, 0.6, int(60 * mult)) # Detritos massivos da explosão
-		GuraShatterMesh.spawn(zone, zone.global_position, 1.5 * mult)
-		if Engine.has_singleton("ScreenShatterFX"):
-			Engine.get_singleton("ScreenShatterFX").shatter(0.5 * mult, 0.6)
-		elif world.get_node_or_null("/root/ScreenShatterFX"):
-			world.get_node("/root/ScreenShatterFX").shatter(0.5 * mult, 0.6)
-		AudioFX.impact(world, pos, 0.85 * mult)
-		zone.override_kb_dir = Vector3.UP
-		zone.setup(damage * mult, 34.0 * mult, Vector3.ZERO, 0.4, caster, 6.0 * mult)  # estático, raio grande, KB enorme
+			var sfx := world.get_node_or_null("/root/ScreenFX")
+			if sfx and sfx.has_method("chromatic_pulse"):
+				sfx.chromatic_pulse(1.2 * mult)
+				
+			_ring(zone, 0.8 * mult, 9.0 * mult, QUAKE, 0.55)
+			_ring(zone, 0.4 * mult, 6.0 * mult, Color(1, 1, 1), 0.4)
+			_debris(zone, 0.6, int(60 * mult)) # Detritos massivos da explosão
+			
+			if Engine.has_singleton("ScreenShatterFX"):
+				Engine.get_singleton("ScreenShatterFX").shatter(0.5 * mult, 0.6)
+			elif world.get_node_or_null("/root/ScreenShatterFX"):
+				world.get_node("/root/ScreenShatterFX").shatter(0.5 * mult, 0.6)
+				
+			AudioFX.impact(world, pos, 0.85 * mult)
+			
+			# O dano e knockback real da explosão
+			zone.setup(damage * mult, 34.0 * mult, Vector3.ZERO, 0.4, caster, 6.0 * mult)
+		)
 	)
 
 # ---------- C: Eruption — o chão racha e ergue os inimigos ----------
 static func _eruption(world: Node, pos: Vector3, damage: float, caster: Node, charge: float = 0.0) -> void:
-	if is_instance_valid(caster) and caster.has_method("get_node"):
-		var proc = caster.get_node_or_null("ProceduralAnimator")
-		if proc and proc.has_method("play_baked"):
-			var anim_res = load("res://assets/animations/left_uppercut_from_guard.res")
-			if not anim_res:
-				anim_res = load("res://assets/animations/punching.res")
-			if anim_res:
-				proc.play_baked(anim_res, 0.3, 0.0)
-		elif caster.has_method("trigger_recovery_anim"):
-			caster.trigger_recovery_anim("C")
-
 	var delay: float = 0.4
+	# KABUTSUCHI AUTORAL. O clipe antigo era o `left_uppercut_from_guard` — um
+	# gancho de BAIXO PARA CIMA enquanto o chão rachava, ou seja, a animação
+	# contava a história ao contrário. Agora os braços descem sobre a cratera.
+	_pose(caster, "gura_c_kabutsuchi", GuraPoses.C_DURACAO, delay - GuraPoses.C_IMPACTO_EM)
 	var tw := world.create_tween()
 	tw.tween_interval(delay)
 	tw.tween_callback(func():
@@ -215,8 +263,7 @@ static func _eruption(world: Node, pos: Vector3, damage: float, caster: Node, ch
 		elif world.get_node_or_null("/root/ScreenShatterFX"):
 			world.get_node("/root/ScreenShatterFX").shatter(0.6, 0.7)
 		AudioFX.impact(world, zone.global_position, 0.9)
-		zone.override_kb_dir = Vector3.UP
-		zone.setup(damage, 30.0, Vector3.ZERO, 0.5, caster, 5.0) # Erupção joga MUITO para cima
+		zone.setup(damage, 30.0, Vector3.ZERO, 0.5, caster, 5.0) # Erupção radial
 	)
 
 # ---------- V: Seaquake / Tsunamis Duplos (ultimate) ----------

@@ -120,67 +120,89 @@ static func _kurouzu(world: Node, origin: Vector3, dir: Vector3, damage: float, 
 	var fwd := dir.normalized()
 	if caster and caster is CharacterBody3D:
 		caster.set_meta("custom_pose", "kurouzu")
-		if caster.has_method("lock_movement"):
-			caster.lock_movement(3.2, "kurouzu")
-		# Limpa a pose após o ataque
-		var tw_caster := world.create_tween()
-		tw_caster.tween_interval(3.2)
-		tw_caster.tween_callback(func():
-			if is_instance_valid(caster) and caster.get_meta("custom_pose", "") == "kurouzu":
-				caster.set_meta("custom_pose", "")
-		)
+		# Congelamento agora depende de `cast_controller`. Não forçamos lock_movement temporal.
 
-	# Efeito de vórtice negro estendido da mão com Anéis de Disco de Acréscimo (Accretion Disks)
+	# Mini buraco negro (VOID_BLACK minúsculo) focado na palma da mão
 	var vortex_root := Node3D.new()
 	world.add_child(vortex_root)
-	var palm_pos := origin + fwd * 1.2
+	var palm_pos: Vector3
+	if caster.has_method("get_right_hand_position"):
+		palm_pos = caster.get_right_hand_position()
+	else:
+		palm_pos = origin + fwd * 1.2
 	vortex_root.global_position = palm_pos
 
-	var sm := SphereMesh.new()
-	sm.radius = 0.9
-	sm.height = 1.8
-	var sphere_inst := MeshInstance3D.new()
-	sphere_inst.mesh = sm
-	sphere_inst.material_override = FxUtil.particle_material(VOID_BLACK, 6.0, true)
-	vortex_root.add_child(sphere_inst)
-
-	# Anel 1 de Gravidade (Disco de Acréscimo Violeta)
-	var ring1 := MeshInstance3D.new()
-	var tr1 := TorusMesh.new()
-	tr1.inner_radius = 1.1
-	tr1.outer_radius = 1.5
-	tr1.rings = 32
-	tr1.ring_segments = 16
-	ring1.mesh = tr1
-	var m_ring := StandardMaterial3D.new()
-	m_ring.albedo_color = GLOW_VIOLET
-	m_ring.emission_enabled = true
-	m_ring.emission = GLOW_VIOLET
-	m_ring.emission_energy_multiplier = 5.0
-	ring1.material_override = m_ring
-	vortex_root.add_child(ring1)
-
-	# Anel 2 de Gravidade (Inclinado)
-	var ring2 := MeshInstance3D.new()
-	var tr2 := TorusMesh.new()
-	tr2.inner_radius = 1.4
-	tr2.outer_radius = 1.8
-	tr2.rings = 32
-	tr2.ring_segments = 16
-	ring2.mesh = tr2
-	ring2.material_override = m_ring
-	ring2.rotation_degrees = Vector3(45, 0, 30)
-	vortex_root.add_child(ring2)
+	# Carrega o modelo 3D do buraco negro
+	var glb_scene: PackedScene = load("res://assets/models/yami_blackhole.glb")
+	var r1: MeshInstance3D = null
+	var r2: MeshInstance3D = null
+	
+	if glb_scene:
+		var glb_inst = glb_scene.instantiate()
+		glb_inst.scale = Vector3(0.2, 0.2, 0.2) # Escala do asset na mão
+		
+		# Aplica os materiais designados pelos Agentes
+		var mat_void := StandardMaterial3D.new()
+		mat_void.albedo_color = VOID_BLACK
+		mat_void.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		
+		var mat_disk := StandardMaterial3D.new()
+		mat_disk.albedo_color = DARK_PURPLE
+		mat_disk.emission_enabled = true
+		mat_disk.emission = GLOW_VIOLET
+		mat_disk.emission_energy_multiplier = 4.0
+		mat_disk.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat_disk.albedo_color.a = 0.8
+		mat_disk.cull_mode = BaseMaterial3D.CULL_DISABLED
+		
+		var mat_aura := StandardMaterial3D.new()
+		mat_aura.albedo_color = GLOW_VIOLET
+		mat_aura.emission_enabled = true
+		mat_aura.emission = GLOW_VIOLET
+		mat_aura.emission_energy_multiplier = 1.5
+		mat_aura.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat_aura.albedo_color.a = 0.3
+		mat_aura.cull_mode = BaseMaterial3D.CULL_DISABLED
+		
+		var mat_ring := StandardMaterial3D.new()
+		mat_ring.albedo_color = Color(0.8, 0.4, 1.0, 1.0)
+		mat_ring.emission_enabled = true
+		mat_ring.emission = Color(0.9, 0.6, 1.0, 1.0)
+		mat_ring.emission_energy_multiplier = 8.0
+		mat_ring.cull_mode = BaseMaterial3D.CULL_DISABLED
+		
+		for child in glb_inst.get_children():
+			if child is MeshInstance3D:
+				if "Singularity" in child.name:
+					child.material_override = mat_void
+				elif "Disk" in child.name:
+					child.material_override = mat_disk
+				elif "Aura" in child.name:
+					child.material_override = mat_aura
+				elif "Ring" in child.name:
+					child.material_override = mat_ring
+					if "1" in child.name: r1 = child as MeshInstance3D
+					if "2" in child.name: r2 = child as MeshInstance3D
+		
+		vortex_root.add_child(glb_inst)
+	else:
+		var sm := SphereMesh.new()
+		sm.radius = 0.2
+		sm.height = 0.4
+		var sphere_inst := MeshInstance3D.new()
+		sphere_inst.mesh = sm
+		sphere_inst.material_override = FxUtil.particle_material(VOID_BLACK, 6.0, true)
+		vortex_root.add_child(sphere_inst)
 
 	var pm := ParticleProcessMaterial.new()
 	pm.direction = fwd
 	pm.spread = 45.0
-	pm.initial_velocity_min = -6.0
-	pm.initial_velocity_max = -14.0 # Puxa para a mão de forma concentrada
-	pm.scale_min = 0.2
-	pm.scale_max = 0.7 # Tamanho reduzido para manter a visão do jogador clara
+	pm.initial_velocity_min = -4.0
+	pm.initial_velocity_max = -8.0 
+	pm.scale_min = 0.1
+	pm.scale_max = 0.4 
 	pm.color_ramp = FxUtil.gradient([GLOW_VIOLET, DARK_PURPLE, VOID_BLACK])
-	vortex_root.add_child(FxUtil.particles(80, 0.6, true, pm, FxUtil.grain(0.5)))
+	vortex_root.add_child(FxUtil.particles(40, 0.4, true, pm, FxUtil.grain(0.5)))
 
 	AudioFX.whoosh(world, palm_pos, 0.6)
 
@@ -197,7 +219,6 @@ static func _kurouzu(world: Node, origin: Vector3, dir: Vector3, damage: float, 
 	vortex_root.add_child(vortex_zone)
 	vortex_zone.setup(damage, 6.0, Vector3.ZERO, KUROUZU_DURATION, caster, KUROUZU_RADIUS)
 
-	# Procura jogador / inimigo mais próximo no alcance (~28m)
 	var target := _find_closest_entity(world, caster, origin, 28.0)
 	if target:
 		print("🌑 ESPIRAL NEGRA (Kurouzu)! ", target.name, " atraído para a mão do usuário e com poderes/ataques negados!")
@@ -207,23 +228,8 @@ static func _kurouzu(world: Node, origin: Vector3, dir: Vector3, damage: float, 
 		if target.has_method("suppress_skills_temporarily"):
 			target.suppress_skills_temporarily(4.0)
 
-		var ctrl := KurouzuController.new(caster, target, fwd, damage, vortex_root, ring1, ring2)
-		world.add_child(ctrl)
-	else:
-		# Se não houver alvo, destrói o VFX e libera o movimento rapidamente (0.5s)
-		if is_instance_valid(caster):
-			if "movement_locked_timer" in caster:
-				caster.movement_locked_timer = 0.5
-			elif "_movement_locked_timer" in caster:
-				caster._movement_locked_timer = 0.5
-		var tw := world.create_tween()
-		tw.tween_interval(0.5)
-		tw.tween_callback(func():
-			if is_instance_valid(vortex_root):
-				vortex_root.queue_free()
-			if is_instance_valid(caster) and caster.get_meta("custom_pose", "") == "kurouzu":
-				caster.set_meta("custom_pose", "")
-		)
+	var ctrl := KurouzuController.new(caster, target, fwd, damage, vortex_root, r1, r2)
+	world.add_child(ctrl)
 
 # ---------- C: Black Hole ----------
 static func _black_hole(world: Node, origin: Vector3, damage: float, caster: Node) -> void:
@@ -425,6 +431,12 @@ class KurouzuController extends Node:
 	var ring2: MeshInstance3D
 	var elapsed := 0.0
 	const DURATION := 3.0
+	
+	var scan_timer := 0.0
+	var cached_los := false
+	var cached_blocks: Array[Node] = []
+	var state := 0
+	var capture_timer := 0.0
 
 	func _init(c: Node3D, t: Node3D, f: Vector3, d: float, v: Node3D, r1: MeshInstance3D = null, r2: MeshInstance3D = null) -> void:
 		caster = c
@@ -443,9 +455,25 @@ class KurouzuController extends Node:
 				caster._movement_locked_timer = 0.0
 			if caster.has_meta("custom_pose") and caster.get_meta("custom_pose") == "kurouzu":
 				caster.set_meta("custom_pose", "")
+			if caster.has_meta("is_casting"):
+				caster.set_meta("is_casting", false)
 
-	func _process(delta: float) -> void:
+	func _exit_tree() -> void:
+		_unlock_caster()
+		if is_instance_valid(target):
+			target.set_meta("in_kurouzu", false)
+			target.set_meta("yami_silenced", false)
+		if is_instance_valid(vortex_root) and not vortex_root.is_queued_for_deletion():
+			vortex_root.queue_free()
+
+	func _physics_process(delta: float) -> void:
 		elapsed += delta
+		scan_timer -= delta
+		var do_scan := false
+		if scan_timer <= 0.0:
+			do_scan = true
+			scan_timer = 0.15 # 150ms throttle timer for scanning/raycasts
+
 		if is_instance_valid(ring1):
 			ring1.rotation.y += 14.0 * delta
 			ring1.rotation.x += 4.0 * delta
@@ -453,46 +481,140 @@ class KurouzuController extends Node:
 			ring2.rotation.y -= 16.0 * delta
 			ring2.rotation.z += 6.0 * delta
 
-		if elapsed >= DURATION or not is_instance_valid(target) or not is_instance_valid(caster):
-			_unlock_caster()
-			if is_instance_valid(target):
-				target.set_meta("in_kurouzu", false)
-				target.set_meta("yami_silenced", false)
-				if target.has_method("take_damage"):
-					target.take_damage(damage, caster.global_position if is_instance_valid(caster) else Vector3.ZERO, fwd * 18.0 + Vector3.UP * 4.0)
-				if get_tree() and get_tree().current_scene:
-					AudioFX.impact(get_tree().current_scene, target.global_position, 0.8)
-			if is_instance_valid(vortex_root):
-				vortex_root.queue_free()
+		# Aborta se caster não existir, se o target não existir, ou se "yami_kurouzu_active" foi desativado no caster (hold release / dano)
+		var hold_active = true
+		if is_instance_valid(caster) and caster.has_meta("yami_kurouzu_active"):
+			hold_active = caster.get_meta("yami_kurouzu_active", true)
+		elif not is_instance_valid(caster):
+			hold_active = false
+		
+		if not is_instance_valid(caster):
 			queue_free()
 			return
 
-		# Posição na palma da mão do usuário
-		var palm_pos: Vector3 = caster.global_position + fwd * 1.4 + Vector3.UP * 1.1
-		target.global_position = target.global_position.lerp(palm_pos, 1.0 - exp(-15.0 * delta))
+		var current_fwd: Vector3 = -caster.global_transform.basis.z.normalized()
+		var palm_pos: Vector3
+		if caster.has_method("get_right_hand_position"):
+			palm_pos = caster.get_right_hand_position()
+		else:
+			palm_pos = caster.global_position + current_fwd * 1.4 + Vector3.UP * 1.1
+
+		if state == 0:
+			if elapsed >= 5.0 or not hold_active:
+				if is_instance_valid(caster):
+					caster.set_meta("yami_kurouzu_active", false)
+					if caster.has_method("pedir_cancelar_hold"):
+						caster.pedir_cancelar_hold("X")
+				queue_free()
+				return
+		else:
+			capture_timer += delta
+			if capture_timer >= 3.0 or not hold_active:
+				_throw_target(current_fwd, palm_pos)
+				queue_free()
+				return
 		if is_instance_valid(vortex_root):
 			vortex_root.global_position = palm_pos
 
-		# Garante anulação de habilidades e imersão na atração
-		target.set_meta("in_kurouzu", true)
-		target.set_meta("yami_silenced", true)
+		# 1. Sucção de blocos Yami no ambiente (area = 28.0)
+		var cnt: int = caster.get_meta("yami_absorbed_blocks", 0) if is_instance_valid(caster) else 0
+		var pull_strength := 12.0 * delta
+		var tree = get_tree()
+		if do_scan and tree:
+			cached_blocks = tree.get_nodes_in_group("yami_blocks")
+			
+		for blk in cached_blocks:
+			if blk is Node3D and is_instance_valid(blk):
+					var d_blk = blk.global_position.distance_to(palm_pos)
+					if d_blk <= 28.0:
+						var b_dir = (palm_pos - blk.global_position).normalized()
+						if "velocity" in blk:
+							blk.velocity = blk.velocity.lerp(b_dir * 25.0, pull_strength)
+						else:
+							blk.global_position = blk.global_position.move_toward(palm_pos, 15.0 * delta)
+						
+						if d_blk <= 1.5:
+							if blk.has_method("despawn"): blk.despawn()
+							else: blk.queue_free()
+							cnt += 1
+		if is_instance_valid(caster):
+			caster.set_meta("yami_absorbed_blocks", cnt)
 
-		# Arremessar o inimigo com UM GRANDE KNOCKBACK ao clicar com o botão esquerdo do mouse!
-		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and elapsed > 0.25 and is_instance_valid(target):
-			var throw_dir: Vector3 = fwd
+		# 2. Lógica principal do alvo (Player/Inimigo)
+		if not is_instance_valid(target) and do_scan and get_tree() and get_tree().current_scene:
+			target = YamiFX._find_closest_entity(get_tree().current_scene, caster, palm_pos, 28.0)
+			if target:
+				print("🌑 Kurouzu prendeu o alvo durante o hold: ", target.name)
+				target.set_meta("in_kurouzu", true)
+				StatusFX.aplicar(target, StatusFX.SUGADO, 3.2)
+				target.set_meta("yami_silenced", true)
+				if target.has_method("suppress_skills_temporarily"):
+					target.suppress_skills_temporarily(4.0)
+
+		if is_instance_valid(target):
+			var dist = target.global_position.distance_to(palm_pos)
+			
+			# Oclusão / Line of Sight
+			if do_scan:
+				cached_los = true
+				if target.is_inside_tree() and target.get_world_3d():
+					var space_state = target.get_world_3d().direct_space_state
+					var query = PhysicsRayQueryParameters3D.create(target.global_position + Vector3.UP * 1.0, palm_pos)
+					var ex = []
+					if caster is CollisionObject3D: ex.append(caster.get_rid())
+					if target is CollisionObject3D: ex.append(target.get_rid())
+					query.exclude = ex
+					query.collision_mask = 1 # Considera apenas mapa base e props físicos da layer 1
+					var result = space_state.intersect_ray(query)
+					if result and not result.is_empty():
+						cached_los = false
+
+			if cached_los:
+				target.set_meta("in_kurouzu", true)
+				target.set_meta("yami_silenced", true)
+				
+				if caster.is_multiplayer_authority():
+					if state == 1:
+						if "velocity" in target:
+							target.velocity = Vector3.ZERO
+							if target.has_method("move_and_slide"):
+								target.move_and_slide()
+						target.global_position = target.global_position.lerp(palm_pos, 25.0 * delta)
+					else:
+						var pull_dir = (palm_pos - target.global_position).normalized()
+						if "velocity" in target:
+							target.velocity = target.velocity.lerp(pull_dir * 22.0, pull_strength)
+							if target.has_method("move_and_slide"):
+								target.move_and_slide()
+						else:
+							target.global_position = target.global_position.move_toward(palm_pos, 22.0 * delta)
+				
+				# Captura Automática se colidir com o buraco negro (dist < 1.4m)
+				if dist < 1.4 and state == 0:
+					state = 1
+					print("🌑 Alvo capturado pelo Kurouzu!")
+			else:
+				# Bloqueado: Não é puxado
+				target.set_meta("in_kurouzu", false)
+				target.set_meta("yami_silenced", false)
+
+	func _throw_target(current_fwd: Vector3, palm_pos: Vector3) -> void:
+		if is_instance_valid(target):
+			target.set_meta("in_kurouzu", false)
+			target.set_meta("yami_silenced", false)
+			
+			var throw_dir: Vector3 = current_fwd
 			if is_instance_valid(caster) and "_cam" in caster and is_instance_valid(caster._cam):
 				throw_dir = -caster._cam.global_transform.basis.z.normalized()
 			elif is_instance_valid(caster) and "rotation" in caster:
 				throw_dir = -caster.global_transform.basis.z.normalized()
 			
-			_unlock_caster() # <--- LIBERA O JOGADOR IMEDIATAMENTE PARA SE MOVER!
-			target.set_meta("in_kurouzu", false)
-			target.set_meta("yami_silenced", false)
-			var mega_kb: Vector3 = throw_dir * 45.0 + Vector3.UP * 10.0
-			if target.has_method("take_damage"):
-				target.take_damage(damage * 1.5, palm_pos, mega_kb)
-			elif "velocity" in target:
-				target.velocity = mega_kb
+			if caster.is_multiplayer_authority():
+				var mega_kb: Vector3 = throw_dir * 45.0 + Vector3.UP * 10.0
+				if target.has_method("take_damage"):
+					target.take_damage(damage * 1.5, palm_pos, mega_kb)
+				elif "velocity" in target:
+					target.velocity = mega_kb
 			
 			if get_tree() and get_tree().current_scene:
 				AudioFX.impact(get_tree().current_scene, target.global_position, 0.6)
@@ -512,15 +634,14 @@ class KurouzuController extends Node:
 				root_fx.position = target.global_position
 				root_fx.add_child(burst)
 				get_tree().current_scene.add_child(root_fx)
-				# Mesmo vazamento da poeira do YamiBlock: nó de VFX solto na cena e
-				# nunca liberado. Um por arremesso do Kurouzu.
-				FxUtil.autofree(root_fx, 0.8)   # o burst one_shot dura 0.5s
-			
-			print("💥 KURUOZU RELEASE: Inimigo arremessado com MEGA KNOCKBACK e jogador liberado para mover!")
-			if is_instance_valid(vortex_root):
-				vortex_root.queue_free()
-			queue_free()
-			return
+				FxUtil.autofree(root_fx, 0.8)
+		
+		if is_instance_valid(caster):
+			caster.set_meta("yami_kurouzu_active", false)
+			if caster.has_method("pedir_cancelar_hold"):
+				caster.pedir_cancelar_hold("X")
+		
+		print("💥 KURUOZU RELEASE: Inimigo arremessado com MEGA KNOCKBACK automático!")
 
 
 class BlackHoleController extends Node:
@@ -728,6 +849,10 @@ class BlackHoleController extends Node:
 			AudioFX.impact(get_tree().current_scene, center, 0.6)
 		queue_free()
 
+	func _exit_tree() -> void:
+		caster = null
+		pool = null
+
 
 class YamiBlock extends Node3D:
 	var velocity := Vector3.ZERO
@@ -735,8 +860,9 @@ class YamiBlock extends Node3D:
 	var damage := 15.0
 	var landed := false
 	var caster: Node
-	var hit_targets := []
+	var hit_targets: Array[Node3D] = []
 	var mesh_inst: MeshInstance3D
+	var _cached_targets: Array = []
 
 	func _init(d: float, c: Node) -> void:
 		damage = maxf(d * 0.25, 12.0)
@@ -751,6 +877,8 @@ class YamiBlock extends Node3D:
 		mesh_inst.material_override = YamiFX.get_shared_block_mat()
 		mesh_inst.scale = Vector3(randf_range(0.5, 1.3), randf_range(0.5, 1.3), randf_range(0.5, 1.3))
 		add_child(mesh_inst)
+		if get_tree():
+			_cached_targets = get_tree().get_nodes_in_group("enemy") + get_tree().get_nodes_in_group("player")
 
 	func despawn() -> void:
 		if get_tree() == null or not is_inside_tree():
@@ -760,6 +888,12 @@ class YamiBlock extends Node3D:
 		var tw := create_tween()
 		tw.tween_property(self, "scale", Vector3.ZERO, 0.4).set_trans(Tween.TRANS_SINE)
 		tw.tween_callback(queue_free)
+
+	func _exit_tree() -> void:
+		hit_targets.clear()
+		_cached_targets.clear()
+		caster = null
+		mesh_inst = null
 
 	func _physics_process(delta: float) -> void:
 		if landed:
@@ -776,7 +910,7 @@ class YamiBlock extends Node3D:
 		# direto. Os inimigos estão em `disabled/` desde 2026-08-10, então na
 		# prática o laço não pegava ninguém além do boneco de treino.
 		if get_tree():
-			for e in get_tree().get_nodes_in_group("enemy") + get_tree().get_nodes_in_group("player"):
+			for e in _cached_targets:
 				if not (e is Node3D) or e in hit_targets or e == caster:
 					continue
 				if global_position.distance_to(e.global_position + Vector3.UP * 0.8) < 1.8:

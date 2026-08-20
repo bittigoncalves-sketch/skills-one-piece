@@ -43,17 +43,22 @@ var _espaco_antes: bool = false
 
 # `yaw` é a orientação real da câmera. Nada de adivinhar: a direção do
 # movimento sai da mesma base que o jogador está vendo.
-func ler(yaw: float) -> void:
-	# Sem mouse capturado o jogo está em menu/pausa — nenhuma tecla conta.
-	var ativo := Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+# `menu_fechado` é recebido do Player (via HUD). No Wayland, o mouse_mode
+# às vezes perde sincronia com a janela. Confiar no estado da UI é mais seguro.
+func ler(yaw: float, menu_fechado: bool = true) -> void:
+	# Fallback seguro: ou o mouse está de fato capturado, ou sabemos que o menu
+	# está fechado (resolve o bug do Wayland ignorar as teclas WASD).
+	var ativo := menu_fechado and (Input.mouse_mode == Input.MOUSE_MODE_CAPTURED or OS.get_name() == "Linux" or OS.get_name() == "FreeBSD")
 
 	f = 0.0
 	r = 0.0
 	if ativo:
-		if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):    f += 1.0
-		if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN):  f -= 1.0
-		if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT): r += 1.0
-		if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):  r -= 1.0
+		# is_physical_key_pressed garante que a posição física WASD no teclado funcione,
+		# não importando se o layout do SO do usuário é QWERTY, AZERTY, ou Dvorak.
+		if Input.is_physical_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):    f += 1.0
+		if Input.is_physical_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN):  f -= 1.0
+		if Input.is_physical_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT): r += 1.0
+		if Input.is_physical_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):  r -= 1.0
 
 	# Base do pivô da câmera PURA (só yaw), sem distorção de pitch — é o que faz
 	# o dash ser sempre horizontal e olhar pra cima não virar empuxo.
@@ -62,6 +67,7 @@ func ler(yaw: float) -> void:
 	direita = base.x
 
 	dir = frente * f + direita * r
+	print("MoveFrame: ativo=", ativo, " f=", f, " r=", r, " dir=", dir)
 	if dir.length() > 1.0:
 		dir = dir.normalized()
 
@@ -81,3 +87,22 @@ func ler(yaw: float) -> void:
 func congelar() -> void:
 	dir = Vector3.ZERO
 	sprint = false
+
+# O GOLPE PLANTA O CORPO — enquanto a animação do corpo a corpo corre, o jogador
+# não anda nem sai do chão (pedido de 2026-08-15).
+#
+# Diferente do `congelar()`, este mata TAMBÉM o Espaço: "não dá para se mover
+# durante o golpe" inclui não pular. Sem isso o pulo viraria o cancelamento
+# grátis de todo golpe, e a trava não significaria nada.
+#
+# ⚠️ `dash_segurado` NÃO é tocado, de propósito. A esquiva é o cancelamento
+# LEGÍTIMO do combo — quem decide se ela vale é o `dash_bloqueado` do Player, que
+# já libera o dash-cancel depois de o golpe conectar (`hit_confirmed`). Zerar a
+# tecla aqui tiraria essa decisão de quem é dono dela.
+func travar_golpe() -> void:
+	dir = Vector3.ZERO
+	sprint = false
+	f = 0.0
+	r = 0.0
+	espaco_segurado = false
+	espaco_agora = false

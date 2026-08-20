@@ -86,6 +86,12 @@ func _start_server_content() -> void:
 	auto_dummy.name = "AutoDummy"
 	auto_dummy.position = Vector3(4, 4, -8)   # Ao lado do primeiro dummy
 	add_child(auto_dummy)
+	
+	var sword := Area3D.new()
+	sword.set_script(load("res://src/items/SwordPickup.gd"))
+	sword.name = "SwordPickup"
+	sword.position = Vector3(2, 4, -2) # Próximo do spawn do jogador
+	add_child(sword)
 
 func _spawn_player_for(id: int) -> void:
 	var data := {"id": id, "pos": [0, 4, 0]}   # clareira central
@@ -101,6 +107,7 @@ func _despawn_player_for(id: int) -> void:
 
 # Determinística pelos dados: roda no servidor E em cada cliente (via spawner).
 func _spawn_player_data(data: Dictionary) -> Node:
+	print("[Main] _spawn_player_data chamado com data=", data)
 	var id := int(data.get("id", 1))
 	var pos: Array = data.get("pos", [0, 4, 0])
 	var player := CharacterBody3D.new()
@@ -117,7 +124,7 @@ func _spawn_player_data(data: Dictionary) -> Node:
 	# cliente" — dava para atribuir ao bug da HUD o que era falta de fruta.
 	# Escolha por-jogador continua sendo fase futura; o ponto aqui é que os dois
 	# lados comecem iguais.
-	player.call_deferred("equip_fruit", "gura_gura")
+	player.call_deferred("equip_fruit", "bara_bara")
 	return player
 
 func _make_player_sync() -> MultiplayerSynchronizer:

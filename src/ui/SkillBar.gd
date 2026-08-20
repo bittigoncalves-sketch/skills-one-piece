@@ -107,7 +107,7 @@ func _process(_delta: float) -> void:
 	if get_tree() == null:
 		return
 	var player := PlayerScript.local_player(get_tree())
-	if not player or not ("_skill_cooldowns" in player):
+	if not is_instance_valid(player) or not ("_skill_cooldowns" in player):
 		return
 	for slot in SLOTS:
 		if _skill_labels.has(slot) and player._skill_cooldowns.has(slot):

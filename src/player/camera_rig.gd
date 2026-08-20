@@ -41,7 +41,7 @@ const SHOULDER_RIGHT := 1.1   # deslocamento p/ o ombro direito
 # a intensidade escala todos juntos, então afinar não desmonta os degraus. Em
 # 1.0 a variação era de 22° — forte demais em jogo. Em 0.10 sobra ~2,2°: o FOV
 # respira sem chamar atenção.
-const FOV_INTENSIDADE := 0.10
+const FOV_INTENSIDADE := 0.0
 const FOV_BASE := 68.0
 const FOV_G_ANDANDO := 4.0
 const FOV_G_CORRENDO := 12.0
@@ -84,6 +84,8 @@ func montar(dono: CollisionObject3D, ativa: bool) -> void:
 	_cam.near = 0.05
 	_cam.current = ativa
 	_spring.add_child(_cam)
+	if ativa:
+		_cam.make_current()
 	aplicar_perspectiva()
 
 # A Camera3D, para quem precisa da direção da mira (tiro, raycast, alvo).
@@ -102,7 +104,7 @@ func pedir_shake(quantidade: float) -> void:
 # Soco de FOV (zoom rápido no impacto). Era escrito direto por três domínios —
 # ver o cabeçalho.
 func pedir_fov_punch(quantidade: float) -> void:
-	_fov_punch = maxf(_fov_punch, quantidade)
+	pass # _fov_punch = maxf(_fov_punch, quantidade) # Desabilitado a pedido (distorção)
 
 # Onde a câmera olha. O yaw/pitch continuam sendo do Player, porque quem os
 # escreve é o INPUT (e a mira assistida das armas) — o rig só aponta.
@@ -155,21 +157,13 @@ func atualizar(delta: float, velocidade: Vector3, vel_ref: float, no_chao: bool,
 	_cam.v_offset = lerpf(_cam.v_offset, sy + absf(sin(_bob_t)) * amp, 0.5)
 
 	# ------------------------------------------------------------------ FOV
-	_fov_punch = maxf(_fov_punch - delta * 22.0, 0.0)
-	var ganho := 0.0
-	if spd > 0.05:
-		ganho = lerpf(FOV_G_ANDANDO, FOV_G_CORRENDO, clampf(spd, 0.0, 1.0))
-		if sprint:
-			ganho = lerpf(ganho, FOV_G_SPRINT, clampf((spd - 0.7) / 0.5, 0.0, 1.0))
-	if not no_chao:
-		ganho += FOV_G_AR                    # no ar abre um pouco: sensação de queda
-	var alvo_fov: float = FOV_BASE + ganho * FOV_INTENSIDADE - _fov_punch
-	# A luneta SOBRESCREVE o FOV de velocidade de propósito: mirar tem prioridade
-	# sobre "respirar".
+	# A pedido do usuário, o FOV dinâmico e o soco de FOV foram removidos do jogo por completo.
+	# Apenas a luneta altera o FOV.
+	var alvo_fov: float = FOV_BASE
+	
 	if luneta:
 		alvo_fov = FOV_LUNETA
-	# Abre RÁPIDO e fecha DEVAGAR. Simétrico dá a impressão de a câmera respirar
-	# junto com cada tranco do passo.
+		
 	var vel_fov := 9.0 if alvo_fov > _cam.fov else 3.5
 	_cam.fov = lerpf(_cam.fov, alvo_fov, vel_fov * delta)
 
@@ -199,3 +193,8 @@ func _efeitos_de_tela(spd: float, sprint: bool) -> void:
 	ScreenFX.set_speed_lines(clampf((v - 0.50) * 0.8, 0.0, 0.4))
 	ScreenFX.set_aberracao_base(clampf((v - 0.62) * 0.8, 0.0, 0.3))
 	ScreenFX.set_vignette(clampf((v - 0.70) * 0.6, 0.0, 0.2))
+
+func _exit_tree() -> void:
+	_ombro = null
+	_spring = null
+	_cam = null

@@ -39,10 +39,10 @@ static func get_fruit_skills() -> Dictionary:
 			"V": {"nome": "Inferno", "cor": Color(1.0, 0.1, 0.0), "dano": 90, "cooldown": 60.0}
 		},
 		"bara_bara": {
-			"Z": {"nome": "Bara Bara Ho", "cor": Color(0.9, 0.3, 0.7), "dano": 22, "cooldown": 5.0},
-			"X": {"nome": "Bara Bara Senbei", "cor": Color(0.8, 0.2, 0.6), "dano": 38, "cooldown": 7.0},
-			"C": {"nome": "Bara Bara Car", "cor": Color(1.0, 0.4, 0.8), "dano": 35, "cooldown": 10.0},
-			"V": {"nome": "Bara Bara Festival", "cor": Color(0.95, 0.15, 0.75), "dano": 75, "cooldown": 60.0}
+			"Z": {"nome": "Corte Único (Dismantle)", "cor": Color(0.8, 0.1, 0.1), "dano": 35, "cooldown": 5.0},
+			"X": {"nome": "Buggy Ball", "cor": Color(1.0, 0.0, 0.0), "dano": 50, "cooldown": 7.0},
+			"C": {"nome": "Área Cortante (Cleave)", "cor": Color(0.6, 0.0, 0.0), "dano": 25, "cooldown": 10.0},
+			"V": {"nome": "Expansão de Domínio (Shrine)", "cor": Color(0.3, 0.0, 0.0), "dano": 60, "cooldown": 60.0}
 		},
 		"goro_goro": {
 			"Z": {"nome": "Sango (Feixe Elétrico)", "cor": Color(0.95, 0.95, 0.3), "dano": 30, "cooldown": 5.0},
@@ -132,7 +132,7 @@ static func process_void_check(actor: CharacterBody3D) -> bool:
 static func apply_yami_suppression(yami_user: Node3D, all_targets: Array) -> void:
 	var radius := 8.0
 	for t in all_targets:
-		if t != yami_user and t is Node3D:
+		if is_instance_valid(t) and t != yami_user and t is Node3D:
 			var dist := yami_user.global_position.distance_to(t.global_position)
 			if dist <= radius:
 				if t.has_method("suppress_skills_temporarily"):
