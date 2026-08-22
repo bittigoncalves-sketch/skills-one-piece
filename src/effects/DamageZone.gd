@@ -35,6 +35,10 @@ var caster: Node = null
 # `tools/dev_tests/`, que criam zonas sem passar pela tabela.
 var cast_id: int = 0
 var teto: float = 0.0
+# Parte do teto guardada para o acerto de clímax, e se ESTA zona é ele.
+# Carimbados por `DamageSpec.marcar(zona, e_climax)`.
+var reserva: float = 0.0
+var reservado: bool = false
 var override_kb_dir: Vector3 = Vector3.ZERO
 var _hit: Dictionary = {}
 var is_weapon_swing: bool = false
@@ -208,7 +212,8 @@ func _on_body(body: Node3D) -> void:
 		# Dano e knockback são mecânicas separadas neste jogo — quem mata é o
 		# buraco do mapa — e um golpe que parasse de empurrar ao esgotar o teto
 		# perderia a sua função principal.
-		CombatResolver.aplicar(body, damage, cast_id, teto, global_position, kb, hitstun)
+		CombatResolver.aplicar(body, damage, cast_id, teto, global_position, kb, hitstun,
+			reserva, reservado)
 		hit_landed.emit(body)
 		# Crédito de kill: registra quem bateu por último em quem. Se o alvo cair
 		# do mapa nos próximos segundos, a kill é de quem empurrou.

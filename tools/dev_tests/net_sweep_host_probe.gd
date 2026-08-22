@@ -57,6 +57,7 @@ const MUDAS_ESPERADAS := {
 	"gura_gura/Z": "investida: só conjura ao AGARRAR alguém (Player._process_gura_rush)",
 	"bara_bara/C": "hold: exige a meta `bara_cleave_active`, que o roteiro não liga",
 	"bara_bara/V": "domínio fere pelo CombatResolver, sem DamageZone (por desenho)",
+	"mera_mera/C": "vagalumes detonam EM CADEIA com atraso (2 s após o toque, ou 20 s sozinhos) — as hitboxes caem na janela do slot seguinte, e é por isso que o V da Mera aparece inflado",
 }
 
 var _eu: Node = null

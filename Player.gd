@@ -1525,7 +1525,7 @@ func net_force_respawn() -> void:
 
 	# Se o jogador possuía uma fruta, devolve a fruta para a sua árvore
 	if current_fruit_id != "":
-		clear_spawned_skills()
+		limpar_skills_em_todos()
 		FruitNet.respawn(current_fruit_id)
 		current_fruit_id = ""
 		speed_multiplier = 1.0
@@ -1999,6 +1999,29 @@ func _get_skills_container() -> Node3D:
 			add_child.call_deferred(_spawned_skills_container)
 	return _spawned_skills_container
 
+# ⚠️ A LIMPEZA PRECISA ATRAVESSAR A REDE (2026-08-22).
+#
+# `clear_spawned_skills()` varre o contêiner `Skills_<jogador>` do peer em que
+# roda — e `_fire_skill` é a PRESENTATION do golpe: ele roda em TODOS os peers,
+# então cada um tem a sua cópia dos efeitos deste jogador. Limpar só localmente
+# deixava as cópias vivas em todo mundo menos em quem trocou de fruta.
+#
+# Sintoma medido com a sonda de dois processos: os 45 vagalumes da Mera Mera
+# continuavam no HOST depois de o cliente trocar de fruta, e detonavam minutos
+# depois, já durante outra fruta. É o "quando o servidor morre ou troca de fruta
+# a fruta não desespawna as skills" do relato, visto do outro lado.
+#
+# `call_local` para o pedido valer também em quem chamou; sem peer roda direto.
+func limpar_skills_em_todos() -> void:
+	if multiplayer.has_multiplayer_peer():
+		_net_limpar_skills.rpc()
+	else:
+		clear_spawned_skills()
+
+@rpc("any_peer", "call_local", "reliable")
+func _net_limpar_skills() -> void:
+	clear_spawned_skills()
+
 func clear_spawned_skills() -> void:
 	if is_instance_valid(_spawned_skills_container):
 		for c in _spawned_skills_container.get_children():
@@ -2137,7 +2160,7 @@ func equip_fruit(fruit_id: String) -> void:
 	# A fruta ANTERIOR volta para a árvore: trocar de poder devolve o antigo ao
 	# mapa, exatamente como morrer devolve.
 	if fruit_id != current_fruit_id:
-		clear_spawned_skills()
+		limpar_skills_em_todos()
 		if current_fruit_id != "":
 			TreeAndFruitGenerator.respawn_fruit(current_fruit_id)
 		if fruit_id != "":

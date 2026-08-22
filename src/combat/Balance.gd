@@ -74,13 +74,17 @@ const FRUTAS := {
 	"gomu_gomu": {
 		"Z": {"tipo": T.UNICO, "dano": 88.0},
 		"X": {"tipo": T.UNICO, "dano": 176.0},
-		# 16 socos: 15 de 80 e o último de 160. O Gatling sempre concentrou o
-		# estrago no soco final (era `damage * 1.8` contra `* 0.4`), e isso é
-		# leitura de golpe, não número solto — o último soco é o que arremessa.
+		# O Gatling sempre concentrou o estrago no soco final (era `damage * 1.8`
+		# contra `* 0.4`): o último soco é o que ARREMESSA, e isso é leitura de
+		# golpe, não número solto.
 		# ⚠️ `hits` conta só os acertos que valem `dano`; toda parte nomeada é um
-		# acerto ADICIONAL, de valor próprio. Contá-la duas vezes faria a conta do
-		# teste divergir da do golpe.
-		"C": {"tipo": T.MULTI, "dano": 80.0, "hits": 15, "partes": {"final": 160.0}},
+		# acerto ADICIONAL, de valor próprio.
+		# 3 socos de 80 pagos + o FINAL de 144, guardado pela `reserva`. Fecha em
+		# 384, o teto do slot. Os outros 12 socos continuam saindo — eles empurram
+		# e sacodem a tela, mas não tiram vida: é o mesmo trato dos escombros do
+		# Liberation, que ejeta até 25 e paga 8.
+		"C": {"tipo": T.MULTI, "dano": 80.0, "hits": 3,
+			  "partes": {"final": 144.0}, "reserva": 144.0},
 		# A queimadura do Red Hawk varre o grupo "enemies", que está vazio desde
 		# que os inimigos foram desativados. O valor fica declarado para o dia em
 		# que voltarem, mas hoje não alcança ninguém.
@@ -97,7 +101,14 @@ const FRUTAS := {
 	},
 	"mera_mera": {
 		"Z": {"tipo": T.MULTI, "dano": 12.0, "hits": 16},
-		"X": {"tipo": T.UNICO, "dano": 160.0},
+		# ⚠️ VIROU MULTI (2026-08-22). O Hiken sempre teve DUAS partes — o punho e a
+		# explosão no fim do trajeto —, mas só o punho estava declarado. E havia um
+		# incentivo invertido: a explosão nascia num temporizador que só corria se a
+		# zona ainda existisse, então ERRAR rendia a explosão e ACERTAR não.
+		# Agora ela nasce também no ponto de impacto, e a `reserva` garante que o
+		# punho não coma o orçamento dela. 160 + 96 = 256, o teto do slot.
+		"X": {"tipo": T.MULTI, "dano": 160.0, "hits": 1,
+			  "partes": {"explosao": 96.0}, "reserva": 96.0},
 		# Vagalumes de Fogo: Uma nuvem de vagalumes, se um é ativado, explode em cadeia.
 		"C": {"tipo": T.UNICO, "dano": 256.0},
 		# Dai Enkai: Entei (Sol Quadrado)
@@ -128,7 +139,12 @@ const FRUTAS := {
 	"goro_goro": {
 		"Z": {"tipo": T.UNICO, "dano": 84.0},
 		# 11 raios que paralisam + a coluna final, que é a única que arremessa.
-		"X": {"tipo": T.MULTI, "dano": 64.0, "hits": 11, "partes": {"coluna": 128.0}},
+		# 2 raios de 64 pagos + a COLUNA de 128, guardada pela `reserva`: 256, o
+		# teto do slot. Os 11 raios continuam caindo e continuam PARALISANDO — o
+		# que eles deixaram de fazer é comer o orçamento inteiro antes de a coluna
+		# chegar, que era o que zerava o clímax do golpe.
+		"X": {"tipo": T.MULTI, "dano": 64.0, "hits": 2,
+			  "partes": {"coluna": 128.0}, "reserva": 128.0},
 		"C": {"tipo": T.UNICO, "dano": 200.0},
 		"V": {"tipo": T.CARREGADO, "dano": 512.0, "dano_max": 768.0, "tempo_de_carga": 3.0,
 			  "partes": {"orbe": 256.0}},
@@ -148,7 +164,14 @@ const FRUTAS := {
 		# ejetando de 12 a 25, e os que sobram viram só espetáculo. Era exatamente
 		# aqui que estava o pior desequilíbrio do jogo: 25 blocos de dano cru
 		# somavam 1800 contra 2048 de vida.
-		"V": {"tipo": T.MULTI, "dano": 96.0, "hits": 8, "partes": {"onda": 128.0}},
+		# ⚠️ A ONDA TEM RESERVA (2026-08-22). Os escombros são criados ANTES dela
+		# no código (`YamiFX._liberation`), e sem reserva os 8 blocos podiam esgotar
+		# o teto e deixar o repelão em ZERO. Na prática a onda quase sempre chega
+		# primeiro — é instantânea, num raio de 25 m, e os blocos ainda precisam
+		# voar —, mas "quase sempre" é exatamente o tipo de suposição que o teto
+		# existe para não depender. 6 blocos de 96 + onda de 128 = 704.
+		"V": {"tipo": T.MULTI, "dano": 96.0, "hits": 6,
+			  "partes": {"onda": 128.0}, "reserva": 128.0},
 	},
 	"suna_suna": {
 		"Z": {"tipo": T.UNICO, "dano": 92.0},
@@ -229,6 +252,7 @@ static func spec(fruta: String, slot: String) -> DamageSpec:
 	# O teto vem do SLOT, não da skill: é o contrato de balanceamento. Uma skill
 	# só o declara para ficar ABAIXO do slot (o V da Mera, em 640).
 	s.teto = float(linha.get("teto", teto_do_slot(slot)))
+	s.reserva = float(linha.get("reserva", 0.0))
 	_moldes[chave] = s
 	return s
 

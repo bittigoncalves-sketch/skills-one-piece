@@ -36,6 +36,24 @@ var dano: float = 0.0          ## único: o golpe. multi: por hit. carregado: o 
 var dano_max: float = 0.0      ## só CARREGADO — o valor com a carga cheia.
 var hits: int = 1              ## só MULTI — quantos acertos o golpe promete.
 var teto: float = 0.0          ## máximo que UMA conjuração tira de UM alvo. 0 = sem teto.
+
+## Quanto do `teto` fica GUARDADO para o acerto de clímax.
+##
+## ⚠️ POR QUE ISTO EXISTE. O orçamento é consumido em ORDEM DE CHEGADA, e há dois
+## golpes cujo clímax chega POR ÚLTIMO: o soco final do Gatling e a coluna do El
+## Thor. Os acertos pequenos comiam o teto inteiro antes, e o clímax — declarado
+## na tabela como valendo mais — entregava ZERO. Medido: com teto 384 e socos de
+## 80, o orçamento fechava no 5º soco e o 16º (o que arremessa) não tirava nada.
+##
+## As outras skills com parte nomeada não precisam de reserva porque resolvem o
+## mesmo problema de outro jeito: no Liberation e no Ice Age o clímax chega
+## PRIMEIRO, e no Kurouzu a soma fecha exata no teto. A reserva é a saída para
+## quem não pode ter nenhuma das duas — uma barragem não tem como acabar antes
+## de começar.
+##
+## Quem cobra sem `reservado` só enxerga `teto - reserva`; o clímax enxerga o
+## teto inteiro. Ver `CombatResolver.aplicar`.
+var reserva: float = 0.0
 var tempo_de_carga: float = 0.0
 
 ## Sub-valores nomeados, para golpes que têm partes de peso diferente: a coluna
@@ -69,6 +87,7 @@ func para_cast() -> DamageSpec:
 	s.dano_max = dano_max
 	s.hits = hits
 	s.teto = teto
+	s.reserva = reserva
 	s.tempo_de_carga = tempo_de_carga
 	s.partes = partes          # só leitura em todo o jogo; não precisa duplicar
 	s.cast_id = CombatResolver.novo_cast()
@@ -94,11 +113,14 @@ func parte(nome: String, padrao: float = 0.0) -> float:
 
 ## Carimba uma hitbox com esta conjuração. Duas linhas viram uma, e — mais
 ## importante — quem lê o efeito vê que a zona PERTENCE a um golpe com orçamento.
-func marcar(zona: Node) -> void:
+func marcar(zona: Node, e_climax: bool = false) -> void:
 	if zona == null or not is_instance_valid(zona):
 		return
 	zona.cast_id = cast_id
 	zona.teto = teto
+	zona.reserva = reserva
+	# `e_climax` = esta hitbox é a que a reserva estava guardando.
+	zona.reservado = e_climax
 
 func _to_string() -> String:
 	var nome: String = ["unico", "multi", "carregado"][int(tipo)]

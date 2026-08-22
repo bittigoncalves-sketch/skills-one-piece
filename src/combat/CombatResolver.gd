@@ -75,7 +75,8 @@ static func novo_cast() -> int:
 ## (uma bala da pistola da Yami, uma auditoria de `tools/dev_tests/`) e entrega
 ## o valor cheio. Não é um caso degenerado, é o caso do golpe de um acerto só.
 static func aplicar(alvo: Node, dano: float, cast_id: int, teto: float,
-		origem: Vector3, knockback: Vector3 = Vector3.ZERO, hitstun: float = 0.3) -> float:
+		origem: Vector3, knockback: Vector3 = Vector3.ZERO, hitstun: float = 0.3,
+		reserva: float = 0.0, reservado: bool = false) -> float:
 	if alvo == null or not is_instance_valid(alvo):
 		return 0.0
 	if not alvo.has_method("take_damage"):
@@ -83,7 +84,10 @@ static func aplicar(alvo: Node, dano: float, cast_id: int, teto: float,
 
 	var final := maxf(dano, 0.0)
 	if cast_id != 0 and teto > 0.0:
-		final = _cobrar(cast_id, alvo, final, teto)
+		# RESERVA: quem não é o clímax enxerga um teto menor, e é isso que deixa
+		# sobrar orçamento para o acerto que chega por último. Ver `DamageSpec.reserva`.
+		var limite := teto if reservado else maxf(teto - reserva, 0.0)
+		final = _cobrar(cast_id, alvo, final, limite)
 
 	# Sempre chama, mesmo com 0: ver a nota sobre teto x acerto no cabeçalho.
 	alvo.take_damage(final, origem, knockback, hitstun)

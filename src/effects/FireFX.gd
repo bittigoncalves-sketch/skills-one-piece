@@ -325,32 +325,26 @@ static func _hiken(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 			fire.global_position = zone.global_position
 			world.add_child(fire)
 			AudioFX.impact(world, zone.global_position, 1.0)
+		# ⚠️ A EXPLOSÃO NASCE AQUI (2026-08-22), e é isso que corrige o incentivo
+		# invertido. Antes ela vinha de um temporizador de 1,15 s que só corria se
+		# a zona ainda existisse — e como `explode` libera a zona, quem ACERTAVA
+		# perdia a explosão e quem ERRAVA ficava com ela. Errar rendia mais que
+		# acertar. `explode` dispara nos DOIS gatilhos (contato e fim de vida da
+		# zona), então agora a explosão acontece sempre, no ponto certo.
+		var ponto := zone.global_position
 		zone.queue_free()
-		
+		if is_instance_valid(world):
+			FireFXGrande._explosion(world, ponto, spec.parte("explosao", damage * 0.6),
+				caster, spec, true)
+
 	zone.collided_with_any.connect(explode)
 	zone.tree_exiting.connect(explode)
 	
-	# Explosão massiva ao final do trajeto.
-	#
-	# ⚠️ FALTAVA `is_instance_valid(zone)` (corrigido em 2026-08-21). O `explode`
-	# acima faz `zone.queue_free()`, e ele dispara em DOIS gatilhos: contato
-	# (`collided_with_any`) e morte da zona (`tree_exiting`). Quando o Hiken
-	# ACERTA alguém antes de 1,15 s, a zona já não existe quando este temporizador
-	# corre — e a linha lia `zone.global_position` num objeto liberado, o que
-	# derrubava o callback com erro de runtime.
-	#
-	# 📌 DECISÃO EM ABERTO, não corrigida aqui: com a guarda, quem ACERTA perde a
-	# explosão final e quem ERRA fica com ela. Ou seja, errar rende mais dano que
-	# acertar — 160 do punho contra 160 da explosão. Isso é balanceamento, não
-	# defeito de código, e é do dono. O conserto natural seria a explosão nascer
-	# TAMBÉM no ponto de impacto (mover a chamada para dentro do `explode`).
-	var tree := zone.get_tree()
-	if tree:
-		var timer := tree.create_timer(1.15)
-		timer.timeout.connect(func():
-			if is_instance_valid(world) and is_instance_valid(zone):
-				FireFXGrande._explosion(world, zone.global_position, damage, caster, spec)
-		)
+	# ⚠️ O TEMPORIZADOR DE 1,15 s FOI REMOVIDO (2026-08-22). Ele era a única fonte
+	# da explosão, e dependia de a zona estar viva — daí o incentivo invertido
+	# descrito no `explode` acima. O `tree_exiting` da própria zona já cobre o
+	# "fim do trajeto" (ela morre pelo `autofree` da vida dela), então não há
+	# caminho perdido: o golpe explode ao acertar E ao terminar sem acertar.
 
 # ---------- C: Dai Enkai: Entei (Invocação e Disparo do Sol) ----------
 # O usuário convoca um colossal Sol ardente (modelo do onepiece-voxel) acima de si,

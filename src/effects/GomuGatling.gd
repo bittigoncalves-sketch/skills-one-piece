@@ -86,7 +86,10 @@ func _fire_punch() -> void:
 	# Passa Callable() vazio no on_recover para que cada soco individual não dispare o chicote no rig
 	# Os 16 socos recebem a MESMA spec: mesmo `cast_id`, mesmo teto. Quem toma
 	# todos leva 384 (o teto do slot C), não 15x80 + 160 = 1360.
-	gomu.setup(_world, _caster, shoulder, null, punch_dir, punch_len, 0.22, dmg, Callable(), true, knockback, shake, _spec)
+	# ⚠️ `is_last` também diz ao orçamento que ESTE é o clímax. Sem isso o soco
+	# final competia com os 15 anteriores pelo mesmo teto e chegava depois de ele
+	# acabar — entregava ZERO, apesar de a tabela declará-lo como o mais forte.
+	gomu.setup(_world, _caster, shoulder, null, punch_dir, punch_len, 0.22, dmg, Callable(), true, knockback, shake, _spec, is_last)
 	
 func _finish() -> void:
 	if _arm_r: _arm_r.visible = true

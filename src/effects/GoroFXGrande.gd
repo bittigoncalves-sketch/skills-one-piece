@@ -358,7 +358,9 @@ class ElThorController extends Node3D:
 			# A COLUNA vale o dobro de um raio (`partes.coluna`): é o clímax do golpe
 			# e a única parte que arremessa.
 			zona.setup(spec.parte("coluna", spec.dano * 2.0), 22.0, Vector3.ZERO, 3.2, caster, 3.5)
-			spec.marcar(zona)
+			# Clímax: gasta a `reserva`. Os 11 raios que caem antes só enxergam
+			# `teto - reserva`, então sempre sobra orçamento para a coluna.
+			spec.marcar(zona, true)
 			AudioFX.cannon(mundo, global_position, 0.34)
 			AudioFX.impact(mundo, global_position, 0.5)
 			GoroFX._screen_flash(mundo, Color(1.0, 1.0, 0.85), 0.75)

@@ -276,7 +276,7 @@ static func _hibashira_legado(world: Node, pos: Vector3, damage: float, caster: 
 
 # Utilizado pelo Hiken ao final de sua trajetória
 static func _explosion(world: Node, pos: Vector3, damage: float, caster: Node,
-		spec: DamageSpec = null) -> void:
+		spec: DamageSpec = null, e_climax: bool = false) -> void:
 	var zone := DamageZone.new()
 	world.add_child(zone)
 	zone.global_position = pos + Vector3.UP * 1.0
@@ -287,7 +287,7 @@ static func _explosion(world: Node, pos: Vector3, damage: float, caster: Node,
 	zone.add_child(FireFX._embers())
 	zone.setup(damage, 35.0, Vector3.ZERO, 1.6, caster, 6.0)
 	if spec != null:
-		spec.marcar(zone)
+		spec.marcar(zone, e_climax)
 	AudioFX.impact(world, pos, 0.9)
 
 # ==================== CONTROLADOR DO SOL (DAI ENKAI: ENTEI) ====================

@@ -427,7 +427,8 @@ static func _liberation(world: Node, origin: Vector3, dir: Vector3, damage: floa
 	world.add_child(wave)
 	wave.global_position = spawn_center + Vector3.UP * 1.0
 	wave.setup(spec.parte("onda", 128.0), 38.0, Vector3.ZERO, 0.45, caster, LIBERATION_RADIUS)
-	spec.marcar(wave)
+	# Clímax do golpe: gasta a `reserva`, então os escombros nunca a consomem.
+	spec.marcar(wave, true)
 
 	# O tween nasce no PRÓPRIO burst_root, não em `world`: é o nó que ele libera
 	# (mesma correção do GomuRedHawk._spawn_explosion). A autofree é a rede de

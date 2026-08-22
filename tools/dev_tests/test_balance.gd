@@ -32,6 +32,7 @@ func _init() -> void:
 	_carregados()
 	_tetos()
 	_orcamento_corta()
+	_reservas()
 	_tabelas_espelhadas()
 
 	print("\n%d checagens, %d falha(s)." % [_checagens, _falhas])
@@ -161,6 +162,54 @@ func _orcamento_corta() -> void:
 
 	CombatResolver.limpar_tudo()
 	alvo.free()
+
+# ---------------------------------------------------------------------------
+# 7. A RESERVA cobre o clímax, e o clímax cabe no teto.
+#
+# Existe porque o orçamento é gasto em ORDEM DE CHEGADA: num golpe cujo clímax
+# chega por último (o soco final do Gatling, a coluna do El Thor), os acertos
+# pequenos comiam o teto inteiro e o clímax entregava ZERO. Este bloco recusa
+# uma reserva que não cubra a parte que ela deveria estar guardando.
+func _reservas() -> void:
+	print("[7] reserva cobre o clímax")
+	for fruta in Balance.FRUTAS:
+		for slot in Balance.FRUTAS[fruta]:
+			var s := Balance.spec(fruta, slot)
+			var nome := "%s/%s" % [fruta, slot]
+			if s.reserva <= 0.0:
+				continue
+			_ok(s.reserva <= s.teto,
+				"%s: reserva %.0f maior que o teto %.0f" % [nome, s.reserva, s.teto])
+			# A maior parte nomeada é o clímax que a reserva guarda.
+			var maior := 0.0
+			for k in s.partes:
+				maior = maxf(maior, float(s.partes[k]))
+			_ok(maior > 0.0, "%s: tem reserva mas nenhuma parte nomeada" % nome)
+			_ok(s.reserva >= maior,
+				"%s: reserva %.0f menor que o clímax %.0f — ele ainda sairia cortado" % [
+					nome, s.reserva, maior])
+			# Os acertos comuns têm de caber no que sobra, senão a reserva só
+			# empurra o corte para os hits normais.
+			var comum := s.dano * float(s.hits)
+			_ok(comum <= s.teto - s.reserva + 0.01,
+				"%s: %d hits x %.0f = %.0f não cabem em teto-reserva = %.0f" % [
+					nome, s.hits, s.dano, comum, s.teto - s.reserva])
+
+	# E o inverso: golpe com parte nomeada cujo clímax chega POR ÚLTIMO precisa de
+	# reserva. Não dá para saber a ordem pela tabela, então aqui só se avisa
+	# quando `hits x dano` já estoura o teto sozinho e não há reserva — é o padrão
+	# exato dos dois casos que estavam quebrados.
+	for fruta in Balance.FRUTAS:
+		for slot in Balance.FRUTAS[fruta]:
+			var s := Balance.spec(fruta, slot)
+			if s.partes.is_empty() or s.reserva > 0.0 or s.tipo != DamageSpec.Tipo.MULTI:
+				continue
+			var comum := s.dano * float(s.hits)
+			if comum >= s.teto:
+				print("     ⚠️ %s/%s: %d hits x %.0f = %.0f já esgotam o teto %.0f." % [
+					fruta, slot, s.hits, s.dano, comum, s.teto])
+				print("        Se a parte nomeada chegar DEPOIS deles, ela entrega zero.")
+				print("        Confira a ordem no efeito; se for por último, declare `reserva`.")
 
 # ---------------------------------------------------------------------------
 # 6. As tabelas que REPETEM números do Balance continuam batendo com ele.
