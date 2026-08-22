@@ -6,11 +6,15 @@ var _duration: float = 3.0
 var _dps: float = 5.0
 var _t: float = 0.0
 var _tick_timer: float = 0.0
+# A conjuração que acendeu a queimadura. Passar por ela mantém o dano por tempo
+# dentro do orçamento do golpe que o causou, em vez de somar por fora.
+var _spec: DamageSpec = null
 
-func setup(target: Node3D, duration: float, dps: float) -> void:
+func setup(target: Node3D, duration: float, dps: float, spec: DamageSpec = null) -> void:
 	_target = target
 	_duration = duration
 	_dps = dps
+	_spec = spec if spec != null else DamageSpec.avulso(dps)
 	
 	# Efeito visual de fogo no alvo
 	if _target:
@@ -35,8 +39,11 @@ func _process(delta: float) -> void:
 	
 	if _tick_timer >= 0.5:
 		_tick_timer = 0.0
-		if _target and _target.has_method("take_damage"):
-			_target.take_damage(_dps * 0.5, _target.global_position, Vector3.ZERO)
+		if _target:
+			# ⚠️ ERA `take_damage()` DIRETO. Como todo o resto do jogo, agora passa
+			# pelo funil — ver src/combat/CombatResolver.gd.
+			CombatResolver.aplicar(_target, _dps * 0.5, _spec.cast_id, _spec.teto,
+				_target.global_position)
 			
 	if _t >= _duration:
 		if _target and _target.has_node("BurnVFX"):

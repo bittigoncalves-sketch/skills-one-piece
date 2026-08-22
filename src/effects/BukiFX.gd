@@ -33,8 +33,10 @@ extends RefCounted
 
 # ---------------------------------------------------------------- O ARSENAL
 # Uma linha por slot. `balas` é a penalidade da fruta; `cadencia` é o intervalo
-# mínimo entre disparos (segundos); `dano_mult` multiplica o dano que vem do
-# SkillSystem, porque lá o número é POR BALA e o minigun precisa de bala fraca.
+# mínimo entre disparos (segundos). O dano POR BALA vem de `src/combat/Balance.gd`
+# e sai de `teto do slot / nº de balas` — é por isso que o minigun tem bala fraca
+# e o canhão bala pesada sem que nenhum dos dois passe do teto.
+# (o `dano_mult` que este comentário citava nunca existiu no dicionário abaixo.)
 #
 # `som` e `fogacho` entraram em 2026-08-11, junto com a munição com cara própria
 # (ver src/effects/BukiProjeteis.gd). Antes o slot escolhia o som e o tamanho do
@@ -93,18 +95,19 @@ const CONE_MIRA := 0.82        # cos do cone de aquisição (~35°)
 # que os 4 slots continuam contando "hitbox: SIM" lá.
 # Mantido de propósito: é a única prova automática de que os quatro slots ainda
 # produzem DamageZone de verdade, munição à parte.
-static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float, caster: Node) -> void:
+static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float,
+		caster: Node, spec: DamageSpec = null) -> void:
 	var slot: String = SLOTS[variant] if variant >= 0 and variant < SLOTS.size() else "Z"
-	disparo(world, origin, dir, slot, damage, caster)
+	disparo(world, origin, dir, slot, damage, caster, null, spec)
 
 # UM TIRO da arma empunhada. Chamado no saque (via `cast`) e a cada clique do
 # botão esquerdo (via `Player._net_bullet_play`, que nasce no SERVIDOR).
 static func disparo(world: Node, origin: Vector3, dir: Vector3, slot: String,
-		damage: float, caster: Node, alvo: Node3D = null) -> void:
+		damage: float, caster: Node, alvo: Node3D = null, spec: DamageSpec = null) -> void:
 	if world == null or not (world is Node) or not world.is_inside_tree():
 		return
 	var d: Dictionary = ARSENAL.get(slot, ARSENAL["Z"])
-	_projetil(world, origin, dir, damage, caster, slot, alvo)
+	_projetil(world, origin, dir, damage, caster, slot, alvo, spec)
 	_fogacho(world, origin, dir, float(d.get("fogacho", 0.35)))
 	_som(world, origin, str(d.get("som", "pistol")))
 	if slot != "X":
@@ -301,7 +304,7 @@ static func alvo_da_mira(caster: Node, origin: Vector3, dir: Vector3) -> Node3D:
 # Em qualquer outra direção ela voava de lado. Só não gritava porque era uma
 # cápsula quase simétrica; com obus e dardo, gritaria.
 static func _projetil(world: Node, origin: Vector3, dir: Vector3, damage: float,
-		caster: Node, slot: String, alvo: Node3D) -> void:
+		caster: Node, slot: String, alvo: Node3D, spec: DamageSpec = null) -> void:
 	var d: Dictionary = ARSENAL.get(slot, ARSENAL["Z"])
 	var raio := float(d["raio"])
 	var velocidade := float(d["vel"])
@@ -313,7 +316,13 @@ static func _projetil(world: Node, origin: Vector3, dir: Vector3, damage: float,
 	# (canhão como mobilidade), então o up vira lateral nesse caso.
 	var cima := Vector3.UP if absf(fwd.dot(Vector3.UP)) < 0.98 else Vector3.RIGHT
 	zone.look_at(origin + fwd, cima)
+	# O PENTE INTEIRO divide um orçamento: as 100 balas do minigun somam o mesmo
+	# teto que os 3 tiros do canhão. Sem isso, a arma com mais munição seria
+	# automaticamente a mais forte — e era: o minigun somava 108 contra os 32 do
+	# canhão. Ver `Player._spec_do_disparo`.
 	zone.setup(damage, float(d["kb"]), fwd * velocidade, 3.0, caster, raio)
+	if spec != null:
+		spec.marcar(zone)
 	zone.add_child(BukiProjeteis.montar(slot, raio, velocidade))
 
 	if alvo != null and is_instance_valid(alvo):

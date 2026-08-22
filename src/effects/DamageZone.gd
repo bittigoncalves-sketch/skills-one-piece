@@ -4,14 +4,37 @@ extends Area3D
 # o próprio caster). Já pronta para inimigos futuros; hoje só não acha alvos.
 
 signal hit_landed(target: Node)
+signal collided_with_any(body: Node)
 
-const DAMAGE_SCALE := 0.12   # foco é knockback, não dano -> dano bem baixo
+# ⚠️ O `DAMAGE_SCALE` de 0,12 QUE MORAVA AQUI FOI REMOVIDO (2026-08-21).
+#
+# Ele existia porque o foco do jogo é knockback e o dano precisava ser baixo —
+# mas estava no lugar errado, e isso tinha consequência: quem criava hitbox
+# levava o corte de 8,3x, e quem chamava `take_damage()` direto (seis efeitos,
+# entre eles o Liberation da Yami e o Domínio da Bara) entregava o número cru.
+# A mesma tabela produzia golpes de 2,4 e de 1811 contra uma vida de 2048.
+#
+# Agora o número que chega em `damage` é FINAL, vem de `src/combat/Balance.gd` e
+# não é multiplicado por nada no caminho. Ver `src/combat/CombatResolver.gd`.
 
 var damage: float = 0.0
 var knockback: float = 0.0
 var hitstun: float = 0.3
+var derruba: float = 0.0
 var vel: Vector3 = Vector3.ZERO
 var caster: Node = null
+
+# ---------------------------------------------------- ORÇAMENTO DA CONJURAÇÃO
+# Quem carimba estes dois é a `DamageSpec` do golpe (`spec.marcar(zona)`). Todas
+# as hitboxes nascidas do mesmo aperto de tecla compartilham o `cast_id`, e o
+# `CombatResolver` corta o que passar do `teto` — é o que impede um Gatling de
+# 16 socos ou um Liberation de 25 escombros de somar dano sem limite.
+#
+# Zerados = golpe avulso, sem orçamento: entrega o valor cheio a cada acerto.
+# É o caso legítimo do golpe de um acerto só, e o caso das auditorias de
+# `tools/dev_tests/`, que criam zonas sem passar pela tabela.
+var cast_id: int = 0
+var teto: float = 0.0
 var override_kb_dir: Vector3 = Vector3.ZERO
 var _hit: Dictionary = {}
 var is_weapon_swing: bool = false
@@ -140,6 +163,9 @@ func _on_body(body: Node3D) -> void:
 		return
 	if body == caster or _hit.has(body):
 		return
+		
+	collided_with_any.emit(body)
+	
 	if body.has_method("take_damage"):
 		_hit[body] = true
 		
@@ -163,8 +189,22 @@ func _on_body(body: Node3D) -> void:
 			t.timeout.connect(func():
 				if is_instance_valid(body):
 					body.set_meta("is_frozen", false))
-		# Dano BAIXO de propósito: o foco é o KNOCKBACK jogar o alvo pra fora do mapa.
-		body.take_damage(damage * DAMAGE_SCALE, global_position, kb, hitstun)
+		
+		# DERRUBAR: Marca o corpo para que a recepção de dano toque a animação
+		# de cair no chão durante o tempo especificado.
+		if derruba > 0.0:
+			body.set_meta("knockdown_dur", derruba)
+			
+		# ⚠️ NÃO chama `take_damage` direto — quem aplica é o `CombatResolver`, e é
+		# ele que consulta o orçamento da conjuração antes de deixar o dano passar.
+		# Chamar direto aqui reabriria exatamente o buraco que esta refatoração
+		# fechou: hitboxes irmãs somando dano sem teto.
+		#
+		# O empurrão vai SEMPRE, mesmo quando o orçamento já acabou e o dano sai 0.
+		# Dano e knockback são mecânicas separadas neste jogo — quem mata é o
+		# buraco do mapa — e um golpe que parasse de empurrar ao esgotar o teto
+		# perderia a sua função principal.
+		CombatResolver.aplicar(body, damage, cast_id, teto, global_position, kb, hitstun)
 		hit_landed.emit(body)
 		# Crédito de kill: registra quem bateu por último em quem. Se o alvo cair
 		# do mapa nos próximos segundos, a kill é de quem empurrou.

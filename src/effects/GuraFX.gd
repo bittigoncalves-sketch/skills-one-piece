@@ -7,12 +7,15 @@ extends RefCounted
 const QUAKE := Color(0.85, 0.94, 1.0)   # branco-azulado (o ar rachando)
 const DEBRIS := Color(0.55, 0.5, 0.45)
 
-static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float, caster: Node, charge: float = 0.0) -> void:
+static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float,
+		caster: Node, charge: float = 0.0, spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	match variant:
-		0: _punch(world, origin, dir.normalized(), damage, caster, charge)
-		1: _shockwave(world, dir, damage, caster, charge) # `dir` agora carrega a posição absoluta do alvo (captura sísmica)
-		2: _eruption(world, _ground(caster, dir, 5.0), damage, caster, charge)
-		_: _seaquake(world, _self_pos(caster), damage, caster, charge)
+		0: _punch(world, origin, dir.normalized(), damage, caster, charge, spec)
+		1: _shockwave(world, dir, damage, caster, charge, spec) # `dir` agora carrega a posição absoluta do alvo (captura sísmica)
+		2: _eruption(world, _ground(caster, dir, 5.0), damage, caster, charge, spec)
+		_: _seaquake(world, _self_pos(caster), damage, caster, charge, spec)
 
 # ---------- helpers ----------
 static func _self_pos(caster: Node) -> Vector3:
@@ -117,7 +120,15 @@ static func _debris(parent: Node, up_bias: float, amount: int) -> void:
 	parent.add_child(p)
 
 # ---------- Z: Gura Punch — soco do tremor (onda pra frente) ----------
-static func _punch(world: Node, origin: Vector3, fwd: Vector3, damage: float, caster: Node, charge: float = 0.0) -> void:
+static func _punch(world: Node, origin: Vector3, fwd: Vector3, damage: float, caster: Node,
+		charge: float = 0.0, spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
+	# ⚠️ O `mult` MANDA NO ESPETÁCULO, NÃO NO DANO (mudou em 2026-08-21).
+	# O Z da Gura não é carregável: ele é disparado pela investida (`Player.
+	# _process_gura_rush`) sempre com `charge = 1.0`, o que fazia o `mult` valer
+	# fixos 1,667 e multiplicar o dano por um número que ninguém escolheu. Raio da
+	# onda, detritos e tremor de tela continuam escalando com ele.
 	var mult: float = 1.0 + clampf(charge / 1.5, 0.0, 3.0)
 	
 	var delay: float = 0.25 * mult
@@ -161,11 +172,15 @@ static func _punch(world: Node, origin: Vector3, fwd: Vector3, damage: float, ca
 			tw_fx.tween_method(sfx.set_borrao, 0.8 * mult, 0.0, 0.4)
 			
 		zone.override_kb_dir = fwd
-		zone.setup(damage * mult, 30.0 * mult, fwd * 22.0, 0.5, caster, 1.8 * mult)   # viaja + knockback ALTO
+		zone.setup(spec.dano, 30.0 * mult, fwd * 22.0, 0.5, caster, 1.8 * mult)   # viaja + knockback ALTO
+		spec.marcar(zone)
 	)
 
 # ---------- X: Esfera Sísmica (Projétil que explode no impacto) ----------
-static func _shockwave(world: Node, target_pos: Vector3, damage: float, caster: Node, charge: float = 0.0) -> void:
+static func _shockwave(world: Node, target_pos: Vector3, damage: float, caster: Node,
+		charge: float = 0.0, spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	# O ARREMESSO AUTORAL no lugar do `punching.res` do Mixamo. A esfera nasce no
 	# mesmo quadro do cast, então a pose começa já no arremesso (sem antecipação):
 	# a puxada por cima do ombro é a CARGA, e ela já aconteceu no `gura_x_charge`.
@@ -196,7 +211,7 @@ static func _shockwave(world: Node, target_pos: Vector3, damage: float, caster: 
 	proj.add_child(orb)
 	
 	# Configura a hitbox móvel
-	proj.setup(0.0, 0.0, fwd * 25.0, 4.0, caster, 3.2) # Raio do projétil dobrado
+	proj.setup(0.0, 0.0, fwd * 25.0, 4.0, caster, 3.2) # Raio do projétil dobrado (dano 0: quem fere é a explosão)
 	
 	# Intercepta colisões conectando ao sinal nativo `body_entered` para explodir
 	proj.body_entered.connect(func(body: Node3D):
@@ -236,12 +251,19 @@ static func _shockwave(world: Node, target_pos: Vector3, damage: float, caster: 
 			AudioFX.impact(world, pos, 0.85 * mult)
 			
 			# O dano e knockback real da explosão
-			zone.setup(damage * mult, 34.0 * mult, Vector3.ZERO, 0.4, caster, 6.0 * mult)
+			# O dano vem da CURVA de carregamento da tabela (192 -> 256), a mesma
+			# fórmula das outras duas skills carregáveis do jogo. `mult` continua
+			# escalando só o tamanho da explosão.
+			zone.setup(spec.valor_do_hit(charge), 34.0 * mult, Vector3.ZERO, 0.4, caster, 6.0 * mult)
+			spec.marcar(zone)
 		)
 	)
 
 # ---------- C: Eruption — o chão racha e ergue os inimigos ----------
-static func _eruption(world: Node, pos: Vector3, damage: float, caster: Node, charge: float = 0.0) -> void:
+static func _eruption(world: Node, pos: Vector3, damage: float, caster: Node,
+		charge: float = 0.0, spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	var delay: float = 0.4
 	# KABUTSUCHI AUTORAL. O clipe antigo era o `left_uppercut_from_guard` — um
 	# gancho de BAIXO PARA CIMA enquanto o chão rachava, ou seja, a animação
@@ -263,12 +285,14 @@ static func _eruption(world: Node, pos: Vector3, damage: float, caster: Node, ch
 		elif world.get_node_or_null("/root/ScreenShatterFX"):
 			world.get_node("/root/ScreenShatterFX").shatter(0.6, 0.7)
 		AudioFX.impact(world, zone.global_position, 0.9)
-		zone.setup(damage, 30.0, Vector3.ZERO, 0.5, caster, 5.0) # Erupção radial
+		zone.setup(spec.dano, 30.0, Vector3.ZERO, 0.5, caster, 5.0) # Erupção radial
+		spec.marcar(zone)
 	)
 
 # ---------- V: Seaquake / Tsunamis Duplos (ultimate) ----------
-static func _seaquake(world: Node, pos: Vector3, damage: float, caster: Node, charge: float = 0.0) -> void:
-	var v_node = load("res://src/effects/GuraVNode.gd").new(caster, damage)
+static func _seaquake(world: Node, pos: Vector3, damage: float, caster: Node,
+		charge: float = 0.0, spec: DamageSpec = null) -> void:
+	var v_node = load("res://src/effects/GuraVNode.gd").new(caster, damage, spec)
 	world.add_child(v_node)
 	v_node.global_position = pos
 

@@ -7,15 +7,21 @@ const RUBBER_COLOR := Color(0.96, 0.58, 0.45, 0.95)
 const IMPACT_GOLD  := Color(1.0, 0.85, 0.35, 0.95)
 const AIR_PRESSURE := Color(0.85, 0.92, 1.0, 0.75)
 
-static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float, caster: Node) -> void:
+static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float,
+		caster: Node, spec: DamageSpec = null) -> void:
 	var body_pos := (caster as Node3D).global_position + Vector3.UP * 1.0 if caster is Node3D else origin
 	var fwd := dir.normalized()
+	# `spec` é opcional porque as auditorias de `tools/dev_tests/` chamam os
+	# efeitos direto, sem passar pela tabela. Sem ela o golpe sai avulso — dano
+	# cheio, sem orçamento — que é o que uma medição de hitbox quer.
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 
 	match variant:
-		0: _pistol(world, body_pos, fwd, damage, caster)
-		1: _bazooka(world, body_pos, fwd, damage, caster)
-		2: _gatling(world, body_pos, fwd, damage, caster)
-		3: _red_hawk(world, body_pos, fwd, damage, caster)
+		0: _pistol(world, body_pos, fwd, damage, caster, spec)
+		1: _bazooka(world, body_pos, fwd, damage, caster, spec)
+		2: _gatling(world, body_pos, fwd, damage, caster, spec)
+		3: _red_hawk(world, body_pos, fwd, damage, caster, spec)
 
 # ---------- Helper: Encontra nó do rig do jogador pelo nome ----------
 static func _find_rig_node(root: Node, node_name: String) -> Node3D:
@@ -47,7 +53,7 @@ static func _create_rubber_limb(local_start: Vector3, fwd: Vector3, length: floa
 	return mi
 
 # ---------- Z: Gomu Gomu no Pistol — Estica o Braço do Próprio Jogador ----------
-static func _pistol(world: Node, body_pos: Vector3, fwd: Vector3, damage: float, caster: Node) -> void:
+static func _pistol(world: Node, body_pos: Vector3, fwd: Vector3, damage: float, caster: Node, spec: DamageSpec) -> void:
 	# ELÁSTICO CORRETO: braço cresce só p/ frente a partir do OMBRO FIXO (GomuArm).
 	# Nada de scale.z no nó do braço. GomuArm cuida de dano/knockback/partículas/som/
 	# speed-lines no impacto e chama a recepção (chicote) quando o punho volta.
@@ -61,7 +67,7 @@ static func _pistol(world: Node, body_pos: Vector3, fwd: Vector3, damage: float,
 			on_recover = Callable(caster, "trigger_recovery_anim")
 		var arm := GomuArm.new()
 		world.add_child(arm)
-		arm.setup(world, caster, shoulder, shoulder, fwd, 12.0, 0.22, damage, on_recover)
+		arm.setup(world, caster, shoulder, shoulder, fwd, 12.0, 0.22, damage, on_recover, true, 1.0, 1.0, spec)
 		return
 
 	# Fallback (sem rig): punho voador simples com dano na ponta.
@@ -75,9 +81,10 @@ static func _pistol(world: Node, body_pos: Vector3, fwd: Vector3, damage: float,
 	fist.material_override = FxUtil.particle_material(IMPACT_GOLD, 3.0, true)
 	zone.add_child(fist)
 	zone.setup(damage, 25.0, fwd * 28.0, 0.6, caster, 1.0)
+	spec.marcar(zone)
 
 # ---------- X: Gomu Gomu no Bazooka — Estica Ambos os Braços do Jogador ----------
-static func _bazooka(world: Node, body_pos: Vector3, fwd: Vector3, damage: float, caster: Node) -> void:
+static func _bazooka(world: Node, body_pos: Vector3, fwd: Vector3, damage: float, caster: Node, spec: DamageSpec) -> void:
 	var length := 16.0
 	var arm_r := _find_rig_node(caster, "UpperArm_R")
 	var arm_l := _find_rig_node(caster, "UpperArm_L")
@@ -89,11 +96,11 @@ static func _bazooka(world: Node, body_pos: Vector3, fwd: Vector3, damage: float
 			
 		var gomu_r := GomuArm.new()
 		world.add_child(gomu_r)
-		gomu_r.setup(world, caster, arm_r, arm_r, fwd, length, 0.28, damage, on_recover, true, 2.2, 1.8)
+		gomu_r.setup(world, caster, arm_r, arm_r, fwd, length, 0.28, damage, on_recover, true, 2.2, 1.8, spec)
 		
 		var gomu_l := GomuArm.new()
 		world.add_child(gomu_l)
-		gomu_l.setup(world, caster, arm_l, arm_l, fwd, length, 0.28, damage, Callable(), false, 2.2, 1.8)
+		gomu_l.setup(world, caster, arm_l, arm_l, fwd, length, 0.28, damage, Callable(), false, 2.2, 1.8, spec)
 		
 		# Agendamos a explosão de ar comprimido para o exato frame de impacto (EXTEND_TIME = 0.09s)
 		world.get_tree().create_timer(0.09).timeout.connect(func():
@@ -144,9 +151,10 @@ static func _bazooka(world: Node, body_pos: Vector3, fwd: Vector3, damage: float
 	zone.add_child(blast)
 
 	zone.setup(damage, 45.0, fwd * 36.0, 1.8, caster, 1.4)
+	spec.marcar(zone)
 
 # ---------- C: Gomu Gomu no Gatling — Barragem Frenética com os Braços do Jogador ----------
-static func _gatling(world: Node, body_pos: Vector3, fwd: Vector3, damage: float, caster: Node) -> void:
+static func _gatling(world: Node, body_pos: Vector3, fwd: Vector3, damage: float, caster: Node, spec: DamageSpec) -> void:
 	var arm_r := _find_rig_node(caster, "UpperArm_R")
 	var arm_l := _find_rig_node(caster, "UpperArm_L")
 	
@@ -157,7 +165,7 @@ static func _gatling(world: Node, body_pos: Vector3, fwd: Vector3, damage: float
 			
 		var gatling = load("res://src/effects/GomuGatling.gd").new()
 		world.add_child(gatling)
-		gatling.setup(world, caster, arm_r, arm_l, fwd, damage, on_recover)
+		gatling.setup(world, caster, arm_r, arm_l, fwd, damage, on_recover, spec)
 		return
 
 	# Fallback (sem rig)
@@ -179,9 +187,10 @@ static func _gatling(world: Node, body_pos: Vector3, fwd: Vector3, damage: float
 	zone.add_child(barrage)
 
 	zone.setup(damage, 30.0, fwd * 20.0, 1.5, caster, 1.8)
+	spec.marcar(zone)
 
 # ---------- V: Gomu Gomu no Red Hawk — Ultimate Skill (Teleport + Fire + Plunge) ----------
-static func _red_hawk(world: Node, body_pos: Vector3, fwd: Vector3, damage: float, caster: Node) -> void:
+static func _red_hawk(world: Node, body_pos: Vector3, fwd: Vector3, damage: float, caster: Node, spec: DamageSpec) -> void:
 	var shoulder := _find_rig_node(caster, "UpperArm_R")
 	var on_recover := Callable()
 	if caster and caster.has_method("trigger_recovery_anim"):
@@ -190,4 +199,4 @@ static func _red_hawk(world: Node, body_pos: Vector3, fwd: Vector3, damage: floa
 	# Usa explícito "load" para evitar problemas de cache de classes do Godot em runtime
 	var red_hawk = load("res://src/effects/GomuRedHawk.gd").new()
 	world.add_child(red_hawk)
-	red_hawk.setup(world, caster, shoulder, fwd, damage, on_recover)
+	red_hawk.setup(world, caster, shoulder, fwd, damage, on_recover, spec)

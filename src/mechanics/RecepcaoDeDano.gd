@@ -48,6 +48,7 @@ const DURACAO := 0.30
 # usam (`hibashira`, `kurouzu`, `gura_rush`), então não há mecanismo novo para
 # manter — só mais um valor.
 const POSE := "dano"
+const POSE_KNOCKDOWN := "knockdown"
 
 # Rigidez da entrada e da saída do peso. ALTA de propósito: o tranco tem que
 # BATER, não deslizar para dentro. As poses de fruta usam 15–25; esta usa 40 na
@@ -94,6 +95,26 @@ static func pose(add: Callable, off: Dictionary, w: float, t: float) -> void:
 	add.call(off, "Shin_R", Vector3(-0.24, 0.0, 0.0) * w)
 	add.call(off, "Shin_L", Vector3(-0.18, 0.0, 0.0) * w)
 
+# O tranco de ser derrubado no chão.
+static func pose_knockdown(add: Callable, off: Dictionary, w: float, t: float) -> void:
+	if w <= 0.001:
+		return
+	
+	# Torso deita quase 90 graus para trás (-1.5 radianos no eixo X).
+	add.call(off, "Torso", Vector3(1.5, 0.0, 0.0) * w)
+	# Cabeça acompanha
+	add.call(off, "Head", Vector3(0.2, 0.0, 0.0) * w)
+	
+	# Braços abertos/caídos
+	add.call(off, "UpperArm_R", Vector3(0.5, 0.0, 0.8) * w)
+	add.call(off, "UpperArm_L", Vector3(0.5, 0.0, -0.8) * w)
+	
+	# Pernas esticadas/levemente levantadas para acompanhar a queda
+	add.call(off, "Thigh_R", Vector3(-1.0, 0.0, 0.0) * w)
+	add.call(off, "Thigh_L", Vector3(-1.0, 0.0, 0.0) * w)
+	add.call(off, "Shin_R", Vector3(0.5, 0.0, 0.0) * w)
+	add.call(off, "Shin_L", Vector3(0.5, 0.0, 0.0) * w)
+
 # ------------------------------------------------------------------ disparo
 # Liga o tranco num corpo. Serve para o Player e para qualquer coisa com meta
 # (o `TrainingDummy` também aceita).
@@ -124,7 +145,8 @@ static func tick(corpo: Node, delta: float) -> bool:
 	var t: float = float(corpo.get_meta("_dano_pose_t")) - delta
 	if t <= 0.0:
 		corpo.remove_meta("_dano_pose_t")
-		if str(corpo.get_meta("custom_pose", "")) == POSE:
+		var cp: String = str(corpo.get_meta("custom_pose", ""))
+		if cp == POSE or cp == POSE_KNOCKDOWN:
 			corpo.set_meta("custom_pose", "")
 		# Solta a paralisia SE ela for nossa. O `is_frozen` é compartilhado com o
 		# gelo da Hie Hie; descongelar sem conferir soltaria o alvo do outro golpe.
@@ -146,7 +168,8 @@ static func limpar(corpo: Node) -> void:
 	if corpo.has_meta("_dano_paralisia"):
 		corpo.remove_meta("_dano_paralisia")
 		corpo.set_meta("is_frozen", false)
-	if str(corpo.get_meta("custom_pose", "")) == POSE:
+	var cp: String = str(corpo.get_meta("custom_pose", ""))
+	if cp == POSE or cp == POSE_KNOCKDOWN:
 		corpo.set_meta("custom_pose", "")
 
 # ------------------------------------------------- DANO DE PARALISIA (mec. 1)
@@ -172,4 +195,13 @@ static func paralisar_com_animacao(corpo: Node, duracao: float) -> void:
 	# Aqui a pose IGNORA a guarda de "não sobrescrever", de propósito: paralisia
 	# vence pose de golpe — o alvo perdeu o controle do corpo.
 	corpo.set_meta("custom_pose", POSE)
+	corpo.set_meta("_dano_pose_t", duracao)
+
+# Derruba no chão (Knockdown). Usa o mesmo fluxo de pose, mas bloqueia o controle.
+static func derrubar_com_animacao(corpo: Node, duracao: float) -> void:
+	if corpo == null or not is_instance_valid(corpo) or duracao <= 0.0:
+		return
+	# Não usa is_frozen para não matar o knockback físico da engine,
+	# mas aplica a pose de knockdown e a meta.
+	corpo.set_meta("custom_pose", POSE_KNOCKDOWN)
 	corpo.set_meta("_dano_pose_t", duracao)

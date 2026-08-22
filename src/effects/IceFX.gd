@@ -12,9 +12,6 @@ extends RefCounted
 #      (menos o conjurador) é congelado por 5s, ganha 2s de imunidade e recongela.
 # ============================================================================
 
-# Dano por SEGUNDO do campo da Ice Age (o V). Ver o tique em `_ice_age`.
-const AGE_DPS := 30.0
-
 const FROST := [
 	Color(0.85, 0.95, 1.0, 0.95), # azul gelo brilhante
 	Color(0.45, 0.75, 1.0, 0.8),  # ciano translúcido
@@ -22,12 +19,15 @@ const FROST := [
 	Color(0.1, 0.2, 0.4, 0.0),    # névoa que some
 ]
 
-static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float, caster: Node) -> void:
+static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float,
+		caster: Node, spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	match variant:
-		0: _disparo_de_gelo(world, origin, dir, damage, caster)
-		1: _iceberg(world, origin, dir, damage, caster)
-		2: _investida_de_gelo(world, origin, dir, damage, caster)
-		_: _ice_age(world, caster.global_position if caster else origin, damage, caster)
+		0: _disparo_de_gelo(world, origin, dir, damage, caster, spec)
+		1: _iceberg(world, origin, dir, damage, caster, spec)
+		2: _investida_de_gelo(world, origin, dir, damage, caster, spec)
+		_: _ice_age(world, caster.global_position if caster else origin, damage, caster, spec)
 
 static func _frost_proc(radius: float, up: float) -> ParticleProcessMaterial:
 	var pm := ParticleProcessMaterial.new()
@@ -68,7 +68,9 @@ static func _crystal(height: float, width: float) -> MeshInstance3D:
 
 # FLECHA DE GELO (rajada do Z, análoga à bala de fogo da Mera) — projétil fino,
 # ciano brilhante, viaja MUITO rápido, com rastro e knockback.
-static func bullet(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
+static func bullet(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	# Uma flecha da RAJADA Z — mesma spec do pente inteiro (`Player._spec_do_disparo`).
 	var fwd := dir.normalized()
 	var zone := DamageZone.new()
 	world.add_child(zone)
@@ -110,9 +112,14 @@ static func bullet(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 
 	AudioFX.snap(world, origin, 1.5)              # "tiro" agudo e cristalino
 	zone.setup(damage, 9.0, fwd * 55.0, 0.7, caster, 0.32)   # flecha RÁPIDA + knockback
+	if spec != null:
+		spec.marcar(zone)
 
 # ---------- Z: Disparo de Gelo (Cópia da Higan, mas elemento Gelo) ----------
-static func _disparo_de_gelo(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
+static func _disparo_de_gelo(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	var fwd := dir.normalized()
 	var zone := DamageZone.new()
 	world.add_child(zone)
@@ -156,10 +163,14 @@ static func _disparo_de_gelo(world: Node, origin: Vector3, dir: Vector3, damage:
 	pm.color_ramp = FxUtil.gradient([Color(0.8, 0.95, 1.0, 1.0), Color(0.3, 0.7, 1.0, 0.6), Color(0.1, 0.3, 0.6, 0.0)])
 	zone.add_child(FxUtil.particles(45, 0.6, false, pm, FxUtil.grain(0.15)))
 
-	zone.setup(damage, 14.0, fwd * 32.0, 1.2, caster, 0.8)
+	zone.setup(spec.dano, 14.0, fwd * 32.0, 1.2, caster, 0.8)
+	spec.marcar(zone)
 
 # ---------- X: Iceberg (Mão direita para cima, cria iceberg e o lança) ----------
-static func _iceberg(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
+static func _iceberg(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	var fwd := dir.normalized()
 
 	# Levanta a mão direita do caster (se possuir modelo articulado)
@@ -210,10 +221,14 @@ static func _iceberg(world: Node, origin: Vector3, dir: Vector3, damage: float, 
 	tw_grow.tween_property(berg, "scale", Vector3.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 	zone.add_child(FxUtil.particles(120, 1.2, false, _frost_proc(2.0, 3.0), FxUtil.grain(0.4)))
-	zone.setup(damage, 25.0, fwd * 22.0, 1.8, caster, 2.5)
+	zone.setup(spec.dano, 25.0, fwd * 22.0, 1.8, caster, 2.5)
+	spec.marcar(zone)
 
 # ---------- C: Investida de Gelo (Dash + Congelamento por 5s no Alvo) ----------
-static func _investida_de_gelo(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
+static func _investida_de_gelo(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	var fwd := dir.normalized()
 
 	# Aplica impulso de dash no caster
@@ -243,10 +258,14 @@ static func _investida_de_gelo(world: Node, origin: Vector3, dir: Vector3, damag
 	# KNOCKBACK ZERO de propósito: a investida PRENDE o alvo num bloco de gelo.
 	# Empurrão mandaria o bloco pra longe e desmancharia o controle, que é o ponto
 	# do golpe. Movimento: os mesmos 12 m em 0,45 s do tween antigo -> 26,7 m/s.
-	zone.setup(damage, 0.0, fwd * 26.7, 0.45, caster, 2.2)
+	zone.setup(spec.dano, 0.0, fwd * 26.7, 0.45, caster, 2.2)
+	spec.marcar(zone)
 
 # ---------- V: Ice Age (Congela o Chão por 50 segundos) ----------
-static func _ice_age(world: Node, center_pos: Vector3, damage: float, caster: Node) -> void:
+static func _ice_age(world: Node, center_pos: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	var floor_pos := Vector3(center_pos.x, 0.05, center_pos.z)
 
 	# HITBOX: a ERUPÇÃO inicial, quando a placa rompe o chão.
@@ -260,7 +279,8 @@ static func _ice_age(world: Node, center_pos: Vector3, damage: float, caster: No
 	burst.global_position = floor_pos + Vector3.UP * 1.0
 	# Raio 5 = o raio BASE da placa (antes de crescer). Vida 1 s: é o impacto da
 	# subida, não uma zona de dano permanente.
-	burst.setup(damage, 8.0, Vector3.ZERO, 1.0, caster, 5.0)
+	burst.setup(spec.parte("impacto", 256.0), 8.0, Vector3.ZERO, 1.0, caster, 5.0)
+	spec.marcar(burst)
 
 	var age_zone := Node3D.new()
 	world.add_child(age_zone)
@@ -327,22 +347,25 @@ static func _ice_age(world: Node, center_pos: Vector3, damage: float, caster: No
 	# não tirava vida nenhuma. Agora ele MORDE — gelo que não fere não pressiona
 	# ninguém a sair de cima dele.
 	#
-	# `AGE_DPS` é dano por SEGUNDO; o tique roda a cada 0.2 s, então cada
-	# passagem cobra um quinto. Passa pelo mesmo `DAMAGE_SCALE` das outras
-	# fontes (a `DamageZone` multiplica por 0.12), para o número aqui ficar na
-	# mesma escala do resto do jogo em vez de virar um valor mágico solto.
-	#
-	# Deliberadamente BAIXO: quem está congelado não pode se mexer, e dano alto
-	# em alvo imóvel vira execução, não pressão. Gatilho para revisar: se em
-	# jogo der para morrer sem conseguir sair do campo, baixar mais.
+	# O valor do tique vem da tabela (`Balance.FRUTAS.hie_hie.V`), não de um
+	# `AGE_DPS` local — era mais um número de balanceamento morando longe dos
+	# outros. Deliberadamente BAIXO: quem está congelado não pode se mexer, e
+	# dano alto em alvo imóvel vira execução, não pressão. O que impede a
+	# execução agora não é só o valor ser baixo: é o TETO da conjuração, que o
+	# campo compartilha com a erupção de abertura.
 	timer.timeout.connect(func():
 		for body in area.get_overlapping_bodies():
 			if body == caster:
 				continue
 			if not (body is CharacterBody3D):
 				continue
-			if body.has_method("take_damage"):
-				body.take_damage(AGE_DPS * DamageZone.DAMAGE_SCALE * 0.2, floor_pos, Vector3.ZERO)
+			# ⚠️ ERA `take_damage()` DIRETO, com um `* DamageZone.DAMAGE_SCALE` colado
+			# à mão para compensar estar fora do funil. O remendo funcionava e era a
+			# prova de que a constante estava no lugar errado. Agora o tique passa pelo
+			# `CombatResolver` como todo o resto — e, por passar, respeita o teto: quem
+			# ficar no campo chega aos 768 em ~16 tiques e a partir daí o gelo é só
+			# controle, congelando e recongelando sem executar.
+			CombatResolver.aplicar(body, spec.dano, spec.cast_id, spec.teto, floor_pos)
 			_congelar_alvo(world, body, 5.0, 2.0)
 	)
 

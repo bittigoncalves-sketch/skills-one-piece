@@ -11,12 +11,15 @@ const SAND := [
 	Color(0.66, 0.52, 0.26, 0.0),
 ]
 
-static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float, caster: Node) -> void:
+static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float,
+		caster: Node, spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	match variant:
-		0: _blade(world, origin, dir, damage, caster)
-		1: _tornado(world, origin + dir * 4.0, damage, caster, dir)
-		2: _quicksand(world, origin + dir * 4.0, damage, caster)
-		_: _desert(world, _ground_target(caster, dir, 11.0), damage, caster)
+		0: _blade(world, origin, dir, damage, caster, spec)
+		1: _tornado(world, origin + dir * 4.0, damage, caster, dir, spec)
+		2: _quicksand(world, origin + dir * 4.0, damage, caster, spec)
+		_: _desert(world, _ground_target(caster, dir, 11.0), damage, caster, spec)
 
 static func _ground_target(caster: Node, dir: Vector3, distance: float) -> Vector3:
 	# O ataque de área não usa pitch: olhar para cima/baixo nunca pode fazer o
@@ -104,7 +107,10 @@ static func _voxel_multimesh(blocks: Array, size: float, color: Color) -> MultiM
 	return mmi
 
 # ---------- Z: Desert Spada — lâmina de areia projétil ----------
-static func _blade(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
+static func _blade(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	var zone := DamageZone.new()
 	world.add_child(zone)
 	zone.global_position = origin
@@ -135,18 +141,24 @@ static func _blade(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 	var trail := _proc(Vector3(0, 0, -1), 25.0, 1.0, 3.0, Vector3(0, -2.0, 0), 0.6, 1.6, 1.2, 0.4)
 	zone.add_child(FxUtil.particles(120, 0.7, false, trail, FxUtil.grain(0.28)))
 
-	zone.setup(damage, 30.0, dir.normalized() * 22.0, 1.45, caster, 3.0)
+	zone.setup(spec.dano, 30.0, dir.normalized() * 22.0, 1.45, caster, 3.0)
+	spec.marcar(zone)
 	AudioFX.whoosh(world, origin, 0.9)   # "fiu" da lâmina cortando o ar
 	var tw := zone.create_tween()
 	tw.tween_property(blade, "scale", Vector3(1.2, 1.2, 0.5), 1.2)
 
 # ---------- X: Sables — tornado de areia (puxa, levanta, dano contínuo) ----------
-static func _tornado(world: Node, pos: Vector3, damage: float, caster: Node, dir: Vector3 = Vector3.ZERO) -> void:
+static func _tornado(world: Node, pos: Vector3, damage: float, caster: Node, dir: Vector3 = Vector3.ZERO,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	# Raiz = comportamento (puxão/levantar/dano contínuo, autoridade do servidor).
 	var tornado := SandTornado.new()
 	world.add_child(tornado)
 	tornado.global_position = pos
-	tornado.setup(3.4, 11.0, 7.5, damage, 3.2, caster, dir)   # raio, puxão, lift, dps, vida
+	# O 4º argumento deixou de ser "dps" e passou a ser o dano POR TIQUE, que é
+	# o que a tabela declara. Ver `SandTornado.setup`.
+	tornado.setup(3.4, 11.0, 7.5, spec.dano, 3.2, caster, dir, spec)   # raio, puxão, lift, dano/tique, vida
 
 	# Espiral voxel ascendente (mais alta e afunilada) girando.
 	var blocks := []
@@ -176,7 +188,10 @@ static func _tornado(world: Node, pos: Vector3, damage: float, caster: Node, dir
 	AudioFX.whoosh(world, pos, 0.65)
 
 # ---------- C: Desert Girasole — areia movediça (armadilha de chão) ----------
-static func _spawn_single_quicksand(world: Node, pos: Vector3, damage: float, caster: Node) -> void:
+static func _spawn_single_quicksand(world: Node, pos: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	var zone := DamageZone.new()
 	world.add_child(zone)
 	# Garante que gruda no chão do cenário
@@ -208,14 +223,18 @@ static func _spawn_single_quicksand(world: Node, pos: Vector3, damage: float, ca
 	_pulse(halo, Vector3(1.3, 1.0, 1.3), 0.4)
 
 	# Fica no chão, como uma armadilha. Sem knockback (0.0). Duração de 8.5s. Raio da área de dano de 3.5.
-	zone.setup(damage, 5.0, Vector3.ZERO, 8.5, caster, 3.5)
+	zone.setup(spec.dano, 5.0, Vector3.ZERO, 8.5, caster, 3.5)
+	spec.marcar(zone)
 	AudioFX.impact(world, zone.global_position, 0.5)
 
-static func _quicksand(world: Node, pos: Vector3, damage: float, caster: Node) -> void:
+static func _quicksand(world: Node, pos: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	var caster_pos: Vector3 = (caster as Node3D).global_position if caster is Node3D else pos
 	
 	var valid_positions := [pos]
-	_spawn_single_quicksand(world, pos, damage, caster)
+	_spawn_single_quicksand(world, pos, damage, caster, spec)
 	
 	# Gerar 4 armadilhas extras aleatórias ao redor do jogador sem encostar
 	for i in range(4):
@@ -233,7 +252,7 @@ static func _quicksand(world: Node, pos: Vector3, damage: float, caster: Node) -
 			
 			if ok:
 				valid_positions.append(candidate)
-				_spawn_single_quicksand(world, candidate, damage, caster)
+				_spawn_single_quicksand(world, candidate, damage, caster, spec)
 				break
 
 # ---------- V: Suna no Sabaku — deserto procedural persistente ----------
@@ -257,7 +276,10 @@ static func _ground_position(world: Node, desired: Vector3) -> Vector3:
 			return hit["position"] as Vector3
 	return Vector3(desired.x, 0.0, desired.z)
 
-static func _desert(world: Node, pos: Vector3, damage: float, caster: Node) -> void:
+static func _desert(world: Node, pos: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	var previous: Node = world.get_tree().get_first_node_in_group("suna_procedural_desert")
 	if previous:
 		previous.queue_free()
@@ -375,10 +397,13 @@ static func _desert(world: Node, pos: Vector3, damage: float, caster: Node) -> v
 			FxUtil.autofree(weed, 20.0)
 
 	# A malha fica no mundo (20s); a tempestade leve acompanha o deserto inteiro.
-	_storm(world, ground, damage, caster)
+	_storm(world, ground, damage, caster, spec)
 
 # ---------- tempestade temporária que acompanha a criação do deserto ----------
-static func _storm(world: Node, pos: Vector3, damage: float, caster: Node) -> void:
+static func _storm(world: Node, pos: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	var zone := DamageZone.new()
 	world.add_child(zone)
 	zone.global_position = pos + Vector3.UP * 1.5
@@ -395,4 +420,5 @@ static func _storm(world: Node, pos: Vector3, damage: float, caster: Node) -> vo
 	zone.add_child(parts)
 	
 	# Sem anéis, apenas a névoa ambiente para não atrapalhar o combate
-	zone.setup(damage, 40.0, Vector3.ZERO, 6.0, caster, 20.0)
+	zone.setup(spec.dano, 40.0, Vector3.ZERO, 6.0, caster, 20.0)
+	spec.marcar(zone)

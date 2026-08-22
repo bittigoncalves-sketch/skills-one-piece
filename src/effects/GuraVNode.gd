@@ -59,11 +59,14 @@ extends Node3D
 #    📌 GATILHO para revisitar: se os buracos ganharem parede/fundo visíveis,
 #    a onda passando reta vira erro de leitura e o assunto volta.
 #
-#  ▸ QUEM ESTÁ NO CAMINHO: leva dano nominal do V (85, que a `DamageZone`
-#    escala por 0,12) e knockback FORTE na direção da onda com forte viés para
-#    CIMA — a Gura Gura é a fruta do arremesso, e ser lançado por um tsunami e
-#    apanhado pelo outro no ar é a coreografia que o golpe promete. Cada onda
-#    acerta cada corpo UMA vez (`DamageZone._hit`), então o teto é dois golpes.
+#  ▸ QUEM ESTÁ NO CAMINHO: leva o dano do V — 384 por onda, de
+#    `src/combat/Balance.gd` — e knockback FORTE na direção da onda com forte
+#    viés para CIMA. A Gura Gura é a fruta do arremesso, e ser lançado por um
+#    tsunami e apanhado pelo outro no ar é a coreografia que o golpe promete.
+#    Cada onda acerta cada corpo UMA vez (`DamageZone._hit`), então o teto são
+#    dois golpes — e ele bate com o teto do ORÇAMENTO da conjuração (768 = 2 x
+#    384). As duas contas coincidirem é o sinal de que a skill está declarada
+#    certo na tabela.
 # ============================================================================
 
 # ---- tempo (s a partir do disparo) ----
@@ -95,9 +98,12 @@ var _fase := 0                # 0 armar, 1 recuo do soco, 2 impacto, 3 travessia
 var _eixo := Vector3.RIGHT    # eixo em que as ondas viajam (cardeal)
 var _ondas: Array[DamageZone] = []
 
-func _init(c: Node, d: float) -> void:
+var _spec: DamageSpec = null
+
+func _init(c: Node, d: float, spec: DamageSpec = null) -> void:
 	_caster = c
 	_damage = d
+	_spec = spec if spec != null else DamageSpec.avulso(d)
 	name = "GuraVNode"
 
 func _ready() -> void:
@@ -258,7 +264,10 @@ func _um_tsunami(sinal: int) -> DamageZone:
 	# `DamageZone` mede alvo − centro da zona: numa parede de 200 m, o centro
 	# está a até 100 m de lado, e o alvo sairia empurrado LATERALMENTE.
 	zona.override_kb_dir = rumo
-	zona.setup(_damage, KB, rumo * VEL, vida, _caster, ALTURA * 0.5, caixa)
+	# As DUAS ondas carregam a mesma spec: o teto de 768 é 2 x 384, então quem é
+	# pego pelas duas leva a ultimate inteira e quem desvia de uma leva metade.
+	zona.setup(_spec.dano, KB, rumo * VEL, vida, _caster, ALTURA * 0.5, caixa)
+	_spec.marcar(zona)
 
 	# A onda SOBE do chão em vez de aparecer inteira (mesma ideia do C).
 	crista.scale = Vector3(1.0, 0.12, 0.7)

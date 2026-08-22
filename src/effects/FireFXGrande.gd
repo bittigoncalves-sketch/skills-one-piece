@@ -15,7 +15,13 @@ extends RefCounted
 # ============================================================================
 
 # ---------- C Legado: Hibashira ----------
-static func _hibashira_legado(world: Node, pos: Vector3, damage: float, caster: Node) -> void:
+# ⚠️ CÓDIGO LEGADO E INALCANÇÁVEL: nada chama esta função desde que o C da Mera
+# virou o Entei carregável. Foi passada pelo funil junto com o resto para não
+# ficar sendo a única fonte de dano cru do arquivo caso alguém a ressuscite.
+static func _hibashira_legado(world: Node, pos: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	var ground := Vector3(pos.x, 0.0, pos.z)
 	var space = world.get_world_3d().direct_space_state if (world is Node3D and world.is_inside_tree() and world.get_world_3d() != null) else null
 	if space:
@@ -200,7 +206,8 @@ static func _hibashira_legado(world: Node, pos: Vector3, damage: float, caster: 
 				(body as CharacterBody3D).move_and_slide()
 				
 			if do_burn:
-				body.take_damage(damage * 0.15, ground, Vector3.ZERO) # Queimadura contínua sem knockback de saída
+				# Queimadura contínua, sem knockback de saída.
+				CombatResolver.aplicar(body, spec.dano, spec.cast_id, spec.teto, ground)
 	)
 	
 	# 6. Encerramento com Explosão Massiva: liberta e espalha qualquer vítima do ataque
@@ -242,8 +249,8 @@ static func _hibashira_legado(world: Node, pos: Vector3, damage: float, caster: 
 				dir_out = dir_out.normalized()
 				
 			var scatter_kb: Vector3 = dir_out * 48.0 + Vector3.UP * 24.0
-			if body.has_method("take_damage"):
-				body.take_damage(damage * 1.6, ground, scatter_kb)
+			CombatResolver.aplicar(body, spec.parte("final", spec.dano * 2.0),
+				spec.cast_id, spec.teto, ground, scatter_kb)
 				
 		# Efeitos da Supernova / Explosão final de encerramento
 		if is_instance_valid(world):
@@ -267,155 +274,9 @@ static func _hibashira_legado(world: Node, pos: Vector3, damage: float, caster: 
 		tw_exp.tween_callback(zone.queue_free).set_delay(0.6)
 	)
 
-# ---------- V: Inferno (Dai Enkai: Entei - O Imperador das Chamas) ----------
-# A técnica suprema de Ace: convoca um Oceano de Chamas na terra (Enkai) em formato mandala que converge
-# no ar e gera uma colossal esfera de sol e magma (Entei), liberando dano sísmico e incineração total.
-static func _inferno(world: Node, pos: Vector3, damage: float, caster: Node) -> void:
-	var controller := Node3D.new()
-	world.add_child(controller)
-	
-	var ground := Vector3(pos.x, 0.0, pos.z)
-	var space = world.get_world_3d().direct_space_state if (world is Node3D and world.is_inside_tree() and world.get_world_3d() != null) else null
-	if space:
-		var q := PhysicsRayQueryParameters3D.create(pos + Vector3.UP * 40.0, pos + Vector3.DOWN * 80.0)
-		q.collide_with_areas = false
-		var hit: Dictionary = space.intersect_ray(q)
-		if not hit.is_empty(): ground = hit["position"]
-		
-	controller.global_position = ground
-	
-	# 1. Iluminação Solar de Domínio & Impacto de Atmosfera
-	var sun_light := OmniLight3D.new()
-	sun_light.light_color = Color(1.0, 0.5, 0.1)
-	sun_light.light_energy = 22.0
-	sun_light.omni_range = 45.0
-	sun_light.position = Vector3(0, 11.0, 0)
-	controller.add_child(sun_light)
-	
-	var sfx := world.get_node_or_null("/root/ScreenFX") if is_instance_valid(world) else null
-	if sfx and sfx.has_method("flash"):
-		sfx.flash(Color(1.0, 0.38, 0.05), 0.65)
-		
-	if is_instance_valid(caster) and caster.has_method("add_camera_shake"):
-		caster.add_camera_shake(0.65)
-		
-	# 2. ENKAI: O Oceano de Chamas na Terra (Mandala geométrica em expansão)
-	var mandala := Node3D.new()
-	controller.add_child(mandala)
-	
-	var sea_blocks = []
-	for ring in range(1, 10):
-		var num_blocks = ring * 22
-		var r = ring * 2.2
-		for j in range(num_blocks):
-			var angle = (j * TAU / float(num_blocks)) + (ring * 0.2)
-			var h = randf_range(0.2, 0.8) + (cos(angle * 4.0) * 0.3)
-			sea_blocks.append(Vector3(cos(angle)*r, h, sin(angle)*r))
-			
-	var mmi_sea := MultiMeshInstance3D.new()
-	var mm_sea := MultiMesh.new()
-	mm_sea.transform_format = MultiMesh.TRANSFORM_3D
-	mm_sea.instance_count = sea_blocks.size()
-	var box_sea := BoxMesh.new(); box_sea.size = Vector3(1.1, 1.4, 1.1)
-	mm_sea.mesh = box_sea
-	mmi_sea.multimesh = mm_sea
-	mmi_sea.material_override = FireFX._magma_material()
-	for i in range(sea_blocks.size()):
-		mm_sea.set_instance_transform(i, Transform3D(Basis().rotated(Vector3.UP, randf()*TAU), sea_blocks[i]))
-	mandala.add_child(mmi_sea)
-	
-	# Animação do oceano de chamas girando e ondulando no solo
-	var tw_sea := controller.create_tween()
-	tw_sea.tween_property(mandala, "rotation:y", TAU * 1.5, 12.0)
-	
-	# 3. DAI ENKAI: ENTEI (A Esfera Solar do Imperador das Chamas no céu)
-	var entei := Node3D.new()
-	controller.add_child(entei)
-	entei.position = Vector3(0, 10.5, 0)
-	
-	# Esfera Central de Plasma
-	var sun_core := MeshInstance3D.new()
-	var sphere := SphereMesh.new()
-	sphere.radius = 3.6
-	sphere.height = 7.2
-	sun_core.mesh = sphere
-	sun_core.material_override = FireFX._plasma_material()
-	entei.add_child(sun_core)
-	
-	# Anéis de Prominência Solar (Voxels massivos orbitando ao redor do Sol)
-	var corona_pivot := Node3D.new()
-	entei.add_child(corona_pivot)
-	var corona_blocks = []
-	for i in range(70):
-		var u = randf() * TAU
-		var v = acos(randf_range(-1.0, 1.0))
-		var rad = randf_range(4.2, 5.8)
-		corona_blocks.append(Vector3(rad * sin(v) * cos(u), rad * sin(v) * sin(u), rad * cos(v)))
-		
-	var mmi_cor := MultiMeshInstance3D.new()
-	var mm_cor := MultiMesh.new()
-	mm_cor.transform_format = MultiMesh.TRANSFORM_3D
-	mm_cor.instance_count = corona_blocks.size()
-	var box_cor := BoxMesh.new(); box_cor.size = Vector3.ONE * 1.25
-	mm_cor.mesh = box_cor
-	mmi_cor.multimesh = mm_cor
-	mmi_cor.material_override = FireFX._voxel_material()
-	for i in range(corona_blocks.size()):
-		mm_cor.set_instance_transform(i, Transform3D(Basis().rotated(Vector3.UP, randf()*TAU), corona_blocks[i]))
-	corona_pivot.add_child(mmi_cor)
-	
-	# Animação de nascimento e órbita da Esfera Entei
-	entei.scale = Vector3(0.1, 0.1, 0.1)
-	var tw_sun := controller.create_tween()
-	tw_sun.tween_property(entei, "scale", Vector3(1.0, 1.0, 1.0), 0.65).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
-	
-	var tw_cor := controller.create_tween()
-	tw_cor.set_loops()
-	tw_cor.tween_property(corona_pivot, "rotation:y", TAU, 3.5).from(0.0)
-	
-	# 4. Erupção de Partículas Solares no Ar e No Chão
-	var pm := FireFX._flame_proc(Vector3.UP, 15.0, 4.0, 9.0, Vector3(0, 3.0, 0), 1.8, 5.0, 4.0)
-	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	pm.emission_box_extents = Vector3(22.0, 0.4, 22.0)
-	controller.add_child(FxUtil.particles(750, 2.2, false, pm, FxUtil.grain(1.4)))
-	
-	# 5. Dano inicial de expansão térmica
-	var init_zone := DamageZone.new()
-	controller.add_child(init_zone)
-	init_zone.setup(damage * 0.45, 35.0, Vector3.ZERO, 0.6, caster, 22.0)
-	AudioFX.impact(world, ground, 0.7)
-	AudioFX.whoosh(world, ground + Vector3(0, 10, 0), 0.5)
-	
-	# 6. Incineração DPS por 12s + Supernova Final
-	var timer := Timer.new()
-	timer.wait_time = 1.0
-	var ticks := [0]
-	timer.timeout.connect(func():
-		ticks[0] += 1
-		if ticks[0] > 12:
-			if is_instance_valid(world):
-				var sfx_final := world.get_node_or_null("/root/ScreenFX") if is_instance_valid(world) else null
-				if sfx_final and sfx_final.has_method("flash"):
-					sfx_final.flash(Color(1.0, 0.9, 0.6), 0.5)
-				AudioFX.impact(world, controller.global_position, 0.6)
-				_explosion(world, entei.global_position, damage * 0.5, caster)
-			controller.queue_free()
-			return
-		if not is_instance_valid(world): return
-		var dps_zone := DamageZone.new()
-		controller.add_child(dps_zone)
-		dps_zone.setup(damage * 0.16, 6.0, Vector3.ZERO, 0.15, caster, 22.0)
-		if is_instance_valid(entei):
-			var tw_pulse := entei.create_tween()
-			tw_pulse.tween_property(entei, "scale", Vector3(1.15, 1.15, 1.15), 0.15)
-			tw_pulse.tween_property(entei, "scale", Vector3(1.0, 1.0, 1.0), 0.25)
-	)
-	controller.add_child(timer)
-	if controller.is_inside_tree():
-		timer.start()
-
 # Utilizado pelo Hiken ao final de sua trajetória
-static func _explosion(world: Node, pos: Vector3, damage: float, caster: Node) -> void:
+static func _explosion(world: Node, pos: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
 	var zone := DamageZone.new()
 	world.add_child(zone)
 	zone.global_position = pos + Vector3.UP * 1.0
@@ -425,6 +286,8 @@ static func _explosion(world: Node, pos: Vector3, damage: float, caster: Node) -
 	zone.add_child(fire)
 	zone.add_child(FireFX._embers())
 	zone.setup(damage, 35.0, Vector3.ZERO, 1.6, caster, 6.0)
+	if spec != null:
+		spec.marcar(zone)
 	AudioFX.impact(world, pos, 0.9)
 
 # ==================== CONTROLADOR DO SOL (DAI ENKAI: ENTEI) ====================
@@ -438,7 +301,10 @@ class EnteiSunController extends Node3D:
 	var light: OmniLight3D
 	var zone: DamageZone
 
-	func _init(c: Node, orig: Vector3, d: Vector3, dmg: float) -> void:
+	var _spec: DamageSpec = null
+
+	func _init(c: Node, orig: Vector3, d: Vector3, dmg: float, spec: DamageSpec = null) -> void:
+		_spec = spec if spec != null else DamageSpec.avulso(dmg)
 		caster = c
 		global_position = orig
 		dir = d.normalized()
@@ -457,7 +323,6 @@ class EnteiSunController extends Node3D:
 		light.omni_range = 45.0
 		add_child(light)
 
-		# Efeito de chamas orbitando a esfera solar
 		var pm := FireFX._flame_proc(Vector3.UP, 180.0, 2.0, 8.0, Vector3(0, 4.0, 0), 0.5, 2.0, 1.0)
 		var p_flames := FxUtil.particles(300, 0.8, false, pm, FxUtil.grain(0.8))
 		add_child(p_flames)
@@ -468,16 +333,28 @@ class EnteiSunController extends Node3D:
 			if sfx and sfx.has_method("flash"):
 				sfx.flash(Color(1.0, 0.5, 0.1), 0.5)
 
-		# Anima a invocação do Sol acima do jogador por 1.0s
+	func setup_charge() -> void:
+		# Posição alvo inicial acima do caster
 		var target_pos := global_position + Vector3.UP * 7.5 + dir * 1.5
 		if is_instance_valid(caster) and caster is Node3D:
 			target_pos = caster.global_position + Vector3.UP * 7.5 + dir * 1.5
-		
+			
 		var tw := create_tween().set_parallel(true)
-		tw.tween_property(sun, "scale", Vector3(1.2, 1.2, 1.2), 1.0).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		tw.tween_property(self, "global_position", target_pos, 0.9).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		tw.tween_property(light, "light_energy", 28.0, 0.8)
-		if is_instance_valid(caster) and caster.has_method("add_camera_shake"):
+
+	func update_charge(charge_time: float) -> void:
+		# Cresce de acordo com o charge_time (até 3.5s). A velocidade foi reduzida pela metade.
+		if not is_instance_valid(sun) or fired: return
+		var max_s = 3.5
+		var ratio = clampf((charge_time * 0.5) / 3.0, 0.0, 1.0)
+		var s = lerpf(0.1, max_s, ratio)
+		sun.scale = Vector3(s, s, s)
+		
+		if is_instance_valid(light):
+			light.light_energy = lerpf(0.0, 40.0, ratio)
+		
+		if is_instance_valid(caster) and caster is Node3D:
+			global_position = caster.global_position + Vector3.UP * (7.5 + s) + dir * 1.5
 			caster.add_camera_shake(0.45)
 
 	func _process(delta: float) -> void:
@@ -486,9 +363,8 @@ class EnteiSunController extends Node3D:
 			sun.rotation.y += 4.5 * delta
 			sun.rotation.z += 1.8 * delta
 		
-		if not fired and elapsed >= 1.0:
-			fired = true
-			_shoot()
+		# Não atira mais automaticamente no elapsed >= 1.0
+		# Só atira quando o MeraChargeNode chamar shoot()
 
 		if fired:
 			global_position += dir * 28.0 * delta
@@ -497,11 +373,13 @@ class EnteiSunController extends Node3D:
 			if elapsed >= 4.5 or _check_impact():
 				_explode()
 
-	func _shoot() -> void:
-		print("🚀 [Dai Enkai: Entei] DISPARANDO O SOL!")
-		if is_instance_valid(caster) and "rotation" in caster:
-			if "_cam" in caster and is_instance_valid(caster._cam):
-				dir = -caster._cam.global_transform.basis.z.normalized()
+	func shoot(aim: Vector3, charge_time: float) -> void:
+		fired = true
+		elapsed = 0.0 # Reseta o tempo para a viagem
+		print("🚀 [Dai Enkai: Entei] DISPARANDO O SOL com carga: ", charge_time)
+		dir = aim.normalized()
+		if dir.length_squared() < 0.01:
+			dir = Vector3(0, 0, -1)
 		
 		zone = DamageZone.new()
 		if get_tree() and get_tree().current_scene:
@@ -509,7 +387,14 @@ class EnteiSunController extends Node3D:
 			zone.global_position = global_position
 			AudioFX.impact(get_tree().current_scene, global_position, 0.75)
 			AudioFX.whoosh(get_tree().current_scene, global_position, 0.85)
-		zone.setup(damage, 7.5, dir * 42.0 + Vector3.UP * 8.0, 3.5, caster, 0.6)
+		
+		# ⚠️ ERA `damage * (1.0 + carga/3.0)` — a terceira curva de carregamento
+		# diferente do jogo. Agora é a mesma interpolação das outras duas
+		# (`DamageSpec.valor_do_hit`), com mínimo e máximo vindos da tabela.
+		# O `area` continua crescendo com a carga: carga longa = knockback maior.
+		var area = 7.5 + (charge_time * 2.0)
+		zone.setup(_spec.valor_do_hit(charge_time), area, dir * 42.0 + Vector3.UP * 8.0, 3.5, caster, 3.5)
+		_spec.marcar(zone)
 
 	func _check_impact() -> bool:
 		if elapsed < 1.15: return false
@@ -533,7 +418,10 @@ class EnteiSunController extends Node3D:
 			var exp_zone := DamageZone.new()
 			world.add_child(exp_zone)
 			exp_zone.global_position = global_position
-			exp_zone.setup(damage * 1.6, 18.0, Vector3.UP * 32.0, 0.4, caster, 0.5)
+			# A explosão fecha o golpe com o valor cheio da carga. Ela e o sol em voo
+			# dividem o mesmo orçamento (384), então acertar com os dois não dobra.
+			exp_zone.setup(_spec.valor_do_hit(3.5), 18.0, Vector3.UP * 32.0, 0.4, caster, 15.0)
+			_spec.marcar(exp_zone)
 
 			# Visual da explosão solar (Esfera de plasma de fogo expandindo)
 			var exp_mesh := MeshInstance3D.new()

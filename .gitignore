@@ -21,3 +21,4 @@ tools/anim_editor/abrir.log
 # modelos largados para rigar (entrada local, não versiona)
 assets/models/inbox/*
 !assets/models/inbox/.gitkeep
+assets/models/environment/sol3D.glb

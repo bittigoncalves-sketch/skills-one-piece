@@ -118,16 +118,50 @@ Duas consequências que explicam quase todo bug de fruta em rede:
    sem criar hitbox nenhuma — foi exatamente assim que três frutas passaram
    meses dando os golpes da Gomu Gomu sem ninguém perceber.
 
-### Dano
+### Dano — reescrito em 2026-08-21
 
-`DamageZone.DAMAGE_SCALE = 0.12`. O número do `SkillSystem` é **nominal**: o
-dano aplicado é `dano × 0,12`. Um golpe de 85 tira ~10,2 de uma barra de 2048.
-**O foco do combate é knockback** (jogar para fora do mapa), não atrito de vida
-— quem mexer em dano precisa saber que 14× de diferença passou despercebido uma
-vez (o tornado da Suna, item 1 da lista).
+> ⚠️ **As tabelas numéricas das páginas por fruta ainda citam a escala ANTIGA.**
+> A fonte da verdade é `src/combat/Balance.gd`. Esta seção descreve o modelo que
+> vale hoje; as páginas individuais estão sendo atualizadas.
 
-Fonte que **fura** a escala existe e é bug conhecido: chamar `take_damage()`
-direto, sem `DamageZone`.
+**Todo número de dano do jogo mora em `src/combat/Balance.gd`.** Ele é FINAL: é
+o que a barra de vida perde, sem nenhum fator escondido no caminho.
+
+O que havia antes, e por que mudou:
+
+- `DamageZone.DAMAGE_SCALE = 0.12` multiplicava tudo que passasse por hitbox. Ele
+  **foi removido**. Estava no lugar errado: seis efeitos chamavam `take_damage()`
+  direto e entregavam o número cru, 8,3× mais forte. Não era bug isolado — era o
+  Liberation da Yami tirando **1811 de uma vida de 2048** (88%) enquanto a
+  ultimate da Gura tirava 20 (1%).
+- Vinte e quatro multiplicadores literais viviam dentro dos arquivos de efeito
+  (`damage * 2.5`, `damage * 0.35`, …). Agora são campos nomeados da spec.
+- O campo `dano` do `SkillSystem` significava quatro coisas diferentes conforme a
+  skill. Agora existe `DamageSpec.tipo` (`UNICO` / `MULTI` / `CARREGADO`).
+
+**O caminho de um golpe:**
+
+```
+Balance.novo(fruta, slot) -> DamageSpec (com cast_id próprio)
+    -> FX.cast(..., spec)      o efeito carimba as hitboxes com spec.marcar()
+    -> DamageZone              a hitbox, com cast_id e teto
+    -> CombatResolver.aplicar  o funil: consulta o orçamento e corta o excedente
+    -> take_damage             o alvo
+```
+
+**Teto por conjuração.** Todas as hitboxes nascidas de um mesmo aperto de tecla
+compartilham um `cast_id`, e o acumulado por (conjuração, alvo) é cortado no teto
+do slot: Z 200, X 256, C 384, V 768. É o que impede um Gatling de 16 socos ou um
+Liberation de 25 escombros de somar sem limite. O teto corta o **dano**, não o
+**acerto**: knockback, hitstun e crédito de kill continuam valendo, porque neste
+jogo quem mata é o buraco do mapa.
+
+**Não existe mais fonte que fure a escala.** Nenhum efeito chama `take_damage()`
+direto — `grep -rn "take_damage(" src/effects/` deve devolver só verificações
+`has_method`. Quem precisa ferir sem hitbox (o arremesso do Kurouzu, os cortes do
+Domínio) chama `CombatResolver.aplicar()`, e por isso obedece ao mesmo teto.
+
+`tools/dev_tests/test_balance.gd` recusa a tabela se ela sair da referência.
 
 ### Recarga — cuidado, há duas tabelas e uma está morta
 

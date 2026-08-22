@@ -12,6 +12,10 @@ extends RefCounted
 # "desabilitado": a tecla não lança nada e o `CastController` recusa no aperto.
 # É uma FLAG DE DADOS, não um `if estilo == "karate_tritao"`: o próximo estilo
 # que quiser 3 golpes em vez de 4 não precisa de código novo.
+# ⚠️ OS VALORES DE `dano` FORAM REESCALADOS EM 2026-08-21 para a mesma escala das
+# frutas. A FONTE usada em jogo é `Balance.ESTILOS` — `Player._fire_skill` lê de
+# lá. Os números aqui ficaram como referência de leitura da skill, ao lado do
+# nome, da cor e da recarga; `test_balance.gd` confere que as duas batem.
 const STYLES := {
 	"karate_tritao": {
 		"nome": "Karate Tritão",
@@ -21,9 +25,9 @@ const STYLES := {
 			# d'água da mão" e "C = onda empurrada pra frente", e os nomes canônicos
 			# estavam invertidos em relação a isso desde sempre. Murasame é o jato
 			# de água disparado; Karakusa Kawaragete é a onda.
-			"Z": {"nome": "Murasame (Tiros d'Água)", "cor": Color(0.3, 0.8, 1.0), "dano": 28, "cooldown": 2.0},
-			"X": {"nome": "Samehada Shotei (Palma de Tubarão)", "cor": Color(0.1, 0.6, 0.9), "dano": 42, "cooldown": 4.0},
-			"C": {"nome": "Karakusa Kawaragete (Onda d'Água)", "cor": Color(0.2, 0.7, 1.0), "dano": 36, "cooldown": 5.5},
+			"Z": {"nome": "Murasame (Tiros d'Água)", "cor": Color(0.3, 0.8, 1.0), "dano": 88, "cooldown": 2.0},
+			"X": {"nome": "Samehada Shotei (Palma de Tubarão)", "cor": Color(0.1, 0.6, 0.9), "dano": 160, "cooldown": 4.0},
+			"C": {"nome": "Karakusa Kawaragete (Onda d'Água)", "cor": Color(0.2, 0.7, 1.0), "dano": 224, "cooldown": 5.5},
 			"V": {"nome": "— (sem técnica)", "cor": Color(0.05, 0.4, 0.95), "dano": 0, "cooldown": 0.0, "desabilitado": true}
 		}
 	},
@@ -31,64 +35,67 @@ const STYLES := {
 		"nome": "PX Pacifista",
 		"cor": Color(1.0, 0.25, 0.25),
 		"skills": {
-			"Z": {"nome": "PX Laser Blast (Feixe de Luz)", "cor": Color(1.0, 0.3, 0.3), "dano": 32, "cooldown": 2.2},
-			"X": {"nome": "Targeting Dual Laser (Disparo Duplo)", "cor": Color(1.0, 0.1, 0.1), "dano": 48, "cooldown": 4.5},
-			"C": {"nome": "Thruster Boost (Propulsor PX)", "cor": Color(1.0, 0.5, 0.2), "dano": 25, "cooldown": 4.0},
-			"V": {"nome": "PX Orbital Laser (Bombardeio Orbital)", "cor": Color(1.0, 0.05, 0.05), "dano": 92, "cooldown": 13.0}
+			"Z": {"nome": "PX Laser Blast (Feixe de Luz)", "cor": Color(1.0, 0.3, 0.3), "dano": 92, "cooldown": 2.2},
+			"X": {"nome": "Targeting Dual Laser (Disparo Duplo)", "cor": Color(1.0, 0.1, 0.1), "dano": 176, "cooldown": 4.5},
+			"C": {"nome": "Thruster Boost (Propulsor PX)", "cor": Color(1.0, 0.5, 0.2), "dano": 200, "cooldown": 4.0},
+			"V": {"nome": "PX Orbital Laser (Bombardeio Orbital)", "cor": Color(1.0, 0.05, 0.05), "dano": 704, "cooldown": 13.0}
 		}
 	},
 	"mink": {
 		"nome": "Mink Electro",
 		"cor": Color(0.95, 0.95, 0.35),
 		"skills": {
-			"Z": {"nome": "Electro Claw Jab (Garra Elétrica)", "cor": Color(0.9, 0.9, 0.2), "dano": 26, "cooldown": 1.8},
-			"X": {"nome": "Voltage Discharge (Descarga Voltáica)", "cor": Color(1.0, 0.95, 0.4), "dano": 40, "cooldown": 4.0},
-			"C": {"nome": "Sulong Dash (Investida Elétrica)", "cor": Color(0.8, 1.0, 0.3), "dano": 30, "cooldown": 4.5},
-			"V": {"nome": "Electro Cannon (Canhão Elétrico)", "cor": Color(1.0, 1.0, 0.1), "dano": 88, "cooldown": 12.5}
+			"Z": {"nome": "Electro Claw Jab (Garra Elétrica)", "cor": Color(0.9, 0.9, 0.2), "dano": 84, "cooldown": 1.8},
+			"X": {"nome": "Voltage Discharge (Descarga Voltáica)", "cor": Color(1.0, 0.95, 0.4), "dano": 152, "cooldown": 4.0},
+			"C": {"nome": "Sulong Dash (Investida Elétrica)", "cor": Color(0.8, 1.0, 0.3), "dano": 208, "cooldown": 4.5},
+			"V": {"nome": "Electro Cannon (Canhão Elétrico)", "cor": Color(1.0, 1.0, 0.1), "dano": 672, "cooldown": 12.5}
 		}
 	},
 	"boxe": {
 		"nome": "Boxe de Combate",
 		"cor": Color(0.95, 0.55, 0.2),
 		"skills": {
-			"Z": {"nome": "Dempsey Roll (Ganchos Sônicos)", "cor": Color(0.9, 0.4, 0.1), "dano": 30, "cooldown": 1.6},
-			"X": {"nome": "Body Blow (Soco no Corpo)", "cor": Color(0.8, 0.3, 0.1), "dano": 45, "cooldown": 3.8},
-			"C": {"nome": "Weave Dash (Esquiva de Luta)", "cor": Color(1.0, 0.6, 0.3), "dano": 20, "cooldown": 3.0},
-			"V": {"nome": "Megaton Uppercut (Uppercut Devastador)", "cor": Color(1.0, 0.2, 0.0), "dano": 90, "cooldown": 11.0}
+			"Z": {"nome": "Dempsey Roll (Ganchos Sônicos)", "cor": Color(0.9, 0.4, 0.1), "dano": 88, "cooldown": 1.6},
+			"X": {"nome": "Body Blow (Soco no Corpo)", "cor": Color(0.8, 0.3, 0.1), "dano": 168, "cooldown": 3.8},
+			"C": {"nome": "Weave Dash (Esquiva de Luta)", "cor": Color(1.0, 0.6, 0.3), "dano": 192, "cooldown": 3.0},
+			"V": {"nome": "Megaton Uppercut (Uppercut Devastador)", "cor": Color(1.0, 0.2, 0.0), "dano": 688, "cooldown": 11.0}
 		}
 	},
 	"cyborg": {
 		"nome": "Cyborg Tech",
 		"cor": Color(0.2, 0.8, 0.75),
 		"skills": {
-			"Z": {"nome": "Strong Right (Punho de Aço)", "cor": Color(0.3, 0.7, 0.9), "dano": 34, "cooldown": 2.0},
-			"X": {"nome": "Weapons Left (Canhão Voxel)", "cor": Color(0.2, 0.8, 0.6), "dano": 46, "cooldown": 4.2},
-			"C": {"nome": "Coup de Vent (Sopro de Ar)", "cor": Color(0.4, 0.9, 0.8), "dano": 35, "cooldown": 5.0},
-			"V": {"nome": "Radical Beam (Super Feixe Radical)", "cor": Color(0.1, 1.0, 0.9), "dano": 95, "cooldown": 14.0}
+			"Z": {"nome": "Strong Right (Punho de Aço)", "cor": Color(0.3, 0.7, 0.9), "dano": 96, "cooldown": 2.0},
+			"X": {"nome": "Weapons Left (Canhão Voxel)", "cor": Color(0.2, 0.8, 0.6), "dano": 176, "cooldown": 4.2},
+			"C": {"nome": "Coup de Vent (Sopro de Ar)", "cor": Color(0.4, 0.9, 0.8), "dano": 216, "cooldown": 5.0},
+			"V": {"nome": "Radical Beam (Super Feixe Radical)", "cor": Color(0.1, 1.0, 0.9), "dano": 720, "cooldown": 14.0}
 		}
 	},
 	"teste_animacao": {
 		"nome": "Teste de Animação",
 		"cor": Color(0.4, 0.6, 1.0),
 		"skills": {
-			"Z": {"nome": "punching (Soco Mixamo)", "cor": Color(0.3, 0.6, 1.0), "dano": 25, "cooldown": 1.2, "anim": "punching"},
-			"X": {"nome": "mmakick (Chute Mixamo)", "cor": Color(1.0, 0.6, 0.2), "dano": 35, "cooldown": 2.5, "anim": "mmakick"},
-			"C": {"nome": "groundsmash (Impacto Mixamo)", "cor": Color(1.0, 0.2, 0.2), "dano": 50, "cooldown": 5.0, "anim": "groundsmash"},
-			"V": {"nome": "groundsmash (Max Smash)", "cor": Color(1.0, 0.1, 0.1), "dano": 85, "cooldown": 10.0, "anim": "groundsmash"}
+			"Z": {"nome": "punching (Soco Mixamo)", "cor": Color(0.3, 0.6, 1.0), "dano": 80, "cooldown": 1.2, "anim": "punching"},
+			"X": {"nome": "mmakick (Chute Mixamo)", "cor": Color(1.0, 0.6, 0.2), "dano": 128, "cooldown": 2.5, "anim": "mmakick"},
+			"C": {"nome": "groundsmash (Impacto Mixamo)", "cor": Color(1.0, 0.2, 0.2), "dano": 192, "cooldown": 5.0, "anim": "groundsmash"},
+			"V": {"nome": "groundsmash (Max Smash)", "cor": Color(1.0, 0.1, 0.1), "dano": 512, "cooldown": 10.0, "anim": "groundsmash"}
 		}
 	}
 }
 
-static func cast(world: Node, style_id: String, variant: int, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
+static func cast(world: Node, style_id: String, variant: int, origin: Vector3, dir: Vector3, damage: float,
+		caster: Node, spec: DamageSpec = null) -> void:
 	var fwd := dir.normalized()
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	match style_id:
-		"karate_tritao": _cast_water(world, origin, fwd, variant, damage, caster)
-		"pacifista":     _cast_laser(world, origin, fwd, variant, damage, caster)
-		"mink":          _cast_electro(world, origin, fwd, variant, damage, caster)
-		"boxe":          _cast_boxe(world, origin, fwd, variant, damage, caster)
-		"cyborg":        _cast_cyborg(world, origin, fwd, variant, damage, caster)
-		"teste_animacao": _cast_teste_anim(world, origin, fwd, variant, damage, caster)
-		_:               _cast_water(world, origin, fwd, variant, damage, caster)
+		"karate_tritao": _cast_water(world, origin, fwd, variant, damage, caster, spec)
+		"pacifista":     _cast_laser(world, origin, fwd, variant, damage, caster, spec)
+		"mink":          _cast_electro(world, origin, fwd, variant, damage, caster, spec)
+		"boxe":          _cast_boxe(world, origin, fwd, variant, damage, caster, spec)
+		"cyborg":        _cast_cyborg(world, origin, fwd, variant, damage, caster, spec)
+		"teste_animacao": _cast_teste_anim(world, origin, fwd, variant, damage, caster, spec)
+		_:               _cast_water(world, origin, fwd, variant, damage, caster, spec)
 
 # ---------- Karate Tritão ----------
 # ⚠️ ATÉ 2026-08-13 ESTA FUNÇÃO IGNORAVA O `variant`: os quatro slots do estilo
@@ -107,15 +114,17 @@ static func cast(world: Node, style_id: String, variant: int, origin: Vector3, d
 #     tecla no aperto), então em jogo ele não chega aqui;
 #   • estilo SEM tratamento próprio — o `cast()` acima manda o desconhecido para
 #     cá, e ele tem que continuar saindo com o mesmo golpe genérico de sempre.
-static func _cast_water(world: Node, origin: Vector3, fwd: Vector3, variant: int, damage: float, caster: Node) -> void:
+static func _cast_water(world: Node, origin: Vector3, fwd: Vector3, variant: int, damage: float,
+		caster: Node, spec: DamageSpec = null) -> void:
 	match variant:
-		0: WaterFX.tiros_da_mao(world, origin, fwd, damage, caster)   # Z — tiros d'água da mão
-		1: WaterFX.esguicho(world, origin, fwd, damage, caster)       # X — INTACTO (pedido do dono)
-		2: WaterFX.onda(world, origin, fwd, damage, caster)           # C — onda empurrada pra frente
-		_: WaterFX.esguicho(world, origin, fwd, damage, caster)       # V / estilo desconhecido
+		0: WaterFX.tiros_da_mao(world, origin, fwd, damage, caster, spec)   # Z — tiros d'água da mão
+		1: WaterFX.esguicho(world, origin, fwd, damage, caster, spec)       # X — INTACTO (pedido do dono)
+		2: WaterFX.onda(world, origin, fwd, damage, caster, spec)           # C — onda empurrada pra frente
+		_: WaterFX.esguicho(world, origin, fwd, damage, caster, spec)       # V / estilo desconhecido
 
 # ---------- Pacifista Laser ----------
-static func _cast_laser(world: Node, origin: Vector3, fwd: Vector3, variant: int, damage: float, caster: Node) -> void:
+static func _cast_laser(world: Node, origin: Vector3, fwd: Vector3, variant: int, damage: float,
+		caster: Node, spec: DamageSpec = null) -> void:
 	var zone := DamageZone.new()
 	world.add_child(zone)
 	zone.global_position = origin
@@ -134,9 +143,12 @@ static func _cast_laser(world: Node, origin: Vector3, fwd: Vector3, variant: int
 	zone.add_child(beam)
 
 	zone.setup(damage, 16.0, fwd * 35.0, 1.5, caster, 1.0)
+	if spec != null:
+		spec.marcar(zone)
 
 # ---------- Mink Electro ----------
-static func _cast_electro(world: Node, origin: Vector3, fwd: Vector3, variant: int, damage: float, caster: Node) -> void:
+static func _cast_electro(world: Node, origin: Vector3, fwd: Vector3, variant: int, damage: float,
+		caster: Node, spec: DamageSpec = null) -> void:
 	var zone := DamageZone.new()
 	world.add_child(zone)
 	zone.global_position = origin
@@ -154,9 +166,12 @@ static func _cast_electro(world: Node, origin: Vector3, fwd: Vector3, variant: i
 	zone.add_child(sparks)
 
 	zone.setup(damage, 14.0, fwd * 28.0, 1.3, caster, 1.0)
+	if spec != null:
+		spec.marcar(zone)
 
 # ---------- Boxe ----------
-static func _cast_boxe(world: Node, origin: Vector3, fwd: Vector3, variant: int, damage: float, caster: Node) -> void:
+static func _cast_boxe(world: Node, origin: Vector3, fwd: Vector3, variant: int, damage: float,
+		caster: Node, spec: DamageSpec = null) -> void:
 	var zone := DamageZone.new()
 	world.add_child(zone)
 	zone.global_position = origin
@@ -174,9 +189,12 @@ static func _cast_boxe(world: Node, origin: Vector3, fwd: Vector3, variant: int,
 	zone.add_child(punches)
 
 	zone.setup(damage, 15.0, fwd * 30.0, 1.4, caster, 1.0)
+	if spec != null:
+		spec.marcar(zone)
 
 # ---------- Cyborg ----------
-static func _cast_cyborg(world: Node, origin: Vector3, fwd: Vector3, variant: int, damage: float, caster: Node) -> void:
+static func _cast_cyborg(world: Node, origin: Vector3, fwd: Vector3, variant: int, damage: float,
+		caster: Node, spec: DamageSpec = null) -> void:
 	var zone := DamageZone.new()
 	world.add_child(zone)
 	zone.global_position = origin
@@ -194,9 +212,12 @@ static func _cast_cyborg(world: Node, origin: Vector3, fwd: Vector3, variant: in
 	zone.add_child(blast)
 
 	zone.setup(damage, 18.0, fwd * 32.0, 1.8, caster, 1.2)
+	if spec != null:
+		spec.marcar(zone)
 
 # ---------- Teste de Animação (Mixamo) ----------
-static func _cast_teste_anim(world: Node, origin: Vector3, fwd: Vector3, variant: int, damage: float, caster: Node) -> void:
+static func _cast_teste_anim(world: Node, origin: Vector3, fwd: Vector3, variant: int, damage: float,
+		caster: Node, spec: DamageSpec = null) -> void:
 	var zone := DamageZone.new()
 	world.add_child(zone)
 	zone.global_position = origin
@@ -210,6 +231,8 @@ static func _cast_teste_anim(world: Node, origin: Vector3, fwd: Vector3, variant
 
 	# Sem VFX de partículas conforme solicitado - foco total na reprodução e teste das animações.
 	zone.setup(damage, 15.0 if variant < 2 else 20.0, fwd * 25.0, 1.3, caster, 1.0)
+	if spec != null:
+		spec.marcar(zone)
 
 
 # Carrega dinamicamente os arquivos FBX/GLB da pasta assets/animations/ e injeta na biblioteca do AnimationPlayer

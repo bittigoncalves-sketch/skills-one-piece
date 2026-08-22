@@ -22,10 +22,10 @@ extends RefCounted
 #  topo de cada bloco — velocidade, alcance, largura, altura, cadência, fração
 #  de dano. Afinar o golpe é editar uma constante; não é reescrever o efeito.
 #
-#  ⚠️ ONDE O DANO É DECIDIDO: quem aplica é a `DamageZone`, e ela multiplica por
-#  `DAMAGE_SCALE` (0.12) — o foco do projeto é knockback, não dano. Então o
-#  número que sai daqui NÃO é o dano final; é o dano nominal do golpe. Ver
-#  src/effects/DamageZone.gd.
+#  ⚠️ ONDE O DANO É DECIDIDO: quem aplica é o `CombatResolver`, chamado pela
+#  `DamageZone`. O número que chega aqui É o dano final — não há mais nenhum
+#  fator no caminho. (Até 2026-08-21 havia: a `DamageZone` multiplicava tudo
+#  por `DAMAGE_SCALE = 0.12`.) A fonte é `src/combat/Balance.gd`.
 #
 #  ⚠️ PROJÉTIL RÁPIDO: a `DamageZone` anda por teleporte e varre o caminho com um
 #  raio (`_varrer_caminho`) justamente porque `Area3D` só enxerga quem está
@@ -89,7 +89,10 @@ const TIRO_RISCO := 2.2           # m de risco d'água atrás da bala
 # 0,6×. É de propósito: a rajada premia mira, não a tecla.
 const TIRO_DANO_FRACAO := 0.30
 
-static func tiros_da_mao(world: Node, origin: Vector3, fwd: Vector3, damage: float, caster: Node) -> void:
+static func tiros_da_mao(world: Node, origin: Vector3, fwd: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	if not _mundo_vivo(world):
 		return
 	var rumo := fwd.normalized()
@@ -100,7 +103,7 @@ static func tiros_da_mao(world: Node, origin: Vector3, fwd: Vector3, damage: flo
 	for i in TIROS_QTD:
 		var atraso := float(i) * TIROS_INTERVALO
 		if atraso <= 0.0:
-			_um_tiro(world, _ponto_da_mao(caster, origin), rumo, dano_tiro, caster, i)
+			_um_tiro(world, _ponto_da_mao(caster, origin), rumo, dano_tiro, caster, i, spec)
 			continue
 		# Agendado por timer em vez de um nó controlador (como o GomuGatling):
 		# são 6 eventos sem estado entre eles. Um Node3D só para contar até 6
@@ -112,9 +115,10 @@ static func tiros_da_mao(world: Node, origin: Vector3, fwd: Vector3, damage: flo
 		t.timeout.connect(func() -> void:
 			if not _mundo_vivo(world):
 				return
-			_um_tiro(world, _ponto_da_mao(caster, origin), rumo, dano_tiro, caster, i))
+			_um_tiro(world, _ponto_da_mao(caster, origin), rumo, dano_tiro, caster, i, spec))
 
-static func _um_tiro(world: Node, de: Vector3, fwd: Vector3, dano: float, caster: Node, indice: int) -> void:
+static func _um_tiro(world: Node, de: Vector3, fwd: Vector3, dano: float, caster: Node, indice: int,
+		spec: DamageSpec = null) -> void:
 	var dir := _com_espalhamento(fwd, indice)
 
 	var zona := DamageZone.new()
@@ -129,6 +133,8 @@ static func _um_tiro(world: Node, de: Vector3, fwd: Vector3, dano: float, caster
 
 	var vida := TIRO_ALCANCE / TIRO_VEL
 	zona.setup(dano, TIRO_KB, dir * TIRO_VEL, vida, caster, TIRO_RAIO)
+	if spec != null:
+		spec.marcar(zona)
 
 	_fogacho_dagua(world, de, dir)
 	# Pitch BAIXO de propósito: é o mesmo estalo da pistola, mas grave lê como
@@ -392,7 +398,10 @@ static func crista_de_onda(p: PerfilDeOnda) -> Node3D:
 	raiz.set_meta("mats", [mat_corpo, mat_labio])
 	return raiz
 
-static func onda(world: Node, origin: Vector3, fwd: Vector3, damage: float, caster: Node) -> void:
+static func onda(world: Node, origin: Vector3, fwd: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	if not _mundo_vivo(world):
 		return
 	var rumo := Vector3(fwd.x, 0.0, fwd.z)
@@ -422,6 +431,7 @@ static func onda(world: Node, origin: Vector3, fwd: Vector3, damage: float, cast
 
 	var vida := ONDA_ALCANCE / ONDA_VEL
 	zona.setup(damage, ONDA_KB, rumo * ONDA_VEL, vida, caster, ONDA_RAIO)
+	spec.marcar(zona)
 
 	# SUBIDA: a onda se levanta do chão em vez de aparecer inteira. Começa baixa e
 	# estreita e abre — é o que dá a sensação de água sendo EMPURRADA, e não de
@@ -599,7 +609,10 @@ static func _erupcao(world: Node, pos: Vector3, rumo: Vector3, largura: float = 
 #  Ele também é o CAMINHO SEGURO de qualquer variante desconhecida (ver
 #  `FightingStyles._cast_water`): estilo sem tratamento próprio continua caindo
 #  aqui, exatamente como caía antes.
-static func esguicho(world: Node, origin: Vector3, fwd: Vector3, damage: float, caster: Node) -> void:
+static func esguicho(world: Node, origin: Vector3, fwd: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	if not _mundo_vivo(world):
 		return
 	var zone := DamageZone.new()
@@ -619,6 +632,7 @@ static func esguicho(world: Node, origin: Vector3, fwd: Vector3, damage: float, 
 	zone.add_child(water)
 
 	zone.setup(damage, 14.0, fwd * 25.0, 1.2, caster, 1.2)
+	spec.marcar(zone)
 
 # ============================================================================
 #  OFICINA

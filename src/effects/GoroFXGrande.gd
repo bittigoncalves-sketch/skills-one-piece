@@ -49,7 +49,10 @@ extends RefCounted
 #          raio gigante no eixo + 2 anéis de choque) — é ela que carrega a
 #          hitbox principal do golpe
 #    4,20  a nuvem se abre e dissipa; o controlador se liberta
-static func el_thor(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
+static func el_thor(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	var fwd: Vector3 = dir.normalized()
 	if fwd.length_squared() < 0.01:
 		fwd = Vector3(0, 0, -1)
@@ -68,7 +71,7 @@ static func el_thor(world: Node, origin: Vector3, dir: Vector3, damage: float, c
 
 	# (a carga do braço já saiu no APERTO — ver `gatilho_do_braco`)
 
-	var ctrl := ElThorController.new(alvo, damage, caster)
+	var ctrl := ElThorController.new(alvo, damage, caster, spec)
 	world.add_child(ctrl)
 	FxUtil.autofree(ctrl, ElThorController.TOTAL + 1.6)   # rede de segurança
 
@@ -180,9 +183,12 @@ class ElThorController extends Node3D:
 	var _luz: GoroFX.Flicker
 	var _mats: Array = []
 
-	func _init(centro: Vector3, dmg: float, c: Node) -> void:
+	var spec: DamageSpec = null
+
+	func _init(centro: Vector3, dmg: float, c: Node, s: DamageSpec = null) -> void:
 		damage = dmg
 		caster = c
+		spec = s if s != null else DamageSpec.avulso(dmg)
 		position = centro
 
 	func _ready() -> void:
@@ -291,7 +297,11 @@ class ElThorController extends Node3D:
 			# ⚠️ OS RAIOS QUE CAEM PARALISAM, NÃO EMPURRAM (pedido do dono,
 			# 2026-08-12). Empurrar aqui espalhava o alvo para fora da área
 			# antes de a COLUNA FINAL chegar — o golpe se sabotava.
-			zona.setup(damage * 0.35, 0.0, Vector3.ZERO, 0.22, caster, 2.8)
+			# ⚠️ ERA `damage * 0.35`. Cada raio que cai vale o dano cheio de um acerto
+			# MULTI (64); quem limita o total dos 11 é o teto do slot, não uma fração
+			# escrita aqui.
+			zona.setup(spec.dano, 0.0, Vector3.ZERO, 0.22, caster, 2.8)
+			spec.marcar(zona)
 			zona.paralisa = 1.2
 			AudioFX.snap(mundo, pos_global, randf_range(1.15, 1.75))
 			if _restam % 4 == 0:
@@ -345,7 +355,10 @@ class ElThorController extends Node3D:
 			# subia 48 m e abandonava a coluna no primeiro instante. Agora ela fica
 			# ONDE O RAIO CAIU. Dano, knockback, vida e raio continuam os de antes.
 			# A COLUNA FINAL é a única que arremessa — é o clímax do golpe.
-			zona.setup(damage, 22.0, Vector3.ZERO, 3.2, caster, 3.5)
+			# A COLUNA vale o dobro de um raio (`partes.coluna`): é o clímax do golpe
+			# e a única parte que arremessa.
+			zona.setup(spec.parte("coluna", spec.dano * 2.0), 22.0, Vector3.ZERO, 3.2, caster, 3.5)
+			spec.marcar(zona)
 			AudioFX.cannon(mundo, global_position, 0.34)
 			AudioFX.impact(mundo, global_position, 0.5)
 			GoroFX._screen_flash(mundo, Color(1.0, 1.0, 0.85), 0.75)
@@ -382,18 +395,21 @@ class ElThorController extends Node3D:
 # começa na hora (a execução 3D nasce no CLIQUE, como o dono pediu) e só é
 # liberado por `soltar()`.
 static func mamaragan_carregado(world: Node, origin: Vector3, dir: Vector3,
-		damage: float, caster: Node) -> Node:
-	var c := _novo_mamaragan(world, origin, dir, damage, caster)
+		damage: float, caster: Node, spec: DamageSpec = null) -> Node:
+	var c := _novo_mamaragan(world, origin, dir, damage, caster, spec)
 	c.segurando = true
 	return c
 
-static func mamaragan(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
-	_novo_mamaragan(world, origin, dir, damage, caster)
+static func mamaragan(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	_novo_mamaragan(world, origin, dir, damage, caster, spec)
 
 # Monta o golpe e devolve o controlador. Separado porque a versão CARREGÁVEL
 # precisa da referência para poder soltar depois.
 static func _novo_mamaragan(world: Node, origin: Vector3, dir: Vector3,
-		damage: float, caster: Node) -> MamaraganController:
+		damage: float, caster: Node, spec: DamageSpec = null) -> MamaraganController:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	var fwd: Vector3 = dir.normalized()
 	if fwd.length_squared() < 0.01:
 		fwd = Vector3(0, 0, -1)
@@ -405,7 +421,7 @@ static func _novo_mamaragan(world: Node, origin: Vector3, dir: Vector3,
 			# então o prazo aqui é só a rede de segurança de um cast normal.
 			caster.lock_movement(MamaraganController.LIBERA_EM, "V")
 
-	var ctrl := MamaraganController.new(origin, fwd, damage, caster)
+	var ctrl := MamaraganController.new(origin, fwd, damage, caster, spec)
 	world.add_child(ctrl)
 	FxUtil.autofree(ctrl, MamaraganController.TOTAL + 1.6)   # rede de segurança
 	return ctrl
@@ -588,9 +604,12 @@ class MamaraganController extends Node3D:
 	var _ancoras: Array = []
 	var _mats: Array = []
 
-	func _init(origem: Vector3, direcao: Vector3, dmg: float, c: Node) -> void:
+	var spec: DamageSpec = null
+
+	func _init(origem: Vector3, direcao: Vector3, dmg: float, c: Node, s: DamageSpec = null) -> void:
 		damage = dmg
 		caster = c
+		spec = s if s != null else DamageSpec.avulso(dmg)
 		fwd = direcao
 		position = origem
 
@@ -800,7 +819,14 @@ class MamaraganController extends Node3D:
 				(c as GPUParticles3D).emitting = false
 		_correntes.clear()
 		if mundo:
-			var bola := MamaraganBall.new(origem, fwd, damage, caster)
+			# A bola herda a spec do controlador: voo e detonação dividem o orçamento.
+			#
+			# O dano da DETONAÇÃO é o da carga no instante da soltura — a mesma
+			# interpolação 512 -> 768 das outras duas skills carregáveis do jogo.
+			# `carga_atual()` devolve 0..1 e `valor_do_hit` espera SEGUNDOS, daí a
+			# multiplicação pelo tempo de carga da tabela.
+			var dano_carregado := spec.valor_do_hit(carga_atual() * spec.tempo_de_carga)
+			var bola := MamaraganBall.new(origem, fwd, dano_carregado, caster, spec)
 			mundo.add_child(bola)
 			AudioFX.impact(mundo, origem, 0.55)
 			AudioFX.whoosh(mundo, origem, 0.75)
@@ -846,11 +872,14 @@ class MamaraganBall extends Node3D:
 	var _t := 0.0
 	var _morreu := false
 
-	func _init(origem: Vector3, direcao: Vector3, dmg: float, c: Node) -> void:
+	var spec: DamageSpec = null
+
+	func _init(origem: Vector3, direcao: Vector3, dmg: float, c: Node, s: DamageSpec = null) -> void:
 		position = origem
 		dir = direcao.normalized()
 		damage = dmg
 		caster = c
+		spec = s if s != null else DamageSpec.avulso(dmg)
 
 	func _ready() -> void:
 		var orb := ThunderOrb.new()
@@ -865,7 +894,10 @@ class MamaraganBall extends Node3D:
 		# descola do visual como acontecia na coluna do El Thor.
 		var zona := DamageZone.new()
 		add_child(zona)
-		zona.setup(damage * 0.6, 26.0, Vector3.ZERO, VIDA + 0.05, caster, 2.6)
+		# A bola em VOO fere quem ela atravessa (`partes.orbe`); o grosso do golpe
+		# é a detonação. Era `damage * 0.6` escrito aqui dentro.
+		zona.setup(spec.parte("orbe", 256.0), 26.0, Vector3.ZERO, VIDA + 0.05, caster, 2.6)
+		spec.marcar(zona)
 
 	func _process(delta: float) -> void:
 		if _morreu:
@@ -911,7 +943,9 @@ class MamaraganBall extends Node3D:
 		var zona := DamageZone.new()
 		mundo.add_child(zona)
 		zona.global_position = pos
+		# A DETONAÇÃO leva o valor da carga — mínimo 512, cheia 768.
 		zona.setup(damage, 30.0, Vector3.ZERO, 0.5, caster, 12.0)
+		spec.marcar(zona)
 
 		AudioFX.cannon(mundo, pos, 0.3)
 		AudioFX.impact(mundo, pos, 0.42)

@@ -10,12 +10,15 @@ const FLAME := [
 	Color(0.2, 0.05, 0.0, 0.0),   # fumaça some
 ]
 
-static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float, caster: Node) -> void:
+static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float,
+		caster: Node, charge: float = 0.0, spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	match variant:
-		0: _higan(world, origin, dir, damage, caster)
-		1: _hiken(world, origin, dir, damage, caster)
-		2: _entei_sun(world, origin, dir, damage, caster)
-		_: FireFXGrande._inferno(world, caster.global_position, damage, caster)
+		0: _higan(world, origin, dir, damage, caster, spec)
+		1: _hiken(world, origin, dir, damage, caster, spec)
+		2: var fireflies = load("res://src/effects/FirefliesFX.gd"); fireflies.cast_fireflies(world, caster.global_position, damage, caster, spec)
+		_: _entei_sun(world, origin, dir, damage, caster, charge, spec)
 
 static func _flame_proc(direction: Vector3, spread: float, vmin: float, vmax: float,
 		grav: Vector3, smin: float, smax: float, turb: float, radius: float = 0.0) -> ParticleProcessMaterial:
@@ -70,7 +73,10 @@ static func _magma_material() -> StandardMaterial3D:
 # ---------- Z: Higan (Tiros de Pistola de Fogo) ----------
 # BALA DE FOGO (Higan em rajada): parece uma bala de verdade, só que de fogo.
 # Cápsula alongada emissiva + miolo branco-quente + rastro; viaja MUITO rápido.
-static func bullet(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
+static func bullet(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	# Uma bala da RAJADA Z. A spec é a mesma do pente inteiro (ver
+	# `Player._spec_do_disparo`), então as 16 balas dividem o teto do slot.
 	var fwd := dir.normalized()
 	var zone := DamageZone.new()
 	world.add_child(zone)
@@ -118,8 +124,13 @@ static func bullet(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 
 	AudioFX.gunshot(world, origin, randf_range(0.95, 1.1)) # som de tiro potente
 	zone.setup(damage, 9.0, fwd * 55.0, 0.7, caster, 0.35)   # bala RÁPIDA + knockback
+	if spec != null:
+		spec.marcar(zone)
 
-static func _higan(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
+static func _higan(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	AudioFX.gunshot(world, origin, 1.0) # Som potente de tiro de bala de fogo ao iniciar
 	var controller := Node3D.new()
 	world.add_child(controller)
@@ -203,7 +214,33 @@ static func _higan(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 		var pm := _flame_proc(Vector3(0,0,1), 10.0, 1.0, 2.0, Vector3(0, 0.5, 0), 0.3, 0.8, 0.5)
 		zone.add_child(FxUtil.particles(30, 0.4, false, pm, FxUtil.grain(0.4)))
 		
-		zone.setup(damage * 0.3, 12.0, dir.normalized() * 35.0, 1.0, caster, 0.6)
+		# Cada dedo dispara um tiro de valor CHEIO; quem limita o total é o teto do
+		# slot, não uma fração escrita aqui (era `damage * 0.3`).
+		zone.setup(spec.dano, 12.0, dir.normalized() * 35.0, 10.0, caster, 0.6)
+		spec.marcar(zone)
+		
+		zone.set_meta("spawn_time", Time.get_ticks_msec())
+		
+		var explode = func(b=null):
+			if not is_instance_valid(zone) or zone.get_meta("exploded", false): return
+			
+			if b != null and not b.has_method("take_damage"):
+				if Time.get_ticks_msec() - zone.get_meta("spawn_time", Time.get_ticks_msec()) < 100:
+					return
+					
+			zone.set_meta("exploded", true)
+			if is_instance_valid(world):
+				var pm_exp = _flame_proc(Vector3.UP, 180.0, 2.0, 5.0, Vector3(0, 1.0, 0), 0.5, 1.5, 1.0)
+				var fire = FxUtil.particles(25, 0.3, true, pm_exp, FxUtil.grain(0.8), 0.85)
+				fire.material_override = FxUtil.particle_material(Color(1, 0.4, 0.1), 4.0, true)
+				fire.global_position = zone.global_position
+				world.add_child(fire)
+				AudioFX.impact(world, zone.global_position, 0.5)
+			zone.queue_free()
+			
+		zone.collided_with_any.connect(explode)
+		zone.tree_exiting.connect(explode)
+		
 		AudioFX.whoosh(world, zone.global_position, 0.5)
 		AudioFX.gunshot(world, zone.global_position, randf_range(0.95, 1.15))
 	)
@@ -212,19 +249,37 @@ static func _higan(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 		timer.start()
 
 # ---------- X: Hiken (Punho de Fogo) ----------
-static func _hiken(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
+static func _hiken(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	var zone := DamageZone.new()
 	world.add_child(zone)
-	zone.global_position = origin
+	# Subimos 0.5 para não raspar no chão imediatamente, já que a hitbox é grande
+	zone.global_position = origin + Vector3.UP * 0.5
 	
-	# Voxel Fist
+	# Voxel Fist (Literal Punho de Fogo)
 	var blocks = []
-	var bs = 0.6
+	var bs = 0.5
+	# Base da mão (Palma e dorso)
 	for x in range(-2, 3):
-		for y in range(-2, 3):
-			for z in range(-2, 3):
-				if x*x + y*y <= 5: # Shape circular arredondado
-					blocks.append(Vector3(x, y, z) * bs)
+		for y in range(-1, 2):
+			for z in range(0, 3):
+				blocks.append(Vector3(x, y, z) * bs)
+	
+	# 4 Dedos dobrados na frente (-z)
+	for x in range(-2, 2): # mindinho até indicador
+		blocks.append(Vector3(x, 1, -1) * bs)
+		blocks.append(Vector3(x, 1, -2) * bs)
+		blocks.append(Vector3(x, 0, -2) * bs)
+		blocks.append(Vector3(x, -1, -2) * bs)
+		blocks.append(Vector3(x, -1, -1) * bs)
+		
+	# Polegar (na lateral direita, x = 2)
+	blocks.append(Vector3(2, 0, -1) * bs)
+	blocks.append(Vector3(3, 0, -1) * bs)
+	blocks.append(Vector3(2, -1, -1) * bs)
+	blocks.append(Vector3(1, -1, -1) * bs)
 					
 	var mmi := MultiMeshInstance3D.new()
 	var mm := MultiMesh.new()
@@ -248,8 +303,32 @@ static func _hiken(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 	zone.add_child(FxUtil.particles(200, 1.0, false, pm, FxUtil.grain(0.8)))
 	zone.add_child(_embers())
 	
-	# Velocidade e tempo de vida
-	zone.setup(damage, 35.0, d * 25.0, 1.2, caster, 2.5)
+	# Velocidade e tempo de vida (raio diminuído de 2.5 para 1.5 para não tocar o chão)
+	zone.setup(spec.dano, 35.0, d * 25.0, 10.0, caster, 1.5)
+	spec.marcar(zone)
+	
+	zone.set_meta("spawn_time", Time.get_ticks_msec())
+	
+	var explode = func(b=null):
+		if not is_instance_valid(zone) or zone.get_meta("exploded", false): return
+		
+		# Prevenir explosão instantânea em chão/paredes nos primeiros 100ms
+		if b != null and not b.has_method("take_damage"):
+			if Time.get_ticks_msec() - zone.get_meta("spawn_time", Time.get_ticks_msec()) < 100:
+				return
+				
+		zone.set_meta("exploded", true)
+		if is_instance_valid(world):
+			var pm_exp = _flame_proc(Vector3.UP, 180.0, 5.0, 15.0, Vector3(0, 1.0, 0), 2.0, 4.0, 2.0)
+			var fire = FxUtil.particles(80, 0.6, true, pm_exp, FxUtil.grain(0.8), 0.85)
+			fire.material_override = FxUtil.particle_material(Color(1, 0.4, 0.1), 6.0, true)
+			fire.global_position = zone.global_position
+			world.add_child(fire)
+			AudioFX.impact(world, zone.global_position, 1.0)
+		zone.queue_free()
+		
+	zone.collided_with_any.connect(explode)
+	zone.tree_exiting.connect(explode)
 	
 	# Explosão massiva ao final do trajeto
 	var tree := zone.get_tree()
@@ -257,35 +336,65 @@ static func _hiken(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 		var timer := tree.create_timer(1.15)
 		timer.timeout.connect(func():
 			if is_instance_valid(world):
-				FireFXGrande._explosion(world, zone.global_position, damage, caster)
+				FireFXGrande._explosion(world, zone.global_position, damage, caster, spec)
 		)
 
 # ---------- C: Dai Enkai: Entei (Invocação e Disparo do Sol) ----------
 # O usuário convoca um colossal Sol ardente (modelo do onepiece-voxel) acima de si,
 # concentrando chamas intensas, e o dispara em alta velocidade contra os inimigos!
-static func _entei_sun(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
+static func _entei_sun(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
+		charge: float = 0.0, spec: DamageSpec = null) -> void:
 	print("☀️ [Mera Mera C - Dai Enkai: Entei] Invocando e disparando o GRANDE SOL!")
 	# A classe interna foi junto no corte por tamanho (2026-08-11) — ela é do
 	# mesmo bloco do Entei, e o Entei ficou aqui. Qualificar é mais barato que
 	# mover a classe de volta e reabrir os 900 linhas.
-	var ctrl := FireFXGrande.EnteiSunController.new(caster, origin, dir, damage)
+	var ctrl := FireFXGrande.EnteiSunController.new(caster, origin, dir, damage, spec)
 	world.add_child(ctrl)
+	
+	ctrl.update_charge(charge)
+	ctrl.set_meta("fired", true)
+	ctrl.shoot(dir, charge)
 
 static func _build_sun_model() -> Node3D:
-	var path := "res://assets/models/environment/sun.gltf"
-	if ResourceLoader.exists(path):
-		var scene: PackedScene = load(path)
-		if scene:
-			var container := Node3D.new()
-			container.name = "SunVisual"
-			var inst := scene.instantiate()
-			container.add_child(inst)
-			# O centro geométrico do sol no blockbench (0.5, 0.5, 0.703125)
-			inst.position = -Vector3(0.5, 0.5, 0.703125) * 6.5
-			inst.scale = Vector3.ONE * 6.5
-			_make_unshaded_emissive(inst)
-			return container
-	return _procedural_sun_fallback()
+	var root := Node3D.new()
+	root.name = "SunVisual"
+	
+	var yellow := Color(1.0, 0.82, 0.05)       # Amarelo vibrante
+	var yellow_bright := Color(1.0, 0.95, 0.3) # Brilho central
+	
+	var core_mesh = BoxMesh.new()
+	core_mesh.size = Vector3(14.0, 14.0, 14.0)
+	var core_mat = StandardMaterial3D.new()
+	core_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	core_mat.albedo_color = yellow
+	core_mat.emission_enabled = true
+	core_mat.emission = yellow
+	core_mat.emission_energy_multiplier = 4.0
+	
+	var core_mi = MeshInstance3D.new()
+	core_mi.mesh = core_mesh
+	core_mi.material_override = core_mat
+	root.add_child(core_mi)
+	
+	# Detalhamento: criar "erupções" cúbicas menores ao redor do cubo central
+	for i in range(24):
+		var bump = MeshInstance3D.new()
+		var b_mesh = BoxMesh.new()
+		b_mesh.size = Vector3(randf_range(3.0, 8.0), randf_range(3.0, 8.0), randf_range(3.0, 8.0))
+		bump.mesh = b_mesh
+		
+		var b_mat = StandardMaterial3D.new()
+		b_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		b_mat.albedo_color = yellow_bright if (i % 4 == 0) else yellow
+		b_mat.emission_enabled = true
+		b_mat.emission = b_mat.albedo_color
+		b_mat.emission_energy_multiplier = 6.0 if (i % 4 == 0) else 3.0
+		bump.material_override = b_mat
+		
+		bump.position = Vector3(randf_range(-7.0, 7.0), randf_range(-7.0, 7.0), randf_range(-7.0, 7.0))
+		root.add_child(bump)
+		
+	return root
 
 static func _make_unshaded_emissive(node: Node) -> void:
 	if node is MeshInstance3D:

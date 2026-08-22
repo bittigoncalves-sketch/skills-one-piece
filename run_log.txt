@@ -1,0 +1,3 @@
+Godot Engine v4.6.3.stable.debian4.6.3+ds-1 - https://godotengine.org
+
+[GameFlow] Display Server (Driver): headless

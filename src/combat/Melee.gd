@@ -10,8 +10,9 @@ extends RefCounted
 #  Passou a janela sem clicar, o combo volta ao primeiro soco.
 #
 #  Sem custo de energia, de propósito: é o golpe que sobra quando a barra azul
-#  acaba. Dano baixo e knockback crescente — quem mata é o buraco, não o dano
-#  (mesma filosofia da DamageZone, ver DAMAGE_SCALE lá).
+#  acaba. Dano moderado e knockback crescente — quem mata é o buraco, não o
+#  dano. Os valores vêm de `Balance.MELEE`; ver a nota sobre a reescala em
+#  `COMBO`, embaixo.
 #
 #  OS DOIS SOCOS SÃO CLIPES DE VERDADE, um de cada lado. Vieram do pacote
 #  Meshy "Blue Block Buddy" e foram medidos (soma UpperArm + ForeArm):
@@ -133,18 +134,30 @@ const JANELA := 2.0        # tempo pra encadear o próximo golpe (pedido do usu�
 # conta derivada da animação em 2026-08-15 — ver `static func recuo()` embaixo e
 # o `tools/dev_tests/medir_tempos_melee.gd`, que mede a defasagem que motivou a
 # troca. Quem quiser um golpe mais lento mexe em `vel`/`inicio`: a trava segue.
+# ⚠️ OS VALORES DE `dano` FORAM REESCALADOS EM 2026-08-21, junto com o resto do
+# jogo. Eram 30/34/40/70, números da escala antiga, em que a `DamageZone` ainda
+# multiplicava tudo por 0,12 — o combo inteiro tirava 20,9 de uma vida de 2048.
+#
+# Agora são os de `Balance.MELEE`, e o combo completo vale 278: pouco mais que
+# um golpe Z de fruta. Sem este realinhamento o corpo a corpo ficaria trinta
+# vezes mais fraco que as frutas e deixaria de ser uma opção.
+#
+# ⚠️ Eles ficam AQUI, e não só no `Balance`, de propósito: cada passo é uma
+# linha de frame data (`vel`, `inicio`, `atraso`, `vida`, `shake`) e separar só
+# a coluna `dano` para outro arquivo tornaria ilegível a leitura de um golpe.
+# O `test_balance.gd` confere que as duas tabelas continuam batendo.
 const COMBO := [
 	{
 		"nome": "Soco Direito", "anim": "boxing_1", "espelhar": false,
 		"vel": 1.5, "inicio": 0.00,
-		"dano": 30.0, "kb": 11.0, "alcance": 1.5, "raio": 1.5,
+		"dano": 48.0, "kb": 11.0, "alcance": 1.5, "raio": 1.5,
 		"atraso": 0.3780, "vida": 0.18, "shake": 0.25,
 		"melee_guarda": "R",
 	},
 	{
 		"nome": "Soco Esquerdo", "anim": "left_uppercut_from_guard", "espelhar": false,
 		"vel": 1.05, "inicio": 0.10,
-		"dano": 34.0, "kb": 13.0, "alcance": 1.5, "raio": 1.5,
+		"dano": 54.0, "kb": 13.0, "alcance": 1.5, "raio": 1.5,
 		"atraso": 0.25, "vida": 0.18, "shake": 0.30,
 		"melee_guarda": "L",
 	},
@@ -155,14 +168,14 @@ const COMBO := [
 		# "perna_L" e não "perna_R".
 		"nome": "Chute Lateral", "anim": "roundhouse_kick", "espelhar": false,
 		"vel": 1.5, "inicio": 0.40,
-		"dano": 40.0, "kb": 15.0, "alcance": 2.0, "raio": 1.9,
+		"dano": 64.0, "kb": 15.0, "alcance": 2.0, "raio": 1.9,
 		"atraso": 0.4667, "vida": 0.22, "shake": 0.4,
 		"melee_guarda": "perna_L",
 	},
 	{
 		"nome": "Finalizador", "anim": "meia_lua_de_compasso", "espelhar": false,
 		"vel": 1.5, "inicio": 0.00,
-		"dano": 70.0, "kb": 26.0, "alcance": 2.2, "raio": 2.0,
+		"dano": 112.0, "kb": 26.0, "alcance": 2.2, "raio": 2.0,
 		"atraso": 0.7113, "vida": 0.25, "shake": 0.6,
 	},
 ]
@@ -171,19 +184,19 @@ const COMBO_SWORD := [
 	{
 		"nome": "Corte Direita-Esquerda", "anim": "boxing_1", "espelhar": false,
 		"vel": 1.5, "inicio": 0.00,
-		"dano": 40.0, "kb": 15.0, "alcance": 2.5, "raio": 2.0,
+		"dano": 64.0, "kb": 15.0, "alcance": 2.5, "raio": 2.0,
 		"atraso": 0.35, "vida": 0.20, "shake": 0.35,
 	},
 	{
 		"nome": "Corte Esquerda-Direita", "anim": "boxing_1", "espelhar": true,
 		"vel": 1.4, "inicio": 0.00,
-		"dano": 45.0, "kb": 18.0, "alcance": 2.5, "raio": 2.0,
+		"dano": 72.0, "kb": 18.0, "alcance": 2.5, "raio": 2.0,
 		"atraso": 0.35, "vida": 0.20, "shake": 0.40,
 	},
 	{
 		"nome": "Corte Vertical", "anim": "boxing_2", "espelhar": false,
 		"vel": 1.2, "inicio": 0.10,
-		"dano": 60.0, "kb": 25.0, "alcance": 3.0, "raio": 2.5,
+		"dano": 96.0, "kb": 25.0, "alcance": 3.0, "raio": 2.5,
 		"atraso": 0.30, "vida": 0.25, "shake": 0.50,
 		"projetil": true
 	},
@@ -357,7 +370,7 @@ static func _spawn_air_slash(world: Node, caster: Node3D, fwd: Vector3, g: Dicti
 	box.size = Vector3(4.0 * s, 0.5 * s, 1.0 * s) # Larga e fina (meia-lua)
 	
 	# Velocidade do projétil: 25 m/s
-	proj.setup(float(g["dano"]) * 1.2 * s, float(g["kb"]) * 1.5 * s, fwd * 25.0, 1.5, caster, 1.0, box)
+	proj.setup(float(g["dano"]) * Balance.MELEE["projetil_mult"] * s, float(g["kb"]) * 1.5 * s, fwd * 25.0, 1.5, caster, 1.0, box)
 	
 	# Visual da meia-lua
 	var m := MeshInstance3D.new()

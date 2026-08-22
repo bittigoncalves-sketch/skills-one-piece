@@ -8,7 +8,7 @@ extends Node3D
 var _radius := 3.0
 var _pull := 9.0          # força do puxão horizontal p/ o centro
 var _lift := 6.0          # velocidade de subida imposta a quem está dentro
-var _dps := 12.0          # dano por segundo (aplicado em ticks)
+var _dano := 12.0         # dano POR TIQUE (vem da tabela; era "por segundo")
 var _tick := 0.4          # intervalo entre ticks de dano
 var _life := 3.0
 var _caster: Node = null
@@ -19,11 +19,14 @@ var _tick_t := 0.0
 var _velocity := Vector3.ZERO
 var _zone: DamageZone = null   # hitbox E sensor de quem está dentro
 
-func setup(radius: float, pull: float, lift: float, dps: float, life: float, caster: Node, move_dir: Vector3 = Vector3.ZERO) -> void:
+var _spec: DamageSpec = null
+
+func setup(radius: float, pull: float, lift: float, dano_por_tique: float, life: float, caster: Node, move_dir: Vector3 = Vector3.ZERO, spec: DamageSpec = null) -> void:
+	_spec = spec if spec != null else DamageSpec.avulso(dano_por_tique)
 	_radius = radius
 	_pull = pull
 	_lift = lift
-	_dps = dps
+	_dano = dano_por_tique
 	_life = life
 	_caster = caster
 
@@ -39,7 +42,8 @@ func setup(radius: float, pull: float, lift: float, dps: float, life: float, cas
 	add_child(_zone)
 	# KNOCKBACK ZERO: o tornado SUGA para o centro. Empurrão pra fora brigaria com
 	# a mecânica de puxar/levantar, que é a razão de ser deste golpe.
-	_zone.setup(dps * _tick, 0.0, Vector3.ZERO, life, caster, radius)
+	_zone.setup(dano_por_tique, 0.0, Vector3.ZERO, life, caster, radius)
+	_spec.marcar(_zone)
 
 	var flat_dir := Vector3(move_dir.x, 0.0, move_dir.z)
 	if flat_dir.length_squared() > 0.01:
@@ -92,15 +96,13 @@ func _physics_process(delta: float) -> void:
 			b.velocity.x = lerpf(b.velocity.x, pull_v.x, 0.35)
 			b.velocity.z = lerpf(b.velocity.z, pull_v.z, 0.35)
 			b.velocity.y = _lift                        # levanta
-		if do_damage and body.has_method("take_damage"):
-			# ⚠️ PASSA PELO DAMAGE_SCALE, como todas as outras fontes de dano.
+		if do_damage:
+			# ⚠️ ERA `take_damage()` DIRETO, com um `* DamageZone.DAMAGE_SCALE`
+			# colado à mão para compensar estar fora do funil — o mesmo remendo do
+			# campo da Ice Age, e a mesma prova de que a constante estava no lugar
+			# errado. Sem o remendo o tornado batia 142,4, catorze vezes o segundo
+			# colocado do jogo, porque estava numa ESCALA diferente de todo o resto.
 			#
-			# Sem ele o tornado batia 142,4 num alvo — 14x o segundo colocado do
-			# jogo inteiro (o chute do corpo a corpo dá 8,4; o ultimate da Yami,
-			# 46,8). O número não estava errado por si: ele estava numa ESCALA
-			# diferente do resto, porque esta linha chamava `take_damage` direto
-			# enquanto todo mundo passa pela DamageZone, que multiplica por 0.12.
-			#
-			# O desequilíbrio ficou visível só em 2026-08-11: antes o tornado
-			# varria apenas o grupo "enemy" e nunca alcançava um jogador.
-			body.take_damage(_dps * _tick * DamageZone.DAMAGE_SCALE, center, Vector3.ZERO)
+			# Agora passa pelo `CombatResolver` como qualquer outra fonte, e por
+			# isso divide o orçamento do golpe com a hitbox de entrada.
+			CombatResolver.aplicar(body, _dano, _spec.cast_id, _spec.teto, center)

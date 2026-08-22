@@ -17,7 +17,10 @@ var _is_right := true
 var _punch_count := 0
 var _max_punches := 16
 
-func setup(world: Node, caster: Node, arm_r: Node3D, arm_l: Node3D, fwd: Vector3, damage: float, on_recover: Callable) -> void:
+var _spec: DamageSpec = null
+
+func setup(world: Node, caster: Node, arm_r: Node3D, arm_l: Node3D, fwd: Vector3, damage: float, on_recover: Callable, spec: DamageSpec = null) -> void:
+	_spec = spec if spec != null else DamageSpec.avulso(damage)
 	_world = world
 	_caster = caster
 	_arm_r = arm_r
@@ -71,11 +74,19 @@ func _fire_punch() -> void:
 	
 	var knockback = 2.5 if is_last else 0.15 # Golpes prendem o inimigo, o último empurra muito
 	var shake = 2.0 if is_last else 0.2 # Shakes curtos, último pesado
-	var dmg = _damage * (1.8 if is_last else 0.4) # Divide o dano, concentra no final
+	# ⚠️ AQUI FICAVA `_damage * (1.8 if is_last else 0.4)`. O `_damage` era o
+	# ORÇAMENTO do golpe inteiro e cada soco levava uma fração dele — mais um
+	# caso do campo `dano` significando coisa diferente conforme a skill.
+	# Agora `_spec.dano` é o valor de UM soco (80) e o `partes.final` é o do
+	# último (160), os dois vindos da tabela. Concentrar o estrago no soco final
+	# é leitura de golpe — é ele que arremessa —, não número solto.
+	var dmg: float = _spec.parte("final", _spec.dano * 2.0) if is_last else _spec.dano
 	
 	# Passa null no hidden_arm para que o próprio GomuArm não o esconda/mostre de forma errada
 	# Passa Callable() vazio no on_recover para que cada soco individual não dispare o chicote no rig
-	gomu.setup(_world, _caster, shoulder, null, punch_dir, punch_len, 0.22, dmg, Callable(), true, knockback, shake)
+	# Os 16 socos recebem a MESMA spec: mesmo `cast_id`, mesmo teto. Quem toma
+	# todos leva 384 (o teto do slot C), não 15x80 + 160 = 1360.
+	gomu.setup(_world, _caster, shoulder, null, punch_dir, punch_len, 0.22, dmg, Callable(), true, knockback, shake, _spec)
 	
 func _finish() -> void:
 	if _arm_r: _arm_r.visible = true

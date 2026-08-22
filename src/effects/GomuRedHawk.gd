@@ -14,8 +14,10 @@ var _target_pos: Vector3
 var _start_pos: Vector3
 var _shoulder: Node3D
 var _arm_visual: GomuArm
+var _spec: DamageSpec = null
 
-func setup(world: Node, caster: Node3D, shoulder: Node3D, fwd: Vector3, damage: float, on_recover: Callable) -> void:
+func setup(world: Node, caster: Node3D, shoulder: Node3D, fwd: Vector3, damage: float, on_recover: Callable, spec: DamageSpec = null) -> void:
+	_spec = spec if spec != null else DamageSpec.avulso(damage)
 	_world = world
 	_caster = caster
 	_fwd = fwd
@@ -153,7 +155,12 @@ func _impact(pos: Vector3) -> void:
 	
 	# Usando raio 8.0 para area de efeito
 	var shockwave_dir = _fwd # Direção do knockback (para trás)
-	zone.setup(_damage * 2.5, 30.0, Vector3.ZERO, 0.2, _caster, 8.0)
+	# ⚠️ ERA `_damage * 2.5` — um dos vinte e quatro multiplicadores literais que
+	# moravam dentro dos arquivos de efeito. O valor da ultimate agora vem inteiro
+	# da tabela (`Balance.FRUTAS.gomu_gomu.V`), onde dá para lê-lo ao lado do das
+	# outras ultimates em vez de ter que abrir um arquivo de explosões.
+	zone.setup(_damage, 30.0, Vector3.ZERO, 0.2, _caster, 8.0)
+	_spec.marcar(zone)
 	
 	# Aplicar queimadura nos inimigos próximos (Fake, adicionamos dano via sinal se tivéssemos, ou script anexado)
 	_apply_burn_aoe(pos, 8.0)
@@ -227,4 +234,7 @@ func _apply_burn_aoe(pos: Vector3, radius: float) -> void:
 			var burn = load("res://src/effects/BurnStatus.gd").new()
 			burn.name = "RedHawkBurn"
 			enemy.add_child(burn)
-			burn.setup(enemy, 3.0, _damage * 0.1)
+			# ⚠️ Este laço varre o grupo "enemies", VAZIO desde que os inimigos foram
+			# desativados (10 ago) — hoje a queimadura não alcança ninguém em partida
+			# PvP. O valor fica declarado na tabela para o dia em que voltarem.
+			burn.setup(enemy, 3.0, _spec.parte("queimadura", 32.0), _spec)

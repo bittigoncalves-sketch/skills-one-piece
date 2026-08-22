@@ -35,7 +35,8 @@ extends RefCounted
 #  componentes criados no `_ready()` (medido na Fase 5: pai=7, filho=1).
 # ============================================================================
 
-const REGEN_ENERGIA := 320.0   # energia por segundo (base, inalterada)
+const REGEN_ENERGIA_PCT := 0.005       # 0,5% do máximo por segundo
+const REGEN_ENERGIA_KILL_PCT := 0.02   # 2% por segundo, depois de matar
 
 # ---------------------------------------------------------- REGENERAÇÃO DE VIDA
 # Pedido do dono, 2026-08-12. Os números são PERCENTUAIS do máximo, não valores
@@ -45,9 +46,8 @@ const REGEN_ENERGIA := 320.0   # energia por segundo (base, inalterada)
 #   depois de apanhar . −90%    -> 1,02 hp/s enquanto a briga está quente
 #   depois de uma kill  2,0%/s  -> 40,96 hp/s por 30 s, cura em 50 s
 #
-# A penalidade de dano vale para VIDA E ENERGIA (pedido explícito). O bônus de
-# kill vale só para a VIDA: em energia, 2%/s seria 82/s, um nerf de 4× sobre os
-# 320/s atuais.
+# A pedido do usuário (2026-08-21), a regeneração de energia agora segue
+# EXATAMENTE o mesmo formato (percentual e com bônus de kill) da vida.
 const REGEN_VIDA_PCT := 0.005        # 0,5% do máximo por segundo
 const REGEN_VIDA_KILL_PCT := 0.02    # 2% por segundo, depois de matar
 const BONUS_KILL_DURACAO := 30.0     # segundos de bônus por kill
@@ -106,15 +106,17 @@ func restaurar() -> void:
 
 # ---------------------------------------------------------------- energia
 # Regenera VIDA e ENERGIA. A penalidade de combate multiplica as duas; o bônus
-# de kill acelera só a vida.
+# de kill acelera as duas.
 func regenerar(delta: float) -> void:
 	var fator := PENALIDADE_DANO if em_combate() else 1.0
 
-	var pct := REGEN_VIDA_KILL_PCT if com_bonus_de_kill() else REGEN_VIDA_PCT
+	var pct_vida := REGEN_VIDA_KILL_PCT if com_bonus_de_kill() else REGEN_VIDA_PCT
 	if vida < vida_max:
-		vida = minf(vida + vida_max * pct * fator * delta, vida_max)
+		vida = minf(vida + vida_max * pct_vida * fator * delta, vida_max)
 
-	energia = minf(energia + REGEN_ENERGIA * fator * delta, energia_max)
+	var pct_energia := REGEN_ENERGIA_KILL_PCT if com_bonus_de_kill() else REGEN_ENERGIA_PCT
+	if energia < energia_max:
+		energia = minf(energia + energia_max * pct_energia * fator * delta, energia_max)
 
 func gastar(custo: float) -> void:
 	energia = maxf(energia - custo, 0.0)

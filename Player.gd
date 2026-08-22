@@ -75,6 +75,11 @@ func _add_input_to_buffer(action: String) -> void:
 		_input_buffer.pop_front()
 
 func _consume_input(action: String) -> bool:
+	if has_meta("custom_pose") and get_meta("custom_pose") == "knockdown":
+		return false
+	if has_meta("is_frozen") and get_meta("is_frozen"):
+		return false
+		
 	var current_time = Time.get_ticks_msec()
 	_input_buffer = _input_buffer.filter(func(i): return current_time - i["time"] <= BUFFER_WINDOW_MS)
 	for i in range(_input_buffer.size()):
@@ -211,7 +216,10 @@ var _buki_armas: Dictionary:        # slot -> Node3D pré-construído (oculto)
 	get: return _rig.armas_buki() if _rig else {}
 var _buki_pivot: Node3D:            # pivô do canhão-corpo (X): gira com a mira
 	get: return _rig.pivo_buki() if _rig else null
-var _skill_cooldowns: Dictionary = {"Z": 0.0, "X": 0.0, "C": 0.0, "V": 0.0}
+var _fruit_cooldowns: Dictionary = {"Z": 0.0, "X": 0.0, "C": 0.0, "V": 0.0}
+var _style_cooldowns: Dictionary = {"Z": 0.0, "X": 0.0, "C": 0.0, "V": 0.0}
+var _skill_cooldowns: Dictionary:
+	get: return _fruit_cooldowns if combat_mode == "fruit" else _style_cooldowns
 var _combo_breaker_cooldown: float = 0.0
 var aim_assist: bool = false   # assistência de mira (liga/desliga no E)
 var _gura_rush_active := false
@@ -283,8 +291,13 @@ const RECARGA_ESTILO := 60.0
 func trigger_skill_cooldown(slot: String) -> void:
 	if not RECARGA_POR_SLOT.has(slot):
 		return
-	_skill_cooldowns[slot] = RECARGA_ESTILO if combat_mode == "style" \
-		else RECARGA_POR_SLOT[slot]
+	if combat_mode == "style":
+		_style_cooldowns[slot] = RECARGA_ESTILO
+	else:
+		if current_fruit_id == "":
+			_fruit_cooldowns[slot] = 0.0
+		else:
+			_fruit_cooldowns[slot] = RECARGA_POR_SLOT[slot]
 var _mesh: MeshInstance3D
 var _crosshair: Control
 
@@ -867,12 +880,19 @@ func _etapa_estado_de_combate(delta: float) -> void:
 	# um golpe longo (Black Hole, 7 s de trava) e sair dele com a barra inteira
 	# recarregada de graça: o tempo de um golpe pagava o tempo de todos.
 	var em_uso := _slot_em_uso()
-	for slot_k in _skill_cooldowns.keys():
-		if _skill_cooldowns[slot_k] <= 0.0:
+	for slot_k in _fruit_cooldowns.keys():
+		if _fruit_cooldowns[slot_k] <= 0.0:
 			continue
-		if em_uso != "" and slot_k != em_uso:
+		if em_uso != "" and slot_k != em_uso and combat_mode == "fruit":
 			continue                       # congelado: outra habilidade está ativa
-		_skill_cooldowns[slot_k] = maxf(_skill_cooldowns[slot_k] - delta, 0.0)
+		_fruit_cooldowns[slot_k] = maxf(_fruit_cooldowns[slot_k] - delta, 0.0)
+	
+	for slot_k in _style_cooldowns.keys():
+		if _style_cooldowns[slot_k] <= 0.0:
+			continue
+		if em_uso != "" and slot_k != em_uso and combat_mode == "style":
+			continue                       # congelado: outra habilidade está ativa
+		_style_cooldowns[slot_k] = maxf(_style_cooldowns[slot_k] - delta, 0.0)
 	if _combo_breaker_cooldown > 0.0:
 		_combo_breaker_cooldown = maxf(_combo_breaker_cooldown - delta, 0.0)
 	if _yami_pistol_active:
@@ -948,7 +968,7 @@ func _etapa_locomocao(delta: float) -> void:
 	q.ler(_yaw, not menu_aberto)
 	# Rajada (Mera/Hie Z): fica PARADO enquanto atira; só a câmera gira. Volta a
 	# andar ao soltar o botão ou acabar as balas (release_charge zera _rapid_fire).
-	if _rapid_fire:
+	if _rapid_fire or (has_meta("custom_pose") and get_meta("custom_pose") == "knockdown"):
 		q.congelar()
 
 	# PARKOUR -> src/player/parkour_controller.gd. Uma chamada resolve pouso de
@@ -1320,6 +1340,7 @@ func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knock
 # souber do dano — é o que faz o adversário te ver apanhar.
 func _feedback_de_dano(amount: float, hitstun_duration: float = 0.3) -> void:
 	FxUtil.flash_red(_char_model)
+	FxUtil.bleed(get_tree().current_scene, global_position + Vector3.UP * 1.2, int(maxf(4, amount / 5.0)))
 	AudioFX.hurt(get_tree().current_scene, global_position + Vector3.UP * 1.0)
 	# ANIMAÇÃO DE RECEPÇÃO DE DANO (pedido do dono, 2026-08-14):
 	# "vai ocorrer sempre que o jogador receber dano".
@@ -1327,7 +1348,12 @@ func _feedback_de_dano(amount: float, hitstun_duration: float = 0.3) -> void:
 	# passa todo dano visível em QUALQUER cópia — o do servidor e o que chega por
 	# `net_vida_do_servidor`. Pendurar no `take_damage` faria o adversário não ver
 	# você apanhar, que é exatamente o bug do item 20.
-	RecepcaoDeDano.aplicar(self, hitstun_duration)
+	var dur_knockdown := get_meta("knockdown_dur", 0.0) as float
+	if dur_knockdown > 0.0:
+		RecepcaoDeDano.derrubar_com_animacao(self, dur_knockdown)
+		remove_meta("knockdown_dur")
+	else:
+		RecepcaoDeDano.aplicar(self, hitstun_duration)
 	if _fsm:
 		_fsm.transition_to("Stunned")
 	FxUtil.damage_number(get_tree().current_scene, global_position + Vector3.UP * 1.7, amount, Color(1.0, 0.75, 0.2))
@@ -1434,6 +1460,7 @@ func net_force_respawn() -> void:
 
 	# Se o jogador possuía uma fruta, devolve a fruta para a sua árvore
 	if current_fruit_id != "":
+		clear_spawned_skills()
 		FruitNet.respawn(current_fruit_id)
 		current_fruit_id = ""
 		speed_multiplier = 1.0
@@ -1481,11 +1508,18 @@ func net_force_respawn() -> void:
 	# atravessavam a morte — medido: cast de C (10 s), morte com 7,967 s
 	# restantes, e a recarga seguia correndo. Como o respawn também devolve a
 	# fruta, o jogador voltava sem poder nenhum E com o relógio andando no vazio.
-	for slot_k in _skill_cooldowns.keys():
-		_skill_cooldowns[slot_k] = 0.0
+	for slot_k in _fruit_cooldowns.keys():
+		_fruit_cooldowns[slot_k] = 0.0
+	for slot_k in _style_cooldowns.keys():
+		_style_cooldowns[slot_k] = 0.0
 
 	_vida.restaurar()
 	RecepcaoDeDano.limpar(self)
+	# Orçamento de dano também morre com o corpo. Um pente cujo teto já tinha
+	# sido gasto sobreviveria ao respawn e a primeira arma sacada na vida nova
+	# não machucaria ninguém — mesmo tipo de vazamento do item 23 (`is_casting`
+	# pendurado depois da morte).
+	encerrar_disparo()
 	velocity = Vector3.ZERO
 	global_position = Scoreboard.RESPAWN   # centro da plataforma (zona sem buraco)
 
@@ -1826,21 +1860,55 @@ func _net_bullet_play(aim: Vector3, origin: Vector3, arma: String) -> void:
 		if sender != 0 and sender != 1: return
 	if arma != "":
 		# BUKI: o disparo tem cara de arma (fogacho, cápsula, projétil) e o dano
-		# por bala vem do SkillSystem — a arma é escolhida pelo slot.
-		var fs := SkillSystem.get_fruit_skills()
-		var dano: float = 20.0
-		if fs.has("buki_buki") and fs["buki_buki"].has(arma):
-			dano = float(fs["buki_buki"][arma].get("dano", 20))
-		BukiFX.disparo(get_tree().current_scene, origin, aim, arma, dano, self)
+		# por bala vem do `Balance`. O PENTE INTEIRO é uma conjuração só — as 100
+		# balas do minigun dividem um orçamento, senão a arma com mais munição
+		# seria automaticamente a mais forte.
+		var spec_b := _spec_do_disparo("buki_buki", arma)
+		BukiFX.disparo(get_tree().current_scene, origin, aim, arma, spec_b.dano, self, null, spec_b)
 		return
 	if get_tree() and get_tree().current_scene:
 		AudioFX.gunshot(get_tree().current_scene, origin, randf_range(0.95, 1.12))
+	# ⚠️ AQUI MORAVAM TRÊS LITERAIS (`8.0`, `25.0`, `8.0`) escritos à mão, que
+	# ignoravam a tabela de skills — ela dizia 20 para a Mera Z e 28 para a Hie Z,
+	# e nenhum dos dois era usado. Com 16 balas por rajada, o erro se multiplicava.
+	var spec_r := _spec_do_disparo(current_fruit_id, "Z")
 	if current_fruit_id == "hie_hie":
-		IceFX.bullet(get_tree().current_scene, origin, aim, 8.0, self)   # flecha de gelo
+		IceFX.bullet(get_tree().current_scene, origin, aim, spec_r.dano, self, spec_r)
 	elif current_fruit_id == "yami_yami":
-		YamiFX.bullet(get_tree().current_scene, origin, aim, 25.0, self) # bala de trevas abissais
+		YamiFX.bullet(get_tree().current_scene, origin, aim, spec_r.dano, self, spec_r)
 	else:
-		FireFX.bullet(get_tree().current_scene, origin, aim, 8.0, self)  # bala de fogo
+		FireFX.bullet(get_tree().current_scene, origin, aim, spec_r.dano, self, spec_r)
+
+# ---------------------------------------------------- CONJURAÇÃO DE DISPARO
+# A spec do pente/rajada em curso. Uma rajada de 16 balas e um pente de 100 são
+# UMA conjuração, não 16 ou 100 — é isso que dá teto a elas.
+#
+# ⚠️ Só o valor do SERVIDOR importa: a `DamageZone` sai cedo em clientes, então
+# cada peer ter o seu `cast_id` é inofensivo. Não vale a pena sincronizar.
+var _spec_disparo: DamageSpec = null
+var _spec_disparo_chave: String = ""
+
+## Abre (ou reaproveita) a conjuração do disparo sustentado deste slot.
+## Troca de arma ou de fruta abre uma conjuração nova — a chave carrega as duas.
+func _spec_do_disparo(fruta: String, slot: String) -> DamageSpec:
+	var chave := fruta + "/" + slot
+	if _spec_disparo != null and _spec_disparo_chave == chave:
+		return _spec_disparo
+	var s := Balance.novo(fruta, slot)
+	if s == null:
+		s = DamageSpec.avulso(0.0)
+	_spec_disparo = s
+	_spec_disparo_chave = chave
+	return s
+
+## Fecha a conjuração de disparo. Chamado ao guardar a arma, ao parar a rajada e
+## ao morrer: sem isto o pente seguinte nasceria com o orçamento do anterior já
+## gasto, e a segunda arma sacada não machucaria ninguém.
+func encerrar_disparo() -> void:
+	if _spec_disparo != null:
+		CombatResolver.encerrar(_spec_disparo.cast_id)
+	_spec_disparo = null
+	_spec_disparo_chave = ""
 
 @rpc("any_peer", "call_local", "reliable")
 func _net_play_cast(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.0) -> void:
@@ -1848,6 +1916,28 @@ func _net_play_cast(slot: String, aim: Vector3, origin: Vector3, charge: float =
 		var sender = multiplayer.get_remote_sender_id()
 		if sender != 0 and sender != 1: return
 	_fire_skill(slot, aim, origin, charge)
+
+var _spawned_skills_container: Node3D
+
+func _exit_tree() -> void:
+	if is_instance_valid(_spawned_skills_container):
+		_spawned_skills_container.queue_free()
+
+func _get_skills_container() -> Node3D:
+	if not is_instance_valid(_spawned_skills_container):
+		_spawned_skills_container = Node3D.new()
+		_spawned_skills_container.name = "Skills_" + name
+		var sc = get_tree().current_scene
+		if sc:
+			sc.add_child.call_deferred(_spawned_skills_container)
+		else:
+			add_child.call_deferred(_spawned_skills_container)
+	return _spawned_skills_container
+
+func clear_spawned_skills() -> void:
+	if is_instance_valid(_spawned_skills_container):
+		for c in _spawned_skills_container.get_children():
+			c.queue_free()
 
 # Presentation da skill (roda em todos): VFX pela fruta/estilo. A DamageZone criada
 # dentro só aplica dano no SERVIDOR (ver DamageZone).
@@ -1859,14 +1949,16 @@ func _fire_skill(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.
 	if _animator:
 		_animator.trigger_kill()
 
-	var world := get_tree().current_scene
+	var world := _get_skills_container()
 
 	if combat_mode == "style":
 		var active_style: String = STYLES_LIST[current_style_idx]
 		var sdata: Dictionary = FightingStyles.STYLES[active_style]["skills"][slot]
-		var dano: float = float(sdata.get("dano", 25))
+		# O dano vem do `Balance`, não da tabela do estilo — mesma fonte única das
+		# frutas, para o corpo a corpo não ficar numa escala própria.
+		var spec_e := Balance.spec_de_estilo(active_style, slot).para_cast()
 		print("🥊 ESTILO ", active_style.to_upper(), ": ", sdata.get("nome", slot))
-		FightingStyles.cast(world, active_style, variant, origin, aim, dano, self)
+		FightingStyles.cast(world, active_style, variant, origin, aim, spec_e.dano, self, spec_e)
 	else:
 		var fruit_skills := SkillSystem.get_fruit_skills()
 		# ⚠️ Aqui existia `else "gomu_gomu"` — um fallback MUDO, e ele era a causa
@@ -1879,6 +1971,8 @@ func _fire_skill(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.
 		if not fruit_skills.has(current_fruit_id):
 			if current_fruit_id == "":
 				print("🚫 Sem Akuma no Mi — pegue uma fruta numa árvore para usar poderes.")
+			elif current_fruit_id == "sem_fruta":
+				print("🚫 Você comeu a Fruta da Normalidade. Suas skills não fazem nada.")
 			else:
 				push_warning("[Fruta] '%s' não tem skills no SkillSystem" % current_fruit_id)
 				print("🚫 A fruta '%s' ainda não tem poderes implementados." % current_fruit_id)
@@ -1886,24 +1980,36 @@ func _fire_skill(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.
 		var fid := current_fruit_id
 		var sdata: Dictionary = fruit_skills[fid][slot]
 		var cor: Color = sdata.get("cor", Color.WHITE)
-		var dano: float = float(sdata.get("dano", 20))
+
+		# A CONJURAÇÃO nasce aqui. `para_cast()` devolve uma cópia da spec com um
+		# `cast_id` novo, e é ele que amarra todas as hitboxes deste golpe a um
+		# orçamento só — ver src/combat/CombatResolver.gd.
+		#
+		# ⚠️ A spec tem de ser criada UMA vez por golpe e descer inteira até o
+		# efeito. Deixar cada hitbox pedir a sua daria um orçamento por hitbox,
+		# que é exatamente o teto que NÃO existia antes desta refatoração.
+		var spec := Balance.novo(fid, slot)
+		if spec == null:
+			push_warning("[Balance] '%s/%s' não está na tabela de dano" % [fid, slot])
+			spec = DamageSpec.avulso(0.0)
+		var dano: float = spec.dano
 		print("⚡ FRUTA ", fid.to_upper(), ": ", sdata.get("nome", slot))
 
 		match fid:
-			"gomu_gomu": GomuFX.cast(world, origin, aim, variant, dano, self)
-			"suna_suna": SandFX.cast(world, origin, aim, variant, dano, self)
-			"mera_mera": FireFX.cast(world, origin, aim, variant, dano, self)
-			"hie_hie":   IceFX.cast(world, origin, aim, variant, dano, self)
-			"goro_goro": GoroFX.cast(world, origin, aim, variant, dano, self)
-			"yami_yami": YamiFX.cast(world, origin, aim, variant, dano, self)
-			"bara_bara": BaraFX.cast(world, origin, aim, variant, dano, self)
-			"gura_gura": GuraFX.cast(world, origin, aim, variant, dano, self, charge)
+			"gomu_gomu": GomuFX.cast(world, origin, aim, variant, dano, self, spec)
+			"suna_suna": SandFX.cast(world, origin, aim, variant, dano, self, spec)
+			"mera_mera": FireFX.cast(world, origin, aim, variant, dano, self, charge, spec)
+			"hie_hie":   IceFX.cast(world, origin, aim, variant, dano, self, spec)
+			"goro_goro": GoroFX.cast(world, origin, aim, variant, dano, self, spec)
+			"yami_yami": YamiFX.cast(world, origin, aim, variant, dano, self, spec)
+			"bara_bara": BaraFX.cast(world, origin, aim, variant, dano, self, spec)
+			"gura_gura": GuraFX.cast(world, origin, aim, variant, dano, self, charge, spec)
 			"buki_buki":
 				# SAQUE DA ARMA. Roda em TODOS os peers (este método é a
 				# presentation do cast), então o adversário vê a arma aparecer
 				# na mão / o corpo virar canhão. O tiro do saque sai junto.
 				_buki_mostrar_arma(["Z", "X", "C", "V"][variant])
-				BukiFX.cast(world, origin, aim, variant, dano, self)
+				BukiFX.cast(world, origin, aim, variant, dano, self, spec)
 			_: _generic_vfx(cor, aim, origin)
 
 	# Fim da janela de interrupção DESTE golpe. Só apaga se nenhum cast novo tiver
@@ -1966,11 +2072,13 @@ func equip_fruit(fruit_id: String) -> void:
 	# A fruta ANTERIOR volta para a árvore: trocar de poder devolve o antigo ao
 	# mapa, exatamente como morrer devolve.
 	if fruit_id != current_fruit_id:
+		clear_spawned_skills()
 		if current_fruit_id != "":
 			TreeAndFruitGenerator.respawn_fruit(current_fruit_id)
 		if fruit_id != "":
 			TreeAndFruitGenerator.hide_fruit(fruit_id)
 
+	_fruit_cooldowns.clear()
 	current_fruit_id = fruit_id
 	
 	if fruit_id == "gura_gura":
@@ -2077,6 +2185,10 @@ func _net_buki_sacar(slot: String) -> void:
 	if multiplayer.has_multiplayer_peer():
 		var sender = multiplayer.get_remote_sender_id()
 		if sender != 0 and sender != 1: return
+	# Saque = pente novo = conjuração nova. Encerrar ANTES de mostrar a arma
+	# garante que sacar a MESMA arma duas vezes devolva o orçamento cheio (a
+	# troca entre armas diferentes já seria pega pela chave de `_spec_do_disparo`).
+	encerrar_disparo()
 	_buki_mostrar_arma(slot)
 
 @rpc("any_peer", "reliable")
@@ -2098,6 +2210,8 @@ func _do_server_buki_guardar() -> void:
 @rpc("any_peer", "call_local", "reliable")
 func _net_buki_guardar() -> void:
 	_buki_mostrar_arma("")
+	# Arma guardada, pente encerrado: o próximo saque começa com o orçamento cheio.
+	encerrar_disparo()
 
 func _buki_apontar_canhao() -> void:
 	_buki.apontar_canhao(_is_authority, _pitch, _yaw, net_facing)

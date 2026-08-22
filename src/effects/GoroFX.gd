@@ -287,12 +287,15 @@ class Flicker extends OmniLight3D:
 # ============================================================================
 #  DESPACHO
 # ============================================================================
-static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float, caster: Node) -> void:
+static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float,
+		caster: Node, spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	match variant:
-		0: _sango(world, origin, dir, damage, caster)
-		1: GoroFXGrande.el_thor(world, origin, dir, damage, caster)
-		2: _shunshin(world, origin, dir, damage, caster)
-		_: GoroFXGrande.mamaragan(world, origin, dir, damage, caster)
+		0: _sango(world, origin, dir, damage, caster, spec)
+		1: GoroFXGrande.el_thor(world, origin, dir, damage, caster, spec)
+		2: _shunshin(world, origin, dir, damage, caster, spec)
+		_: GoroFXGrande.mamaragan(world, origin, dir, damage, caster, spec)
 
 # ---------- Z: Sango — o raio que SAI DO CORPO do jogador ----------
 #
@@ -305,7 +308,10 @@ static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damag
 #    5. fagulhas voltaicas saindo da cabeça
 #    6. descarga de saída no peito + luz + estalo + flash de tela
 #  Duração: raio-tether apaga em ~0,45 s; a cabeça e a hitbox vivem 1,1 s.
-static func _sango(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
+static func _sango(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	var fwd: Vector3 = dir.normalized()
 	if fwd.length_squared() < 0.01:
 		fwd = Vector3(0, 0, -1)
@@ -379,11 +385,15 @@ static func _sango(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 	_screen_flash(world, Color(0.85, 0.95, 1.0), 0.30)
 	_shake(caster, 0.22)
 
-	zone.setup(damage, 14.0, fwd * 32.0, 1.1, caster, 1.0)
+	zone.setup(spec.dano, 14.0, fwd * 32.0, 1.1, caster, 1.0)
+	spec.marcar(zone)
 
 # ---------- C: Shunshin — Dash / Teleporte Elétrico Instantâneo ----------
 # NÃO MEXER: decisão do dono do projeto — o C fica para bem mais tarde.
-static func _shunshin(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
+static func _shunshin(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	var zone := DamageZone.new()
 	world.add_child(zone)
 	zone.global_position = origin
@@ -407,4 +417,5 @@ static func _shunshin(world: Node, origin: Vector3, dir: Vector3, damage: float,
 	if caster is CharacterBody3D:
 		(caster as CharacterBody3D).global_position += fwd * 12.0
 
-	zone.setup(damage, 10.0, fwd * 25.0, 0.6, caster, 1.2)
+	zone.setup(spec.dano, 10.0, fwd * 25.0, 0.6, caster, 1.2)
+	spec.marcar(zone)

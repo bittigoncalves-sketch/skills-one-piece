@@ -24,7 +24,7 @@ static func get_tree_definitions() -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	var fora: Array[String] = []
 	for d in _todas_as_definicoes():
-		if com_poder.has(str(d.get("id", ""))):
+		if com_poder.has(str(d.get("id", ""))) or str(d.get("id", "")) == "sem_fruta":
 			out.append(d)
 		else:
 			fora.append(str(d.get("id", "")))
@@ -36,6 +36,15 @@ static func get_tree_definitions() -> Array[Dictionary]:
 # daqui — é o inventário do que existe desenhado.
 static func _todas_as_definicoes() -> Array[Dictionary]:
 	return [
+		{
+			"id": "sem_fruta",
+			"nome": "Fruta da Normalidade (Sem Fruta)",
+			"foliage_color": Color(0.3, 0.3, 0.3),
+			"trunk_color": Color(0.5, 0.5, 0.5),
+			"fruit_color": Color(0.8, 0.8, 0.8),
+			"fruit_glow": Color(0.1, 0.1, 0.1),
+			"leaf_shape": "canopy"
+		},
 		{
 			"id": "mera_mera",
 			"nome": "Árvore de Fogo (Mera Mera)",

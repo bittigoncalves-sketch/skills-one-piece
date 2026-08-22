@@ -88,6 +88,7 @@ var _sword_w := 0.0         # peso da pose da espada de duas mãos
 var _melee_stance_w := 0.0  # peso da postura de combate (pernas em V + guarda) durante o combo desarmado
 var _melee_guarda: String = ""  # "" | "R" | "L" | "perna_R" | "perna_L" — ver play_baked()
 var _dano_w := 0.0          # tranco de recepção de dano (src/mechanics/RecepcaoDeDano.gd)
+var _knockdown_w := 0.0     # pose de queda no chão (src/mechanics/RecepcaoDeDano.gd)
 var _recovery_t := 0.0      # timer do tranco elástico de recepção (chicote)
 var _t := 0.0
 
@@ -248,8 +249,11 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	# devagar (14): o tranco tem que bater na hora e relaxar depois. As poses de
 	# fruta usam 15-25 nos dois sentidos porque são intenção, não impacto.
 	var _quer_dano: bool = custom_pose == RecepcaoDeDano.POSE
+	var _quer_knockdown: bool = custom_pose == RecepcaoDeDano.POSE_KNOCKDOWN
 	_dano_w = lerpf(_dano_w, 1.0 if _quer_dano else 0.0,
 		1.0 - exp(-(RecepcaoDeDano.RIGIDEZ_ENTRA if _quer_dano else RecepcaoDeDano.RIGIDEZ_SAI) * delta))
+	_knockdown_w = lerpf(_knockdown_w, 1.0 if _quer_knockdown else 0.0,
+		1.0 - exp(-(RecepcaoDeDano.RIGIDEZ_ENTRA if _quer_knockdown else RecepcaoDeDano.RIGIDEZ_SAI) * delta))
 	
 	# GOLPES AUTORAIS DA GURA (Z/X/C/V) — `src/anim/GuraPoses.gd`.
 	# `_gura_golpe_t` é a FASE da animação: quem desenha interpola quadros-chave
@@ -332,6 +336,7 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	# POR ÚLTIMO entre as poses: o tranco de dano SOMA por cima do que o corpo já
 	# estava fazendo. É o que faz levar um tiro correndo continuar lendo como corrida.
 	RecepcaoDeDano.pose(_add, off, _dano_w, _t)
+	RecepcaoDeDano.pose_knockdown(_add, off, _knockdown_w, _t)
 	_charge(off, _charge_w, charge_slot)
 	
 	# Se não estiver em charge, mas tem charge_slot = "C" (Gatling firing) -> aplica shake no torso.

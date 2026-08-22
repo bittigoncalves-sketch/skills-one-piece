@@ -343,3 +343,70 @@ static func dash_effect(world: Node, base_pos: Vector3, move_dir: Vector3) -> vo
 	world.add_child(burst)
 	burst.global_position = base_pos + Vector3(0, 0.5, 0) + recuo
 	autofree(burst, 0.7)
+
+# Efeito de sangramento: gotas quadradas caindo no chão com partículas extras
+static func bleed(world: Node, pos: Vector3, amount: int = 8) -> void:
+	if world == null:
+		return
+		
+	# 1. Partículas de Sangue (Efeito Imediato/Spray)
+	var pm := ParticleProcessMaterial.new()
+	pm.direction = Vector3(0, 1.0, 0)
+	pm.spread = 60.0
+	pm.initial_velocity_min = 4.0
+	pm.initial_velocity_max = 8.0
+	pm.gravity = Vector3(0, -15.0, 0)
+	pm.scale_min = 0.5
+	pm.scale_max = 1.2
+	pm.color_ramp = gradient([Color(0.8, 0.0, 0.0, 1.0), Color(0.4, 0.0, 0.0, 0.8), Color(0.2, 0.0, 0.0, 0)])
+	
+	var blood_mesh := BoxMesh.new()
+	blood_mesh.size = Vector3(0.08, 0.08, 0.08)
+	blood_mesh.material = particle_material(Color(0.7, 0.0, 0.0, 1), 0.5, false)
+	
+	var burst := particles(25, 0.6, true, pm, blood_mesh, 0.95)
+	world.add_child(burst)
+	burst.global_position = pos
+	autofree(burst, 1.0)
+	
+	# 2. Gotas Físicas (RigidBody3D) que espirram, caem no chão e somem
+	var drop_mat := StandardMaterial3D.new()
+	drop_mat.albedo_color = Color(0.6, 0.0, 0.0, 1.0)
+	drop_mat.roughness = 0.2
+	drop_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	
+	var drop_box := BoxMesh.new()
+	drop_box.size = Vector3(0.12, 0.12, 0.12)
+	drop_box.material = drop_mat
+	
+	var drop_shape := BoxShape3D.new()
+	drop_shape.size = drop_box.size
+	
+	for i in range(amount):
+		var rb := RigidBody3D.new()
+		# Camada 0 e Mascara 1 garantem que ela não bata no jogador, apenas no cenário
+		rb.collision_layer = 0
+		rb.collision_mask = 1 
+		
+		var mi := MeshInstance3D.new()
+		mi.mesh = drop_box
+		rb.add_child(mi)
+		
+		var col := CollisionShape3D.new()
+		col.shape = drop_shape
+		rb.add_child(col)
+		
+		world.add_child(rb)
+		rb.global_position = pos + Vector3(randf_range(-0.2, 0.2), randf_range(0.0, 0.5), randf_range(-0.2, 0.2))
+		
+		# Impulso para espalhar
+		var dir = Vector3(randf_range(-1.0, 1.0), randf_range(0.5, 1.5), randf_range(-1.0, 1.0)).normalized()
+		var force = randf_range(3.0, 7.0)
+		rb.apply_central_impulse(dir * force)
+		rb.apply_torque_impulse(Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * 0.5)
+		
+		# Fade scale and delete
+		var tw := rb.create_tween()
+		tw.tween_interval(randf_range(1.5, 3.5))
+		tw.tween_property(mi, "scale", Vector3.ZERO, 1.0).set_ease(Tween.EASE_IN)
+		tw.tween_callback(rb.queue_free)

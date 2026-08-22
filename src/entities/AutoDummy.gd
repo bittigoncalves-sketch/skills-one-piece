@@ -26,6 +26,8 @@ func _physics_process(delta: float) -> void:
 	
 	if has_meta("is_frozen") and get_meta("is_frozen"):
 		return
+	if has_meta("custom_pose") and get_meta("custom_pose") == "knockdown":
+		return
 	if health <= 0.0:
 		return
 		

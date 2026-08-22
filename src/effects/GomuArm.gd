@@ -38,8 +38,13 @@ var _hit := false
 var _beam: MeshInstance3D
 var _fist: MeshInstance3D
 
+# A conjuração a que este braço pertence. No Gatling são 16 braços com a MESMA
+# spec: é o que faz os 16 socos dividirem um teto só em vez de somarem sem fim.
+var _spec: DamageSpec = null
+
 func setup(world: Node, caster: Node, shoulder: Node3D, hidden_arm: Node3D,
-		aim: Vector3, max_len: float, radius: float, damage: float, on_recover: Callable, is_main_arm: bool = true, knockback_mult: float = 1.0, shake_mult: float = 1.0) -> void:
+		aim: Vector3, max_len: float, radius: float, damage: float, on_recover: Callable, is_main_arm: bool = true, knockback_mult: float = 1.0, shake_mult: float = 1.0, spec: DamageSpec = null) -> void:
+	_spec = spec if spec != null else DamageSpec.avulso(damage)
 	_world = world
 	_caster = caster
 	_shoulder = shoulder
@@ -148,6 +153,7 @@ func _do_hit() -> void:
 		_world.add_child(zone)
 		zone.global_position = tip
 		zone.setup(_damage, 35.0 * _knockback_mult, _aim * (28.0 * _knockback_mult), 0.35, _caster, 1.3 * _shake_mult)
+		_spec.marcar(zone)
 
 		_spawn_speed_lines()
 		AudioFX.impact(_world, tip, 1.0)

@@ -99,7 +99,11 @@ func _auditar(fid: String, com_arvore: Array) -> void:
 		_player.set_meta("is_casting", false)
 		_player._cast.abortar()   # `_charging` virou vista sem setter (passo 6c)
 		_player._rapid_fire = false
-		_player._movement_locked_timer = 0.0
+		# ⚠️ ERA `_player._movement_locked_timer = 0.0`, e a propriedade não existe
+		# mais desde que a FSM assumiu a trava de movimento (`Player.gd:107`). A
+		# auditoria morria aqui, na PRIMEIRA fruta, e imprimia o resumo vazio —
+		# quebra anterior a esta refatoração, encontrada ao rodá-la.
+		_player.lock_movement(0.0, "")
 		_player.energy = _player.max_energy
 
 		var origem: Vector3 = _player.global_position + Vector3.UP

@@ -38,19 +38,24 @@ static func get_shared_block_mat() -> StandardMaterial3D:
 		_shared_block_mat.roughness = 0.9
 	return _shared_block_mat
 
-static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float, caster: Node) -> void:
+static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float,
+		caster: Node, spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	match variant:
-		0: _pistol_shot(world, origin, dir, damage, caster)
-		1: _kurouzu(world, origin, dir, damage, caster)
-		2: _black_hole(world, origin, damage, caster)
-		_: _liberation(world, origin, dir, damage, caster)
+		0: _pistol_shot(world, origin, dir, damage, caster, spec)
+		1: _kurouzu(world, origin, dir, damage, caster, spec)
+		2: _black_hole(world, origin, damage, caster, spec)
+		_: _liberation(world, origin, dir, damage, caster, spec)
 
 # ---------- Z: Disparo de Pistola (Tiro de Trevas) ----------
 # Chamado tanto no clique esquerdo com a pistola empunhada quanto na execução do slot Z.
-static func _pistol_shot(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
-	bullet(world, origin, dir, damage, caster)
+static func _pistol_shot(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	bullet(world, origin, dir, damage, caster, spec)
 
-static func bullet(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
+static func bullet(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
 	var fwd: Vector3 = dir.normalized()
 	var zone := DamageZone.new()
 	world.add_child(zone)
@@ -114,9 +119,14 @@ static func bullet(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 
 	AudioFX.gunshot(world, origin, randf_range(0.95, 1.05)) # Som nítido de disparo de pistola
 	zone.setup(damage, 12.0, fwd * 105.0, 0.5, caster, 0.3) # Bala de arma de fogo de altíssima velocidade
+	if spec != null:
+		spec.marcar(zone)
 
 # ---------- X: Espiral Negra / Kurouzu ----------
-static func _kurouzu(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
+static func _kurouzu(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	var fwd := dir.normalized()
 	if caster and caster is CharacterBody3D:
 		caster.set_meta("custom_pose", "kurouzu")
@@ -217,7 +227,8 @@ static func _kurouzu(world: Node, origin: Vector3, dir: Vector3, damage: float, 
 	# clique de release, com knockback 45.
 	var vortex_zone := DamageZone.new()
 	vortex_root.add_child(vortex_zone)
-	vortex_zone.setup(damage, 6.0, Vector3.ZERO, KUROUZU_DURATION, caster, KUROUZU_RADIUS)
+	vortex_zone.setup(spec.dano, 6.0, Vector3.ZERO, KUROUZU_DURATION, caster, KUROUZU_RADIUS)
+	spec.marcar(vortex_zone)
 
 	var target := _find_closest_entity(world, caster, origin, 28.0)
 	if target:
@@ -228,11 +239,14 @@ static func _kurouzu(world: Node, origin: Vector3, dir: Vector3, damage: float, 
 		if target.has_method("suppress_skills_temporarily"):
 			target.suppress_skills_temporarily(4.0)
 
-	var ctrl := KurouzuController.new(caster, target, fwd, damage, vortex_root, r1, r2)
+	var ctrl := KurouzuController.new(caster, target, fwd, damage, vortex_root, r1, r2, spec)
 	world.add_child(ctrl)
 
 # ---------- C: Black Hole ----------
-static func _black_hole(world: Node, origin: Vector3, damage: float, caster: Node) -> void:
+static func _black_hole(world: Node, origin: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	if caster and caster is CharacterBody3D:
 		caster.set_meta("custom_pose", "black_hole")
 		caster.set_meta("yami_black_hole_active", true)
@@ -264,11 +278,14 @@ static func _black_hole(world: Node, origin: Vector3, damage: float, caster: Nod
 	# +0,18 evita o z-fighting com o chão; é rente ao piso, não flutuando.
 	ground_pos.y = hit_y + 0.18
 
-	var ctrl := BlackHoleController.new(caster, ground_pos, damage)
+	var ctrl := BlackHoleController.new(caster, ground_pos, damage, spec)
 	world.add_child(ctrl)
 
 # ---------- V: Liberation (Ribereshon - Repelão & Destruição em Círculo) ----------
-static func _liberation(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node) -> void:
+static func _liberation(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
+		spec: DamageSpec = null) -> void:
+	if spec == null:
+		spec = DamageSpec.avulso(damage)
 	# `dir` não é usado: o Liberation é OMNIDIRECIONAL, nasce aos pés e empurra
 	# para todos os lados. A direção do olhar não muda nada aqui.
 	# Posição no chão aos pés do usuário para expansão da onda no plano horizontal sem obstruir a visão!
@@ -285,15 +302,28 @@ static func _liberation(world: Node, origin: Vector3, dir: Vector3, damage: floa
 	var nominal_blocks := 15 + absorbed
 	var spawn_count := clampi(nominal_blocks, 12, MAX_SPAWN_PER_CAST)
 	
-	# Os blocos excedentes além do limite aumentam diretamente o dano de cada escombro para não perder poder de fogo
-	var damage_mult := 1.2
-	if nominal_blocks > MAX_SPAWN_PER_CAST:
-		damage_mult += (nominal_blocks - MAX_SPAWN_PER_CAST) * 0.06
-
+	# ⚠️ AQUI ESTAVA O PIOR DESEQUILÍBRIO DO JOGO.
+	#
+	# Cada escombro chamava `take_damage()` DIRETO, com `damage * 1.2` — fora do
+	# funil, portanto sem o corte de 0,12 que todo o resto levava. Cada bloco
+	# valia 72 crus, cada um com a sua própria lista `hit_targets`, e nada
+	# impedia o mesmo alvo de ser atingido por todos. Com 25 blocos: 1800 de dano
+	# contra uma vida de 2048. Um Liberation era 88% da vida de alguém; a
+	# ultimate da Gura, na mesma medição, era 1%.
+	#
+	# O `damage_mult` que ficava aqui — que AUMENTAVA o dano por bloco quando o
+	# número de blocos passava do limite de spawn, "para não perder poder de
+	# fogo" — foi removido junto: ele empurrava na direção oposta à do teto.
+	#
+	# Agora os escombros valem o dano MULTI da tabela (96), passam pelo
+	# `CombatResolver` e dividem o orçamento de 768 com a onda de repulsão. O
+	# golpe continua ejetando de 12 a 25 blocos; os que chegam depois do teto
+	# empurram e não ferem, que é o espetáculo sem a execução.
 	if is_instance_valid(caster):
 		caster.set_meta("yami_absorbed_blocks", 0) # Esvazia a escuridão após liberar
 
-	print("🌊 LIBERATION OTIMIZADO! Onda repulsora ejetando ", spawn_count, " escombros com dano x", snappedf(damage_mult, 0.01), " (Anterior absorvidos: ", absorbed, ")")
+	print("🌊 LIBERATION! Onda repulsora ejetando ", spawn_count, " escombros de ",
+		spec.dano, " (teto do golpe: ", spec.teto, ", absorvidos: ", absorbed, ")")
 
 	# Onda de Choque Rápida no Solo (Torus 1 - Ciano Brilhante / Branco)
 	var burst_root := Node3D.new()
@@ -376,7 +406,7 @@ static func _liberation(world: Node, origin: Vector3, dir: Vector3, damage: floa
 
 	# REPELÃO: Escombros e blocos ejetados com recursos compartilhados (Zero micro-stutters)
 	for i in range(spawn_count):
-		var blk := YamiBlock.new(damage * damage_mult, caster)
+		var blk := YamiBlock.new(spec.dano, caster, spec)
 		world.add_child(blk)
 		var angle := randf_range(0, TAU)
 		var dist := randf_range(0.8, 3.5)
@@ -396,7 +426,8 @@ static func _liberation(world: Node, origin: Vector3, dir: Vector3, damage: floa
 	var wave := DamageZone.new()
 	world.add_child(wave)
 	wave.global_position = spawn_center + Vector3.UP * 1.0
-	wave.setup(damage * 1.5, 38.0, Vector3.ZERO, 0.45, caster, LIBERATION_RADIUS)
+	wave.setup(spec.parte("onda", 128.0), 38.0, Vector3.ZERO, 0.45, caster, LIBERATION_RADIUS)
+	spec.marcar(wave)
 
 	# O tween nasce no PRÓPRIO burst_root, não em `world`: é o nó que ele libera
 	# (mesma correção do GomuRedHawk._spawn_explosion). A autofree é a rede de
@@ -438,7 +469,10 @@ class KurouzuController extends Node:
 	var state := 0
 	var capture_timer := 0.0
 
-	func _init(c: Node3D, t: Node3D, f: Vector3, d: float, v: Node3D, r1: MeshInstance3D = null, r2: MeshInstance3D = null) -> void:
+	var spec: DamageSpec = null
+
+	func _init(c: Node3D, t: Node3D, f: Vector3, d: float, v: Node3D, r1: MeshInstance3D = null, r2: MeshInstance3D = null, s: DamageSpec = null) -> void:
+		spec = s if s != null else DamageSpec.avulso(d)
 		caster = c
 		target = t
 		fwd = f
@@ -611,8 +645,14 @@ class KurouzuController extends Node:
 			
 			if caster.is_multiplayer_authority():
 				var mega_kb: Vector3 = throw_dir * 45.0 + Vector3.UP * 10.0
+				# ⚠️ ERA `take_damage(damage * 1.5)` DIRETO — o segundo desvio da
+				# Yami, e o que fazia o Kurouzu valer 56,7 quando o vórtice
+				# sozinho valia 4,2. O ARREMESSO é o clímax do golpe e continua
+				# valendo o triplo do vórtice, agora por `partes.arremesso` na
+				# tabela; o que mudou é que ele divide o teto de 256 com ele.
 				if target.has_method("take_damage"):
-					target.take_damage(damage * 1.5, palm_pos, mega_kb)
+					CombatResolver.aplicar(target, spec.parte("arremesso", 192.0),
+						spec.cast_id, spec.teto, palm_pos, mega_kb)
 				elif "velocity" in target:
 					target.velocity = mega_kb
 			
@@ -654,7 +694,10 @@ class BlackHoleController extends Node:
 	const MAX_DURATION := 7.0
 	const RADIUS := 32.0
 
-	func _init(c: Node3D, pos: Vector3, d: float) -> void:
+	var spec: DamageSpec = null
+
+	func _init(c: Node3D, pos: Vector3, d: float, s: DamageSpec = null) -> void:
+		spec = s if s != null else DamageSpec.avulso(d)
 		caster = c
 		center = pos
 		damage = d
@@ -759,6 +802,7 @@ class BlackHoleController extends Node:
 		add_child(zone)
 		zone.global_position = center
 		zone.setup(damage, 0.0, Vector3.ZERO, MAX_DURATION, caster, RADIUS)
+		spec.marcar(zone)
 
 		AudioFX.whoosh(get_tree().current_scene, center, 0.45)
 
@@ -864,7 +908,10 @@ class YamiBlock extends Node3D:
 	var mesh_inst: MeshInstance3D
 	var _cached_targets: Array = []
 
-	func _init(d: float, c: Node) -> void:
+	var spec: DamageSpec = null
+
+	func _init(d: float, c: Node, s: DamageSpec = null) -> void:
+		spec = s if s != null else DamageSpec.avulso(d)
 		damage = maxf(d * 0.25, 12.0)
 		caster = c
 		rot_spd = Vector3(randf_range(-4, 4), randf_range(-4, 4), randf_range(-4, 4))
@@ -915,9 +962,12 @@ class YamiBlock extends Node3D:
 					continue
 				if global_position.distance_to(e.global_position + Vector3.UP * 0.8) < 1.8:
 					hit_targets.append(e)
-					if e.has_method("take_damage"):
-						var kb := velocity.normalized() * 14.0 + Vector3.UP * 3.0
-						e.take_damage(damage, global_position, kb)
+					# ⚠️ ERA `e.take_damage(damage, ...)` DIRETO — o desvio que fazia o
+					# Liberation tirar 1800 de uma vida de 2048. Passar pelo
+					# `CombatResolver` põe o escombro debaixo do teto que ele
+					# divide com a onda e com os outros 24 blocos.
+					var kb := velocity.normalized() * 14.0 + Vector3.UP * 3.0
+					CombatResolver.aplicar(e, damage, spec.cast_id, spec.teto, global_position, kb)
 					if get_tree() and get_tree().current_scene:
 						AudioFX.snap(get_tree().current_scene, global_position, 0.8)
 

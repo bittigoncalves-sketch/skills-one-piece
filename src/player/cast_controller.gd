@@ -65,7 +65,7 @@ var _slot_carregado := ""
 
 # Quais golpes são carregáveis. Tabela em vez de `if` espalhado: quando a
 # segunda skill carregável existir, é uma linha.
-const CARREGAVEIS := {"goro_goro": ["V"], "gura_gura": ["X"]}
+const CARREGAVEIS := {"goro_goro": ["V"], "gura_gura": ["X"], "mera_mera": ["V"]}
 
 func montar_em(dono: Node) -> void:
 	_dono = dono
@@ -192,18 +192,33 @@ func comecar(slot_pedido: String) -> void:
 		_dono.trigger_skill_cooldown(slot_pedido)
 		_dono.gastar_energia(_dono.ENERGY_SKILL)
 		var mira_c: Dictionary = _dono.mira_do_cast()
-		var dano_c: float = float(SkillSystem.get_fruit_skills()[fruta][slot_pedido]["dano"])
+		# ⚠️ A spec nasce AQUI, no aperto, e não na soltura. Duas razões:
+		#   • o efeito 3D do charge-up já existe enquanto a tecla está segurada
+		#     (o sol da Mera, a orbe da Gura), e ele precisa dos números;
+		#   • a conjuração tem de ser a MESMA do começo ao fim, senão o golpe
+		#     soltaria com um orçamento diferente do que começou.
+		# `tempo_de_carga` da tabela é quem define a carga cheia — as três skills
+		# carregáveis tinham três curvas diferentes antes disto.
+		var spec_c := Balance.novo(fruta, slot_pedido)
+		if spec_c == null:
+			spec_c = DamageSpec.avulso(0.0)
+		var dano_c: float = spec_c.dano
 		# Carrega a skill X (Captura Sísmica)
 		_dono.congelar_para_cast() # Exige concentração e congela
-		
+
 		if fruta == "gura_gura" and slot_pedido == "X":
-			_carregado = GuraChargeNode.new(_dono, slot_pedido)
+			_carregado = GuraChargeNode.new(_dono, slot_pedido, spec_c)
 			_dono.get_tree().current_scene.add_child(_carregado)
 			_dono.add_camera_shake(0.3)
 			_dono.set_meta("custom_pose", "gura_x_charge")
+		elif fruta == "mera_mera" and slot_pedido == "V":
+			_carregado = MeraChargeNode.new(_dono, slot_pedido, dano_c, spec_c)
+			_dono.get_tree().current_scene.add_child(_carregado)
+			_dono.add_camera_shake(0.5)
+			_dono.set_meta("custom_pose", "mera_v_charge")
 		else:
 			_carregado = GoroFXGrande.mamaragan_carregado(
-				_dono.get_tree().current_scene, mira_c["origem"], mira_c["aim"], dano_c, _dono)
+				_dono.get_tree().current_scene, mira_c["origem"], mira_c["aim"], dano_c, _dono, spec_c)
 			_dono.add_camera_shake(0.85)
 			_dono.pedir_soco_de_fov(8.0)
 		_dono.pedir_soco_de_fov(8.0)
@@ -213,6 +228,10 @@ func comecar(slot_pedido: String) -> void:
 	# PRESSIONAR, não congela o corpo; para ao soltar ou ao acabar o pente.
 	if slot_pedido == "Z" and na_fruta and (fruta == "mera_mera" or fruta == "hie_hie"):
 		_dono.trigger_skill_cooldown("Z")
+		# A rajada inteira é UMA conjuração: as 16 balas dividem o teto do slot Z
+		# (200). Encerrar aqui abre uma conjuração nova a cada aperto de tecla —
+		# sem isto, a segunda rajada nasceria com o orçamento da primeira gasto.
+		_dono.encerrar_disparo()
 		_dono._disparo.iniciar_rajada()
 		return
 		
@@ -331,14 +350,24 @@ func pedir_cast(slot_pedido: String) -> void:
 	if not _dono._is_authority or _suprimido:
 		_dono.set_meta("is_casting", false)
 		return
+	if _dono.combat_mode == "fruit":
+		var fid = _dono.current_fruit_id
+		if fid == "" or fid == "sem_fruta":
+			_dono.set_meta("is_casting", false)
+			return
 	if _dono._skill_cooldowns.get(slot_pedido, 0.0) > 0.0:
+		_dono.set_meta("is_casting", false)
+		return
+	if slot_pedido == "V" and _dono.current_fruit_id == "bara_bara" and _dono.get_meta("bara_v_active", false):
 		_dono.set_meta("is_casting", false)
 		return
 	# ⚠️ BUKI BUKI: aqui o slot está sendo EMPUNHADO, não gasto. A recarga dele só
 	# começa quando a arma é LARGADA (troca, desistência ou munição zerada). Ligar
 	# o cooldown no saque poria em recarga a arma que acabou de ir para a mão.
 	if not _dono._buki_ativa():
-		_dono.trigger_skill_cooldown(slot_pedido)
+		var eh_bara_v = (slot_pedido == "V" and _dono.current_fruit_id == "bara_bara")
+		if not eh_bara_v:
+			_dono.trigger_skill_cooldown(slot_pedido)
 	if slot_pedido != "Z" and _dono._yami_pistol_active:
 		_dono.guardar_pistola_da_yami()
 
@@ -360,10 +389,15 @@ class GuraChargeNode extends Node:
 	var _slot: String
 	var _tempo: float = 0.0
 	var _orb: Node3D = null
-	
-	func _init(dono: Node, slot: String) -> void:
+	# A spec da carga. Aqui ela serve só para o TETO do tempo de carga
+	# (`tempo_de_carga`); quem cria a hitbox é o `_fire_skill` do lado do
+	# servidor, na soltura, com a spec dele.
+	var _spec: DamageSpec = null
+
+	func _init(dono: Node, slot: String, spec: DamageSpec = null) -> void:
 		_dono = dono
 		_slot = slot
+		_spec = spec
 		if _slot == "X":
 			# Cria a orb visual na mão do jogador
 			if _dono.has_node("_char_model"):
@@ -375,8 +409,11 @@ class GuraChargeNode extends Node:
 					_orb.position = Vector3(0, -0.3, 0) # Offset para a ponta do braço
 				
 	func _process(delta: float) -> void:
-		_tempo = minf(_tempo + delta, 3.0) # MAX_CHARGE = 3.0
-		
+		# O teto da carga vem da tabela (`tempo_de_carga`), não de um `3.0`
+		# escrito aqui: é ele que define onde a interpolação 192 -> 256 chega ao fim.
+		var maximo: float = _spec.tempo_de_carga if _spec != null and _spec.tempo_de_carga > 0.0 else 3.0
+		_tempo = minf(_tempo + delta, maximo)
+
 		if is_instance_valid(_dono) and _dono.has_method("add_camera_shake"):
 			_dono.add_camera_shake(minf(_tempo * 0.8, 2.5))
 			
@@ -404,4 +441,68 @@ class GuraChargeNode extends Node:
 				_dono.pedir_cast_no_servidor(_slot, mira["origem"] + aim * 100.0, mira["origem"], _tempo)
 			else:
 				_dono.pedir_cast_no_servidor(_slot, aim, mira["origem"], _tempo)
+		queue_free()
+
+class MeraChargeNode extends Node:
+	var _dono: Node
+	var _slot: String
+	var _dano: float
+	var _tempo: float = 0.0
+	var _sun_ctrl: Node = null
+	# Ver a nota em `GuraChargeNode._spec`: aqui o sol é VISUAL — na soltura ele
+	# é destruído e o servidor instancia um sol sincronizado com a spec do cast.
+	var _spec: DamageSpec = null
+
+	func _init(dono: Node, slot: String, dano: float, spec: DamageSpec = null) -> void:
+		_dono = dono
+		_slot = slot
+		_dano = dano
+		_spec = spec
+
+	func _ready() -> void:
+		if is_instance_valid(_dono):
+			# Instancia o controle do Sol sobre a cabeça do jogador
+			var firefxgrande = load("res://src/effects/FireFXGrande.gd")
+			_sun_ctrl = firefxgrande.EnteiSunController.new(_dono, _dono.global_position, Vector3(0,0,-1), _dano, _spec)
+			_dono.get_tree().current_scene.add_child(_sun_ctrl)
+			# Chamamos um novo método setup_charge() em EnteiSunController
+			if _sun_ctrl.has_method("setup_charge"):
+				_sun_ctrl.setup_charge()
+			
+	func _process(delta: float) -> void:
+		# Mesmo motivo do `GuraChargeNode`: o teto da carga é da tabela.
+		var maximo: float = _spec.tempo_de_carga if _spec != null and _spec.tempo_de_carga > 0.0 else 3.5
+		_tempo = minf(_tempo + delta, maximo)
+
+		if is_instance_valid(_dono) and _dono.has_method("add_camera_shake"):
+			_dono.add_camera_shake(minf(_tempo * 0.5, 1.5))
+			
+		if is_instance_valid(_sun_ctrl) and _sun_ctrl.has_method("update_charge"):
+			_sun_ctrl.update_charge(_tempo)
+			
+	func _exit_tree() -> void:
+		if is_instance_valid(_dono) and _dono.has_meta("custom_pose") and _dono.get_meta("custom_pose") == "mera_v_charge":
+			_dono.remove_meta("custom_pose")
+		# Se soltou e _sun_ctrl ainda existe, nós o destruimos, pois
+		# soltar() deveria ter lançado ele e transferido o controle.
+		if is_instance_valid(_sun_ctrl) and not _sun_ctrl.get_meta("fired", false):
+			_sun_ctrl.queue_free()
+			
+	func soltar(aim: Vector3) -> void:
+		if is_instance_valid(_dono):
+			if _dono.has_method("pedir_soco_de_fov"):
+				_dono.pedir_soco_de_fov(5.0)
+			if Engine.has_singleton("ScreenFX"):
+				Engine.get_singleton("ScreenFX").chromatic_pulse(0.5)
+				
+			var mira := _dono.mira_do_cast() as Dictionary
+			
+			if is_instance_valid(_sun_ctrl):
+				# Destrói o sol local, pois o _net_play_cast vai instanciar
+				# um novo sol sincronizado e dispará-lo imediatamente para todos.
+				_sun_ctrl.queue_free()
+				
+			# Manda pro servidor que foi castado, com o tempo como modificador
+			# Isso fará o servidor instanciar a zona de dano
+			_dono.pedir_cast_no_servidor(_slot, aim, mira["origem"], _tempo)
 		queue_free()

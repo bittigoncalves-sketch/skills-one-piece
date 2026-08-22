@@ -10,12 +10,24 @@
 **Id:** `gura_gura` · **Tipo:** Paramecia · **Passiva:** Homem-Tremor (Quake
 Force) — nenhum bônus de mobilidade (`speed_mod` e `jump_mod` = 1,0).
 
-**A identidade da fruta é o KNOCKBACK, não o dano.** Os quatro golpes usam
-números de dano baixos e empurrão altíssimo, e três deles forçam
-`override_kb_dir = Vector3.UP`: o alvo vai **para cima**, não para longe. Numa
-arena cujo chão tem 16 buracos e cuja morte principal é a queda, arremessar para
-o alto é o golpe mais letal que existe — e é por isso que a Gura pode ter o
-menor dano nominal do jogo (20/25/30/85) sem ser a fruta mais fraca.
+**A identidade da fruta é o KNOCKBACK.** Os quatro golpes usam empurrão
+altíssimo e mandam o alvo **para cima** tanto quanto para longe. Numa arena cujo
+chão tem 16 buracos e cuja morte principal é a queda, arremessar para o alto é o
+golpe mais letal que existe.
+
+> 🔄 **O dano parou de ser o preço disso em 2026-08-21.** A frase que estava
+> aqui dizia que a Gura tinha "o menor dano nominal do jogo (20/25/30/85)". Na
+> escala nova (`src/combat/Balance.gd`) ela vale **96 / 192→256 / 224 / 384 por
+> onda** — topo da faixa do slot Z, a faixa carregada inteira do X, meio da faixa
+> do C, e o teto do V nas duas ondas (768). Ela não compra mais o arremesso com
+> dano baixo; o preço agora é o tempo parado (a carga do X, os 0,9 s do V) e o
+> fato de três dos quatro golpes exigirem chegar perto.
+
+⚠️ **A nota sobre `override_kb_dir = Vector3.UP` saiu porque não é o que o código
+faz.** Hoje só duas zonas fixam direção, e nenhuma delas fixa `UP`: o **Z** fixa
+`fwd` (empurra na direção da investida) e as ondas do **V** fixam o rumo da onda.
+O **X** e o **C** usam o radial padrão da `DamageZone`, que já é
+`Knockback.PADRAO` — radial + 35% para cima. Ver `src/combat/Knockback.gd`.
 
 ---
 
@@ -35,7 +47,8 @@ menor dano nominal do jogo (20/25/30/85) sem ser a fruta mais fraca.
 
 | arquivo | papel |
 |---|---|
-| `SkillSystem.gd:29-34` | nomes, cores e dano **nominal** dos 4 slots |
+| `src/combat/Balance.gd` | **a tabela de dano** (`FRUTAS.gura_gura`) — a fonte da verdade desde 2026-08-21 |
+| `SkillSystem.gd:44-49` | **só nome e cor** dos 4 slots; o `dano` que ele devolve é derivado do `Balance` |
 | `src/player/cast_controller.gd:164-168` | **Z** desvia para a investida física, não para o VFX |
 | `src/player/cast_controller.gd:68` | `CARREGAVEIS = {… "gura_gura": ["X"]}` — o X é carregável |
 | `src/player/cast_controller.gd:306-370` | `GuraChargeNode` — a captura sísmica do X |
@@ -100,17 +113,25 @@ retorna. O que acontece:
 4. ao encostar em alguém: o alvo recebe `is_frozen` e `StatusFX.CONGELADO` por
    1 s, fica **grudado** a 1,5 m à frente por 0,5 s, e só então o golpe é pedido
    ao servidor com `charge = 1.0`;
-5. `GuraFX._punch` toca `right_upper_hook_from_guard.res`, espera `0,25 × mult` e
-   abre a hitbox à frente do corpo.
+5. `GuraFX._punch` liga a pose autoral `gura_z_soco` (era o clipe
+   `right_upper_hook_from_guard.res` até 2026-08-15), espera `0,25 × mult` e abre
+   a hitbox à frente do corpo.
 
-**Números do impacto** (`GuraFX.gd:137`, com `charge = 1.0` → `mult ≈ 1,67`):
+**Números do impacto** (`GuraFX.gd:123-177`, com `charge = 1.0` → `mult ≈ 1,67`):
 
 | | valor |
 |---|---|
-| dano nominal | 20 → ~33 com o multiplicador → **~4,0 aplicados** (`× DAMAGE_SCALE`) |
-| knockback | 30 × mult ≈ **50, todo para CIMA** (`override_kb_dir = UP`) |
+| dano | **96**, e é o que a barra perde (`Balance.FRUTAS.gura_gura.Z`) |
+| knockback | 30 × mult ≈ **50**, fixo em `fwd` (`override_kb_dir`) |
 | raio | 1,8 × mult ≈ **3,0 m** |
 | deslocamento da zona | `fwd × 22` m/s, vida 0,5 s |
+| teto da conjuração | 200 (slot Z) — um acerto só, nem chega perto dele |
+
+> 🔄 **O Z NÃO é carregável (esclarecido em 2026-08-21).** Ele não passa pelo
+> charge-up: a investida o dispara sempre com `charge = 1.0`, o que fazia o
+> `mult ≈ 1,67` multiplicar um dano que ninguém tinha escolhido. Hoje o `mult`
+> manda **só no espetáculo** — raio da onda, detritos, tremor de tela e volume —
+> e o dano sai reto da tabela (`GuraFX.gd:127-132`).
 
 **Por que agarrar antes de socar.** Sem o passo 4 o soco saía enquanto o alvo
 ainda estava se movendo e a animação não casava com nada. Prender por 0,5 s dá
@@ -128,7 +149,7 @@ no cliente do atacante. A posição de outro jogador é autoritária **no client
 dele**; em PvP o agarrão pode ser desfeito pelo próprio dono do corpo no quadro
 seguinte. Não foi testado em rede — ver item 35.
 
-### X — Shockwave: capturar, carregar, e detonar EM CIMA DO ALVO
+### X — Esfera Sísmica: carregar e ARREMESSAR
 
 O X é o **segundo golpe carregável** do jogo (o primeiro é o V da Goro Goro), e
 usa toda a mecânica de charge-up documentada em
@@ -136,34 +157,42 @@ usa toda a mecânica de charge-up documentada em
 a skill nasce **no clique**, cresce enquanto a tecla está segurada, e **levar
 dano dispara** em vez de cancelar.
 
-No aperto, `GuraChargeNode` (`cast_controller.gd:306`):
+No aperto, `GuraChargeNode` (`cast_controller.gd:387`):
 
-- lança um raio de **30 m** na mira; se acertar um corpo com `take_damage()`, ele
-  vira `_target`, ganha `is_frozen` + `CONGELADO` por 4 s;
-- todo quadro o alvo é puxado (lerp, fator 10/s) para **5 m à frente e 2,5 m
-  acima** do conjurador — ou seja, **fica suspenso no ar, na sua frente**;
-- a carga sobe até o teto de **3,0 s**; a câmera treme proporcionalmente.
+- pendura uma `SeismicOrb` no antebraço direito e liga a pose sustentada
+  `gura_x_charge`; a câmera treme proporcionalmente à carga;
+- a carga sobe até **3,0 s**, e quem manda nesse teto é o `tempo_de_carga` da
+  tabela — não um literal escrito no controlador (`cast_controller.gd:412-414`).
 
-Ao soltar, o pedido de cast leva **a posição do alvo** no campo `aim` — não uma
-direção. `GuraFX.cast` sabe disso (`variant 1` passa `dir` cru para
-`_shockwave`), e a explosão nasce **no corpo capturado**.
+Ao soltar, o pedido de cast leva `origem + aim × 100` no campo `aim`, e
+`GuraFX._shockwave` lança dali uma `DamageZone` **projétil** (dano 0, raio 3,2,
+`fwd × 25` m/s, vida 4 s). Quem fere é a explosão que nasce no primeiro corpo
+tocado.
 
 | | valor |
 |---|---|
-| multiplicador | `1 + clamp(carga / 1,5 ; 0 ; 3)` → **1,0 a 3,0** |
-| dano nominal | 25 × mult → **3,0 a 9,0 aplicados** |
-| knockback | 34 × mult → até **102, para CIMA** |
-| raio | 6,0 × mult → **6 a 18 m** |
+| dano | **192 → 256**, reta ao longo dos 3,0 s de carga (`DamageSpec.valor_do_hit`) |
+| multiplicador `mult` | `1 + clamp(carga / 1,5 ; 0 ; 3)` → 1,0 a 3,0 — **só tamanho e tremor** |
+| knockback | 34 × mult → até **102**, radial (`Knockback.PADRAO`) |
+| raio da explosão | 6,0 × mult → **6 a 18 m** |
 | vida da zona | 0,4 s (estática), após 0,3 s de espera |
+| teto da conjuração | 256 (slot X) — a carga cheia entrega **exatamente** o teto |
 
-**Por que a explosão vai ao alvo em vez de sair do punho.** Um golpe carregado
-de 3 segundos que ainda pode errar não recompensa o risco: o jogador fica parado,
-congelado, visível e vulnerável durante a carga. A captura transforma o tempo de
-carga em **garantia de acerto** — o preço já foi pago na imobilidade.
+**Por que a carga mexe no dano E no tamanho.** Até 2026-08-21 as três skills
+carregáveis do jogo tinham três curvas próprias (`1 + carga/1,5` grampeado em 3
+aqui, `1 + carga/3,0` na Mera, uma máquina de estados no Mamaragan) e nenhuma
+delas dizia onde o golpe começava e onde terminava. Agora a faixa está escrita na
+tabela (192 → 256) e a interpolação é **linear**, igual para as três; o `mult`
+antigo sobreviveu só onde ele sempre foi honesto, que é o espetáculo.
 
-⚠️ **Só o caminho da carga manda posição.** Qualquer outro caminho para o slot X
-(`cast_skill_slot("X")`, um RPC vindo de outro peer, um teste) manda uma
-**direção unitária**, e a onda nasce a ~1 m da origem do mundo. Item 32.
+> 🔄 **REDESENHADO — e a versão antiga deste documento descrevia a CAPTURA.**
+> O texto que estava aqui contava que o `GuraChargeNode` lançava um raio de 30 m,
+> congelava o alvo, o mantinha suspenso a 5 m à frente e detonava **em cima
+> dele**, e concluía que "a captura transforma o tempo de carga em garantia de
+> acerto". Nada disso existe hoje em `cast_controller.gd` — não há raio, `_target`
+> nem `is_frozen` no arquivo inteiro. O X é projétil, e **pode errar**.
+> ⚠️ Não achei registro de quando a captura saiu; a data acima é a desta revisão,
+> não a da mudança.
 
 ### C — Kabutsuchi: o chão racha
 

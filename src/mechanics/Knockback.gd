@@ -35,9 +35,12 @@ extends RefCounted
 # Fração do knockback que vira impulso PARA CIMA.
 #
 # 0.35 é o valor histórico do projeto, preservado ao pé da letra. Ele existe
-# porque o jogo mata pelo BURACO, não pelo dano (ver `DAMAGE_SCALE = 0.12` na
-# DamageZone): sem componente vertical o alvo desliza pelo chão e agarra na
-# borda; com ela, ele sai do plano e cai.
+# porque o jogo mata pelo BURACO, não pelo dano: sem componente vertical o alvo
+# desliza pelo chão e agarra na borda; com ela, ele sai do plano e cai.
+#
+# ⚠️ Este comentário citava um `DAMAGE_SCALE = 0.12` na `DamageZone`. Ele não
+# existe mais desde 2026-08-21 — o dano agora vem final de `src/combat/Balance.gd`.
+# A razão de ser do viés vertical não mudou; a referência é que estava velha.
 const FRACAO_VERTICAL := 0.35
 
 # Perfis nomeados. Cada golpe escolhe um em vez de repetir números.

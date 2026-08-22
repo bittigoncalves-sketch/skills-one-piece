@@ -6,7 +6,12 @@ extends CharacterBody3D
 ##  - morreu (HP<=0) OU 30s sem receber dano -> vida cheia + volta ao centro.
 ## Está no grupo "enemy" pra as skills (DamageZone + tornado da Suna) o afetarem.
 
-const MAX_HP := 1000.0
+# ⚠️ 1000 -> 2048 em 2026-08-21. O boneco tinha 48,8% da vida do jogador, e como
+# TODA aferição manual de dano é feita contra ele, qualquer conta de "quantos
+# golpes para matar" medida na arena de treino estava errada por um fator de 2.
+# O número acompanha `HealthController.vida_max` de propósito: o alvo de teste
+# tem de medir o jogo real.
+const MAX_HP := 2048.0
 const RESET_AFTER := 30.0          # segundos sem dano -> reseta
 const CENTER := Vector3(0, 4, -8)   # à frente do spawn do player (não sobrepõe)
 const VOID_Y := -40.0
@@ -22,6 +27,8 @@ var _max_kb_speed := 0.0
 var _model: Node3D
 var _ap: AnimationPlayer
 var _rig: PlayerRig
+
+var _base_scale: Vector3 = Vector3.ONE
 
 var _hitstop_timer: float = 0.0
 var _pending_knockback: Vector3 = Vector3.ZERO
@@ -47,6 +54,8 @@ func _ready() -> void:
 	_fit_model()
 
 func _physics_process(delta: float) -> void:
+	RecepcaoDeDano.tick(self, delta)
+	
 	# HITSTOP LOCAL: Boneco congela e treme, aguardando o fim do impacto
 	if _hitstop_timer > 0.0:
 		_hitstop_timer -= delta
@@ -100,8 +109,21 @@ func take_damage(amount: float, _from_pos: Vector3 = Vector3.ZERO, knockback: Ve
 	health -= amount
 	# Feedback de dano: pisca vermelho, número flutuante, som e contador na HUD.
 	FxUtil.flash_red(_model)
+	
+	if _model:
+		var dur_knockdown := get_meta("knockdown_dur", 0.0) as float
+		if dur_knockdown > 0.0:
+			RecepcaoDeDano.derrubar_com_animacao(self, dur_knockdown)
+			remove_meta("knockdown_dur")
+		else:
+			var tw = create_tween()
+			tw.tween_property(_model, "scale", _base_scale * Vector3(1.25, 0.75, 1.25), 0.05)
+			tw.tween_property(_model, "scale", _base_scale, 0.15)
+			RecepcaoDeDano.aplicar(self, hitstun)
+		
 	FxUtil.damage_number(get_tree().current_scene, global_position + Vector3.UP * 1.7, amount, Color(1.0, 0.9, 0.35))
 	AudioFX.hurt(get_tree().current_scene, global_position + Vector3.UP * 1.0)
+	FxUtil.bleed(get_tree().current_scene, global_position + Vector3.UP * 1.0, randi_range(6, 12))
 	var hud := get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("add_damage_dealt"):
 		hud.add_damage_dealt(amount)
@@ -146,7 +168,8 @@ func _fit_model() -> void:
 	var ky := 1.0
 	if ab.size.y > 0.01:
 		ky = MODEL_TARGET_H / ab.size.y
-	_model.scale = Vector3(ky, ky, ky * 1.85)
+	_base_scale = Vector3(ky, ky, ky * 1.85)
+	_model.scale = _base_scale
 	_model.position.y = FEET_Y - ky * ab.position.y
 
 func _model_aabb(root: Node3D) -> AABB:

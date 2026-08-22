@@ -16,6 +16,7 @@ charge-up** — a mecânica que o X da Gura Gura reaproveita depois.
 | `src/effects/GoroFX.gd` | a **paleta**, a oficina de raios (`bolt_fill`, `volt_material`, `storm_cloud`, `shock_ring`) e os golpes do dia a dia (Z, C) |
 | `src/effects/GoroFXGrande.gd` | os dois espetáculos: **X (El Thor)** e **V (Mamaragan)** |
 | `src/player/cast_controller.gd:68,159-196` | o gatilho do X no aperto e o charge-up do V |
+| `src/combat/Balance.gd` | **todo o dano** dos quatro slots (a tabela única, desde 2026-08-21) |
 
 **Por que dois arquivos.** Os espetáculos são blocos grandes que não participam
 do combate normal, e o projeto tem teto de 900 linhas por script
@@ -36,10 +37,19 @@ nuvem clarear, o raio some dentro dela.
 
 | tecla | golpe | o que acontece | hitbox |
 |---|---|---|---|
-| **Z** | Sango | feixe elétrico à frente | dano 30 · kb 14 · `fwd × 32` · vida 1,1 s · raio 1,0 |
-| **X** | El Thor | nuvem de raio 9,5 m, **11 raios** que caem em 4,2 s e a coluna final | raios: `dano × 0,35`, **`paralisa = 1,2 s`**, raio 2,8 · coluna: dano cheio, kb 22, raio 3,5, vida 3,2 s |
-| **C** | Shunshin | teleporte-raio curto | dano 20 · kb 10 · `fwd × 25` · vida 0,6 s · raio 1,2 |
-| **V** | Mamaragan | **carregável**: a bola cresce enquanto a tecla é segurada e é arremessada na mira do instante da soltura | bola: `dano × 0,6`, kb 26, raio 2,6 · impacto: dano cheio, kb 30, **raio 12**, vida 0,5 s |
+| **Z** | Sango | feixe elétrico à frente | dano **84** · kb 14 · `fwd × 32` · vida 1,1 s · raio 1,0 |
+| **X** | El Thor | nuvem de raio 9,5 m, **11 raios** que caem em 4,2 s e a coluna final | raios: **64** cada, **`paralisa = 1,2 s`** (kb 0), raio 2,8, vida 0,22 s · coluna: **128** (`partes.coluna`), kb 22, raio 3,5, vida 3,2 s · **teto 256** |
+| **C** | Shunshin | teleporte-raio curto | dano **200** · kb 10 · `fwd × 25` · vida 0,6 s · raio 1,2 |
+| **V** | Mamaragan | **carregável**: a bola cresce enquanto a tecla é segurada e é arremessada na mira do instante da soltura | bola em voo: **256** (`partes.orbe`), kb 26, raio 2,6 · detonação: **512 → 768** conforme a carga, kb 30, **raio 12**, vida 0,5 s · **teto 768** |
+
+**Sobre os números do X.** Os 11 raios eram `damage × 0,35` e a coluna levava o
+"dano cheio" — duas frações escritas dentro do `GoroFXGrande`. Hoje cada raio
+vale um acerto MULTI inteiro (64) e a coluna vale o dobro de um raio, por
+`partes.coluna`; quem limita o total é o teto de 256 do slot X, não uma fração
+escondida no arquivo de partículas. Consequência de leitura: **quatro raios já
+gastam o orçamento inteiro**, e os sete seguintes mais a coluna continuam
+paralisando, empurrando e arremessando sem tirar vida. O teto corta o dano, não
+o acerto — e neste golpe o que mata é a coluna jogar o alvo para fora do mapa.
 
 ### O X tem um gatilho separado do golpe
 
