@@ -214,10 +214,23 @@ repete a ressalva no cabeçalho, porque é o tipo de coisa que se descobre tarde
 
 ### ⚠️ Atalho de desenvolvimento ligado hoje
 
-`Player.gd:18` e `Main.gd:114` nascem com **`gura_gura`** equipada. Está no
-histórico do commit `a71a20a` como atalho de sessão, **não** como regra de jogo:
-se isso chegar ao jogador final, a economia inteira das frutas (achar a árvore,
-disputar a fruta, perder ao morrer) deixa de existir.
+Conferido em 2026-08-21 — e **os dois pontos discordam entre si**:
+
+| onde | fruta |
+|---|---|
+| `Player.gd:25` (`current_fruit_id`) | **`bara_bara`** |
+| `Main.gd:127` (`equip_fruit` adiado) | **`mera_mera`** |
+
+Como o `Main.gd` roda depois, quem vence é a `mera_mera`; a `bara_bara` do
+`Player.gd` fica valendo só nos testes que sobem o Player sem a cena.
+
+> A versão anterior desta seção dizia `gura_gura` em `Player.gd:18` e
+> `Main.gd:114`. Envelheceu duas vezes: a fruta mudou, e as linhas andaram (o
+> `Player.gd` cresceu 180 linhas no commit `59e5a48`).
+
+Está no histórico do commit `a71a20a` como atalho de sessão, **não** como regra
+de jogo: se isso chegar ao jogador final, a economia inteira das frutas (achar a
+árvore, disputar a fruta, perder ao morrer) deixa de existir.
 
 ---
 

@@ -39,15 +39,61 @@ Uma linha por slot em `BukiFX.ARSENAL` — do calibre ao som. Mudar a identidade
 de uma arma é editar **uma linha**; antes isso era uma escada de `if slot ==`
 espalhada pelo `disparo`.
 
-| slot | arma | balas | cadência | vel | raio | kb | dano/bala |
-|---|---|---|---|---|---|---|---|
-| **Z** | Pistola | 12 | 0,20 s | 42 m/s | 0,18 | 4,0 | 24 |
-| **X** | Canhão (corpo inteiro) | 3 | 0,95 s | 22 m/s | 0,55 | 24,0 | 90 |
-| **C** | Sniper (+ luneta) | 5 | 1,05 s | **250 m/s** | 0,16 | 10,0 | 72 |
-| **V** | Minigun | 100 | 0,06 s | 46 m/s | 0,14 | 1,6 | 9 |
+| slot | arma | balas | cadência | vel | raio | kb | dano/bala | pente inteiro | teto |
+|---|---|---|---|---|---|---|---|---|---|
+| **Z** | Pistola | 12 | 0,20 s | 42 m/s | 0,18 | 4,0 | **16** | 192 | 200 |
+| **X** | Canhão (corpo inteiro) | 3 | 0,95 s | 22 m/s | 0,55 | 24,0 | **85** | 255 | 256 |
+| **C** | Sniper (+ luneta) | 5 | 1,05 s | **250 m/s** | 0,16 | 10,0 | **76** | 380 | 384 |
+| **V** | Minigun | 100 | 0,06 s | 46 m/s | 0,14 | 1,6 | **7** | 700 | 768 |
 
-⚠️ **`dano` aqui é POR BALA, não por golpe** — por isso o minigun vale 9 e o
-canhão 90.
+⚠️ **`dano` aqui é POR BALA, não por golpe** — por isso o minigun vale 7 e o
+canhão 85. A coluna vem de `Balance.FRUTAS.buki_buki`; as demais, de
+`BukiFX.ARSENAL`. Os números são **finais** — é o que a barra de vida perde. Ver
+a seção "Dano" do [README da pasta](README.md).
+
+### O dano por bala não é escolhido: é `teto do slot ÷ nº de balas`
+
+É a única fruta em que a tecla **empunha** em vez de lançar, e a munição é a
+penalidade — o que significa que o número de balas é **desenho de arma**, não
+orçamento. Se o dano por bala fosse escolhido à mão, a arma com mais munição
+seria automaticamente a mais forte, e era exatamente isso que acontecia: com a
+tabela antiga o minigun somava **108** contra os **32** do canhão. Uma arma de
+100 balas com o mesmo dano/bala de uma de 3 não é uma arma pesada, é um bug de
+aritmética.
+
+Hoje o valor sai da divisão, e por isso a soma do pente encosta no teto do slot
+por baixo (192 de 200, 255 de 256, 380 de 384). A divisão é arredondada **para
+baixo** de propósito: o teto continua sendo a garantia dura — quem mexer no
+`balas` do `ARSENAL` sem mexer no `Balance` não consegue estourar o slot —, mas
+no caso normal o jogador esvazia o pente inteiro sem nunca ver o corte, o que
+mantém a última bala tão valiosa quanto a primeira.
+
+A folga sobra onde há mais balas para arredondar: o minigun perde 0,68 por bala e
+fica em 700 de 768, contra 8 de folga na pistola. Não incomoda — a 0,06 s de
+cadência, esvaziar o pente é 6 s de gatilho preso, e ninguém fica 6 s na frente
+do minigun. O teto ali é rede de segurança, não a régua.
+
+> **Nota (2026-08-21):** havia um comentário no `ARSENAL` citando um campo
+> `dano_mult` por arma. Ele **nunca existiu** no dicionário — era documentação de
+> um desenho que não chegou a ser escrito, e mandava quem lesse procurar um
+> multiplicador inexistente para explicar a diferença entre o canhão e o minigun.
+> Foi corrigido junto com a tabela.
+
+### O PENTE INTEIRO é uma conjuração só
+
+`Player._spec_do_disparo` abre **uma** `DamageSpec` por (fruta, slot) e a
+reaproveita em cada tiro, então todas as balas de um pente carregam o mesmo
+`cast_id` e o mesmo teto. **As 100 balas do minigun somam o mesmo teto que os 3
+tiros do canhão.**
+
+A conjuração é fechada por `Player.encerrar_disparo()`, e o "quando" importa:
+
+- **ao sacar** (`_net_buki_sacar`) — encerra ANTES de mostrar a arma, senão sacar
+  a *mesma* arma duas vezes reaproveitaria o orçamento já gasto (a troca entre
+  armas **diferentes** já seria pega pela chave de `_spec_do_disparo`);
+- **ao guardar** (`_net_buki_guardar`) — o próximo saque começa cheio;
+- **ao morrer** (`Player.gd:1522`) — um pente com o teto gasto que sobrevivesse
+  ao respawn faria a primeira arma da vida nova não machucar ninguém.
 
 ### O teto de velocidade é de FÍSICA, não de gosto
 

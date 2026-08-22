@@ -5,7 +5,8 @@ Voltáica — só `speed_mod 1,15` / `jump_mod 1,10` estão implementados (o
 *volt meter* de 0 a 100 não existe no código).
 
 É a fruta mais trabalhada em VFX do projeto, e a **primeira a ganhar
-charge-up** — a mecânica que o X da Gura Gura reaproveita depois.
+charge-up** — a mecânica que o X da Gura Gura e, depois, o V da Mera Mera
+reaproveitam.
 
 ---
 
@@ -15,8 +16,9 @@ charge-up** — a mecânica que o X da Gura Gura reaproveita depois.
 |---|---|
 | `src/effects/GoroFX.gd` | a **paleta**, a oficina de raios (`bolt_fill`, `volt_material`, `storm_cloud`, `shock_ring`) e os golpes do dia a dia (Z, C) |
 | `src/effects/GoroFXGrande.gd` | os dois espetáculos: **X (El Thor)** e **V (Mamaragan)** |
-| `src/player/cast_controller.gd:68,159-196` | o gatilho do X no aperto e o charge-up do V |
+| `src/player/cast_controller.gd:68,173-174,183-232` | o gatilho do X no aperto e o charge-up do V |
 | `src/combat/Balance.gd` | **todo o dano** dos quatro slots (a tabela única, desde 2026-08-21) |
+| `SkillSystem.gd:61-66` | **só nome e cor** dos 4 slots — nenhum número de dano |
 
 **Por que dois arquivos.** Os espetáculos são blocos grandes que não participam
 do combate normal, e o projeto tem teto de 900 linhas por script
@@ -41,6 +43,9 @@ nuvem clarear, o raio some dentro dela.
 | **X** | El Thor | nuvem de raio 9,5 m, **11 raios** que caem em 4,2 s e a coluna final | raios: **64** cada, **`paralisa = 1,2 s`** (kb 0), raio 2,8, vida 0,22 s · coluna: **128** (`partes.coluna`), kb 22, raio 3,5, vida 3,2 s · **teto 256** |
 | **C** | Shunshin | teleporte-raio curto | dano **200** · kb 10 · `fwd × 25` · vida 0,6 s · raio 1,2 |
 | **V** | Mamaragan | **carregável**: a bola cresce enquanto a tecla é segurada e é arremessada na mira do instante da soltura | bola em voo: **256** (`partes.orbe`), kb 26, raio 2,6 · detonação: **512 → 768** conforme a carga, kb 30, **raio 12**, vida 0,5 s · **teto 768** |
+
+Os números saem de `src/combat/Balance.gd` e são **finais** — é o que a barra de
+vida perde. Ver a seção "Dano" do [README da pasta](README.md).
 
 **Sobre os números do X.** Os 11 raios eram `damage × 0,35` e a coluna levava o
 "dano cheio" — duas frações escritas dentro do `GoroFXGrande`. Hoje cada raio
@@ -69,11 +74,36 @@ para cima é ativada mesmo se o jogador continuar segurando a skill, visto que n
 antes de a coluna chegar. **O golpe se sabotava.** É o único uso do campo
 `paralisa` da `DamageZone` no projeto inteiro.
 
+### O V: a bola em voo e a detonação dividem UM orçamento
+
+As duas hitboxes do Mamaragan nascem do mesmo aperto de tecla e carregam o mesmo
+`cast_id`, então o teto de **768** do slot V vale para a soma. Quem for atingido
+pela **bola em voo** leva os 256 de `partes.orbe` e, na detonação, só os 512 que
+sobram do orçamento — mesmo com carga cheia. Acertar com as duas partes **não**
+dobra o golpe; o que a bola em voo compra é o dano garantido de quem for
+atropelado no caminho, e o empurrão dela (kb 26) continua valendo inteiro
+mesmo depois do teto.
+
 ### O charge-up do V
 
 Linha do tempo em `MamaraganController`: `T_CARGA = 2,30 s` para a bola ficar
 completa (raio 0,30 → 2,30), `T_LANCA = 3,30`, `TOTAL = 5,40`. Segurando, a
 linha do tempo **congela** em `T_LANCA` e a bola espera o dedo.
+
+⚠️ **Duas escalas de tempo, e elas não são a mesma.** O visual da bola usa
+`T_CARGA = 2,30 s`; o DANO usa o `tempo_de_carga = 3,0 s` da tabela. O código
+concilia as duas convertendo a carga visual, que é uma fração de 0 a 1, para os
+segundos que o `DamageSpec` espera:
+`spec.valor_do_hit(carga_atual() * spec.tempo_de_carga)`
+(`GoroFXGrande.gd:826-828`). Ou seja: **bola visualmente cheia = dano máximo**,
+independente do número de segundos — mas quem mexer em qualquer um dos dois
+números precisa saber que existe essa ponte.
+
+Até 2026-08-21 o Mamaragan tinha uma **máquina de estados própria** para o
+dano da carga, a terceira curva diferente do jogo (as outras eram
+`1 + carga/1,5` da Gura e `1 + carga/3,0` da Mera). Hoje as três skills
+carregáveis usam a mesma reta de `dano` a `dano_max` (`DamageSpec.valor_do_hit`),
+e a faixa mora na tabela: **512 → 768**.
 
 Três regras que separam o charge-up de todo o resto do jogo:
 

@@ -330,12 +330,25 @@ static func _hiken(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 	zone.collided_with_any.connect(explode)
 	zone.tree_exiting.connect(explode)
 	
-	# Explosão massiva ao final do trajeto
+	# Explosão massiva ao final do trajeto.
+	#
+	# ⚠️ FALTAVA `is_instance_valid(zone)` (corrigido em 2026-08-21). O `explode`
+	# acima faz `zone.queue_free()`, e ele dispara em DOIS gatilhos: contato
+	# (`collided_with_any`) e morte da zona (`tree_exiting`). Quando o Hiken
+	# ACERTA alguém antes de 1,15 s, a zona já não existe quando este temporizador
+	# corre — e a linha lia `zone.global_position` num objeto liberado, o que
+	# derrubava o callback com erro de runtime.
+	#
+	# 📌 DECISÃO EM ABERTO, não corrigida aqui: com a guarda, quem ACERTA perde a
+	# explosão final e quem ERRA fica com ela. Ou seja, errar rende mais dano que
+	# acertar — 160 do punho contra 160 da explosão. Isso é balanceamento, não
+	# defeito de código, e é do dono. O conserto natural seria a explosão nascer
+	# TAMBÉM no ponto de impacto (mover a chamada para dentro do `explode`).
 	var tree := zone.get_tree()
 	if tree:
 		var timer := tree.create_timer(1.15)
 		timer.timeout.connect(func():
-			if is_instance_valid(world):
+			if is_instance_valid(world) and is_instance_valid(zone):
 				FireFXGrande._explosion(world, zone.global_position, damage, caster, spec)
 		)
 

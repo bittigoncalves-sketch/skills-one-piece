@@ -49,7 +49,13 @@ const FRACAO_VERTICAL := 0.35
 # adequada. Três existem porque três casos REAIS aparecem no jogo hoje.
 const PADRAO := "padrao"          # radial + 35% pra cima (o de sempre)
 const SO_HORIZONTAL := "rasteiro" # empurra sem levantar: bom para parede/onda
-const ARREMESSO := "arremesso"    # sobe mais que empurra: o V da Gura usa
+const ARREMESSO := "arremesso"    # sobe mais que empurra
+# ⚠️ `ARREMESSO` dizia "o V da Gura usa" — NÃO USA (verificado em 2026-08-21).
+# A `DamageZone` chama sempre `Knockback.PADRAO`; o V da Gura fixa a DIREÇÃO
+# (`override_kb_dir`), não o perfil. Nem `ARREMESSO` nem o ajudante `rasteiro()`
+# (que usa `SO_HORIZONTAL`) têm um único chamador no projeto. Ficam como opção
+# pronta — mas quem for cobrar "três casos REAIS" no aviso acima que saiba que
+# hoje o número real é UM.
 
 const PERFIS := {
 	PADRAO:         {"vertical": FRACAO_VERTICAL, "horizontal": 1.0},

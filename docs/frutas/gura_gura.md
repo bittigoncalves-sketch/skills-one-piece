@@ -1,11 +1,11 @@
 # Gura Gura no Mi — a fruta do tremor
 
-> 🔧 **Fruta em revisão nesta data (2026-08-14).** `Player.gd`,
-> `src/anim/ProceduralAnimator.gd`, `src/effects/GuraFX.gd` e
-> `src/effects/GuraVNode.gd` estão sendo editados enquanto este documento é
-> escrito. **A estrutura descrita aqui é a de agora**; números soltos (ângulos de
-> pose, multiplicadores) podem já ter andado. Onde o número importa, ele está
-> marcado com o arquivo e a linha para conferência.
+> 🔧 **Esta página foi escrita durante uma revisão da fruta (2026-08-14) e
+> reconferida contra o código em 2026-08-21/22**, depois da reescrita do dano.
+> Nesta passagem foram corrigidos: os números de dano do **C** e do **V** (ainda
+> estavam na escala do `DAMAGE_SCALE`), a seção do **V** inteira (descrevia o
+> golpe anterior ao commit `6268a6e`), a direção do knockback e as linhas de
+> arquivo, que tinham andado com o crescimento do `Player.gd`.
 
 **Id:** `gura_gura` · **Tipo:** Paramecia · **Passiva:** Homem-Tremor (Quake
 Force) — nenhum bônus de mobilidade (`speed_mod` e `jump_mod` = 1,0).
@@ -27,7 +27,7 @@ golpe mais letal que existe.
 faz.** Hoje só duas zonas fixam direção, e nenhuma delas fixa `UP`: o **Z** fixa
 `fwd` (empurra na direção da investida) e as ondas do **V** fixam o rumo da onda.
 O **X** e o **C** usam o radial padrão da `DamageZone`, que já é
-`Knockback.PADRAO` — radial + 35% para cima. Ver `src/combat/Knockback.gd`.
+`Knockback.PADRAO` — radial + 35% para cima. Ver `src/mechanics/Knockback.gd`.
 
 ---
 
@@ -37,9 +37,9 @@ O **X** e o **C** usam o radial padrão da `DamageZone`, que já é
 |---|---|
 | **obtível** | sim — Árvore do Abalo (`TreeAndFruitGenerator`, paleta azul-tempestade) |
 | **Z/X/C/V com hitbox** | 4/4 |
-| **atalho ligado hoje** | o jogador **nasce** com ela equipada (`Player.gd:18`, `Main.gd:114`) — atalho de desenvolvimento, ver o README da pasta |
-| **peculiaridade** | equipar dobra a escala do corpo (`scale = Vector3(2,2,2)`) |
-| **pendências abertas** | itens **31, 32, 35** da [`../LISTA_DE_CORRECOES.md`](../LISTA_DE_CORRECOES.md) |
+| **atalho de nascimento** | ⚠️ **não é mais a Gura.** `Player.gd:25` nasce com `bara_bara` e `Main.gd:127` equipa `mera_mera` no spawn. O atalho de desenvolvimento continua existindo (ver o README da pasta), só mudou de fruta em 2026-08-21 |
+| **peculiaridade** | equipar dobra a escala do corpo (`scale = Vector3(2,2,2)`, `Player.gd:2085`) |
+| **pendências abertas** | itens **32 e 35** da [`../LISTA_DE_CORRECOES.md`](../LISTA_DE_CORRECOES.md) — o **31** está corrigido no código |
 
 ---
 
@@ -49,12 +49,12 @@ O **X** e o **C** usam o radial padrão da `DamageZone`, que já é
 |---|---|
 | `src/combat/Balance.gd` | **a tabela de dano** (`FRUTAS.gura_gura`) — a fonte da verdade desde 2026-08-21 |
 | `SkillSystem.gd:44-49` | **só nome e cor** dos 4 slots; o `dano` que ele devolve é derivado do `Balance` |
-| `src/player/cast_controller.gd:164-168` | **Z** desvia para a investida física, não para o VFX |
+| `src/player/cast_controller.gd:177-181` | **Z** desvia para a investida física, não para o VFX |
 | `src/player/cast_controller.gd:68` | `CARREGAVEIS = {… "gura_gura": ["X"]}` — o X é carregável |
-| `src/player/cast_controller.gd:306-370` | `GuraChargeNode` — a captura sísmica do X |
-| `Player.gd:1336-1391` | `start_gura_rush()` e `_process_gura_rush()` — a investida do Z |
-| `Player.gd:838-842` | a locomoção durante a investida (velocidade × 4) |
-| `Player.gd:1585-1588` | a escala 2× ao equipar |
+| `src/player/cast_controller.gd:387-451` | `GuraChargeNode` — a carga do X |
+| `Player.gd:1752-1810` | `start_gura_rush()` e `_process_gura_rush()` — a investida do Z |
+| `Player.gd:1035-1038` | a locomoção durante a investida (velocidade × 4) |
+| `Player.gd:2085-2087` | a escala 2× ao equipar |
 | `src/effects/GuraFX.gd` | os quatro efeitos + os blocos visuais (`_ring`, `_bubble`, `_debris`) |
 | `src/effects/GuraVNode.gd` | o nó gerenciador da ultimate (V), com a linha do tempo de 4 s |
 | `src/effects/GuraShatterMesh.gd` | o "ar rachando" — teia de linhas procedural (`SurfaceTool`) |
@@ -107,7 +107,7 @@ retorna. O que acontece:
 
 1. cobra recarga (5 s) e energia (180), congela o cast e liga a pose `gura_rush`;
 2. por até **0,6 s** o jogador corre na direção da mira a **4× a velocidade**
-   efetiva (`Player.gd:840`);
+   efetiva (`Player.gd:1036`);
 3. todo quadro, uma esfera de raio **1,2 m**, a 1,5 m à frente e 1,0 m acima do
    centro, procura qualquer corpo com `take_damage()` que não esteja congelado;
 4. ao encostar em alguém: o alvo recebe `is_frozen` e `StatusFX.CONGELADO` por
@@ -144,14 +144,16 @@ hitbox. A recarga de 5 s e os 180 de energia **já foram gastos** no início. Is
 não está declarado como decisão em lugar nenhum do código; se for indesejado, o
 conserto é devolver recarga/energia quando `_gura_rush_timer` expira sem alvo.
 
-⚠️ **A investida escreve `global_position` do alvo direto** (`Player.gd:1361`),
+⚠️ **A investida escreve `global_position` do alvo direto** (`Player.gd:1777`),
 no cliente do atacante. A posição de outro jogador é autoritária **no cliente
 dele**; em PvP o agarrão pode ser desfeito pelo próprio dono do corpo no quadro
 seguinte. Não foi testado em rede — ver item 35.
 
 ### X — Esfera Sísmica: carregar e ARREMESSAR
 
-O X é o **segundo golpe carregável** do jogo (o primeiro é o V da Goro Goro), e
+O X é **uma das três skills carregáveis** do jogo — as outras duas são o V da
+Goro Goro (a primeira a existir) e o V da Mera Mera, e desde 2026-08-21 as três
+usam a mesma reta de interpolação (`DamageSpec.valor_do_hit`). O X
 usa toda a mecânica de charge-up documentada em
 [`../PEDIDO_2026-08-12.md`](../PEDIDO_2026-08-12.md#charge-up--implementado-em-2026-08-12-noite):
 a skill nasce **no clique**, cresce enquanto a tecla está segurada, e **levar
@@ -197,14 +199,17 @@ antigo sobreviveu só onde ele sempre foi honesto, que é o espetáculo.
 ### C — Kabutsuchi: o chão racha
 
 Sem captura e sem carga. `GuraFX._eruption` mira o ponto **5 m à frente** no
-plano horizontal (`_ground`), força `y = 0,2` e, após **0,4 s** de espera
-(o tempo do uppercut `left_uppercut_from_guard.res`), abre:
+plano horizontal (`_ground`), força `y = 0,2` e, após **0,4 s** de espera (o
+tempo da pose autoral `gura_c_kabutsuchi`, que substituiu o uppercut do Mixamo —
+o clipe antigo era um gancho de baixo para cima enquanto o chão rachava, ou seja
+contava a história ao contrário), abre:
 
 | | valor |
 |---|---|
-| dano nominal | 30 → **3,6 aplicados** |
-| knockback | 30, **para CIMA** |
+| dano | **224** (`Balance.FRUTAS.gura_gura.C`) |
+| knockback | 30, **radial** — `Knockback.PADRAO`, com o viés de 35% para cima |
 | raio | 5,0 m · vida 0,5 s · estático |
+| teto da conjuração | 384 (slot C) — um acerto só, não chega perto dele |
 | visual | bolha 3,0 · anel até 7,0 · **90 destroços** com viés para cima · rachadura + `ScreenShatterFX` |
 
 ⚠️ O `y = 0,2` é **chão absoluto**, não o chão sob o jogador. Na arena — que é
@@ -212,39 +217,81 @@ uma grade de lajes com buracos — isso funciona porque o piso está em y ≈ 0;
 num mapa com desnível, a erupção sairia enterrada ou flutuando. Registrado como
 limitação conhecida, não como bug: hoje não há mapa com desnível.
 
-### V — Tsunamis Duplos: 4 segundos de imobilidade por dois muros
+### V — Seaquake: duas paredes de água vindas das bordas do mapa
 
-O V não é um efeito, é um **nó com linha do tempo**: `GuraVNode` entra na cena,
-congela o conjurador e caminha por cinco poses, uma por segundo:
+> 🔄 **REESCRITO DO ZERO em 2026-08-14** (commit `6268a6e`). A versão que este
+> documento descrevia — cinco poses de um segundo cada, quatro segundos de
+> imobilidade e duas zonas de raio 15 m nascendo a ±6 m do jogador — **não
+> existe mais**. Aquele golpe nem tsunami tinha: eram duas nuvens de partículas
+> que subiam em vez de avançar, e o clímax (bolha, 200 destroços, 3 anéis)
+> nascia na **origem do mapa**, não no jogador.
 
-| t | pose | o que acontece |
+O V não é um efeito, é um **nó com linha do tempo** (`GuraVNode`), e o pedido do
+dono era literal: *"o personagem entra em pose de T socando o ar e rachaduras
+brancas como o quebrar de uma tela aparecem a partir das mãos do jogador, e dos
+dois lados do mapa são spawnados tsunamis gigantes que quando colidirem encerram
+o ataque"*. Quatro tempos, cada um com um dono no arquivo:
+
+| t | fase | o que acontece |
 |---|---|---|
-| 0 s | `gura_v_prep` | postura firme, respiração |
-| 1 s | `gura_v_squat` | agacha, braços atrás · tremor 0,3 |
-| 2 s | `gura_v_gather` | agachado vibrando · anel de 8 m + 40 destroços · tremor 0,6 |
-| 3 s | `gura_v_lift` | braços sobem · tremor 0,9 |
-| 4 s | `gura_v_tpose` | T-pose · tremor 1,5 · **dispara** |
+| 0 s | `_armar()` | pose `gura_v_lift`, `is_casting`, `lock_movement(0,90 s)` · tremor 0,5 |
+| 0,45 s | `_socar()` | entra `gura_v_tpose` — a pose de T **abre recuando** os braços · tremor 0,35 |
+| `T_IMPACTO` | `_impacto()` | o punho chega: tremor 1,6, soco de FOV 14, e as **rachaduras nascem nas duas mãos** (duas teias por mão + anel + 30 destroços) |
+| 0,90 s | `_lancar_tsunamis()` | as duas ondas nascem **nas bordas** e o corpo é solto |
+| medido | `_encontro()` | quando o vão entre as frentes cai a 8 m: anéis de até 70 m, bolha de 22 m, 220 destroços, vidro de 9,0 · tremor 2,5 |
 
-No disparo (`_liberar_tsunamis`): rachadura de escala 4,0, bolha de 8 m, 200
-destroços, 3 anéis até 20 m, e **duas** `DamageZone` nascendo a ±6 m dos lados:
+`T_IMPACTO` é `T_SOCO + GuraPoses.V_GOLPE_ATE` — as rachaduras esperam o punho
+**chegar**, senão o vidro trincava com os braços ainda voltando, que é o efeito
+antes da causa.
+
+**As ondas** (`_um_tsunami`), uma em cada borda oposta do eixo escolhido:
 
 | | valor |
 |---|---|
-| dano nominal | 85 por tsunami → **10,2 aplicados** |
-| knockback | 35 (radial — este golpe **não** força UP) |
-| velocidade | `±right × 15 + fwd × 30` ≈ **33,5 m/s**, abrindo em leque |
-| raio | **15 m** cada · vida 0,8 s |
-| limpeza | 0,5 s depois do disparo o nó se libera e devolve pose/animação |
+| dano | **384 por onda** (`Balance.FRUTAS.gura_gura.V`, MULTI 384 × 2) |
+| teto da conjuração | **768** — exatamente 2 × 384 |
+| knockback | `KB = 60`, **fixo no rumo da onda** (`override_kb_dir`) com viés para cima |
+| velocidade | `VEL = 40` m/s — 100 m de borda até o centro = **2,5 s** |
+| hitbox | **caixa** de `200 × 24 × 12` m (`LARGURA × ALTURA × HITBOX_FUNDO`), não esfera |
+| berço | `BORDA = 100 m` (metade de `MapBuilder.PLATFORM_SIZE`), no chão |
+| vida | travessia inteira + 1 s; quem mata as ondas antes é o `_encontro()` |
 
-**Por que 4 segundos parado.** É o golpe mais forte da fruta e o único que
-cobre a arena de lado a lado; o custo não podia ser só a recarga de 25 s, que o
-jogador paga sozinho e escondido. Quatro segundos de T-pose visível é um custo
-que **o adversário vê e pode punir** — o poder fica alto sem virar botão grátis.
+**Cada onda acerta cada corpo uma vez** (`DamageZone._hit`), então o teto do
+orçamento e o teto físico do golpe coincidem: quem é pego pelas duas leva a
+ultimate inteira (768), quem desvia de uma leva metade. **As duas contas
+baterem é o sinal de que a skill está declarada certo na tabela.**
 
-⚠️ A limpeza mora em **dois** lugares (`_process` no fim e `_exit_tree`), de
-propósito: se o nó morrer antes de terminar — morte do conjurador, troca de
-cena — o jogador tem que sair de `is_casting` e da pose de qualquer jeito. Foi
-essa a família de bug do item 23 ("morrer segurando a tecla travava o jogo").
+**Por que caixa e não esfera.** Uma esfera que cobrisse 200 m de frente teria
+100 m de raio e acertaria quem estivesse 100 m **atrás** da onda. O parâmetro
+`forma` do `DamageZone.setup` nasceu para isto. Pelo mesmo motivo o knockback é
+fixo no rumo: o radial padrão mede `alvo − centro da zona`, e numa parede de
+200 m o centro pode estar a 100 m de lado — o alvo sairia empurrado de lado, não
+para a frente da onda.
+
+**O eixo é arredondado para o cardeal mais próximo da mira** (`_escolher_eixo`):
+o mapa é um quadrado de 200 m, e uma onda na diagonal nasceria numa quina, faria
+283 m de caminho e cortaria só metade da arena.
+
+**O fim é MEDIDO, não cronometrado.** A cada quadro o nó lê a posição real das
+duas zonas e projeta a distância no eixo; quando o vão cai abaixo de
+`FOLGA_ENCONTRO = 8 m`, o clímax dispara no ponto médio. Um cronômetro mentiria
+se uma onda fosse destruída ou se o `VEL` mudasse — a pergunta é "quando
+colidirem", e isso é geometria. `TETO_TRAVESSIA = 6 s` é rede de segurança.
+
+**O jogador só fica travado 0,90 s**, o tempo do soco. Depois disso ele anda,
+corre e desvia enquanto as ondas fecham — o dono avisou que prender o jogador
+por 8 s é problema, não espetáculo. **As ondas passam POR CIMA dos 16 buracos**
+de propósito: fazer a crista afundar em cada vão exigiria geometria por célula e
+uma hitbox que a acompanhasse, e o resultado ("a onda some e volta") lê pior que
+a água atravessando. 📌 Gatilho para revisitar: se os buracos ganharem parede ou
+fundo visíveis, a onda reta vira erro de leitura.
+
+⚠️ **As ondas são FILHAS do nó**, de propósito: se ele morrer (jogador morreu,
+cena trocada), elas morrem junto e não sobra hitbox invisível varrendo o mapa.
+E a limpeza do corpo mora em **dois** lugares (`_encerrar` e `_exit_tree`), pela
+mesma razão — seja qual for o caminho da morte, o jogador tem que sair de
+`is_casting` e da pose de T. Foi essa a família de bug do item 23 ("morrer
+segurando a tecla travava o jogo").
 
 ---
 
@@ -263,7 +310,7 @@ aparente e a altura da câmera**.
 |---|---|
 | benefício imediato | leitura instantânea de quem está com a fruta mais forte da arena |
 | impacto futuro | qualquer sistema que assuma jogador de tamanho fixo (parkour, buracos de 1×1 laje, mira, hitbox de melee) passa a ter um caso especial |
-| manutenção | **não replica**: `Main.gd:119` sincroniza `current_fruit_id`, mas `equip_fruit` **não** roda nos outros peers — o adversário te vê em tamanho normal |
+| manutenção | **não replica**: `Main.gd:132` sincroniza `current_fruit_id`, mas `equip_fruit` **não** roda nos outros peers — o adversário te vê em tamanho normal |
 | extensão | nenhuma outra fruta usa o mecanismo; é um `if` por id, não uma propriedade de dados |
 | custo | duas linhas |
 | riscos | passar pelos buracos, escalar paredes e ser atingido mudam de comportamento sem nada avisar |
@@ -271,20 +318,38 @@ aparente e a altura da câmera**.
 **Gatilho:** se uma segunda fruta precisar mudar o corpo do jogador, isso vira
 campo de dados na `FruitPassiveSystem` (ex.: `escala`), não um segundo `if`.
 
-### Três dos quatro golpes empurram para CIMA
+### Dois golpes fixam a direção do empurrão; dois usam o radial
 
-`override_kb_dir = Vector3.UP` no Z, X e C. O padrão da `DamageZone` é radial
-(`alvo − centro`), que espalha o alvo para longe. Para a Gura, espalhar é pior:
-manda o adversário para fora do raio dos golpes seguintes e, num mapa de buracos,
-lançar para cima é o que de fato mata (o alvo cai onde estava, e onde estava pode
-ser um buraco). O V é a exceção — ali o efeito **é** varrer a arena.
+Só **Z** e **V** escrevem `override_kb_dir`, e nenhum dos dois fixa `UP`:
 
-### O dano é baixo de propósito
+| golpe | direção do knockback | por quê |
+|---|---|---|
+| **Z** | `fwd` — a direção da investida | o soco fecha uma corrida; empurrar de lado desmentiria o movimento |
+| **X** | radial (`Knockback.PADRAO`) | explosão esférica: radial **é** a leitura certa |
+| **C** | radial (`Knockback.PADRAO`) | a cratera abre embaixo do alvo; o viés de 35% para cima já ergue |
+| **V** | o rumo da onda | numa parede de 200 m o "centro da zona" pode estar a 100 m de lado, e o radial jogaria o alvo para os lados em vez de à frente da água |
 
-Nominal 20/25/30/85 contra 25/40/55/80 da Gomu e 30/50/20/90 da Goro. Com
-`DAMAGE_SCALE`, o Z tira ~4 de uma barra de 2048: em atrito puro, a Gura é a
-pior fruta do jogo. Ela ganha pelo arremesso. Quem for equilibrar dano precisa
-tratar knockback como a moeda dela, não como bônus.
+O componente vertical **não some em nenhum deles**: `Knockback.PADRAO` é radial
++ **35% para cima** (`FRACAO_VERTICAL`), e é ele que tira o alvo do plano num
+mapa onde quem mata é o buraco. Ver
+[`../../src/mechanics/Knockback.gd`](../../src/mechanics/Knockback.gd).
+
+> ⚠️ **A versão antiga deste documento dizia `override_kb_dir = Vector3.UP` no
+> Z, X e C.** Não é o que o código faz, e não era em nenhuma versão recente —
+> conferido linha a linha em `GuraFX.gd` e `GuraVNode.gd`.
+
+### O dano deixou de ser o preço do arremesso
+
+O texto que estava aqui dizia "nominal 20/25/30/85… com `DAMAGE_SCALE` o Z tira
+~4 de uma barra de 2048: em atrito puro, a Gura é a pior fruta do jogo".
+**Nada disso vale desde 2026-08-21:** o `DAMAGE_SCALE` foi removido, os números
+da tabela são finais, e a Gura hoje vale **96 / 192→256 / 224 / 384 por onda**,
+dentro da faixa do slot como todas as outras.
+
+O preço do arremesso agora é **tempo e distância**, não dano: a carga do X, os
+0,90 s travado no V, e o fato de o Z ser uma investida que só existe se encostar
+em alguém. Quem for equilibrar esta fruta ajusta esses tempos — mexer no dano
+para baixo recria o desequilíbrio que a tabela acabou de fechar.
 
 ---
 
@@ -292,11 +357,13 @@ tratar knockback como a moeda dela, não como bônus.
 
 | # | o que | onde |
 |---|---|---|
-| **31** | `GuraShatterMesh.spawn` escreve `global_position` **antes** do `add_child` — a rachadura nasce no lugar errado quando o pai não está na origem (Z, X e C) | `GuraShatterMesh.gd:50-51` |
-| **32** | o X só funciona pelo caminho da carga; qualquer outro caminho explode perto de (0,0,0) | `GuraFX.gd:13` |
-| **35** | a investida do Z e a captura do X escrevem a posição de outro corpo no cliente do atacante — não testado em rede | `Player.gd:1361`, `cast_controller.gd:344` |
-| — | Z gasta recarga e energia mesmo sem encostar em ninguém (decisão pendente, não bug medido) | `Player.gd:1336` |
-| — | a erupção do C assume piso em `y = 0,2` | `GuraFX.gd:208` |
+| **31** | ✅ **corrigido.** `GuraShatterMesh.spawn` posiciona **depois** do `add_child`, e o motivo ficou escrito no código (fora da árvore, `global_position` escreve no transform local, e a rachadura nascia a ~2× a posição pedida) | `GuraShatterMesh.gd:56-65` |
+| **32** | o X só funciona pelo caminho da carga: `cast` passa `dir` como **posição absoluta do alvo**, então um cast direto (sem `GuraChargeNode`) manda a esfera para perto de (0,0,0) | `GuraFX.gd:15` |
+| **35** | a investida do Z escreve a posição de outro corpo no cliente do atacante — não testado em rede. (A **captura do X já não existe**: o `GuraChargeNode` não tem raio, `_target` nem `is_frozen`.) | `Player.gd:1777` |
+| — | Z gasta recarga e energia mesmo sem encostar em ninguém (decisão pendente, não bug medido) | `Player.gd:1752` |
+| — | a erupção do C assume piso em `y = 0,2` | `GuraFX.gd:277` |
+| — | `GuraVNode._encerrar()` **não chama** `CombatResolver.encerrar(cast_id)`, embora o cabeçalho do `CombatResolver` cite o V da Gura como o exemplo de golpe longo que "sabe a hora em que acaba". Sem impacto em jogo — o orçamento é recolhido pelo varredor de 90 s —, mas as duas pontas discordam | `GuraVNode.gd:410`, `CombatResolver.gd:106-110` |
+| — | `Knockback.gd:52` diz que o perfil `ARREMESSO` é "o V da Gura usa". Ele **não usa**: a `DamageZone` chama sempre `Knockback.PADRAO`, e `ARREMESSO`/`SO_HORIZONTAL` não têm chamador nenhum no jogo | `DamageZone.gd:178-180` |
 | — | nenhum teste automatizado cobre a Gura especificamente; o `test_frutas.gd` só conta nós e hitboxes | `tools/dev_tests/` |
 
 **Nunca foi medido:** dano real em alvo, alcance efetivo do Z (a investida

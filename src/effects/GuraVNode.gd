@@ -409,6 +409,12 @@ func _soltar_o_corpo() -> void:
 
 func _encerrar() -> void:
 	_soltar_o_corpo()
+	# Devolve o orçamento da conjuração (2026-08-21). O `CombatResolver` tem um
+	# varredor que recolhe sozinho o que passa de 90 s, mas este golpe SABE a hora
+	# em que acaba — e o cabeçalho do resolver cita justamente ele como o exemplo
+	# de golpe longo que deve fechar a própria conta em vez de esperar a varredura.
+	if _spec != null:
+		CombatResolver.encerrar(_spec.cast_id)
 	if is_inside_tree():
 		queue_free()
 

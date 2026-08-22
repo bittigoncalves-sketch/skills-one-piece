@@ -101,7 +101,14 @@ const FRUTAS := {
 		# Vagalumes de Fogo: Uma nuvem de vagalumes, se um é ativado, explode em cadeia.
 		"C": {"tipo": T.UNICO, "dano": 256.0},
 		# Dai Enkai: Entei (Sol Quadrado)
-		"V": {"tipo": T.CARREGADO, "dano": 256.0, "dano_max": 384.0, "tempo_de_carga": 3.5},
+		#
+		# ⚠️ 256->384 CORRIGIDO PARA 512->768 em 2026-08-21. O Entei MUDOU DE SLOT
+		# (era o C carregado, virou o V) e veio com os números do slot antigo. A
+		# faixa de carga do C é 256-384 e a do V é 512-768, então a ultimate da
+		# Mera estava valendo o mesmo que um C de qualquer outra fruta — metade do
+		# que o slot promete. Quem pegou foi `tools/dev_tests/test_balance.gd`,
+		# checagem [1]: "mera_mera/V: carga 256->384 fora da faixa [512, 768]".
+		"V": {"tipo": T.CARREGADO, "dano": 512.0, "dano_max": 768.0, "tempo_de_carga": 3.5},
 	},
 	"bara_bara": {
 		"Z": {"tipo": T.UNICO, "dano": 92.0},
