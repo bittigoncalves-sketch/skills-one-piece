@@ -302,6 +302,9 @@ class EnteiSunController extends Node3D:
 	var zone: DamageZone
 
 	var _spec: DamageSpec = null
+	# Carga do instante do DISPARO. Guardada porque a explosão acontece segundos
+	# depois e precisa valer o que o jogador carregou — ver `_explode`.
+	var _carga := 0.0
 
 	func _init(c: Node, orig: Vector3, d: Vector3, dmg: float, spec: DamageSpec = null) -> void:
 		_spec = spec if spec != null else DamageSpec.avulso(dmg)
@@ -343,10 +346,22 @@ class EnteiSunController extends Node3D:
 		tw.tween_property(self, "global_position", target_pos, 0.9).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 	func update_charge(charge_time: float) -> void:
-		# Cresce de acordo com o charge_time (até 3.5s). A velocidade foi reduzida pela metade.
+		# Cresce de acordo com o charge_time.
+		#
+		# ⚠️ O SOL NUNCA CHEGAVA AO TAMANHO CHEIO (corrigido em 2026-08-21).
+		# A conta era `clampf((charge_time * 0.5) / 3.0, 0, 1)`: com o tempo de
+		# carga real de 3,5 s ela parava em 0,58, então a bola travava em 58% da
+		# escala máxima e a carga completa lia igual a uma carga de 2 s. Eram dois
+		# números pressupondo cargas diferentes — o `/ 3.0` vinha de quando a carga
+		# durava 3 s, e o `* 0.5` ("velocidade reduzida pela metade") nunca foi
+		# recalculado depois.
+		#
+		# Agora o divisor é o tempo de carga DA TABELA (`Balance`), que é o mesmo
+		# que manda no dano — visual e dano passam a falar da mesma carga.
 		if not is_instance_valid(sun) or fired: return
-		var max_s = 3.5
-		var ratio = clampf((charge_time * 0.5) / 3.0, 0.0, 1.0)
+		var max_s = 3.5   # escala máxima da malha (não é tempo)
+		var t_max: float = _spec.tempo_de_carga if _spec != null and _spec.tempo_de_carga > 0.0 else 3.5
+		var ratio = clampf(charge_time / t_max, 0.0, 1.0)
 		var s = lerpf(0.1, max_s, ratio)
 		sun.scale = Vector3(s, s, s)
 		
@@ -367,12 +382,28 @@ class EnteiSunController extends Node3D:
 		# Só atira quando o MeraChargeNode chamar shoot()
 
 		if fired:
-			global_position += dir * 28.0 * delta
+			# ⚠️ O SOL E A HITBOX ANDAVAM EM RELÓGIOS DIFERENTES (2026-08-22).
+			#
+			# Aqui o controlador avançava `global_position += dir * 28 * delta` no
+			# quadro OCIOSO, enquanto a `DamageZone` avança sozinha (`vel`) no quadro
+			# de FÍSICA. Dois integradores com o mesmo número e passos diferentes
+			# ficam juntos no papel e derivam na prática — e a 28 m/s por 3,5 s a
+			# separação é visível: a explosão nascia onde estava o DESENHO, e o dano
+			# tinha ficado para trás (ou à frente) do que o jogador viu.
+			#
+			# Agora a HITBOX é a fonte da verdade e o desenho a segue. Isso preserva
+			# o conserto do commit `91f0929`: quem anda é a zona, então o
+			# `_varrer_caminho` dela continua valendo e o sol não atravessa ninguém.
+			if is_instance_valid(zone):
+				global_position = zone.global_position
+			else:
+				global_position += dir * 28.0 * delta
 			if elapsed >= 4.5 or _check_impact():
 				_explode()
 
 	func shoot(aim: Vector3, charge_time: float) -> void:
 		fired = true
+		_carga = charge_time
 		elapsed = 0.0 # Reseta o tempo para a viagem
 		print("🚀 [Dai Enkai: Entei] DISPARANDO O SOL com carga: ", charge_time)
 		dir = aim.normalized()
@@ -381,7 +412,8 @@ class EnteiSunController extends Node3D:
 		
 		zone = DamageZone.new()
 		if get_tree() and get_tree().current_scene:
-			get_tree().current_scene.add_child(zone)
+			# ⚠️ Ia para `current_scene` e escapava do `clear_spawned_skills` (2026-08-22).
+			FxUtil.mundo_de_skills(caster, get_tree().current_scene).add_child(zone)
 			zone.global_position = global_position
 			AudioFX.impact(get_tree().current_scene, global_position, 0.75)
 			AudioFX.whoosh(get_tree().current_scene, global_position, 0.85)
@@ -421,13 +453,25 @@ class EnteiSunController extends Node3D:
 			if is_instance_valid(caster) and caster.has_method("add_camera_shake"):
 				caster.add_camera_shake(0.9)
 
-			# Super Damage Zone da explosão final (raio de 18 metros)
+			# Super Damage Zone da explosão final (raio 15 m).
+			# ⚠️ O comentário dizia "raio de 18 metros" (corrigido em 2026-08-21):
+			# 18 é o KNOCKBACK — o 2º argumento de `setup` —, e o raio é o 6º, 15,0.
+			# ⚠️ Ia para `world` (a cena) e escapava do `clear_spawned_skills`
+			# (2026-08-22) — golpe que continuava no mapa depois de trocar de fruta.
+			var mundo_skills := FxUtil.mundo_de_skills(caster, world)
 			var exp_zone := DamageZone.new()
-			world.add_child(exp_zone)
+			mundo_skills.add_child(exp_zone)
 			exp_zone.global_position = global_position
 			# A explosão fecha o golpe com o valor cheio da carga. Ela e o sol em voo
-			# dividem o mesmo orçamento (384), então acertar com os dois não dobra.
-			exp_zone.setup(_spec.valor_do_hit(3.5), 18.0, Vector3.ZERO, 0.4, caster, 15.0)
+			# dividem o mesmo orçamento, então acertar com os dois não dobra.
+			# ⚠️ O número escrito aqui era 384 (corrigido em 2026-08-21): o Entei
+			# MUDOU do slot C para o V, e o teto do V é 768.
+			# ⚠️ ERA `valor_do_hit(3.5)` — o MÁXIMO FIXO (corrigido em 2026-08-22).
+			# A explosão valia carga cheia mesmo num toque de tecla, e como ela
+			# sozinha já bate no teto do slot, CARREGAR NÃO MUDAVA NADA no dano. O
+			# jogador segurava 3,5 s por espetáculo, não por poder. Agora vale a
+			# carga que ele realmente segurou.
+			exp_zone.setup(_spec.valor_do_hit(_carga), 18.0, Vector3.ZERO, 0.4, caster, 15.0)
 			_spec.marcar(exp_zone)
 
 			# Visual da explosão solar (Esfera de plasma de fogo expandindo)
@@ -435,14 +479,12 @@ class EnteiSunController extends Node3D:
 			var sm := SphereMesh.new(); sm.radius = 1.0; sm.height = 2.0
 			exp_mesh.mesh = sm
 			exp_mesh.material_override = FxUtil.particle_material(Color(1.0, 0.65, 0.1), 8.0, false)
-			world.add_child(exp_mesh)
+			mundo_skills.add_child(exp_mesh)
 			exp_mesh.global_position = global_position
 			var tw_exp := world.create_tween().set_parallel(true)
 			tw_exp.tween_property(exp_mesh, "scale", Vector3(30.0, 30.0, 30.0), 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 			tw_exp.tween_property(exp_mesh, "transparency", 1.0, 0.55)
 			tw_exp.tween_callback(exp_mesh.queue_free).set_delay(0.6)
 
-		if is_instance_valid(zone):
-			zone.queue_free()
-		queue_free()
+		queue_free()   # o `zone` já foi liberado no topo de `_explode`
 

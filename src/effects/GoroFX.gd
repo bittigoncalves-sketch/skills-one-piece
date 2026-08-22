@@ -288,14 +288,14 @@ class Flicker extends OmniLight3D:
 #  DESPACHO
 # ============================================================================
 static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float,
-		caster: Node, spec: DamageSpec = null) -> void:
+		caster: Node, spec: DamageSpec = null, charge: float = 0.0) -> void:
 	if spec == null:
 		spec = DamageSpec.avulso(damage)
 	match variant:
 		0: _sango(world, origin, dir, damage, caster, spec)
 		1: GoroFXGrande.el_thor(world, origin, dir, damage, caster, spec)
 		2: _shunshin(world, origin, dir, damage, caster, spec)
-		_: GoroFXGrande.mamaragan(world, origin, dir, damage, caster, spec)
+		_: GoroFXGrande.mamaragan(world, origin, dir, damage, caster, spec, charge)
 
 # ---------- Z: Sango — o raio que SAI DO CORPO do jogador ----------
 #

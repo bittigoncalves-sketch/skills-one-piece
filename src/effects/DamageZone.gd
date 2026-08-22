@@ -66,6 +66,10 @@ func setup(dmg: float, kb: float, velocity: Vector3, life: float, caster_node: N
 		col.shape = shape
 	add_child(col)
 
+	# ⚠️ GRUPO "hitbox" (2026-08-22): é assim que a visão do E (`ScreenFX`) acha os
+	# ataques em voo para desenhá-los através das paredes. Sem grupo, a única
+	# alternativa seria varrer a cena inteira a cada 0,15 s.
+	add_to_group("hitbox")
 	body_entered.connect(_on_body)
 	area_entered.connect(_on_area)
 	FxUtil.autofree(self, life)

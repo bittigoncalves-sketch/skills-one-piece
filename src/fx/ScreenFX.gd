@@ -78,6 +78,10 @@ var _aberr_pulso := 0.0    # pico de impacto/dash, decai sozinho
 var aim_assist_active := false
 var _local_player: Node3D = null
 var _red_target_mat: StandardMaterial3D
+# Ataques em voo (golpes dos OUTROS). Âmbar para não se confundir com o vermelho
+# dos corpos — quando as duas coisas aparecem juntas atrás de um muro, cor igual
+# viraria uma mancha só.
+var _skill_mat: StandardMaterial3D
 var _highlight_timer := 0.0
 
 func _ready() -> void:
@@ -97,6 +101,20 @@ func _ready() -> void:
 	_red_target_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_red_target_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_red_target_mat.albedo_color = Color(1.0, 0.15, 0.18, 0.82)
+	# ⚠️ ISTO É O QUE FAZ "VER ATRAVÉS DA PAREDE" (2026-08-22). O destaque já
+	# existia, mas era ocluído como qualquer malha: só aparecia quando o alvo já
+	# estava à vista — ou seja, quando não fazia falta. `no_depth_test` desliga o
+	# teste de profundidade e `render_priority` alto garante que ele seja desenhado
+	# por cima do cenário em vez de disputar com ele.
+	_red_target_mat.no_depth_test = true
+	_red_target_mat.render_priority = 100
+
+	_skill_mat = StandardMaterial3D.new()
+	_skill_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_skill_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_skill_mat.albedo_color = Color(1.0, 0.68, 0.12, 0.70)
+	_skill_mat.no_depth_test = true
+	_skill_mat.render_priority = 99
 	_red_target_mat.emission_enabled = true
 	_red_target_mat.emission = Color(1.0, 0.12, 0.12)
 	_red_target_mat.emission_energy_multiplier = 2.8
@@ -177,6 +195,25 @@ func update_aim_highlights(enable: bool) -> void:
 	for p in tree.get_nodes_in_group("player"):
 		if p is Node3D and p != _local_player and not targets.has(p):
 			targets.append(p)
+	# ATAQUES EM VOO. `caster` diferente do jogador local: o que interessa é ver o
+	# golpe que vem, não o próprio. A `DamageZone` entra no grupo "hitbox" ao ser
+	# configurada — ver a nota lá.
+	for z in tree.get_nodes_in_group("hitbox"):
+		if not (z is Node3D) or not is_instance_valid(z):
+			continue
+		var dono = z.get("caster")
+		if dono != null and is_instance_valid(dono) and dono == _local_player:
+			continue
+		for mi in _collect_all_meshes(z):
+			var g := mi as GeometryInstance3D
+			if g == null:
+				continue
+			if enable:
+				if g.material_overlay == null or g.material_overlay == _skill_mat:
+					g.material_overlay = _skill_mat
+			elif g.material_overlay == _skill_mat:
+				g.material_overlay = null
+
 	for target in targets:
 		var meshes := _collect_all_meshes(target)
 		for mi in meshes:

@@ -395,10 +395,23 @@ class BaraCleaveController extends Node:
 		slash.material_override = m
 		
 		var offset := Vector3(randf_range(-CLEAVE_RADIUS, CLEAVE_RADIUS), randf_range(0.5, 3.0), randf_range(-CLEAVE_RADIUS, CLEAVE_RADIUS))
-		slash.global_position = center + offset
 		slash.rotation_degrees.z = randf_range(0, 360)
-		
-		get_tree().current_scene.add_child(slash)
+
+		# ⚠️ DUAS CORREÇÕES AQUI (2026-08-22).
+		#
+		# 1. Ia para `get_tree().current_scene` e escapava do
+		#    `clear_spawned_skills` — trocar de fruta ou morrer deixava o corte no
+		#    mapa. O dono deste controlador é o CASTER (`caster.add_child(controller)`
+		#    em `_bara_area_cortante`), então é dele que sai o contêiner de skills.
+		#
+		# 2. `global_position` era escrito ANTES do `add_child`. Nó fora da árvore
+		#    não tem espaço global para resolver: o Godot reclamava
+		#    ("Condition !is_inside_tree() is true") e devolvia Transform3D(), então
+		#    o corte nascia na ORIGEM DO MAPA em vez de em volta do jogador. É a
+		#    mesma armadilha já documentada em `GomuFX` e `GomuRedHawk`.
+		var mundo := FxUtil.mundo_de_skills(get_parent(), get_tree().current_scene)
+		mundo.add_child(slash)
+		slash.global_position = center + offset
 		var tw := slash.create_tween()
 		tw.tween_property(m, "albedo_color:a", 0.0, 0.15)
 		tw.tween_callback(slash.queue_free)

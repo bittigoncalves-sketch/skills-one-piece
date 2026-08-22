@@ -74,9 +74,52 @@ static func grain(size: float) -> QuadMesh:
 	q.material = m
 	return q
 
+# ONDE UM EFEITO DEVE NASCER.
+#
+# ⚠️ Efeito pendurado em `get_tree().current_scene` NÃO É LIMPO por
+# `Player.clear_spawned_skills()` (2026-08-22) — ela só varre os filhos do
+# contêiner `Skills_<jogador>`. Era por isso que trocar de fruta ou morrer
+# deixava golpe vivo no mapa: quatro efeitos escapavam para a cena e ninguém
+# mais era dono deles.
+#
+# Use isto no lugar de `current_scene` sempre que o efeito PERTENCER a um golpe.
+# Quem não tem caster (ou caster sem contêiner) cai na cena, como antes.
+static func mundo_de_skills(caster: Node, alternativa: Node = null) -> Node:
+	if is_instance_valid(caster) and caster.has_method("_get_skills_container"):
+		var c = caster._get_skills_container()
+		if is_instance_valid(c):
+			return c
+	if is_instance_valid(alternativa):
+		return alternativa
+	var arv := Engine.get_main_loop() as SceneTree
+	return arv.current_scene if arv != null else null
+
 # Agenda a remoção do nó após `t` segundos.
+#
+# ⚠️ NÃO USE `node.get_tree()` SOZINHO (corrigido em 2026-08-22). Ele é NULO
+# enquanto o nó não está na árvore — e isso acontece de verdade no caminho normal
+# do jogo: `Player._get_skills_container()` entra na cena por
+# `add_child.call_deferred(...)`, então no PRIMEIRO golpe de uma vida o contêiner
+# ainda não está na árvore quando o efeito nasce dentro dele. Quem chamasse
+# `autofree` aí levava "Cannot call method 'create_timer' on a null value", o
+# temporizador nunca era criado e **o nó ficava no mapa para sempre**.
+#
+# Encontrado ao rotear o V da Goro Goro pelo `_fire_skill`, mas o buraco é geral:
+# vale para qualquer efeito criado no primeiro cast.
+#
+# O `Engine.get_main_loop()` é o mesmo `SceneTree`, e não depende de o nó já
+# estar pendurado em algum lugar.
 static func autofree(node: Node, t: float) -> void:
-	node.get_tree().create_timer(t).timeout.connect(node.queue_free)
+	if node == null or not is_instance_valid(node):
+		return
+	var arv: SceneTree = node.get_tree()
+	if arv == null:
+		arv = Engine.get_main_loop() as SceneTree
+	if arv == null:
+		return                                  # sem laço principal: nada a agendar
+	arv.create_timer(t).timeout.connect(func():
+		if is_instance_valid(node):
+			node.queue_free())
 
 # Piscada VERMELHA de dano: aplica um overlay vermelho translúcido em TODAS as meshes
 # do modelo e o desvanece (não altera os materiais base). Vale p/ qualquer ser.

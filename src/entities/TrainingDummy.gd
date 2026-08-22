@@ -54,6 +54,16 @@ func _ready() -> void:
 	_fit_model()
 
 func _physics_process(delta: float) -> void:
+	# ⚠️ SÓ A AUTORIDADE SIMULA (2026-08-22). Desde que o boneco passou a nascer
+	# pelo `MultiplayerSpawner` (Main.gd), ele existe também no cliente — e sem
+	# esta guarda o cliente rodaria gravidade, atrito, knockback e reset por conta
+	# própria, brigando a cada quadro com a `position` que o `MultiplayerSynchronizer`
+	# traz do servidor. O resultado seria o boneco tremendo ou andando sozinho.
+	#
+	# Quem manda é o servidor (`set_multiplayer_authority(SERVER_ID)` no spawn),
+	# que é o mesmo lado que decide dano — ver `DamageZone._on_body`.
+	if multiplayer.has_multiplayer_peer() and not is_multiplayer_authority():
+		return
 	RecepcaoDeDano.tick(self, delta)
 	
 	# HITSTOP LOCAL: Boneco congela e treme, aguardando o fim do impacto

@@ -16,7 +16,13 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
-	
+	# ⚠️ A guarda do pai SAI CEDO no cliente, mas o `super` não interrompe ESTE
+	# corpo — a IA abaixo continuaria correndo (2026-08-22). Sem repetir a guarda,
+	# o boneco automático perseguiria alvos e atacaria no cliente, produzindo
+	# golpes que o servidor nunca autorizou.
+	if multiplayer.has_multiplayer_peer() and not is_multiplayer_authority():
+		return
+
 	if _trava > 0.0:
 		_trava = maxf(_trava - delta, 0.0)
 	if _melee_janela > 0.0:

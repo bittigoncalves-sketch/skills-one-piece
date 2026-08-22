@@ -52,7 +52,14 @@ func _init() -> void:
 	print("\n-- 3. soltar dispara --")
 	p.release_charge("V")
 	await _w(0.4)
-	_ok(not ctrl.segurando, "soltar liberou o golpe")
+	# ⚠️ O NÓ DA CARGA PODE TER SIDO LIBERADO (2026-08-22). Desde que o V da Goro
+	# passou a ir para a rede, quem o `CastController` segura é um
+	# `MamaraganChargeNode` — a CARGA, não o golpe — e ele se destrói na soltura,
+	# como o `MeraChargeNode` sempre fez. Um nó liberado é a prova mais forte de
+	# que soltou, não uma falha; antes o `MamaraganController` sobrevivia porque
+	# ELE era o golpe, e era esse o desenho que impedia o cliente de acertar o
+	# servidor. Ver `cast_controller.comecar()`.
+	_ok(not is_instance_valid(ctrl) or not ctrl.segurando, "soltar liberou o golpe")
 	_ok(not p._cast.carregando_skill(), "o Player não está mais segurando nada")
 	await _w(3.0)
 

@@ -673,7 +673,8 @@ class KurouzuController extends Node:
 				var root_fx := Node3D.new()
 				root_fx.position = target.global_position
 				root_fx.add_child(burst)
-				get_tree().current_scene.add_child(root_fx)
+				# ⚠️ Escapava do `clear_spawned_skills` (2026-08-22).
+				FxUtil.mundo_de_skills(caster, get_tree().current_scene).add_child(root_fx)
 				FxUtil.autofree(root_fx, 0.8)
 		
 		if is_instance_valid(caster):
@@ -1007,7 +1008,8 @@ class YamiBlock extends Node3D:
 				var d_root := Node3D.new()
 				d_root.position = global_position
 				d_root.add_child(dust)
-				get_tree().current_scene.add_child(d_root)
+				# ⚠️ Escapava do `clear_spawned_skills` (2026-08-22).
+				FxUtil.mundo_de_skills(caster, get_tree().current_scene).add_child(d_root)
 				# VAZAMENTO REAL: este nó NUNCA era liberado. Um por bloco que cai
 				# (~35% dos 15 escombros), 2 nós cada, para sempre, a cada V.
 				FxUtil.autofree(d_root, 0.6)   # poeira one_shot dura 0.2s

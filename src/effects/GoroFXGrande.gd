@@ -401,13 +401,14 @@ static func mamaragan_carregado(world: Node, origin: Vector3, dir: Vector3,
 	return c
 
 static func mamaragan(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
-		spec: DamageSpec = null) -> void:
-	_novo_mamaragan(world, origin, dir, damage, caster, spec)
+		spec: DamageSpec = null, charge: float = 0.0) -> void:
+	_novo_mamaragan(world, origin, dir, damage, caster, spec, charge)
 
 # Monta o golpe e devolve o controlador. Separado porque a versão CARREGÁVEL
 # precisa da referência para poder soltar depois.
 static func _novo_mamaragan(world: Node, origin: Vector3, dir: Vector3,
-		damage: float, caster: Node, spec: DamageSpec = null) -> MamaraganController:
+		damage: float, caster: Node, spec: DamageSpec = null,
+		charge: float = 0.0) -> MamaraganController:
 	if spec == null:
 		spec = DamageSpec.avulso(damage)
 	var fwd: Vector3 = dir.normalized()
@@ -422,6 +423,15 @@ static func _novo_mamaragan(world: Node, origin: Vector3, dir: Vector3,
 			caster.lock_movement(MamaraganController.LIBERA_EM, "V")
 
 	var ctrl := MamaraganController.new(origin, fwd, damage, caster, spec)
+	# ⚠️ CARGA VINDA DA REDE (2026-08-22). Quando o golpe chega por
+	# `_net_play_cast`, a carga JÁ ACONTECEU na tela de quem conjurou — o
+	# `MamaraganChargeNode` desenhou nuvens, orbe e flutuação lá, e mandou o
+	# tempo junto. Aqui a linha do tempo pula direto para o arremesso: replayá-la
+	# do zero atrasaria a bola em 3,3 s depois da soltura, que é o oposto do que
+	# o jogador acabou de pedir.
+	if charge > 0.0:
+		var t_max: float = spec.tempo_de_carga if spec.tempo_de_carga > 0.0 else 3.0
+		ctrl.travar_carga(clampf(charge / t_max, 0.0, 1.0))
 	world.add_child(ctrl)
 	FxUtil.autofree(ctrl, MamaraganController.TOTAL + 1.6)   # rede de segurança
 	return ctrl
@@ -707,6 +717,13 @@ class MamaraganController extends Node3D:
 			queue_free()
 
 	# Quanto a bola já cresceu, de 0 a 1.
+	# Fixa a carga e manda a linha do tempo direto para o arremesso. Usada pelo
+	# caminho de REDE — ver `_novo_mamaragan`.
+	func travar_carga(valor: float) -> void:
+		_carga_travada = clampf(valor, 0.0, 1.0)
+		segurando = false
+		_t = T_LANCA
+
 	func carga_atual() -> float:
 		if _carga_travada > 0.0:
 			return _carga_travada

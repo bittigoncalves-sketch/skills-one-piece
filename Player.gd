@@ -498,7 +498,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		_cycle_fruit()   # DEBUG: cicla entre as frutas pra testar as skills
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E:
 		aim_assist = not aim_assist   # liga/desliga a assistência de mira
-		print("🎯 Assistência de mira: ", "LIGADA" if aim_assist else "DESLIGADA")
+		# 2026-08-22: o E deixou de ser só assistência de mira. Com ele ligado, os
+		# corpos e os ATAQUES EM VOO dos outros passam a ser desenhados através das
+		# paredes (`ScreenFX`: `no_depth_test` no material de destaque).
+		print("🎯 Visão de combate (mira assistida + ver através de paredes): ",
+			"LIGADA" if aim_assist else "DESLIGADA")
 		var hud := get_tree().get_first_node_in_group("hud")
 		if hud and hud.has_method("set_aim_assist"):
 			hud.set_aim_assist(aim_assist)
@@ -1236,6 +1240,63 @@ func set_character(cid: String) -> void:
 # de aparência do `equip_fruit()` (o Main equipa suna_suna ao nascer, o que
 # virava Crocodile mesmo com o elenco trancado). Quem pode ser carregado é regra
 # de JOGO — por isso não desceu para o componente, que monta o que mandarem.
+# ============================================================================
+#  COR DO JOGADOR — identificação visual em partida online.
+# ============================================================================
+#
+#  ⚠️ A COR VEM DO DADO DE SPAWN, e isso é a parte que importa. Ela poderia ser
+#  sorteada aqui, ou derivada de `hash(peer_id)` — e as duas dariam cores
+#  DIFERENTES EM CADA MÁQUINA, porque cada peer sortearia por conta própria.
+#  Quem manda é o servidor: ele escolhe o índice em `Main._spawn_player_for`, e o
+#  `MultiplayerSpawner` replica o dicionário de spawn inteiro. Todo mundo monta o
+#  mesmo corpo com a mesma cor, sem RPC novo e sem propriedade replicada a mais.
+const CORES := [
+	{"nome": "azul",  "cor": Color(0.16, 0.42, 0.95)},
+	{"nome": "verde", "cor": Color(0.18, 0.72, 0.32)},
+	{"nome": "preto", "cor": Color(0.08, 0.08, 0.10)},
+]
+
+## Índice em `CORES`. −1 = sem cor atribuída (singleplayer, testes) — aí o
+## personagem fica com a aparência original.
+var cor_idx: int = -1
+
+func nome_da_cor() -> String:
+	return str(CORES[cor_idx]["nome"]) if cor_idx >= 0 and cor_idx < CORES.size() else "original"
+
+## Chamada pelo `Main` no spawn. Guarda e pinta.
+func aplicar_cor_do_jogador(idx: int) -> void:
+	cor_idx = idx
+	_tingir_modelo()
+
+## Pinta o corpo. Precisa rodar DE NOVO a cada troca de personagem: `_rig.montar`
+## constrói um modelo novo e o anterior (com a tinta) é descartado.
+##
+## ⚠️ Usa `material_override`, o mesmo caminho do `AutoDummy._recolor_model` —
+## é o precedente do projeto para "este corpo é daquele time". Como ele cobre
+## TODAS as malhas do modelo, uma arma da Buki que já esteja na mão no momento da
+## pintura também é tingida; ela volta ao normal no próximo saque, que reconstrói
+## o visual. Não vale complicar por isso enquanto for só cosmético.
+func _tingir_modelo() -> void:
+	if cor_idx < 0 or cor_idx >= CORES.size():
+		return
+	var modelo := _char_model
+	if modelo == null or not is_instance_valid(modelo):
+		return
+	var c: Color = CORES[cor_idx]["cor"]
+	var malhas: Array = []
+	FxUtil._collect_meshes(modelo, malhas)
+	for m in malhas:
+		if not (m is MeshInstance3D):
+			continue
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = c
+		# Preto puro some contra a sombra; um mínimo de brilho próprio mantém a
+		# silhueta legível sem clarear a cor.
+		mat.emission_enabled = true
+		mat.emission = c
+		mat.emission_energy_multiplier = 0.35
+		(m as MeshInstance3D).material_override = mat
+
 func _setup_character_model(cid: String) -> void:
 	if not ELENCO_LIBERADO.has(cid):
 		cid = ELENCO_LIBERADO[0]
@@ -1249,6 +1310,10 @@ func _setup_character_model(cid: String) -> void:
 	if not _rig.skinnado() and _breath == null:
 		_breath = load("res://VFX/BreathVFX.tscn").instantiate()
 		add_child(_breath)   # filho do Player (sem a escala do rig)
+
+	# O rig acabou de ser reconstruído: a tinta do modelo anterior foi embora com
+	# ele. Repintar aqui é o que faz a cor sobreviver à troca de personagem.
+	_tingir_modelo()
 
 # PRESENTATION da arma empunhada — roda em TODOS os peers (chamada de dentro de
 # `_fire_skill` e do `_net_buki_guardar`), então o adversário vê a arma na mão
@@ -2000,7 +2065,7 @@ func _fire_skill(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.
 			"suna_suna": SandFX.cast(world, origin, aim, variant, dano, self, spec)
 			"mera_mera": FireFX.cast(world, origin, aim, variant, dano, self, charge, spec)
 			"hie_hie":   IceFX.cast(world, origin, aim, variant, dano, self, spec)
-			"goro_goro": GoroFX.cast(world, origin, aim, variant, dano, self, spec)
+			"goro_goro": GoroFX.cast(world, origin, aim, variant, dano, self, spec, charge)
 			"yami_yami": YamiFX.cast(world, origin, aim, variant, dano, self, spec)
 			"bara_bara": BaraFX.cast(world, origin, aim, variant, dano, self, spec)
 			"gura_gura": GuraFX.cast(world, origin, aim, variant, dano, self, charge, spec)

@@ -114,6 +114,20 @@ func tick_silencio(delta: float) -> void:
 func abortar() -> void:
 	_carregando = false
 	_slot = ""
+	# ⚠️ O NÓ DA CARGA FICAVA VIVO (corrigido em 2026-08-22). `abortar()` é o que o
+	# respawn e a troca de fruta chamam, e ele zerava as duas flags sem tocar no
+	# `_carregado` — então morrer no meio de um carregamento deixava o sol da
+	# Mera, a orbe da Gura ou a nuvem do Mamaragan pendurados no mapa PARA SEMPRE,
+	# com o jogador já vivo de novo do outro lado da arena. É metade do "a fruta
+	# não desespawna as skills"; a outra metade eram os efeitos que nasciam fora
+	# do contêiner (ver `FxUtil.mundo_de_skills`).
+	#
+	# `queue_free` e não `soltar`: abortar é CANCELAR. Quem quer soltar com a
+	# carga que tem chama `liberar_por_dano()`, que é outra regra e é declarada.
+	if is_instance_valid(_carregado):
+		_carregado.queue_free()
+	_carregado = null
+	_slot_carregado = ""
 
 # --------------------------------------------- começar a segurar a tecla
 func comecar(slot_pedido: String) -> void:
@@ -217,8 +231,23 @@ func comecar(slot_pedido: String) -> void:
 			_dono.add_camera_shake(0.5)
 			_dono.set_meta("custom_pose", "mera_v_charge")
 		else:
-			_carregado = GoroFXGrande.mamaragan_carregado(
-				_dono.get_tree().current_scene, mira_c["origem"], mira_c["aim"], dano_c, _dono, spec_c)
+			# ⚠️ O MAMARAGAN (V da Goro) NÃO IA PARA A REDE (corrigido em 2026-08-22).
+			#
+			# Era o único carregável em que o nó local ERA o golpe: o
+			# `MamaraganController.soltar()` lançava a bola ali mesmo e nunca
+			# chamava `pedir_cast_no_servidor`. Consequências, as duas medidas:
+			#   • NO CLIENTE — a bola e a `DamageZone` nasciam só do lado dele, e
+			#     `DamageZone._on_body` sai cedo fora do servidor. O golpe gastava
+			#     recarga (60 s) e energia e não feria ninguém. É o "V da Goro não
+			#     atinge o servidor" do relato.
+			#   • NO HOST — funcionava (local == autoritativo), mas os clientes não
+			#     viam nada: nenhum `_net_play_cast` era emitido.
+			#
+			# Agora ele segue o mesmo desenho dos outros dois carregáveis: o nó
+			# local é APENAS a carga (nuvens, orbe, jogador flutuando), e a soltura
+			# pede o golpe ao servidor, que o reproduz em todos os peers.
+			_carregado = MamaraganChargeNode.new(_dono, slot_pedido, dano_c, spec_c, mira_c)
+			_dono.get_tree().current_scene.add_child(_carregado)
 			_dono.add_camera_shake(0.85)
 			_dono.pedir_soco_de_fov(8.0)
 		_dono.pedir_soco_de_fov(8.0)
@@ -505,4 +534,76 @@ class MeraChargeNode extends Node:
 			# Manda pro servidor que foi castado, com o tempo como modificador
 			# Isso fará o servidor instanciar a zona de dano
 			_dono.pedir_cast_no_servidor(_slot, aim, mira["origem"], _tempo)
+		queue_free()
+
+# ============================================================================
+#  MAMARAGAN (V da Goro Goro) — a CARGA, não o golpe.
+# ============================================================================
+#
+#  Existe desde 2026-08-22 para pôr o V da Goro no mesmo desenho dos outros dois
+#  carregáveis. Antes, `mamaragan_carregado()` devolvia o EFEITO INTEIRO já
+#  vivo, e a soltura dele lançava a bola localmente — o servidor nunca ficava
+#  sabendo. Ver o comentário no `comecar()`.
+#
+#  O `MamaraganController` continua sendo quem desenha a carga (nuvens, correntes,
+#  a orbe crescendo, o jogador flutuando): é bom e não foi reescrito. O que mudou
+#  é quem termina o golpe — agora é a rede, como no `MeraChargeNode`.
+class MamaraganChargeNode extends Node:
+	var _dono: Node
+	var _slot: String
+	var _spec: DamageSpec = null
+	var _ctrl: Node = null          # o MamaraganController local (só a carga)
+
+	# ⚠️ `segurando` também faz parte do contrato herdado do `MamaraganController`
+	# (o `test_charge_up.gd` lê os dois). Aqui é DERIVADO do controlador em vez de
+	# duplicado: dois donos do mesmo estado é como se descobre, meses depois, que
+	# um deles nunca foi atualizado.
+	var segurando: bool:
+		get: return is_instance_valid(_ctrl) and bool(_ctrl.get("segurando"))
+
+	func _init(dono: Node, slot: String, dano: float, spec: DamageSpec, mira: Dictionary) -> void:
+		_dono = dono
+		_slot = slot
+		_spec = spec
+		if is_instance_valid(_dono):
+			_ctrl = GoroFXGrande.mamaragan_carregado(
+				_dono.get_tree().current_scene, mira["origem"], mira["aim"], dano, _dono, spec)
+
+	# Quanto de carga já subiu, em 0..1. O controlador é quem sabe — a linha do
+	# tempo dele (`T_ORB`, `T_CARGA`) é que faz a orbe crescer na tela, e usar
+	# outro relógio aqui faria o dano discordar do que o jogador está vendo.
+	#
+	# ⚠️ O NOME É `carga_atual`, e não `carga`, de propósito: é a API que o
+	# `MamaraganController` já expunha e que o `test_charge_up.gd` lê. Este nó
+	# entrou na frente dele como o que o `CastController` segura, então herda o
+	# contrato — trocar o nome quebraria o teste sem ganho nenhum.
+	func carga_atual() -> float:
+		if is_instance_valid(_ctrl) and _ctrl.has_method("carga_atual"):
+			return float(_ctrl.carga_atual())
+		return 0.0
+
+	# O golpe só pode sair depois de a orbe existir — repassa a regra do controlador.
+	func pode_soltar() -> bool:
+		return is_instance_valid(_ctrl) and _ctrl.has_method("pode_soltar") and _ctrl.pode_soltar()
+
+	func _exit_tree() -> void:
+		if is_instance_valid(_ctrl):
+			_ctrl.queue_free()
+
+	func soltar(aim: Vector3) -> void:
+		if is_instance_valid(_dono):
+			if _dono.has_method("pedir_soco_de_fov"):
+				_dono.pedir_soco_de_fov(5.0)
+			var mira := _dono.mira_do_cast() as Dictionary
+			# `carga()` ANTES de destruir o controlador — ele é quem guarda o tempo.
+			var t := carga_atual()
+			if is_instance_valid(_ctrl):
+				_ctrl.queue_free()   # a carga local sai; o golpe vem pela rede
+				_ctrl = null
+			# `pedir_cast_no_servidor` converte em `_net_play_cast`, que roda em
+			# TODOS os peers — inclusive neste. A carga viaja em SEGUNDOS, como
+			# nas outras duas skills, porque é isso que `DamageSpec.valor_do_hit`
+			# espera; `carga_atual()` devolve 0..1.
+			var tempo_de_carga: float = _spec.tempo_de_carga if _spec != null else 3.0
+			_dono.pedir_cast_no_servidor(_slot, aim, mira["origem"], t * tempo_de_carga)
 		queue_free()
