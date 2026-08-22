@@ -368,8 +368,6 @@ class EnteiSunController extends Node3D:
 
 		if fired:
 			global_position += dir * 28.0 * delta
-			if is_instance_valid(zone):
-				zone.global_position = global_position
 			if elapsed >= 4.5 or _check_impact():
 				_explode()
 
@@ -393,7 +391,8 @@ class EnteiSunController extends Node3D:
 		# (`DamageSpec.valor_do_hit`), com mínimo e máximo vindos da tabela.
 		# O `area` continua crescendo com a carga: carga longa = knockback maior.
 		var area = 7.5 + (charge_time * 2.0)
-		zone.setup(_spec.valor_do_hit(charge_time), area, dir * 42.0 + Vector3.UP * 8.0, 3.5, caster, 3.5)
+		zone.setup(_spec.valor_do_hit(charge_time), area, dir * 28.0, 3.5, caster, 3.5)
+		zone.collided_with_any.connect(_on_zone_collided)
 		_spec.marcar(zone)
 
 	func _check_impact() -> bool:
@@ -401,8 +400,16 @@ class EnteiSunController extends Node3D:
 		if global_position.y <= 0.9: return true
 		return false
 
+	func _on_zone_collided(body: Node) -> void:
+		if not is_instance_valid(self): return
+		if body == caster: return
+		if not is_processing(): return # Já explodiu
+		_explode()
+
 	func _explode() -> void:
 		set_process(false)
+		if is_instance_valid(zone):
+			zone.queue_free()
 		print("💥 [Dai Enkai: Entei] EXPLOSÃO SOLAR APOCALÍPTICA!")
 		var world := get_tree().current_scene if get_tree() else null
 		if is_instance_valid(world):
@@ -420,7 +427,7 @@ class EnteiSunController extends Node3D:
 			exp_zone.global_position = global_position
 			# A explosão fecha o golpe com o valor cheio da carga. Ela e o sol em voo
 			# dividem o mesmo orçamento (384), então acertar com os dois não dobra.
-			exp_zone.setup(_spec.valor_do_hit(3.5), 18.0, Vector3.UP * 32.0, 0.4, caster, 15.0)
+			exp_zone.setup(_spec.valor_do_hit(3.5), 18.0, Vector3.ZERO, 0.4, caster, 15.0)
 			_spec.marcar(exp_zone)
 
 			# Visual da explosão solar (Esfera de plasma de fogo expandindo)
