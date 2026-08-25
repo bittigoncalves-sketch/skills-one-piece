@@ -114,9 +114,22 @@ func regenerar(delta: float) -> void:
 	if vida < vida_max:
 		vida = minf(vida + vida_max * pct_vida * fator * delta, vida_max)
 
-	var pct_energia := REGEN_ENERGIA_KILL_PCT if com_bonus_de_kill() else REGEN_ENERGIA_PCT
 	if energia < energia_max:
-		energia = minf(energia + energia_max * pct_energia * fator * delta, energia_max)
+		energia = minf(energia + regen_energia_por_s(energia_max, com_bonus_de_kill()) * fator * delta,
+			energia_max)
+
+# A regen de energia EM VALOR ABSOLUTO (por segundo), a partir do percentual.
+#
+# ⚠️ EXISTE PARA TER UMA FONTE SÓ. Até 2026-08-21 havia uma constante absoluta
+# `REGEN_ENERGIA` e as sondas de rede a liam direto; quando ela virou percentual
+# (para continuar valendo se a energia cheia deixar de ser 4096), as sondas
+# ficaram citando um nome que não existia mais — e passaram a NÃO COMPILAR, em
+# silêncio, porque ninguém roda uma sonda de dois processos todo dia. Ver
+# `docs/erros.md`.
+#
+# Quem quiser o número em unidades/s pergunta aqui em vez de refazer a conta.
+static func regen_energia_por_s(maximo: float, com_kill: bool = false) -> float:
+	return (REGEN_ENERGIA_KILL_PCT if com_kill else REGEN_ENERGIA_PCT) * maximo
 
 func gastar(custo: float) -> void:
 	energia = maxf(energia - custo, 0.0)

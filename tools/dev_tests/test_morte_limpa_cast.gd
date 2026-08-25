@@ -24,9 +24,25 @@ func _init() -> void:
 	if p == null:
 		print("❌ sem jogador — a porta 24565 pode estar ocupada"); quit(1); return
 
+	# ⚠️ OS BONECOS BATEM SOZINHOS — e este teste lia o estado bem no instante de
+	# um soco deles. Medido: o corpo respawnava, a FSM voltava a Idle em 1,11 s
+	# (certo), e em 2,49 s o AutoDummy acertava um Jab (−48 de vida, o número
+	# exato de `Balance.MELEE`) que jogava o jogador de volta para "Stunned" —
+	# 10 ms antes da asserção. O teste também começava com o jogador já
+	# machucado, o que sozinho já pode recusar um `begin_charge`.
+	#
+	# Mesma limpeza de `test_fsm.gd` e `test_charge_up.gd`, mas em TODO o grupo
+	# "enemy": desde 2026-08-23 os bonecos são criados pelo servidor por
+	# interruptor, então não há um nó fixo na cena para desligar.
+	for e in get_nodes_in_group("enemy"):
+		e.set_meta("is_frozen", true)
+		e.set_meta("damage_immune", true)
+		e.global_position = Vector3(0, 1.0, -1000.0)
+
 	p.combat_mode = "fruit"
 	p.equip_fruit("goro_goro")
 	p.energy = p.max_energy
+	p.health = p.max_health
 	await _w(1.0)
 
 	print("===== MORRER LIMPA O ESTADO DE COMBATE =====")
@@ -39,7 +55,20 @@ func _init() -> void:
 	_ok(not p._charging, "depois de morrer NÃO está mais carregando")
 	_ok(not bool(p.get_meta("is_casting", false)), "a marca `is_casting` foi limpa")
 	_ok(p._slot_em_uso() == "", "nenhum slot ficou 'em uso' (era o que congelava a recarga)")
-	_ok(float(p._movement_locked_timer) <= 0.0, "o travamento de movimento foi solto")
+	# ⚠️ `_movement_locked_timer` NÃO EXISTE MAIS — e ler um campo inexistente
+	# aqui não dava "falha", dava TIMEOUT. O erro de runtime aborta o `_init()`
+	# no meio da cadeia de `await`, o `quit()` nunca roda e a bateria matava o
+	# processo aos 120 s. Timeout que na verdade é API velha lê como "o teste
+	# está lento", e ninguém foi olhar. Ver `docs/erros.md`.
+	#
+	# Quem governa a trava hoje é a FSM de combate (`Player.gd`:
+	# "_movement_locked_timer removido (FSM gerencia)"), e `lock_movement()`
+	# virou só o carimbo do `active_skill`. As duas coisas que precisam estar
+	# limpas depois da morte são exatamente essas.
+	var estado_fsm: String = String(p._fsm.state.name) if p._fsm and p._fsm.state else "<sem estado>"
+	_ok(estado_fsm == "Idle", "a FSM de combate voltou para Idle (lido: %s)" % estado_fsm)
+	_ok(str(p.get_meta("active_skill", "")) == "",
+		"o carimbo `active_skill` foi limpo (lido: '%s')" % str(p.get_meta("active_skill", "")))
 
 	print("\n-- 2. e os poderes VOLTAM a funcionar --")
 	p.equip_fruit("goro_goro")     # pega a fruta de novo (a morte devolveu ao mapa)

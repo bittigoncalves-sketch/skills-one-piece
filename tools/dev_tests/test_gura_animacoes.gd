@@ -82,14 +82,31 @@ func _auditar_v() -> int:
 
 	# A pose de T entra em `GuraVNode.T_SOCO` (0,45 s) e ASSENTA depois do soco.
 	# Amostro o fim da janela travada, antes de as ondas soltarem o corpo.
-	var assentado := _janela(amostras, 0.78, 0.90)
+	# ⚠️ AS JANELAS SAEM DAS CONSTANTES, NÃO DE NÚMEROS ESCRITOS À MÃO.
+	#
+	# Elas eram `(0.78, 0.90)`, `(0.45, 0.52)` e `(0.45, 0.80)`. O `0.90` é
+	# exatamente o `GuraVNode.T_TSUNAMI` — o instante em que a pose é SOLTA e o
+	# jogador recupera o controle. A janela do "T assentado" terminava em cima
+	# da soltura, e o peso da pose decai rápido (rate 15/s): metade das amostras
+	# era o braço CAINDO.
+	#
+	# A média resultante dizia ELEV 45,4° para um T que, medido dentro da
+	# sustentação, está em 80,3° — o valor documentado. Os dois vereditos que
+	# falhavam ("os braços estão em T" e "há recuo antes do golpe") eram o MESMO
+	# defeito: a média contaminada também servia de referência para o recuo.
+	#
+	# A animação estava certa o tempo todo. A régua é que pegava o fim dela.
+	var t_assenta: float = GuraVNode.T_SOCO + GuraPoses.V_ASSENTA_ATE
+	var t_solta: float = GuraVNode.T_TSUNAMI
+	var assentado := _janela(amostras, t_assenta + 0.02, t_solta - 0.05)
 	var elev_l := _media(assentado, "elev_L")
 	var elev_r := _media(assentado, "elev_R")
 	var fora_l := _media(assentado, "out_L")
 	var fora_r := _media(assentado, "out_R")
 	var frente := (absf(_media(assentado, "fwd_L")) + absf(_media(assentado, "fwd_R"))) * 0.5
 
-	print("   T assentado (0,78–0,90 s):")
+	print("   T assentado (%.2f–%.2f s — dentro da sustentação, longe da soltura em %.2f):"
+		% [t_assenta + 0.02, t_solta - 0.05, t_solta])
 	print("      braço L: ELEV %6.1f° | FORA %+.2f | FRENTE %+.2f" % [
 		elev_l, fora_l, _media(assentado, "fwd_L")])
 	print("      braço R: ELEV %6.1f° | FORA %+.2f | FRENTE %+.2f" % [
@@ -117,7 +134,7 @@ func _auditar_v() -> int:
 	# (o T) a 89° (o golpe) mexe FORA em 0,013 — ruído. O mesmo movimento aparece
 	# inteiro em ELEV (9°) e no empurrão à FRENTE, que é o que o olho lê como
 	# "socando o ar". Métrica saturada esconde movimento real.
-	var pico_janela := _janela(amostras, 0.45, 0.80)
+	var pico_janela := _janela(amostras, GuraVNode.T_SOCO, t_assenta + 0.05)
 	var elev_pico: float = maxf(_maximo(pico_janela, "elev_L"), _maximo(pico_janela, "elev_R"))
 	var elev_t: float = (elev_l + elev_r) * 0.5
 	var frente_pico: float = maxf(_maximo(pico_janela, "fwd_L"), _maximo(pico_janela, "fwd_R"))
@@ -133,7 +150,8 @@ func _auditar_v() -> int:
 
 	# 4) O RECUO: logo que a pose de T entra (0,45 s) os braços ainda estão
 	#    RECOLHIDOS — abaixo de onde vão assentar. É o primeiro tempo do soco.
-	var recuo := _janela(amostras, 0.45, 0.52)
+	#    A janela é a do próprio `_V_RECUO` (`GuraPoses.V_RECUO_ATE`).
+	var recuo := _janela(amostras, GuraVNode.T_SOCO, GuraVNode.T_SOCO + GuraPoses.V_RECUO_ATE)
 	var fora_recuo: float = (_media(recuo, "out_L") + _media(recuo, "out_R")) * 0.5
 	var recuo_ok: bool = fora_recuo < t_medio
 	print("      abertura no recuo %+.3f  (assenta em %+.3f)" % [fora_recuo, t_medio])
@@ -178,7 +196,18 @@ func _conjurar(slot: String) -> Array:
 	_player.set_meta("is_casting", false)
 	_player._cast.abortar()
 	_player._rapid_fire = false
-	_player._movement_locked_timer = 0.0
+	# ⚠️ `_movement_locked_timer` NÃO EXISTE MAIS. Ele foi removido quando a FSM
+	# de combate passou a governar a trava (`Player.gd`: "_movement_locked_timer
+	# removido (FSM gerencia)"), e `lock_movement()` virou só o carimbo do
+	# `active_skill`. Escrever num campo inexistente estoura em tempo de
+	# execução, aborta `_conjurar` na primeira linha e o teste reportava "não
+	# consegui amostrar o corpo" — mensagem que parece problema de ANIMAÇÃO e
+	# era API velha. Ver `docs/erros.md`.
+	_player.remove_meta("active_skill")
+	if _player._fsm:
+		_player._fsm.transition_to("Idle")
+	if _player._melee:
+		_player._melee.cancelar_golpe()
 	_player.energy = _player.max_energy
 	_player.remove_meta("custom_pose")
 	await _quadros(20)

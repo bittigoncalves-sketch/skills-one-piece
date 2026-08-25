@@ -89,8 +89,22 @@ func _init() -> void:
 	await process_frame
 	_t0 = _agora()
 	# Autoload em script `-s` não vira identificador de compilação -> pega por nó.
-	get_root().get_node("GameFlow").create_room()
-	print("[HOST] sala criada (porta 24565) — esperando o cliente...")
+	var gf := get_root().get_node("GameFlow")
+	# ⚠️ OS BONECOS DE TREINO FICAM DE FORA DESTA SONDA, e é o HOST quem decide.
+	#
+	# Eles andam e BATEM sozinhos. Numa sonda de rede que mede recarga, HUD e
+	# regeneração no corpo do cliente, cada soco deles é um evento de dano que
+	# não veio de lugar nenhum do roteiro: media-se 5 avisos de dano onde o
+	# teste tinha provocado 1, e a recarga do Z era zerada no meio da conta por
+	# uma morte que ninguém pediu.
+	#
+	# Desligar aqui e não no cliente é obrigatório: desde 2026-08-23 quem cria e
+	# destrói boneco é o SERVIDOR (`Main.pedir_dummy` + MultiplayerSpawner). O
+	# cliente não tem autoridade sobre eles.
+	gf.dummies["TrainingDummy"] = false
+	gf.dummies["AutoDummy"] = false
+	gf.create_room()
+	print("[HOST] sala criada (porta 24565), bonecos de treino DESLIGADOS — esperando o cliente...")
 
 	for i in 900:
 		await process_frame
@@ -432,9 +446,13 @@ func _relatorio() -> void:
 	print("\n-- ITEM 3: A CÓPIA SEM AUTORIDADE NÃO REGENERA ENERGIA (prova negativa) --")
 	print("   energia da cópia autoritativa: %.1f -> zerada -> %.1f (máximo lido depois de zerar: %.1f, %d amostras)"
 		% [float(_en["e0"]), float(_en["e_fim"]), float(_en["e_max"]), int(_en["n"])])
-	print("   se ela regenerasse a %.0f/s, em %.2f s teria voltado ~%.0f"
-		% [HealthController.REGEN_ENERGIA, _t() - float(_en["t_zero"]),
-			minf(HealthController.REGEN_ENERGIA * (_t() - float(_en["t_zero"])), 4096.0)])
+	# Ver a nota da mesma troca em `net_mp_client_probe.gd`: `REGEN_ENERGIA` era
+	# absoluta e virou percentual em 2026-08-21.
+	var teto_en: float = float(_en.get("e_max_possivel", 4096.0))
+	var regen_s: float = HealthController.regen_energia_por_s(teto_en)
+	print("   se ela regenerasse a %.2f/s, em %.2f s teria voltado ~%.0f"
+		% [regen_s, _t() - float(_en["t_zero"]),
+			minf(regen_s * (_t() - float(_en["t_zero"])), teto_en)])
 	_ok(int(_en["n"]) > 10 and float(_en["e_max"]) <= 0.01,
 		"a energia da cópia do servidor ficou em %.2f — a regen só roda na AUTORIDADE (Player.gd:682)"
 		% float(_en["e_max"]))

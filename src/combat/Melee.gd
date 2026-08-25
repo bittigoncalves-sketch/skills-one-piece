@@ -197,10 +197,21 @@ const JANELA := 2.0        # tempo pra encadear o próximo golpe (pedido do usu�
 #  exatamente o defeito de 2026-08-11 documentado lá em cima. Janela na
 #  velocidade natural mostra o movimento de verdade; acelerar mostra um risco.
 #
-#  GATILHO: quando as Fases A-D do §6 do plano entregarem os quatro clipes
-#  autorais de 0,40 s, `pico`/`vel` passam a descrever o clipe inteiro e a
-#  janela deixa de cortar coisa alguma. Até lá o combo LÊ pior do que vai ler,
-#  e MEDE certo — que é o que esta frente entrega.
+#  ✅ GATILHO CUMPRIDO EM 2026-08-25 — as Fases A-D entregaram os quatro clipes
+#  autorais (`m1_jab`, `m1_soco_esquerdo`, `m1_chute`, `m1_finalizador`, feitos
+#  por `tools/autorar_combo_m1.py`). Eles JÁ nascem com a duração do frame data,
+#  então `vel = 1.0`, `pico = startup`, `inicio` derivado = 0 e a janela cobre o
+#  clipe inteiro: nada é cortado.
+#
+#  A janela CONTINUA implementada, e não é código morto: é ela que segura a
+#  `COMBO_SWORD` e qualquer clipe do Mixamo que volte a entrar no combo.
+#
+#  ⚠️ E REFAZER NÃO ERA SÓ QUESTÃO DE TEMPO. Medido nos 29 clipes do acervo:
+#  ONZE começam com o tronco rolado mais de 25° no eixo Z, e dois eram do combo
+#  — `boxing_1` (jab) a −32,8° e `roundhouse_kick` (chute) entre −52° e −86° o
+#  clipe INTEIRO, ou seja nunca de pé. Conferido no jogo e não só no dado: o
+#  "up" do torso ficava a 51° da vertical. Defeito de retarget que janela
+#  nenhuma conserta. Ver `docs/erros.md`.
 #
 #  ⚠️ `COMBO_SWORD` NÃO FOI CONVERTIDO. O plano trata dos quatro M1 do punho;
 #  a espada nem está no mapa hoje (saiu do spawn em 2026-08-23). Ela continua
@@ -215,16 +226,16 @@ const WHIFF_MULT := 1.35
 
 const COMBO := [
 	{
-		"nome": "Jab", "anim": "boxing_1", "espelhar": false,
-		"vel": 1.5, "pico": 0.5670,
+		"nome": "Jab", "anim": "m1_jab", "espelhar": false,
+		"vel": 1.0, "pico": 0.20,
 		"startup": 0.20, "ativo": 0.06, "recuperacao": 0.14,
 		"hitstun": 0.75,
 		"dano": 48.0, "kb": 11.0, "alcance": 1.5, "raio": 1.5, "shake": 0.25,
 		"melee_guarda": "R",
 	},
 	{
-		"nome": "Soco Esquerdo", "anim": "left_uppercut_from_guard", "espelhar": false,
-		"vel": 1.05, "pico": 0.3625,
+		"nome": "Soco Esquerdo", "anim": "m1_soco_esquerdo", "espelhar": false,
+		"vel": 1.0, "pico": 0.20,
 		"startup": 0.20, "ativo": 0.06, "recuperacao": 0.14,
 		"hitstun": 0.75,
 		"dano": 54.0, "kb": 13.0, "alcance": 1.5, "raio": 1.5, "shake": 0.30,
@@ -238,8 +249,8 @@ const COMBO := [
 		# Recuperação 0,03 s mais longa que a dos socos, e hitstun 0,05 s maior:
 		# é o golpe de alcance do combo (2,0 m contra 1,5 m), e o plano paga o
 		# alcance com exposição. A vantagem sai +0,23 s, ainda acima do startup.
-		"nome": "Chute Lateral", "anim": "roundhouse_kick", "espelhar": false,
-		"vel": 1.5, "pico": 1.1000,
+		"nome": "Chute Lateral", "anim": "m1_chute", "espelhar": false,
+		"vel": 1.0, "pico": 0.20,
 		"startup": 0.20, "ativo": 0.06, "recuperacao": 0.17,
 		"hitstun": 0.80,
 		"dano": 64.0, "kb": 15.0, "alcance": 2.0, "raio": 1.9, "shake": 0.4,
@@ -260,8 +271,8 @@ const COMBO := [
 		#
 		# GATILHO: quando `CombatStateRagdoll` entrar (Ordem 3), este campo vira
 		# o gatilho do ragdoll e o knockdown volta a ser só o do plano B.
-		"nome": "Finalizador", "anim": "meia_lua_de_compasso", "espelhar": false,
-		"vel": 1.5, "pico": 1.0670,
+		"nome": "Finalizador", "anim": "m1_finalizador", "espelhar": false,
+		"vel": 1.0, "pico": 0.25,
 		"startup": 0.25, "ativo": 0.08, "recuperacao": 0.35,
 		"hitstun": 0.80, "derruba": 2.0,
 		"dano": 112.0, "kb": 26.0, "alcance": 2.2, "raio": 2.0, "shake": 0.6,
@@ -456,9 +467,19 @@ static func clipe(i: int, weapon: String = "") -> Animation:
 	var chave: String = "%s|%s" % [g["anim"], g["espelhar"]]
 	if _cache.has(chave):
 		return _cache[chave]
-	var caminho: String = "res://assets/animations/%s.res" % g["anim"]
-	if not ResourceLoader.exists(caminho):
-		push_warning("[Melee] clipe ausente: " + caminho)
+	# ⚠️ `.res` E `.tres`. O caminho era `%s.res` fixo, e o editor de animação do
+	# projeto (`tools/anim_editor/`, e o `autorar_combo_m1.py`) grava `.tres` —
+	# texto, que o Godot carrega igual. Todo clipe autoral entrava aqui como
+	# "clipe ausente" e o golpe ficava sem animação nenhuma, com um warning que
+	# some no meio do log.
+	var caminho := ""
+	for ext in [".tres", ".res"]:
+		var tentativa: String = "res://assets/animations/%s%s" % [g["anim"], ext]
+		if ResourceLoader.exists(tentativa):
+			caminho = tentativa
+			break
+	if caminho == "":
+		push_warning("[Melee] clipe ausente (nem .tres nem .res): " + String(g["anim"]))
 		return null
 	var a: Animation = load(caminho)
 	if g["espelhar"]:

@@ -107,7 +107,13 @@ func _init() -> void:
 	var mapa: Dictionary = _p.get_script().get_script_constant_map()
 	_tabela = mapa.get("RECARGA_POR_SLOT", {})
 	print("[CLI] RECARGA_POR_SLOT lida do Player.gd: %s" % str(_tabela))
-	print("[CLI] REGEN_ENERGIA = %.0f/s (HealthController)" % HealthController.REGEN_ENERGIA)
+	# ⚠️ A regen de energia é PERCENTUAL do máximo desde 2026-08-21. A constante
+	# absoluta `REGEN_ENERGIA` que esta sonda lia deixou de existir naquele dia e
+	# a sonda parou de COMPILAR — sem ninguém notar, porque teste de dois
+	# processos não roda todo dia. `regen_energia_por_s` é a fonte única.
+	print("[CLI] regen de energia = %.2f/s (%.1f%% de %.0f, HealthController)" % [
+		HealthController.regen_energia_por_s(_p.max_energy),
+		HealthController.REGEN_ENERGIA_PCT * 100.0, _p.max_energy])
 
 	# A sonda entra no lugar da HUD e fica lá o teste inteiro.
 	var hud_real = get_first_node_in_group("hud")
@@ -315,14 +321,14 @@ func _fase_energia() -> void:
 	var t_m: float = float(amostras[i_meio][0])
 	var e_m: float = float(amostras[i_meio][1])
 	var taxa: float = e_m / maxf(t_m, 0.0001)
-	var esperado: float = HealthController.REGEN_ENERGIA
+	var esperado: float = HealthController.regen_energia_por_s(_p.max_energy)
 	print("   [dono] TAXA MEDIDA no meio da subida: %.1f/s (esperado %.1f/s, erro %+.2f%%)"
 		% [taxa, esperado, (taxa - esperado) / esperado * 100.0])
 	print("   [dono] tempo teórico do 0 ao teto: %.2f s | tempo medido até %.0f: %.3f s"
 		% [float(_p.max_energy) / esperado, e_fim, t_fim])
 	_ok(e_fim > 0.0, "a energia SUBIU sozinha no dono (0 -> %.1f)" % e_fim)
 	_ok(absf(taxa - esperado) / esperado < 0.10,
-		"a taxa medida (%.1f/s) bate com REGEN_ENERGIA=%.0f/s dentro de 10%%" % [taxa, esperado])
+		"a taxa medida (%.1f/s) bate com a regen esperada de %.2f/s dentro de 10%%" % [taxa, esperado])
 	await _esperar(1.0)
 
 
@@ -336,23 +342,47 @@ func _fase_recarga() -> void:
 	# Perto do host: cast que erra tudo não prova nada sobre o caminho de rede.
 	if _host != null:
 		_p.global_position = _host.global_position + Vector3(0, 0, 4.0)
+
+	# ⚠️ ESTA FASE NÃO PODE DEIXAR O CORPO MORRER — e deixava.
+	#
+	# Medido: no meio da recarga do Z saía um "💀 MORTE REGISTRADA", e morrer
+	# ZERA as recargas de propósito (item 22, decisão do dono de 2026-08-12). A
+	# medição lia 1,111 s onde a tabela diz 5,0 e acusava a recarga de quebrada —
+	# quando o que tinha acontecido era exatamente o comportamento que a FASE 5,
+	# logo abaixo, existe para provar.
+	#
+	# Duas fases não podem disputar o mesmo corpo: aqui ele fica imune e plantado;
+	# a FASE 5 mata de propósito e desfaz isso.
+	_p.set_meta("damage_immune", true)
+	_p.velocity = Vector3.ZERO
 	await _esperar(0.5)
 
 	for slot in ["Z", "X", "C"]:
 		var esperado: float = float(_tabela.get(slot, 0.0))
 		_zerar_recargas()
 		_p.energy = _p.max_energy
+		_p.health = _p.max_health
 		await process_frame
 		var t_ini := _agora()
+		var y_ini: float = _p.global_position.y
 		_p.cast_skill_slot(slot)
-		var logo_apos: float = float(_p._skill_cooldowns[slot])
+		# ⚠️ `.get()`, NÃO `[slot]`. Morrer RECONSTRÓI `_skill_cooldowns`, e a
+		# chave some: o acesso direto estourava "Invalid access to property or
+		# key 'X' on a base object of type 'Dictionary'" e ABORTAVA a fase
+		# inteira — os slots X e C nunca chegaram a ser medidos, sem que o
+		# relatório dissesse isso.
+		var logo_apos: float = float(_p._skill_cooldowns.get(slot, 0.0))
 		print("   -> cast_skill_slot('%s'): recarga escrita = %.2f s (tabela diz %.1f)"
 			% [slot, logo_apos, esperado])
 		var liberou := -1.0
 		while _agora() - t_ini < esperado + 15.0:
 			await process_frame
 			Engine.time_scale = 1.0
-			if float(_p._skill_cooldowns[slot]) <= 0.0:
+			# Segura o corpo no lugar: um empurrão do host durante a espera o
+			# levaria para o buraco, e a morte zeraria a recarga no meio da conta.
+			_p.velocity = Vector3.ZERO
+			_p.global_position.y = y_ini
+			if float(_p._skill_cooldowns.get(slot, 0.0)) <= 0.0:
 				liberou = _agora() - t_ini
 				break
 		_recargas[slot] = liberou
@@ -363,11 +393,14 @@ func _fase_recarga() -> void:
 		_ok(liberou > 0.0 and absf(erro) < 0.6,
 			"o slot '%s' ficou indisponível %.3f s — %.1f s esperados (erro %+.3f s)" % [slot, liberou, esperado, erro])
 
+	# Devolve o corpo à mortalidade: a FASE 5 mata de propósito.
+	_p.set_meta("damage_immune", false)
+
 	# V = 60 s. Medir a espera inteira somaria 1 minuto morto ao teste sem provar
 	# nada novo — o mecanismo é o mesmo de Z/X/C. Meço só o valor ARMADO.
 	_zerar_recargas()
 	_p.trigger_skill_cooldown("V")
-	var v_armado: float = float(_p._skill_cooldowns["V"])
+	var v_armado: float = float(_p._skill_cooldowns.get("V", 0.0))
 	print("   -> 'V' (ultimate): recarga armada = %.2f s (tabela diz %.1f) — NÃO esperei os %.0f s"
 		% [v_armado, float(_tabela.get("V", 0.0)), float(_tabela.get("V", 0.0))])
 	_ok(absf(v_armado - float(_tabela.get("V", 0.0))) < 0.01,
@@ -526,7 +559,8 @@ func _fase_vida() -> void:
 		% [taxa_penal, esperado_penal])
 	print("      taxa medida FORA da janela  (t=7->8 s): %.2f hp/s   (esperado %.2f)"
 		% [taxa_livre, esperado_livre])
-	print("   [dono] comparação: a ENERGIA, no mesmo corpo, sobe %.0f/s (base)." % HealthController.REGEN_ENERGIA)
+	print("   [dono] comparação: a ENERGIA, no mesmo corpo, sobe %.2f/s (base)."
+		% HealthController.regen_energia_por_s(_p.max_energy))
 	_ok(hp_fim > hp1,
 		"a vida REGENEROU: %.1f -> %.1f em %.2f s (Δ = %+.1f)" % [hp1, hp_fim, float(amostras[-1][0]), hp_fim - hp1])
 	_ok(absf(taxa_penal - esperado_penal) < esperado_penal * 0.5 + 0.5,

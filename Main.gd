@@ -265,7 +265,9 @@ func _spawn_player_data(data: Dictionary) -> Node:
 	# cliente" — dava para atribuir ao bug da HUD o que era falta de fruta.
 	# Escolha por-jogador continua sendo fase futura; o ponto aqui é que os dois
 	# lados comecem iguais.
-	player.call_deferred("equip_fruit", "mera_mera")
+	# Lê a constante do Player em vez de repetir o nome — ver a nota em
+	# `Player.FRUTA_INICIAL` sobre os três escritores que discordavam.
+	player.call_deferred("equip_fruit", Player.FRUTA_INICIAL)
 
 	# COR: `-1` quando o dado não traz nada (spawn sem rede, testes) — aí o
 	# personagem fica com a aparência original, como sempre foi.

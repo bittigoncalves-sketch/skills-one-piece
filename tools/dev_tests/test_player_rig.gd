@@ -48,10 +48,32 @@ func _init() -> void:
 	print("\n-- as regras do fit valem --")
 	var esc: Vector3 = rig.modelo().scale
 	_ok(absf(esc.x - esc.y) < 0.0001, "escala X e Y iguais (%.4f)" % esc.x)
-	if rig.skinnado():
-		_ok(absf(esc.z - esc.y) < 0.0001, "skinnado = escala UNIFORME (senao o skinning corrompe)")
-	else:
-		_ok(absf(esc.z - esc.y * 1.85) < 0.0001, "voxel engrossa Z em 1.85x (%.4f)" % esc.z)
+	# ⚠️ A ESPESSURA MUDOU DE LUGAR — teste reescrito em 2026-08-25.
+	#
+	# Ele cobrava `esc.z == esc.y * 1.85`, ou seja a espessura do voxel como
+	# ESCALA DO NO. O rig deixou de fazer assim: agora a escala é UNIFORME nos
+	# dois casos e o 1.85 é ASSADO NA MALHA (`PlayerModelKit.bake_depth`, que
+	# multiplica o z de cada vértice e regrava o ArrayMesh).
+	#
+	# A troca é uma melhoria, não um descuido: escala não-uniforme no nó pai
+	# distorce todo filho que gire — um braço a 90° ficaria achatado no eixo
+	# errado —, e é a mesma classe de problema que já obrigava o skinnado a usar
+	# escala uniforme (transform NaN -> tela cinza).
+	#
+	# Então a asserção certa agora é a OPOSTA da antiga: escala uniforme SEMPRE,
+	# e a espessura conferida na geometria.
+	_ok(absf(esc.z - esc.y) < 0.0001,
+		"escala do nó UNIFORME (%.4f) — a espessura não mora mais aqui" % esc.z)
+	if not rig.skinnado():
+		var prof := _profundidade_do_torso(rig.modelo())
+		var larg := _largura_do_torso(rig.modelo())
+		_ok(prof > 0.0 and larg > 0.0, "o torso do voxel foi medido (%.3f fundo x %.3f largo)" % [prof, larg])
+		# O torso da base nasce mais largo que fundo; depois do bake de 1,85x o
+		# fundo tem que ter ENCOSTADO na largura. Sem número mágico: o que se
+		# afirma é que o bake ACONTECEU, não um valor exato de malha.
+		_ok(prof > larg * 0.8,
+			"a espessura FOI ASSADA na malha: fundo/largura = %.2f (sem o bake ficaria ~%.2f)"
+				% [prof / maxf(larg, 0.0001), prof / maxf(larg, 0.0001) / 1.85])
 	_ok(rig.modelo().position.y <= -0.8 + 0.0001,
 		"pes no fundo da colisao ou abaixo (y=%.4f)" % rig.modelo().position.y)
 
@@ -72,3 +94,24 @@ func _ok(c: bool, m: String) -> void:
 func _w(s: float) -> void:
 	var t := Time.get_ticks_msec()
 	while Time.get_ticks_msec()-t < int(s*1000.0): await process_frame
+
+
+# ---------------------------------------------------------------- medição
+# Fundo (Z) e largura (X) do TORSO, na malha local — sem escala de nó nenhuma.
+# É onde a espessura passou a morar depois do `bake_depth`.
+func _profundidade_do_torso(modelo: Node3D) -> float:
+	return _aabb_do_torso(modelo).size.z
+
+func _largura_do_torso(modelo: Node3D) -> float:
+	return _aabb_do_torso(modelo).size.x
+
+func _aabb_do_torso(modelo: Node3D) -> AABB:
+	if modelo == null:
+		return AABB()
+	var torso := modelo.find_child("Torso", true, false)
+	if not (torso is MeshInstance3D):
+		return AABB()
+	var mesh: Mesh = (torso as MeshInstance3D).mesh
+	if mesh == null:
+		return AABB()
+	return mesh.get_aabb()

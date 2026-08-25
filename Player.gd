@@ -22,7 +22,24 @@ const MOUSE_SENS := 0.0035
 # dono do tremor, do soco de FOV, do balanço, da perspectiva e da distância;
 # aqui só sobra a referência a ele e o `_cam` de conveniência para a mira.
 
-var current_fruit_id: String = "bara_bara"
+# ⚠️ ATALHO DE DESENVOLVIMENTO, E ELE TEM UMA FONTE SÓ DESDE 2026-08-25.
+#
+# Havia TRÊS escritores da fruta inicial, e os três discordavam: este padrão
+# dizia `bara_bara`, o `Main._spawn_player` equipava `mera_mera` (e vencia, por
+# ser adiado), e o `test_initial_fruit` cobrava `gura_gura` — nome de uma sessão
+# ainda mais antiga. O teste ficou vermelho e ninguém sabia qual dos três estava
+# certo, porque não havia "certo": havia três opiniões.
+#
+# Agora o número mora aqui e os outros dois LEEM. Trocar a fruta de trabalho é
+# mexer nesta linha.
+#
+# ⚠️ E ISTO NÃO É REGRA DE JOGO. A economia das frutas é achar a árvore,
+# disputar o fruto e perdê-lo ao morrer (ver `docs/frutas/README.md`). Se este
+# atalho chegar ao jogador final, essa economia deixa de existir.
+# GATILHO para apagar: quando houver escolha de fruta/personagem no menu.
+const FRUTA_INICIAL := "mera_mera"
+
+var current_fruit_id: String = FRUTA_INICIAL
 var active_style: String = "basic"
 var combat_mode: String = "fruit" # "fruit" ou "style"
 var speed_multiplier: float = 1.0

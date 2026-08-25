@@ -1,0 +1,138 @@
+[gd_resource type="Animation" format=3]
+
+[resource]
+resource_name = "m1_chute"
+length = 0.4300
+loop_mode = 0
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Torso:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0.0000, 0.0333, 0.0667, 0.1000, 0.1333, 0.1667, 0.2000, 0.2333, 0.2667, 0.3000, 0.3333, 0.3667, 0.4000, 0.4300),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.10000, 0.16000, -0.12000), Vector3(0.10093, 0.15674, -0.11580), Vector3(0.09991, 0.16032, -0.12041), Vector3(0.09673, 0.17143, -0.13469), Vector3(0.08903, 0.19838, -0.16934), Vector3(0.07677, 0.24132, -0.22456), Vector3(0.06000, 0.30000, -0.30000), Vector3(0.06000, 0.30000, -0.30000), Vector3(0.06794, 0.27221, -0.26427), Vector3(0.07940, 0.23209, -0.21269), Vector3(0.08627, 0.20807, -0.18180), Vector3(0.09169, 0.18909, -0.15740), Vector3(0.09630, 0.17295, -0.13665), Vector3(0.10000, 0.16000, -0.12000)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Head:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0.0000, 0.0333, 0.0667, 0.1000, 0.1333, 0.1667, 0.2000, 0.2333, 0.2667, 0.3000, 0.3333, 0.3667, 0.4000, 0.4300),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.02000, -0.10000, 0.00000), Vector3(0.01953, -0.10653, 0.00000), Vector3(0.02005, -0.09936, 0.00000), Vector3(0.02163, -0.07714, 0.00000), Vector3(0.02548, -0.02324, 0.00000), Vector3(0.03162, 0.06264, 0.00000), Vector3(0.04000, 0.18000, 0.00000), Vector3(0.04000, 0.18000, 0.00000), Vector3(0.03603, 0.12441, 0.00000), Vector3(0.03030, 0.04418, 0.00000), Vector3(0.02687, -0.00386, 0.00000), Vector3(0.02416, -0.04183, 0.00000), Vector3(0.02185, -0.07410, 0.00000), Vector3(0.02000, -0.10000, 0.00000)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("UpperArm_L:rotation")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.0000, 0.0333, 0.0667, 0.1000, 0.1333, 0.1667, 0.2000, 0.2333, 0.2667, 0.3000, 0.3333, 0.3667, 0.4000, 0.4300),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.45000, 0.00000, -1.05000), Vector3(0.45583, 0.00000, -1.04417), Vector3(0.44943, 0.00000, -1.05057), Vector3(0.42959, 0.00000, -1.07041), Vector3(0.38147, 0.00000, -1.11853), Vector3(0.30478, 0.00000, -1.19522), Vector3(0.20000, 0.00000, -1.30000), Vector3(0.20000, 0.00000, -1.30000), Vector3(0.24963, 0.00000, -1.25037), Vector3(0.32127, 0.00000, -1.17873), Vector3(0.36416, 0.00000, -1.13584), Vector3(0.39806, 0.00000, -1.10194), Vector3(0.42687, 0.00000, -1.07313), Vector3(0.45000, 0.00000, -1.05000)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("ForeArm_L:rotation")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0.0000, 0.0333, 0.0667, 0.1000, 0.1333, 0.1667, 0.2000, 0.2333, 0.2667, 0.3000, 0.3333, 0.3667, 0.4000, 0.4300),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(1.30000, 0.00000, 0.00000), Vector3(1.31399, 0.00000, 0.00000), Vector3(1.29863, 0.00000, 0.00000), Vector3(1.25102, 0.00000, 0.00000), Vector3(1.13552, 0.00000, 0.00000), Vector3(0.95148, 0.00000, 0.00000), Vector3(0.70000, 0.00000, 0.00000), Vector3(0.70000, 0.00000, 0.00000), Vector3(0.81911, 0.00000, 0.00000), Vector3(0.99104, 0.00000, 0.00000), Vector3(1.09398, 0.00000, 0.00000), Vector3(1.17535, 0.00000, 0.00000), Vector3(1.24449, 0.00000, 0.00000), Vector3(1.30000, 0.00000, 0.00000)]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("UpperArm_R:rotation")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0.0000, 0.0333, 0.0667, 0.1000, 0.1333, 0.1667, 0.2000, 0.2333, 0.2667, 0.3000, 0.3333, 0.3667, 0.4000, 0.4300),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.30000, 0.00000, 0.95000), Vector3(0.30466, 0.00000, 0.94417), Vector3(0.29954, 0.00000, 0.95057), Vector3(0.28367, 0.00000, 0.97041), Vector3(0.24517, 0.00000, 1.01853), Vector3(0.18383, 0.00000, 1.09522), Vector3(0.10000, 0.00000, 1.20000), Vector3(0.10000, 0.00000, 1.20000), Vector3(0.13970, 0.00000, 1.15037), Vector3(0.19701, 0.00000, 1.07873), Vector3(0.23133, 0.00000, 1.03584), Vector3(0.25845, 0.00000, 1.00194), Vector3(0.28150, 0.00000, 0.97313), Vector3(0.30000, 0.00000, 0.95000)]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("ForeArm_R:rotation")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0.0000, 0.0333, 0.0667, 0.1000, 0.1333, 0.1667, 0.2000, 0.2333, 0.2667, 0.3000, 0.3333, 0.3667, 0.4000, 0.4300),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(1.15000, 0.00000, 0.00000), Vector3(1.16282, 0.00000, 0.00000), Vector3(1.14874, 0.00000, 0.00000), Vector3(1.10510, 0.00000, 0.00000), Vector3(0.99923, 0.00000, 0.00000), Vector3(0.83053, 0.00000, 0.00000), Vector3(0.60000, 0.00000, 0.00000), Vector3(0.60000, 0.00000, 0.00000), Vector3(0.70919, 0.00000, 0.00000), Vector3(0.86679, 0.00000, 0.00000), Vector3(0.96115, 0.00000, 0.00000), Vector3(1.03573, 0.00000, 0.00000), Vector3(1.09912, 0.00000, 0.00000), Vector3(1.15000, 0.00000, 0.00000)]
+}
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("Thigh_L:rotation")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(0.0000, 0.0333, 0.0667, 0.1000, 0.1333, 0.1667, 0.2000, 0.2333, 0.2667, 0.3000, 0.3333, 0.3667, 0.4000, 0.4300),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.75000, 0.00000, -0.55000), Vector3(0.76049, 0.00000, -0.52972), Vector3(0.74897, 0.00000, -0.55199), Vector3(0.71327, 0.00000, -0.62102), Vector3(0.62664, 0.00000, -0.78849), Vector3(0.48861, 0.00000, -1.05535), Vector3(0.30000, 0.00000, -1.42000), Vector3(0.30000, 0.00000, -1.42000), Vector3(0.38934, 0.00000, -1.24728), Vector3(0.51828, 0.00000, -0.99799), Vector3(0.59549, 0.00000, -0.84872), Vector3(0.65651, 0.00000, -0.73075), Vector3(0.70837, 0.00000, -0.63049), Vector3(0.75000, 0.00000, -0.55000)]
+}
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("Shin_L:rotation")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(0.0000, 0.0333, 0.0667, 0.1000, 0.1333, 0.1667, 0.2000, 0.2333, 0.2667, 0.3000, 0.3333, 0.3667, 0.4000, 0.4300),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-1.35000, 0.00000, 0.00000), Vector3(-1.37774, 0.00000, 0.00000), Vector3(-1.34727, 0.00000, 0.00000), Vector3(-1.25286, 0.00000, 0.00000), Vector3(-1.02379, 0.00000, 0.00000), Vector3(-0.65877, 0.00000, 0.00000), Vector3(-0.16000, 0.00000, 0.00000), Vector3(-0.16000, 0.00000, 0.00000), Vector3(-0.39624, 0.00000, 0.00000), Vector3(-0.73723, 0.00000, 0.00000), Vector3(-0.94140, 0.00000, 0.00000), Vector3(-1.10277, 0.00000, 0.00000), Vector3(-1.23991, 0.00000, 0.00000), Vector3(-1.35000, 0.00000, 0.00000)]
+}
+tracks/8/type = "value"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("Foot_L:rotation")
+tracks/8/interp = 1
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"times": PackedFloat32Array(0.0000, 0.0333, 0.0667, 0.1000, 0.1333, 0.1667, 0.2000, 0.2333, 0.2667, 0.3000, 0.3333, 0.3667, 0.4000, 0.4300),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.30000, 0.00000, 0.00000), Vector3(0.30466, 0.00000, 0.00000), Vector3(0.29954, 0.00000, 0.00000), Vector3(0.28367, 0.00000, 0.00000), Vector3(0.24517, 0.00000, 0.00000), Vector3(0.18383, 0.00000, 0.00000), Vector3(0.10000, 0.00000, 0.00000), Vector3(0.10000, 0.00000, 0.00000), Vector3(0.13970, 0.00000, 0.00000), Vector3(0.19701, 0.00000, 0.00000), Vector3(0.23133, 0.00000, 0.00000), Vector3(0.25845, 0.00000, 0.00000), Vector3(0.28150, 0.00000, 0.00000), Vector3(0.30000, 0.00000, 0.00000)]
+}
+tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("Thigh_R:rotation")
+tracks/9/interp = 1
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"times": PackedFloat32Array(0.0000, 0.0333, 0.0667, 0.1000, 0.1333, 0.1667, 0.2000, 0.2333, 0.2667, 0.3000, 0.3333, 0.3667, 0.4000, 0.4300),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.10000, 0.00000, 0.05000), Vector3(-0.09907, 0.00000, 0.04930), Vector3(-0.10009, 0.00000, 0.05007), Vector3(-0.10327, 0.00000, 0.05245), Vector3(-0.11097, 0.00000, 0.05822), Vector3(-0.12323, 0.00000, 0.06743), Vector3(-0.14000, 0.00000, 0.08000), Vector3(-0.14000, 0.00000, 0.08000), Vector3(-0.13206, 0.00000, 0.07404), Vector3(-0.12060, 0.00000, 0.06545), Vector3(-0.11373, 0.00000, 0.06030), Vector3(-0.10831, 0.00000, 0.05623), Vector3(-0.10370, 0.00000, 0.05278), Vector3(-0.10000, 0.00000, 0.05000)]
+}
+tracks/10/type = "value"
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/path = NodePath("Shin_R:rotation")
+tracks/10/interp = 1
+tracks/10/loop_wrap = true
+tracks/10/keys = {
+"times": PackedFloat32Array(0.0000, 0.0333, 0.0667, 0.1000, 0.1333, 0.1667, 0.2000, 0.2333, 0.2667, 0.3000, 0.3333, 0.3667, 0.4000, 0.4300),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.12000, 0.00000, 0.00000), Vector3(-0.12047, 0.00000, 0.00000), Vector3(-0.11995, 0.00000, 0.00000), Vector3(-0.11837, 0.00000, 0.00000), Vector3(-0.11452, 0.00000, 0.00000), Vector3(-0.10838, 0.00000, 0.00000), Vector3(-0.10000, 0.00000, 0.00000), Vector3(-0.10000, 0.00000, 0.00000), Vector3(-0.10397, 0.00000, 0.00000), Vector3(-0.10970, 0.00000, 0.00000), Vector3(-0.11313, 0.00000, 0.00000), Vector3(-0.11584, 0.00000, 0.00000), Vector3(-0.11815, 0.00000, 0.00000), Vector3(-0.12000, 0.00000, 0.00000)]
+}

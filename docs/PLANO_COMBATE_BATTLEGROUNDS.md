@@ -545,11 +545,19 @@ pesquisa — pedir se for preciso auditar uma fonte específica.
 | Cancelar para bloqueio | 🔶 permissão pronta, **sem efeito** até a Ordem 2 | `CombatStateAttackRecovery` |
 | Bug B2 (stun em cópia remota) | 🔶 metade fechada por necessidade | `Player._feedback_de_dano` |
 | Bugs B1, B3-B6 | ⬜ frente de REDE | — |
-| Animações Fases A-D (§6) | ⬜ **pendente, e é o que falta para o combo LER bem** | — |
+| Animações Fases A-D (§6) | ✅ feito em 2026-08-25 | `tools/autorar_combo_m1.py`, `assets/animations/m1_*.tres` |
+| Fase B (guardas distintas, portão) | ✅ medido: 168°–430° entre pares, mínimo exigido 40° | mesmo script |
+| Personagem + 29+4 animações no Blender | ✅ feito | `tools/blender/montar_personagem.py` → `art_src/blender/personagem_base.blend` |
 | Bloqueio/guarda, ragdoll | ⬜ Ordens 2 e 3 | — |
 
-⚠️ **O que está em tela hoje é uma JANELA dos clipes do Mixamo**, não clipes de
-0,40 s. A trava é o frame data e o clipe é cortado por ela, na velocidade
-natural — o golpe e o impacto aparecem, a volta à guarda não. Acelerar para
-caber foi descartado (a 5,6x o soco vira borrão, que é o defeito de
-2026-08-11). É interino e declarado; o gatilho é a Fase A-D.
+✅ **A JANELA DEIXOU DE CORTAR** (2026-08-25). Os quatro M1 são agora clipes
+autorais que JÁ nascem com a duração do frame data (`vel = 1.0`, `inicio = 0`,
+janela = clipe inteiro). O mecanismo de janela continua no código porque é ele
+que segura a `COMBO_SWORD` e qualquer clipe do Mixamo que volte ao combo.
+
+⚠️ **E refazer não era só questão de tempo.** Medido nos 29 clipes do acervo:
+**onze começam com o tronco rolado mais de 25°** no eixo Z — e dois eram do
+combo: `boxing_1` (jab) a −32,8° e `roundhouse_kick` (chute) entre −52° e −86°
+o clipe INTEIRO, ou seja nunca de pé. Confirmado no jogo: o "up" do torso ficava
+a 51,4° da vertical. Defeito de retarget que janela nenhuma consertaria. A lista
+completa está em [`ESQUELETO.md`](ESQUELETO.md).

@@ -7,6 +7,91 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-25 — onze clipes retargetados têm o tronco tombado ~50°
+
+**Sintoma:** nenhum reclamado, e é o que assusta. Descoberto ao montar o
+personagem no Blender: toda pose animada saía "caída". A primeira suspeita foi
+da minha conversão — era do dado.
+
+**Causa raiz:** o retarget do Mixamo deixou uma ROLAGEM no `Torso` (eixo Z) que
+nunca foi zerada. Medido no primeiro quadro dos 29 clipes: **11 passam de 25°**.
+
+```
+roundhouse_kick   −81,4°   (faixa −85,7 … −51,8 — NUNCA fica de pé)
+kicking           −60,6°
+gunplay           −53,8°
+bouncing_idle     −50,7°
+boxing_1 (jab)    −32,8°
+```
+
+**Confirmado no jogo, não só no JSON:** tocando `bouncing_fight_idle` por
+`play_baked`, o vetor "para cima" do torso fica a **51,4° da vertical**.
+
+**Por que ninguém viu:** dos 11, só dois estavam em uso no combo (`boxing_1` e
+`roundhouse_kick`), e ali o defeito se confundia com o problema já conhecido de
+LEITURA dos socos ("os dois liam igual", 2026-08-11). O resto do acervo é
+material de reserva que nunca chegou à tela.
+
+**Como detectar:** `Torso.z` no primeiro quadro de cada clipe. Ele deve estar
+perto de zero — rolagem é o eixo que um humano quase não usa parado. Uma
+varredura de 10 linhas sobre `tools/anim_editor/clips/*.json` acha todos.
+
+**Correção:** os quatro M1 do combo foram REAUTORADOS
+(`tools/autorar_combo_m1.py`), com portão medido que exige `|Torso.z| <= 20°`.
+Os outros 7 clipes tombados continuam como estão — estão fora de uso e a lista
+ficou registrada em `docs/ESQUELETO.md`, em ordem de gravidade.
+
+---
+
+## 2026-08-25 — a conferência do rig no Blender comparava o erro consigo mesma
+
+**Sintoma:** o `.blend` gerado abria com a pose de repouso PERFEITA e todas as
+poses animadas embaralhadas — e o script dizia "✓ a conta fecha, pior erro
+0,4 mm".
+
+**Causa raiz:** o Godot reporta `Node3D.rotation_order = 2`, que a documentação
+dele chama de **YXZ**. A string equivalente no mathutils do Blender é **`ZXY`**:
+as duas bibliotecas nomeiam a ordem de Euler em sentidos opostos. Eu usei
+`'YXZ'`.
+
+O que fez o defeito sobreviver a um teste foi outra coisa, e é a lição:
+**a conferência comparava a cinemática direta com o Blender, e os dois liam o
+Euler pela MESMA função.** Errando junto, concordavam. A pose de repouso
+disfarçava porque com todos os ângulos em zero qualquer ordem acerta.
+
+**Como detectar:** teste sem referência EXTERNA não prova conversão. A correção
+foi colar no script uma base medida dentro do Godot (`ANCORA_COLUNAS`) e
+recusar montar se a conversão não a reproduzir. Junto entrou um CONTROLE: a
+mesma conta com os eixos errados de propósito, que precisa explodir — se o
+controle não reprovar, o teste não vale e o script também recusa.
+
+Medido depois: âncora 3×10⁻⁷, pior erro 0,099 mm, controle 2,243 m.
+
+**Lição de método:** todo teste de conversão precisa de (a) uma referência
+externa e (b) um controle que falhe. Sem (b), "passou" e "não sabe reprovar"
+são indistinguíveis — foi a mesma classe de cegueira do `transition_to`
+silencioso registrado acima.
+
+---
+
+## 2026-08-25 — `Melee.clipe()` só achava `.res`, e o editor grava `.tres`
+
+**Sintoma:** golpe sem animação nenhuma, com um `push_warning` de "clipe
+ausente" que some no meio do log.
+
+**Causa raiz:** o caminho era montado como `"res://assets/animations/%s.res"` —
+extensão fixa. O editor de animação do próprio projeto
+(`tools/anim_editor/clip.py::para_tres`) grava **`.tres`**, que o Godot carrega
+exatamente igual. Ou seja: todo clipe AUTORAL era invisível para o combo.
+
+**Como detectar:** `push_warning` não falha teste nenhum. Vale procurar
+`"%s.res"`, `"%s.tres"` e afins — extensão escrita à mão é sempre uma aposta
+sobre quem gravou o arquivo.
+
+**Correção:** `clipe()` tenta `.tres` e depois `.res`.
+
+---
+
 ## 2026-08-25 — o auto-mira e o lunge do corpo a corpo apontavam PARA TRÁS
 
 **Sintoma:** nenhum visível, e é o que torna o caso instrutivo. O golpe acertava

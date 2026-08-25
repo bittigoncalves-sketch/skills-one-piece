@@ -22,3 +22,4 @@ tools/anim_editor/abrir.log
 assets/models/inbox/*
 !assets/models/inbox/.gitkeep
 assets/models/environment/sol3D.glb
+art_src/blender/*.blend1
