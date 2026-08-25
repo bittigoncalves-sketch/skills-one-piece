@@ -7,6 +7,143 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-25 — o auto-mira e o lunge do corpo a corpo apontavam PARA TRÁS
+
+**Sintoma:** nenhum visível, e é o que torna o caso instrutivo. O golpe acertava
+normalmente (a hitbox sempre usou a direção certa), então nada parecia errado —
+o que faltava era o auxílio: o jogador nunca era puxado para o alvo.
+
+**Causa raiz:** `find_best_melee_target` e `perform_melee_lunge` calculavam a
+frente como
+
+```gdscript
+var forward = -Vector3.FORWARD.rotated(Vector3.UP, _yaw)
+```
+
+`Vector3.FORWARD` **já é** `(0, 0, −1)`. Negá-la dá `(0, 0, +1)` — para trás. O
+resto do combate usa `-Basis.from_euler(Vector3(0, yaw, 0)).z`
+(`melee_controller.pedir`, que é quem posiciona a hitbox).
+
+**Medido** (`dot` entre as duas expressões, três ângulos):
+
+```
+yaw= 0.00 | lunge/auto-mira=( 0.00, 0.00, 1.00)  hitbox=( 0.00, 0.00,-1.00)  dot=-1.00
+yaw= 1.57 | lunge/auto-mira=( 1.00, 0.00, 0.00)  hitbox=(-1.00, 0.00, 0.00)  dot=-1.00
+yaw= 3.14 | lunge/auto-mira=( 0.00, 0.00,-1.00)  hitbox=( 0.00, 0.00, 1.00)  dot=-1.00
+```
+
+−1,00 em todo yaw: exatamente opostas, não "um pouco fora".
+
+**Duas consequências, ambas silenciosas:**
+
+1. o cone frontal (`dot_prod > 0.0`) selecionava alvos **atrás** do jogador;
+2. o lunge empurrava o corpo **para longe** do alvo recém-selecionado — e para
+   longe de onde a hitbox ia nascer.
+
+**Como detectar:** duas expressões de "frente" no mesmo sistema é o cheiro. O
+teste é uma linha: `print(a.dot(b))` para alguns yaws. `-Vector3.FORWARD` é
+armadilha de nome — lê-se "a frente", vale o contrário.
+
+**O que NÃO era bug:** o `lunge_force` de 18,0. Parece absurdo para um puxão de
+0,30 m (§3.3 do plano), mas é impulso de UM QUADRO — `_etapa_locomocao` reescreve
+`velocity.x/z` no quadro seguinte. 18 ÷ 60 = 0,30 m, o número-alvo. Quase
+"corrigi" um valor correto por ler a unidade errada.
+
+## 2026-08-25 — o estado "Stunned" era pedido em 7 pontos e NÃO EXISTIA
+
+**Sintoma:** nenhum. É o pior tipo — o jogo não reclamava de nada, e cinco
+mecânicas estavam desligadas em silêncio.
+
+**Causa raiz:** `Player._feedback_de_dano` chamava `_fsm.transition_to("Stunned")`
+e outros seis pontos checavam `_fsm.state.name == "Stunned"`. Nunca houve um nó
+com esse nome: `PlayerStateMachine.transition_to` começa com
+
+```gdscript
+if not has_node(target_state_path):
+    return
+```
+
+ou seja, a transição era um **no-op calado** e as seis comparações eram falsas
+para sempre. O que estava morto por causa disso:
+
+- `_request_melee` não recusava clique sob hitstun — dava para socar apanhando;
+- `golpe_prende` nunca cedia ao tranco — atacar era imunidade a empurrão, o
+  oposto do que o comentário ao lado afirmava;
+- o wall bounce do knockback (depois do `move_and_slide`) nunca disparou uma vez;
+- o combo breaker (G) exigia estar em "Stunned" e só conseguia ler o
+  `_hitstop_timer`;
+- `_slot_em_uso` nunca via combate travado por stun.
+
+**Como detectar:** `grep -n 'transition_to("' *.gd src/**/*.gd` e conferir cada
+alvo contra os `add_child` da montagem da FSM. Uma transição para nó inexistente
+é indistinguível de uma transição que aconteceu — a máquina não avisa.
+
+**Correção:** `src/player/hsm/CombatStateStunned.gd`, registrado no `_ready` do
+Player junto com as outras fases, e uma nota no ponto de montagem dizendo que o
+NOME DO NÓ é o endereço.
+
+**Lição de método:** `return` silencioso em resolvedor de nome é o mesmo defeito
+de classe do `_fire_skill` que "engole quase tudo" (ver `docs/frutas/README.md`):
+o caminho de erro é indistinguível do caminho de sucesso. Onde não dá para
+mudar a assinatura, o teste tem que afirmar a EXISTÊNCIA do alvo — foi o que
+`src/tests/test_fsm.gd` passou a fazer.
+
+---
+
+## 2026-08-25 — tirar o boneco da cena derrubou a suíte `src/tests/` inteira
+
+**Sintoma:** `>>> TEST FAIL (cenário não montou): TrainingDummy não encontrado em
+TestArena.tscn` nos três testes de `src/tests/`. Nenhum deles rodou uma asserção
+desde 2026-08-23.
+
+**Causa raiz:** o commit de 2026-08-23 (interruptores F1/F2) tirou o nó
+`TrainingDummy` do `TestArena.tscn` — correto, porque os bonecos passaram a ser
+criados pelo SERVIDOR via `Main.pedir_dummy()` + `MultiplayerSpawner`. O que não
+acompanhou foi o `BaseTest.gd`, que buscava o nó na cena e abortava sem ele.
+
+**Por que passou despercebido:** o aborto é uma linha só, no fim de uma saída de
+centenas de linhas de `MoveFrame: ...`, e a contagem "6 falham" da validação de
+08-23 não distingue teste que FALHOU de teste que nem MONTOU. É exatamente a
+"segunda armadilha" que o cabeçalho do próprio `BaseTest.gd` manda nunca deixar
+passar — e passou.
+
+**Correção:** o `BaseTest` monta o próprio boneco quando a cena não traz um.
+Devolver o nó à cena seria o conserto errado: a cena deixou de ser o lugar dele
+de propósito.
+
+**Como detectar:** `grep -c "cenário não montou"` na saída da suíte. Vale a pena
+o `validar.sh` tratar isso como categoria própria, separada de asserção falhada.
+
+---
+
+## 2026-08-25 — o corpo de teste nasce a 1,7 m da parede (falso negativo de dash)
+
+**Sintoma:** no `test_fsm.gd`, a asserção "o corpo saiu de verdade" lia
+**0,0 m/s** e acusava um dash que não tinha saído. O dash havia saído: medido a
+**42,9 m/s** no quadro do disparo.
+
+**Causa raiz:** duas coisas somadas.
+
+1. O Player, montado em `SpawnPoint` (0, 1, 0), aparece em **z = −9,77** entre os
+   quadros 2 e 3 — um teleporte de 9,77 m que ninguém pediu. **A causa disso
+   continua ABERTA**; medido, não explicado (`velocity` é zero antes e depois, e
+   `Scoreboard.RESPAWN` é (0, 6, 0), então não é o respawn).
+2. A parede da arena está em z = −11,5 e a esquiva percorre ~12 m em 0,28 s. A
+   asserção media dois quadros depois do disparo, quando o `move_and_slide` já
+   tinha zerado a velocidade contra a parede.
+
+**Correção (do teste):** medir no PRIMEIRO quadro da esquiva — que é também o
+instante certo semanticamente — e reposicionar o corpo antes do round que mede
+deslocamento.
+
+**Como detectar:** asserção de movimento que lê exatamente 0,0 num corpo que
+deveria estar voando é quase sempre colisão, não ausência de impulso. Imprimir
+`is_on_wall()` e a posição junto com a velocidade separa os dois casos em um
+quadro.
+
+**Pendência:** o teleporte do item 1. Está registrado aqui para não se perder;
+quem for mexer em spawn de teste começa por ele.
+
 ## 2026-08-23 — o Kurouzu (X da Yami) virava zumbi por um argumento faltando
 
 **Sintoma:** relatado pelo dono — "o X da Yami Yami não está atraindo o inimigo e
