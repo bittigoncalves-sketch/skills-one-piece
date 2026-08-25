@@ -61,6 +61,17 @@ O **arremesso** do release vale **192** (`partes.arremesso`), com
 X: o golpe inteiro cabe no orçamento, e o clímax continua valendo o triplo do
 vórtice.
 
+⚠️ **Dois consertos em 2026-08-23 — o golpe estava efetivamente quebrado em uso
+normal.** `pedir_cancelar_hold` era chamado com UM argumento onde a assinatura pede
+DOIS; o erro abortava `_physics_process` **antes** do `queue_free()`, e o
+controlador virava zumbi: o orbe ficava colado na mão para sempre, e a linha
+`yami_kurouzu_active = false` (que vem antes da que falha) seguia rodando e
+desligava o X SEGUINTE no primeiro quadro. Os dois sintomas relatados pelo dono —
+"não atrai" e "não some" — eram esta causa só. Junto, `_find_closest_entity` usava
+`world.get_tree()`, que é null no primeiro golpe de cada vida, e por isso a
+conjuração nunca marcava alvo (sem `in_kurouzu`, sem `SUGADO`, sem os 4 s de
+silêncio). Medição em [`../erros.md`](../erros.md).
+
 ⚠️ **Corrigido em 2026-08-21 — este era o segundo desvio da fruta.** O arremesso
 era `take_damage(damage × 1,5)` **direto**, fora do funil e portanto sem o
 `DAMAGE_SCALE` de 0,12 que a hitbox do vórtice levava: o arremesso valia 56,7
@@ -86,6 +97,14 @@ não moedor. Medido: um tique de esmagamento por segundo não tirava nada do
 dummy; **a mordida de entrada tira 256**, o valor cheio do slot C. (Os 6,0
 medidos na auditoria antiga eram os mesmos 50 da tabela velha depois do
 `DAMAGE_SCALE` de 0,12 — o golpe não mudou de desenho, só de escala.)
+
+⚠️ **O prisioneiro-IA não era prisioneiro (resolvido em 2026-08-23).** A guarda
+`in_black_hole` estava no `TrainingDummy` e no `Player`, mas o **`AutoDummy`** não
+a repetia — `super._physics_process()` não interrompe o corpo do filho. Medido com
+o poço aberto: o boneco automático acelerava para 3,10 m/s (a perseguição cheia) e
+escapava, enquanto o TrainingDummy ao lado ficava nos 0,4 m/s da sucção. O jogador
+humano **já estava travado** nos dois sentidos da rede (dois processos, W segurado:
+`velocity = (0,0,0)`), então a falha era só da IA.
 
 ⚠️ **Item 2 da lista (resolvido em 2026-08-11):** o `Player` **não tinha** essa
 guarda e o jogador preso tomava dano onde o dummy não tomava. A guarda foi

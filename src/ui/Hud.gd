@@ -17,6 +17,7 @@ var _match: MatchHud
 var _status: StatusEffectsHud
 var _ammo: AmmoHud
 var _scope: SniperScope
+var _dummies: DummyToggleHud
 
 func _ready() -> void:
 	add_to_group("hud")   # o Player encontra a HUD por este grupo ao equipar fruta
@@ -55,6 +56,12 @@ func _ready() -> void:
 	_ammo = AmmoHud.new()
 	_ammo.name = "AmmoHud"
 	add_child(_ammo)
+
+	# Bonecos de treino (canto inferior direito, ABAIXO da munição). O `AmmoHud`
+	# reserva a altura deste painel — ver `DummyToggleHud.ALTURA_TOTAL`.
+	_dummies = DummyToggleHud.new()
+	_dummies.name = "DummyToggleHud"
+	add_child(_dummies)
 
 	# Itens iniciais de exemplo.
 	_inv.add_item({"nome": "Suna Suna no Mi", "tipo": "Logia", "cor": Color(0.95, 0.8, 0.45)})

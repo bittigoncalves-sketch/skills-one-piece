@@ -103,11 +103,70 @@ func _start_server_content() -> void:
 	if ENEMIES_ENABLED and _enemies:
 		_enemies.start(ENEMY_COUNT)
 
-	# ⚠️ Estes três iam para `add_child(self)` direto e só existiam no servidor
+	# ⚠️ Estes iam para `add_child(self)` direto e só existiam no servidor
 	# (2026-08-22). Agora passam pelo spawner e aparecem também no cliente.
-	_spawn_entity("TrainingDummy", Vector3(0, 4, -8))   # À FRENTE do player (evita nascer um dentro do outro)
-	_spawn_entity("AutoDummy",     Vector3(4, 4, -8))   # Ao lado do primeiro
-	_spawn_entity("SwordPickup",   Vector3(2, 4, -2))   # Próximo do spawn do jogador
+	# Desde 2026-08-23 cada boneco só nasce se a preferência dele estiver ligada
+	# (menu principal / canto inferior direito da HUD) — ver `GameFlow.dummies`.
+	for tipo in POSICAO_DOS_BONECOS:
+		if GameFlow.dummy_ligado(tipo):
+			_spawn_entity(tipo, POSICAO_DOS_BONECOS[tipo])
+
+	# ⚠️ A ESPADA SAIU DO MAPA (2026-08-23), a pedido do dono: ela é de uso FUTURO.
+	#
+	# Saiu daqui e SÓ daqui. `src/items/SwordPickup.gd`, a entrada no `_ENTIDADES`
+	# abaixo, o combo `Melee.COMBO_SWORD` e as poses de `WeaponPoses` continuam
+	# inteiros e compilando — devolver a espada ao mundo é reescrever esta linha:
+	#
+	#     _spawn_entity("SwordPickup", Vector3(2, 4, -2))
+	#
+	# Apagar o resto junto seria jogar fora um sistema pronto para poupar um nó.
+
+# FONTE ÚNICA da posição de cada boneco. Estava escrita só no `_start_server_content`
+# e o interruptor de partida precisa da MESMA posição para recriar o boneco no
+# lugar certo — duas cópias divergiriam no primeiro ajuste de mapa.
+#   TrainingDummy: à FRENTE do player (evita nascer um dentro do outro)
+#   AutoDummy:     ao lado do primeiro
+const POSICAO_DOS_BONECOS := {
+	"TrainingDummy": Vector3(0, 4, -8),
+	"AutoDummy":     Vector3(4, 4, -8),
+}
+
+# ---------------------------------------------------- LIGAR/DESLIGAR OS BONECOS
+# Pedido de qualquer peer; QUEM APLICA É O SERVIDOR (2026-08-23).
+#
+# O boneco é um corpo com física e vida replicado pelo `_entity_spawner` — ver a
+# nota grande lá em cima. Deixar cada cliente criar ou apagar o seu daria duas
+# simulações divergentes do MESMO nó, que é exatamente o defeito que o spawner
+# existe para não ter. Então o caminho é o mesmo do resto do jogo: o cliente
+# PEDE, o servidor decide, e o spawner replica a criação (e a remoção).
+#
+# Consequência declarada: o interruptor é do MUNDO, não da tela. Num jogo de dois,
+# desligar o boneco tira o boneco para os dois — o que é o comportamento correto
+# para um corpo sólido que ambos podem socar. Esconder só do lado de quem clicou
+# deixaria um jogador batendo num alvo invisível para o outro.
+func pedir_dummy(tipo: String, ligado: bool) -> void:
+	if multiplayer.has_multiplayer_peer():
+		_net_definir_dummy.rpc_id(NetworkConfig.SERVER_ID, tipo, ligado)
+	else:
+		_aplicar_dummy(tipo, ligado)                    # sem rede (singleplayer puro/testes)
+
+@rpc("any_peer", "call_local", "reliable")
+func _net_definir_dummy(tipo: String, ligado: bool) -> void:
+	if not multiplayer.is_server():
+		return
+	_aplicar_dummy(tipo, ligado)
+
+# Idempotente de propósito: chamar duas vezes com o mesmo valor não cria um
+# boneco em cima do outro nem tenta apagar o que já não existe. O nome do nó é o
+# próprio `tipo` (ver `_spawn_entity_data`), então a busca é direta.
+func _aplicar_dummy(tipo: String, ligado: bool) -> void:
+	if not POSICAO_DOS_BONECOS.has(tipo) or not is_instance_valid(_entities_root):
+		return
+	var existente := _entities_root.get_node_or_null(NodePath(tipo))
+	if ligado and existente == null:
+		_spawn_entity(tipo, POSICAO_DOS_BONECOS[tipo])
+	elif not ligado and existente != null:
+		existente.queue_free()      # o MultiplayerSpawner replica a remoção
 
 func _spawn_entity(tipo: String, pos: Vector3) -> void:
 	var data := {"tipo": tipo, "pos": [pos.x, pos.y, pos.z]}

@@ -7,6 +7,175 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-23 — o Kurouzu (X da Yami) virava zumbi por um argumento faltando
+
+**Sintoma:** relatado pelo dono — "o X da Yami Yami não está atraindo o inimigo e
+não está desaparecendo após o uso". O orbe do buraco negro ficava colado na palma
+da mão para sempre, e os X seguintes abriam e morriam sem puxar ninguém.
+
+**Causa raiz:** `KurouzuController` chamava `caster.pedir_cancelar_hold("X")` com
+UM argumento; `Player.pedir_cancelar_hold(slot, fruit)` pede DOIS. O erro de
+runtime aborta a função em curso — e no caminho SEM captura o `queue_free()` vinha
+na linha **seguinte**, então nunca rodava. O controlador virava zumbi: `_exit_tree`
+é quem libera o `vortex_root`, e ele nunca disparava.
+
+O segundo sintoma sai do mesmo zumbi. A linha `set_meta("yami_kurouzu_active",
+false)` vem ANTES da chamada que falha, então continuava rodando a cada quadro.
+Passados os 5 s de vida do zumbi, ela desligava o X **seguinte** no primeiro
+quadro — o golpe nascia já cancelado. Não era o X que estava quebrado: era o X
+anterior que não tinha morrido.
+
+**Evidência:** sonda de dois processos e de processo único
+(`--script` com `GameFlow.start_singleplayer`):
+
+```
+X nº1 sem alvo -> controladores vivos: 1 | orbes vivos: 1 | kurouzu_active=false
+X nº2 (6 s depois, alvo a 8,81 m):
+   kurouzu_active logo após comecar = true
+   kurouzu_active 0,2 s depois      = false      <- o zumbi desligou
+   controladores vivos: 2 | orbes vivos: 2       <- acumulando
+SCRIPT ERROR: Invalid call to function 'pedir_cancelar_hold' in base
+  'CharacterBody3D (Player)'. Expected 2 argument(s).
+  at: KurouzuController._physics_process (res://src/effects/YamiFX.gd:542)
+```
+
+O erro repetia a **cada quadro de física**, indefinidamente.
+
+**Descartado:** a oclusão (`cached_los`), a força de sucção, a guarda
+`caster.is_multiplayer_authority()` e o teto `KUROUZU_DURATION` — todos corretos.
+Com um alvo capturado o golpe puxava 8,42 m -> 1,78 m normalmente; o defeito só
+aparece quando a tecla é solta **sem captura**, que é o caso comum em jogo.
+
+**Correção:** `src/effects/YamiFX.gd:542` e `:684` passam a fruta
+(`pedir_cancelar_hold("X", "yami_yami")`), e o `queue_free()` foi movido para
+**antes** de tocar no caster — a saída do controlador não pode depender de uma
+chamada externa dar certo.
+
+**Como detectar de novo:** conjurar X sem ninguém por perto, soltar, e contar os
+nós que respondem a `_throw_target` na árvore. Depois da correção: 0 controladores
+e 0 orbes após 5 conjurações seguidas (contagem de cena estável em ~1.000 nós).
+
+---
+
+## 2026-08-23 — `world.get_tree()` é null no primeiro golpe de cada vida
+
+**Sintoma:** a primeira conjuração do X da Yami em cada vida não marcava alvo
+nenhum: sem `in_kurouzu`, sem o ícone `SUGADO`, sem os 4 s de silêncio. O vórtice
+abria na mão e era só enfeite por ~150 ms.
+
+**Causa raiz:** `YamiFX._find_closest_entity` fazia
+`world.get_tree().get_nodes_in_group(...)`. O `world` é o `Skills_<jogador>` de
+`Player._get_skills_container()`, que entra na cena por
+`add_child.call_deferred(...)` — no primeiro cast ele **ainda não está na árvore**,
+e `get_tree()` devolve null.
+
+É literalmente a mesma armadilha que `FxUtil.autofree` documenta desde
+2026-08-22, no mesmo repositório. Ela voltou porque a correção de lá foi aplicada
+**num ponto só**, e não à classe de problema: qualquer código que receba `world`
+como parâmetro está sujeito a ele.
+
+**Evidência:**
+
+```
+SCRIPT ERROR: Cannot call method 'get_nodes_in_group' on a null value.
+  at: _find_closest_entity (res://src/effects/YamiFX.gd:444)
+  [1] _kurouzu  [2] cast  [3] _fire_skill  [4] _net_play_cast
+```
+
+O que mascarava: a revarredura do `KurouzuController` 150 ms depois roda a partir
+de um nó já na árvore e achava o alvo. Por isso o golpe "quase" funcionava — a
+distância no primeiro instante media 4,79 m em vez de 2,71 m.
+
+**Correção:** `src/effects/YamiFX.gd:441` cai para
+`Engine.get_main_loop() as SceneTree` quando `world.get_tree()` é null — o mesmo
+SceneTree, sem depender de o nó estar pendurado.
+
+**Como detectar de novo:** `grep -rn "world.get_tree()" src/effects/` deve voltar
+vazio. Em jogo: conjurar o golpe na **primeira** vez de uma vida e procurar
+`Cannot call method ... on a null value` no console.
+
+---
+
+## 2026-08-23 — o AutoDummy andava dentro do Black Hole
+
+**Sintoma:** relatado pelo dono — "o C da Yami Yami não deve possibilitar que o
+inimigo se mova". O boneco automático perseguia e socava normalmente com o poço
+aberto em cima dele.
+
+**Causa raiz:** `AutoDummy._physics_process` chama `super._physics_process(delta)`
+e **continua**. O pai (`TrainingDummy`) sai cedo em `in_vortex`, `in_kurouzu` e
+`in_black_hole`, mas `super` não interrompe o corpo do filho — o próprio arquivo
+já documentava isso para a guarda de autoridade em 2026-08-22 e repetiu **só** o
+`is_frozen`. As três metas de controle de multidão ficaram de fora.
+
+**Evidência:** sonda em singleplayer com o C aberto, medindo os dois bonecos lado
+a lado (`in_bh=true` nos dois o tempo todo):
+
+```
+             AutoDummy          TrainingDummy
+t=5,4 s      0,18 m/s           0,32 m/s
+t=5,7 s      1,45 m/s   <-      0,48 m/s
+t=6,0 s      3,10 m/s   <-      0,40 m/s     (3,5 m/s = perseguição cheia)
+```
+
+O TrainingDummy fica nos ~0,4 m/s da sucção; o AutoDummy acelerava para a
+velocidade de perseguição e escapava do poço.
+
+**Descartado:** o jogador humano. Duas sondas de **dois processos** (host
+conjurando/cliente vítima e o inverso), com W fisicamente segurado via
+`Input.parse_input_event`, mostraram `velocity=(0,0,0)` na vítima durante todo o
+poço — `Player._etapa_travamento` já respeitava `in_black_hole` nos dois sentidos
+da rede. O deslocamento residual de 0,48 m/s era a sucção, não a tecla.
+
+**Correção:** `src/entities/AutoDummy.gd` repete a mesma lista de metas do pai
+antes de rodar a IA.
+
+**Como detectar de novo:** abrir o C ao lado dos dois bonecos e comparar a
+velocidade dos dois. Divergência = a IA está ignorando o controle.
+
+---
+
+## 2026-08-23 — `set_anchors_preset` sozinho: painel de HUD fora da tela
+
+**Sintoma:** o painel novo dos bonecos de treino não aparecia no canto inferior
+direito. Ao investigar, descobriu-se que o **painel de munição da Buki Buki
+(`AmmoHud`) nunca tinha aparecido também** — erro silencioso desde que o arquivo
+nasceu.
+
+**Causa raiz:** `set_anchors_preset(PRESET_FULL_RECT)` recalcula as âncoras para
+**manter** o retângulo atual, que num `Control` recém-criado é `(0,0)`. Todo
+cálculo que parte de `size.x`/`size.y` resolve contra zero. O que faz o `Control`
+preencher a viewport é `set_anchors_**and_offsets**_preset`.
+
+**Evidência:** print do jogo rodando —
+
+```
+[DBG] DummyToggleHud visible=true  size=(0.0, 0.0)
+[DBG]   ColorRect size=(250,72)  position=(-270,-92)   <- fora da tela
+[DBG] AmmoHud size=(0.0, 0.0)
+[DBG] MatchHud size=(1280.0, 1280.0)                   <- o que usa o preset certo
+```
+
+**Descartado:** `visible`, `mouse_filter`, ordem dos filhos na `CanvasLayer` e a
+`z_index` — todos corretos.
+
+**Correção:** `src/ui/DummyToggleHud.gd` e `src/ui/AmmoHud.gd` passam a usar
+`set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)`.
+
+**Como detectar de novo:** `grep -rn "set_anchors_preset(Control.PRESET_FULL_RECT)"
+src/ui/` — em `_ready()` de HUD raiz, é sempre o errado. E, no jogo rodando,
+imprimir `size` do nó: `(0,0)` num painel que deveria preencher a tela é o defeito.
+
+**Lição de método (o erro é meu, e repetido):** o `MatchHud` documenta este exato
+defeito desde 2026-08-12, com a mesma explicação, no mesmo repositório — e eu
+escrevi a chamada errada de novo. O motivo de escapar é que **ela não vira erro em
+teste nenhum**: compila, instancia, `visible` é `true`, os filhos existem, e todas
+as sondas de árvore passam. Só a captura de tela do jogo rodando denuncia. Por isso
+o `AmmoHud` conviveu meses com o defeito. Regra prática: HUD nova só conta como
+entregue depois de **aparecer numa captura de tela**, nunca por sonda de árvore.
+
+---
+
 ## 2026-08-10 — `--editor --quit` não detecta script que não compila
 
 **Sintoma:** uma edição minha quebrou o `IceFX.gd` inteiro (usei a variável

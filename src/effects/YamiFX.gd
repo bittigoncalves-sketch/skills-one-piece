@@ -438,10 +438,30 @@ static func _liberation(world: Node, origin: Vector3, dir: Vector3, damage: floa
 	tw.tween_callback(burst_root.queue_free)
 	FxUtil.autofree(burst_root, 2.0)
 
+# ⚠️ NÃO USE `world.get_tree()` AQUI (corrigido em 2026-08-23). É a MESMA
+# armadilha que `FxUtil.autofree` já documenta, e ela derrubava esta função em
+# TODO primeiro golpe de uma vida: `world` é o `Skills_<jogador>` de
+# `Player._get_skills_container()`, que entra na cena por
+# `add_child.call_deferred(...)` — no primeiro cast ele ainda NÃO está na
+# árvore, `get_tree()` devolve null, e a chamada morria com
+# "Cannot call method 'get_nodes_in_group' on a null value".
+#
+# Consequência medida no X: o alvo NUNCA era encontrado na conjuração. Não saía
+# `in_kurouzu`, nem o ícone SUGADO, nem os 4 s de silêncio — o golpe abria o
+# vórtice na mão e ficava só bonito. O que salvava parcialmente era a revarredura
+# do `KurouzuController` 150 ms depois, que roda a partir de um nó JÁ na árvore.
+#
+# `Engine.get_main_loop()` é o mesmo SceneTree e não depende de o nó estar
+# pendurado em lugar nenhum.
 static func _find_closest_entity(world: Node, ignore_caster: Node, center: Vector3, max_dist: float) -> Node3D:
 	var best_target: Node3D = null
 	var best_dist := max_dist
-	var candidates := world.get_tree().get_nodes_in_group("enemy") + world.get_tree().get_nodes_in_group("player")
+	var arv: SceneTree = world.get_tree() if world != null else null
+	if arv == null:
+		arv = Engine.get_main_loop() as SceneTree
+	if arv == null:
+		return null
+	var candidates := arv.get_nodes_in_group("enemy") + arv.get_nodes_in_group("player")
 	for c in candidates:
 		if not (c is Node3D) or c == ignore_caster:
 			continue
@@ -536,11 +556,27 @@ class KurouzuController extends Node:
 
 		if state == 0:
 			if elapsed >= 5.0 or not hold_active:
+				# ⚠️ A MORTE VEM PRIMEIRO (2026-08-23). Este era o bug do "o buraco
+				# negro não some da mão": `pedir_cancelar_hold` era chamado com UM
+				# argumento e a assinatura pede DOIS (`slot, fruta`). O erro de
+				# runtime abortava `_physics_process` inteiro — e o `queue_free()`
+				# ficava DEPOIS, então nunca rodava. O controlador virava zumbi:
+				# `_exit_tree` (que é quem libera o `vortex_root`) nunca disparava e
+				# o orbe seguia colado na palma da mão para sempre.
+				#
+				# Pior: a linha `set_meta("yami_kurouzu_active", false)` continuava
+				# rodando a CADA quadro. Passados os 5 s do zumbi, o X SEGUINTE era
+				# desligado no primeiro quadro de vida — o golpe abria e morria sem
+				# puxar ninguém, que é o outro sintoma relatado. Cada X sem captura
+				# somava mais um zumbi. Medido: 2 conjurações = 2 orbes presos.
+				#
+				# Marcar a morte antes de tocar no caster é barato e tira a saída do
+				# controlador da mão de qualquer chamada externa que possa falhar.
+				queue_free()
 				if is_instance_valid(caster):
 					caster.set_meta("yami_kurouzu_active", false)
 					if caster.has_method("pedir_cancelar_hold"):
-						caster.pedir_cancelar_hold("X")
-				queue_free()
+						caster.pedir_cancelar_hold("X", "yami_yami")
 				return
 		else:
 			capture_timer += delta
@@ -681,7 +717,12 @@ class KurouzuController extends Node:
 		if is_instance_valid(caster):
 			caster.set_meta("yami_kurouzu_active", false)
 			if caster.has_method("pedir_cancelar_hold"):
-				caster.pedir_cancelar_hold("X")
+				# Mesma correção de aridade do caminho sem captura, acima. Aqui o
+				# erro não prendia o orbe (o `queue_free()` de quem chama vem
+				# depois do `_throw_target`), mas cortava o `print` do release e,
+				# principalmente, o AVISO DE REDE: sem este RPC os outros peers
+				# ficavam com `yami_kurouzu_active` ligado no conjurador.
+				caster.pedir_cancelar_hold("X", "yami_yami")
 		
 		print("💥 KURUOZU RELEASE: Inimigo arremessado com MEGA KNOCKBACK automático!")
 

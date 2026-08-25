@@ -32,6 +32,26 @@ func _physics_process(delta: float) -> void:
 	
 	if has_meta("is_frozen") and get_meta("is_frozen"):
 		return
+	# ⚠️ CONTROLE DE MULTIDÃO TAMBÉM VALE PARA A IA (2026-08-23).
+	#
+	# O pai (`TrainingDummy._physics_process`) já sai cedo em `in_vortex`,
+	# `in_kurouzu` e `in_black_hole` — mas `super._physics_process()` NÃO
+	# interrompe este corpo, exatamente como a guarda de autoridade logo acima
+	# já documenta. Só `is_frozen` era repetido aqui, então o boneco automático
+	# perseguia e socava normalmente DENTRO do Black Hole da Yami.
+	#
+	# Medido antes da correção: com `in_black_hole = true` o AutoDummy chegava a
+	# 3,10 m/s (a velocidade cheia de perseguição, 3,5) e escapava do poço,
+	# enquanto o TrainingDummy ao lado ficava nos ~0,4 m/s da sucção. O C é
+	# CONTROLE PURO (ver docs/frutas/yami_yami.md) e o inimigo que anda enquanto
+	# preso apaga a única coisa que o golpe faz.
+	#
+	# A lista é a MESMA do pai de propósito: um estado que prende o boneco parado
+	# tem de prender a IA junto, senão o alvo de teste mente sobre o golpe.
+	if (has_meta("in_vortex") and get_meta("in_vortex")) \
+			or (has_meta("in_kurouzu") and get_meta("in_kurouzu")) \
+			or (has_meta("in_black_hole") and get_meta("in_black_hole")):
+		return
 	if has_meta("custom_pose") and get_meta("custom_pose") == "knockdown":
 		return
 	if health <= 0.0:

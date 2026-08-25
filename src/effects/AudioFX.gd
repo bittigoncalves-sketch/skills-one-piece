@@ -43,6 +43,14 @@ static func sniper(world: Node, pos: Vector3, pitch := 1.0) -> void:
 static func minigun(world: Node, pos: Vector3, pitch := 1.0) -> void:
 	_play(world, pos, _pool("minigun"), pitch, 0.42)
 
+# ---- ESQUIVA (2026-08-23) ------------------------------------------------
+# O dash era o único movimento MUDO do jogo: ele já tinha anel de choque, rastro
+# e recuo de câmera, e não fazia barulho nenhum. Passa pelo `_pool` porque a
+# recarga é de 1,5 s — sintetizar ~4.800 amostras a cada esquiva é trabalho
+# jogado fora, e as 3 variantes evitam que a repetição vire metrônomo.
+static func dash(world: Node, pos: Vector3, pitch := 1.0) -> void:
+	_play(world, pos, _pool("dash"), pitch, 0.6)
+
 # ---- infra ----
 static func _play(world: Node, pos: Vector3, stream: AudioStream, pitch: float, vol_lin: float) -> void:
 	if world == null:
@@ -81,6 +89,7 @@ static func _gerar(nome: String) -> AudioStreamWAV:
 		"pistol": return _pistol_stream()
 		"sniper": return _sniper_stream()
 		"minigun": return _minigun_stream()
+		"dash": return _dash_stream()
 	return _gunshot_stream()
 
 static func _wav(samples: PackedFloat32Array) -> AudioStreamWAV:
@@ -226,6 +235,37 @@ static func _minigun_stream() -> AudioStreamWAV:
 		var f := lerpf(700.0, 240.0, minf(t * 3.0, 1.0))
 		var corpo := sin(TAU * f * (float(i) / RATE)) * 0.40
 		s[i] = clampf((ruido * 0.70 + corpo) * env, -1.0, 1.0)
+	return _wav(s)
+
+# DASH (Q) — 0,22 s. O `whoosh` NÃO serve aqui, e a razão é o envelope: ele é
+# `sin(t*PI)`, sobe e desce, que é o gesto de um braço BALANÇANDO. A esquiva é o
+# contrário — o ar é rasgado no primeiro quadro e o resto é rastro. Então:
+# ataque instantâneo, cauda longa.
+#
+# Três camadas, porque o corpo atravessa 12 m em 0,28 s e um ruído sozinho soa a
+# folha de papel amassada:
+#   1. o TAPA da partida (~25 ms): passa-alta pobre (ruído menos a sua média
+#      móvel), o mesmo truque da pistola — é o brilho que dá o "de repente";
+#   2. o CORPO do ar: o mesmo ruído passa-BAIXA, com o corte FECHANDO ao longo do
+#      som (o coeficiente cai de 0,55 para 0,12). Corte fixo soa a chiado parado;
+#      é a queda que lê como algo passando e se afastando;
+#   3. o EMPURRÃO do pé no chão: 90 Hz escorregando para 45, morto em ~45 ms.
+static func _dash_stream() -> AudioStreamWAV:
+	var n := int(RATE * 0.22)
+	var s := PackedFloat32Array()
+	s.resize(n)
+	var media := 0.0
+	var sub := 0.0
+	for i in n:
+		var t := float(i) / n
+		var tapa: float = pow(1.0 - minf(t * 9.0, 1.0), 3.0)      # ~25 ms
+		var cauda: float = pow(1.0 - t, 2.2)
+		var ruido := randf() * 2.0 - 1.0
+		media = lerpf(media, ruido, lerpf(0.55, 0.12, t))
+		var agudo := ruido - media                                 # passa-alta pobre
+		sub += TAU * lerpf(90.0, 45.0, minf(t * 3.0, 1.0)) / RATE
+		var chao: float = sin(sub) * pow(1.0 - minf(t * 5.0, 1.0), 2.0) * 0.35
+		s[i] = clampf(agudo * 1.3 * tapa + media * 1.1 * cauda + chao, -1.0, 1.0)
 	return _wav(s)
 
 # CANHÃO — mais longo e mais grave que o tiro de pistola, com três camadas:

@@ -69,7 +69,18 @@ func atualizar(delta: float, q: MoveFrame, bloqueado: bool) -> void:
 		# sempre horizontal, e a suspensão da gravidade não vira empuxo.
 		_direcao = q.dir.normalized() if q.dir.length_squared() > 0.01 else q.frente
 		if _dono:
-			FxUtil.dash_effect(_dono.get_tree().current_scene, _dono.global_position, _direcao)
+			var cena := _dono.get_tree().current_scene
+			FxUtil.dash_effect(cena, _dono.global_position, _direcao)
+			# SOM DA ESQUIVA (2026-08-23). Nasce aqui, junto do anel de choque, e
+			# não num observador de estado: o disparo é ESTE instante, e é o único
+			# ponto do ciclo que sabe que a esquiva SAIU (mirar não faz barulho).
+			#
+			# É LOCAL, como o `dash_effect` logo acima: o dash não tem RPC — quem
+			# não é a autoridade nem chega a rodar `atualizar`. Dar som ao dash
+			# alheio é trabalho de replicar o dash, não deste ponto.
+			#
+			# O pitch varia ±6% para dois dashes seguidos não soarem colados.
+			AudioFX.dash(cena, _dono.global_position, randf_range(0.94, 1.06))
 
 	# Consome o tempo DEPOIS do gatilho, para o disparo já andar neste quadro.
 	# `_passo` é quanto do dash cabe no quadro: no último ele é MENOR que o delta.
