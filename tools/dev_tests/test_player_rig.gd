@@ -42,16 +42,27 @@ func _init() -> void:
 	# NAO da pra reconferir a altura aqui: a AABB visivel de agora ja inclui a
 	# escala, as pistolas e os marcadores, entao ela nao e a altura do corpo (dava
 	# 2.11 e nao 1.5). O que se pode afirmar sem inventar metrica sao as REGRAS
-	# documentadas do fit. Os numeros exatos do fit foram conferidos por A/B
-	# contra o commit anterior a esta fase (2026-08-11): escala
-	# (0.416667, 0.416667, 0.770833) e pos.y -0.8000, identicos.
+	# documentadas do fit.
+	#
+	# A REGRA MUDOU, e este teste ficou para tras. Ate 2026-08-11 o fit engrossava
+	# a profundidade pela ESCALA do no raiz: (ky, ky, ky*1.85). Escala nao-uniforme
+	# no root CISALHA todo membro rotacionado — era o risco que o
+	# docs/PLANO_ANIMACAO_PROCEDURAL.md (secao 7) mandava eliminar ANTES da
+	# animacao procedural, e foi eliminado: hoje a escala e UNIFORME nos dois tipos
+	# de corpo, e a profundidade e embutida na GEOMETRIA por
+	# PlayerModelKit.bake_depth(). O teste continuava exigindo a escala antiga e
+	# reprovava o conserto.
+	#
+	# Aqui as duas metades sao medidas: a escala tem que ser uniforme, E o
+	# engrossamento tem que continuar acontecendo — so que na malha.
 	print("\n-- as regras do fit valem --")
 	var esc: Vector3 = rig.modelo().scale
 	_ok(absf(esc.x - esc.y) < 0.0001, "escala X e Y iguais (%.4f)" % esc.x)
-	if rig.skinnado():
-		_ok(absf(esc.z - esc.y) < 0.0001, "skinnado = escala UNIFORME (senao o skinning corrompe)")
-	else:
-		_ok(absf(esc.z - esc.y * 1.85) < 0.0001, "voxel engrossa Z em 1.85x (%.4f)" % esc.z)
+	_ok(absf(esc.z - esc.y) < 0.0001,
+		"escala UNIFORME (nao-uniforme no root cisalha membro rotacionado) (%.4f)" % esc.z)
+	if not rig.skinnado():
+		_ok(_fator_de_profundidade(rig) > 0.0,
+			"voxel engrossa Z em %.2fx NA MALHA (bake_depth)" % _fator_de_profundidade(rig))
 	_ok(rig.modelo().position.y <= -0.8 + 0.0001,
 		"pes no fundo da colisao ou abaixo (y=%.4f)" % rig.modelo().position.y)
 
@@ -72,3 +83,26 @@ func _ok(c: bool, m: String) -> void:
 func _w(s: float) -> void:
 	var t := Time.get_ticks_msec()
 	while Time.get_ticks_msec()-t < int(s*1000.0): await process_frame
+
+# Quanto a malha do Torso ficou mais funda que a de um modelo recem-construido
+# (que ainda nao passou pelo bake_depth). Devolve 0.0 se nao der pra medir —
+# o `_ok` reprova, que e o que se quer se o engrossamento sumir.
+func _fator_de_profundidade(rig) -> float:
+	var torso := rig.modelo().find_child("Torso", true, false) as MeshInstance3D
+	if torso == null or torso.mesh == null:
+		return 0.0
+	var cru := CharacterBuilder.build_character(rig.character_id)
+	var no: Node3D = cru["node"]
+	var torso_cru := no.find_child("Torso", true, false) as MeshInstance3D
+	if torso_cru == null or torso_cru.mesh == null:
+		no.queue_free()
+		return 0.0
+	var z_cru: float = torso_cru.mesh.get_aabb().size.z
+	var z_bak: float = torso.mesh.get_aabb().size.z
+	no.queue_free()
+	if z_cru < 0.0001:
+		return 0.0
+	var f: float = z_bak / z_cru
+	# 1.85 e o fator de PlayerRig._fit_model_to_body; abaixo de 1.5 o corpo
+	# voltou a ser uma tabua e o conserto foi desfeito sem querer.
+	return f if f > 1.5 else 0.0

@@ -114,6 +114,21 @@ godot --headless --path . -s tools/bake_mixamo.gd
 
 Detalhes em [`docs/ANIMACOES_MIXAMO.md`](docs/ANIMACOES_MIXAMO.md).
 
+### Editar animação no Blender
+
+Desde 2026-08-25 o clipe do jogo vai e volta do Blender sem script no meio:
+
+```bash
+godot --headless --path . -s tools/exportar_para_blender.gd
+#   abre assets/blender/rig_base_completo.glb no Blender (33 Actions), edita
+godot --headless --path . -s tools/importar_do_blender.gd -- \
+      assets/blender/rig_base_completo.glb
+```
+
+**Para continuar o trabalho de animação, comece por
+[`docs/PLANO_ANIMACAO_FASES_2_3_4.md`](docs/PLANO_ANIMACAO_FASES_2_3_4.md)** —
+é o ponto de entrada, e traz o que uma máquina nova precisa preparar antes.
+
 ## Documentação
 
 O índice está dividido em **três blocos**: as frutas (uma página por fruta), os
@@ -134,6 +149,8 @@ antigas — nada ali é apagado).
 
 | Arquivo | Conteúdo |
 |---|---|
+| [`docs/PLANO_ANIMACAO_FASES_2_3_4.md`](docs/PLANO_ANIMACAO_FASES_2_3_4.md) | **ponto de entrada da animação**: o que falta (Fases 2, 3, 4), com alvos medidos e o preparo da máquina nova |
+| [`docs/AUDITORIA_ANIMACAO.md`](docs/AUDITORIA_ANIMACAO.md) | os 11 achados medidos do sistema de animação e do esqueleto, e a Fase 1 implementada |
 | [`docs/ANIMACOES_MIXAMO.md`](docs/ANIMACOES_MIXAMO.md) | pipeline, catálogo de clipes, limitações |
 | [`docs/AGENTES.md`](docs/AGENTES.md) | como o trabalho é dividido entre agentes especializados |
 | [`docs/LIMITE_DE_TAMANHO.md`](docs/LIMITE_DE_TAMANHO.md) | limite de 900 linhas por script, o que já foi dividido e o plano do `Player.gd` |

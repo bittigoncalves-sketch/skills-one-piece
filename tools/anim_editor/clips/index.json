@@ -1,139 +1,169 @@
 {
   "clips": [
     {
+      "length": 4.0,
+      "name": "alert",
+      "tracks": 13
+    },
+    {
       "length": 1.6667,
       "name": "armada",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 4.0333,
       "name": "au_to_role",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 1.4,
       "name": "bencao",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 3.0,
       "name": "bouncing_fight_idle",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 2.2333,
       "name": "boxing",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 2.2333,
       "name": "boxing_1",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 2.1667,
       "name": "boxing_2",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 2.2333,
       "name": "boxing_3",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 1.4,
       "name": "chapa_2",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 2.4,
       "name": "chapa_giratoria_2",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 5.8,
       "name": "dying",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 1.5333,
       "name": "flying_kick",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 0.2333,
       "name": "gunplay",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 3.3,
       "name": "jab_to_elbow_punch",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 4.2,
       "name": "jumping_over_into_combat",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 2.3,
       "name": "kicking",
-      "tracks": 12
+      "tracks": 13
+    },
+    {
+      "length": 1.3667,
+      "name": "left_uppercut_from_guard",
+      "tracks": 13
     },
     {
       "length": 1.7667,
       "name": "meia_lua_de_compasso",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 4.5333,
       "name": "pivot",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 1.4,
       "name": "pontera",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 1.2667,
       "name": "punching",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 2.2,
       "name": "quad_punch",
-      "tracks": 12
+      "tracks": 13
+    },
+    {
+      "length": 1.7667,
+      "name": "right_upper_hook_from_guard",
+      "tracks": 13
     },
     {
       "length": 2.1667,
       "name": "roundhouse_kick",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 2.1667,
       "name": "roundhouse_kick_2",
-      "tracks": 12
+      "tracks": 13
+    },
+    {
+      "length": 0.6333,
+      "name": "running",
+      "tracks": 13
     },
     {
       "length": 2.1,
       "name": "running_dive_roll",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 3.0333,
       "name": "smash",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 2.1667,
       "name": "stabbing",
-      "tracks": 12
+      "tracks": 13
     },
     {
       "length": 3.6333,
       "name": "uppercut_jab",
-      "tracks": 12
+      "tracks": 13
+    },
+    {
+      "length": 0.9,
+      "name": "walk_backward_inplace",
+      "tracks": 13
+    },
+    {
+      "length": 1.0333,
+      "name": "walking",
+      "tracks": 13
     }
   ]
 }

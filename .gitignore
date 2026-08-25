@@ -22,3 +22,7 @@ tools/anim_editor/abrir.log
 assets/models/inbox/*
 !assets/models/inbox/.gitkeep
 assets/models/environment/sol3D.glb
+
+# glTF gerado para editar no Blender — derivado de assets/animations/*.res por
+#   godot --headless --path . -s tools/exportar_para_blender.gd
+assets/blender/

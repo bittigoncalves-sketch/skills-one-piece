@@ -871,8 +871,12 @@ class MamaraganController extends Node3D:
 			(caster as CharacterBody3D).floor_snap_length = _snap_salvo
 			_snap_salvo = -1.0
 		# O `lock_movement` foi armado para a duração cheia; solto agora.
-		caster.set("_movement_locked_timer", 0.0)
-		caster.set_meta("active_skill", "")
+		# O `set("_movement_locked_timer", ...)` que estava aqui era no-op
+		# silencioso desde que a FSM aposentou o campo. Ver docs/erros.md.
+		if caster.has_method("unlock_movement"):
+			caster.unlock_movement()
+		else:
+			caster.set_meta("active_skill", "")
 
 	func _exit_tree() -> void:
 		_liberar_jogador()

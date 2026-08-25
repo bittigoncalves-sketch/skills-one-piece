@@ -7,6 +7,144 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-25 — 12 das 13 faixas de todo clipe apontavam para lugar nenhum
+
+**Sintoma:** nenhum. O jogo tocava as 29 animações do Mixamo normalmente. Mas o
+dock de animação do Godot mostrava as faixas em vermelho, nenhum
+`AnimationPlayer` conseguia tocar um `.res`, e toda tentativa de exportar para
+glTF morria com `glTF: Cannot get node for animated track`. O caminho para o
+Blender simplesmente não existia, e não havia erro apontando para o motivo.
+
+**Causa raiz:** o baker gravava o caminho da faixa **plano** —
+`NodePath("Head:rotation")`. O rig é uma árvore (`Torso → Neck → Head`), então
+esse caminho só resolveria se cada papel fosse filho direto da raiz. Onze anos
+de `NodePath` e o formato parecia certo porque **o jogo nunca usou o NodePath**:
+o `ProceduralAnimator._apply_baked` fazia `String(path).get_slice(":", 0)` e
+procurava o papel num dicionário próprio. Um formato privado vestido de formato
+público — funcionava para o único consumidor que existia, e fechava a porta para
+todos os outros.
+
+**Evidência:** `tools/dev_tests/testar_export_gltf.gd` monta o rig e conta:
+`faixas do .res que resolvem como NodePath real: 1/13`. Reescrevendo o caminho
+para `Torso/Neck/Head:rotation`, o mesmo clipe exporta 13 canais de quaternion.
+
+**Correção:** `src/anim/RigContrato.gd` passou a ser a fonte única do formato
+(`caminho()`, `faixa()`, `papel_de()`), o baker grava hierárquico e o
+`_apply_baked` aceita os dois — um `.res` antigo continua tocando enquanto não
+for reassado. Guarda: `tools/dev_tests/test_biblioteca_anim.gd` varre a pasta
+inteira e reprova qualquer faixa que não resolva na árvore real do personagem.
+
+**Erro de medição no meio do conserto (vale registrar):** depois da decimação,
+tentei alertar sobre o tamanho do salto entre chaves vizinhas — nas duas formas,
+euler e geodésica. Não serve, e a razão é estrutural: a decimação afasta as
+chaves DE PROPÓSITO, e o que ela garante é o **erro de pose** (≤ 1°), não o
+espaçamento. Um chute rápido tem 71° de giro real entre duas chaves e está
+perfeito. O alerta marcava 8 clipes sadios em 33. O alarme voltou para o que de
+fato pode falhar: o destorcimento do euler (gimbal).
+
+---
+
+## 2026-08-25 — A regen virou percentual e três sondas ficaram na constante absoluta
+
+**Sintoma:** `test_compila` reprovava com `Parse Error: Cannot find member
+"REGEN_ENERGIA" in base "HealthController"`, e o `net_mp_probe` falhava junto —
+duas linhas do resumo do gate, uma causa só.
+
+**Causa raiz:** a regeneração de energia foi refeita de **taxa absoluta**
+(`REGEN_ENERGIA`, unidades por segundo) para **percentual do máximo**
+(`REGEN_ENERGIA_PCT = 0.005`). A constante velha sumiu, e três pontos das sondas
+de rede continuaram lendo dela — o que faz o script **não compilar**, e com ele
+o `net_mp_client_probe` / `net_mp_host_probe` que o `net_mp_probe` sobe.
+
+Mesma família do `_movement_locked_timer` acima, e no mesmo dia: **um membro
+público-de-fato removido sem varrer os chamadores**. A diferença é que aqui a
+falha é ruidosa (não compila) em vez de silenciosa — e mesmo assim ficou meses,
+porque o `test_compila` mistura o erro real com dezenas de "Identifier not found:
+<autoload>" que são esperados num `--script`.
+
+**Correção:** as sondas passaram a derivar a taxa da constante viva —
+`HealthController.REGEN_ENERGIA_PCT * max_energy` — em vez de guardar uma cópia
+do número. Se a taxa mudar de novo, a sonda acompanha em vez de mentir.
+(É a mesma regra do erro de 2026-08-07, *"Cópia da fórmula no teste escondeu a
+mudança no código"*.)
+
+---
+
+## 2026-08-25 — Um campo aposentado quebrou 5 testes e 3 golpes, sem um erro sequer apontar para ele
+
+**Sintoma:** cinco falhas no `./validar.sh rapido` que pareciam cinco bugs
+diferentes — as quatro animações da Gura "não amostravam o corpo", o teste de
+morte dava TIMEOUT de 120 s, e as sondas de rede paravam de imprimir no meio.
+Nenhuma mensagem citava a causa comum.
+
+**Causa raiz:** `_movement_locked_timer` foi **removido** do `Player` quando a
+trava de movimento virou estado da FSM (commit "Fix Tela Cinza"). **Sete pontos
+do projeto continuaram falando com ele**, e o GDScript falha de duas maneiras
+diferentes conforme a forma de acesso — as duas ruins:
+
+| forma | o que acontece | quem sofreu |
+|---|---|---|
+| `obj.campo = x` / `print(obj.campo)` | erro de runtime que **aborta a corrotina na hora** | `test_gura_animacoes`, `test_morte_limpa_cast`, `test_segurar_ataque`, `net_client_probe` |
+| `obj.set("campo", x)` | **no-op silencioso** | `GoroFXGrande._liberar_jogador` |
+| `if "campo" in obj:` | condição falsa, bloco **nunca entra** | `YamiFX._unlock_caster`, `YamiFX` (Black Hole) |
+
+O primeiro grupo mata o teste no meio e faz ele relatar **o sintoma errado**: o
+`test_gura_animacoes` acusava a animação da Gura, que estava perfeita; o
+`test_morte_limpa_cast` virava TIMEOUT, indistinguível de "o jogo travou ao
+morrer" — que é exatamente o bug que ele existe para vigiar.
+
+O segundo grupo é pior: **o jogo**, não o teste. Os três efeitos que soltam o
+jogador no fim do golpe (Kurouzu, Black Hole, Mamaragan) achavam que estavam
+soltando e não faziam nada. Sem erro, sem log, sem teste reprovando.
+
+**Evidência:** `grep -rn "_movement_locked_timer" --include="*.gd"` → 7 pontos
+vivos, e `Player.gd:107` com o comentário `# _movement_locked_timer removido
+(FSM gerencia)` — a remoção foi feita e anotada, mas ninguém varreu os chamadores.
+
+**O aviso já tinha tocado uma vez.** O `tools/dev_tests/test_frutas.gd` carrega,
+desde antes, este comentário: *"ERA `_player._movement_locked_timer = 0.0` […] A
+auditoria morria aqui, na PRIMEIRA fruta, e imprimia o resumo vazio"*. Alguém
+bateu exatamente neste bug, consertou **o ponto em que tropeçou**, e os outros
+seis ficaram apodrecendo — inclusive os três que quebravam o jogo. Conserto
+pontual em bug de causa comum é dívida com juros: quando o próximo aparece,
+ninguém lembra que é o mesmo.
+
+**Correção:** `Player.unlock_movement()`, o inverso exato do `lock_movement`
+atual (limpar a meta `active_skill`) — e nada além, porque o dono do resto da
+trava é a FSM e mexer nela de dentro de um nó de VFX seria adivinhação. Os três
+efeitos chamam esse método; as sondas usam `_fsm.state.name`. Varredura final:
+zero usos vivos.
+
+**A lição, que vale além deste campo:** remover um membro público-de-fato não é
+uma edição local. `set()` e `"campo" in obj` **não avisam** — a única rede é
+varrer os chamadores no mesmo commit. E, do lado do teste: **quando um teste de
+comportamento visual falha, o primeiro suspeito é a sonda**, não o
+comportamento, ainda mais se ela toca em campos privados de outro sistema.
+
+---
+
+## 2026-08-25 — O teste do rig exigia a escala não-uniforme que o projeto tinha decidido eliminar
+
+**Sintoma:** `test_player_rig` reprovava com
+`XX voxel engrossa Z em 1.85x (0.4167)` — ou seja, a escala Z estava 0,4167
+(uniforme) onde o teste queria 0,7708.
+
+**Causa raiz:** o teste estava certo em 2026-08-11 e ficou para trás. O
+`docs/PLANO_ANIMACAO_PROCEDURAL.md` (seção 7) mandava eliminar a escala
+não-uniforme no root **antes** da animação procedural, porque ela **cisalha todo
+membro rotacionado**. Foi eliminada: a escala virou uniforme nos dois tipos de
+corpo e a profundidade passou a ser embutida na **geometria**, por
+`PlayerModelKit.bake_depth()`. O teste continuou cobrando a regra antiga e
+reprovava exatamente o conserto que a spec pedia.
+
+**Correção:** o teste agora mede as **duas** metades — a escala tem que ser
+uniforme, E o engrossamento tem que continuar acontecendo, medido na AABB da
+malha do `Torso` contra um modelo recém-construído (`_fator_de_profundidade`,
+que dá 1,85). Um teste que só conhecia o mecanismo antigo virou um teste que
+conhece o resultado.
+
+---
+
 ## 2026-08-10 — `--editor --quit` não detecta script que não compila
 
 **Sintoma:** uma edição minha quebrou o `IceFX.gd` inteiro (usei a variável

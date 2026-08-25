@@ -243,7 +243,7 @@ func _janela_acao(a: Animation, papeis: Array, t_hit: float) -> Array:
 		return [0.0, 0.0, 0.0, 0.0]
 	var tis: Array = []
 	for p in papeis:
-		tis.append(a.find_track(NodePath(String(p) + ":rotation"), Animation.TYPE_VALUE))
+		tis.append(RigContrato.acha_faixa(a, String(p)))
 	var passo_t := 1.0 / 120.0
 	var pos: Array = []
 	var t := 0.0
@@ -379,7 +379,7 @@ func _amplitude(a: Animation, roles: Array) -> float:
 		return 0.0
 	var total := 0.0
 	for i in a.get_track_count():
-		if not (String(a.track_get_path(i)).get_slice(":", 0) in roles):
+		if not (RigContrato.papel_de(a.track_get_path(i)) in roles):
 			continue
 		var lo := Vector3.ONE * 1e9
 		var hi := Vector3.ONE * -1e9

@@ -432,9 +432,10 @@ func _relatorio() -> void:
 	print("\n-- ITEM 3: A CÓPIA SEM AUTORIDADE NÃO REGENERA ENERGIA (prova negativa) --")
 	print("   energia da cópia autoritativa: %.1f -> zerada -> %.1f (máximo lido depois de zerar: %.1f, %d amostras)"
 		% [float(_en["e0"]), float(_en["e_fim"]), float(_en["e_max"]), int(_en["n"])])
-	print("   se ela regenerasse a %.0f/s, em %.2f s teria voltado ~%.0f"
-		% [HealthController.REGEN_ENERGIA, _t() - float(_en["t_zero"]),
-			minf(HealthController.REGEN_ENERGIA * (_t() - float(_en["t_zero"])), 4096.0)])
+	var regen := _regen_energia()
+	print("   se ela regenerasse a %.1f/s, em %.2f s teria voltado ~%.0f"
+		% [regen, _t() - float(_en["t_zero"]),
+			minf(regen * (_t() - float(_en["t_zero"])), TETO_ENERGIA)])
 	_ok(int(_en["n"]) > 10 and float(_en["e_max"]) <= 0.01,
 		"a energia da cópia do servidor ficou em %.2f — a regen só roda na AUTORIDADE (Player.gd:682)"
 		% float(_en["e_max"]))
@@ -500,3 +501,13 @@ func _ok(cond: bool, msg: String) -> void:
 	print(("   ✅ " if cond else "   ❌ ") + msg)
 	if not cond:
 		_falhas += 1
+
+# Teto de energia do corpo (o mesmo 4096 que o `HealthController` usa por padrão).
+const TETO_ENERGIA := 4096.0
+
+# A regen virou PERCENTUAL do máximo (`REGEN_ENERGIA_PCT`); a constante absoluta
+# `REGEN_ENERGIA` não existe mais, e lê-la fazia esta sonda NÃO COMPILAR — o que
+# reprovava o `test_compila` e derrubava o `net_mp_probe` junto.
+# Ver docs/erros.md, 2026-08-25.
+func _regen_energia() -> float:
+	return HealthController.REGEN_ENERGIA_PCT * TETO_ENERGIA

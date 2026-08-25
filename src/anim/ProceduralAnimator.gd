@@ -101,7 +101,8 @@ func trigger_hitstop(duration: float, shake_intensity: float = 0.04) -> void:
 
 
 # Clipe BAKED (ex.: Mixamo retargetado): dirige os nós por role, sobrepondo a
-# animação procedural enquanto toca. Cada faixa tem path "<Role>:rotation".
+# animação procedural enquanto toca. O formato da faixa está em
+# `src/anim/RigContrato.gd` — hoje NodePath("Torso/Neck/Head:rotation").
 var _baked: Animation = null
 var _baked_t := 0.0
 var _baked_speed := 1.0
@@ -114,7 +115,7 @@ var _trail_tip: Node3D = null
 
 const REC_DUR := 0.35       # duração da recepção (recovery)
 
-# Toca um clipe retargetado (Animation com faixas <Role>:rotation) por cima do rig.
+# Toca um clipe retargetado (ver RigContrato para o formato da faixa) por cima do rig.
 # `speed` acelera o clipe sem reassá-lo: os golpes do Mixamo são autorados em
 # ~2 s, tempo demais para um combo de corpo a corpo encadeado em 2 s.
 #
@@ -146,7 +147,9 @@ func is_playing_baked() -> bool:
 func _apply_baked(delta: float) -> void:
 	_baked_t += delta * _baked_speed
 	for i in _baked.get_track_count():
-		var role := String(_baked.track_get_path(i)).get_slice(":", 0)
+		# `papel_de` aceita "Torso/Neck/Head:rotation" (formato atual) e
+		# "Head:rotation" (clipe ainda não reassado).
+		var role := RigContrato.papel_de(_baked.track_get_path(i))
 		if _n.has(role):
 			var euler = _baked.value_track_interpolate(i, _baked_t)
 			if euler is Vector3:

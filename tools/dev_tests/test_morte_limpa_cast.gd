@@ -39,7 +39,16 @@ func _init() -> void:
 	_ok(not p._charging, "depois de morrer NÃO está mais carregando")
 	_ok(not bool(p.get_meta("is_casting", false)), "a marca `is_casting` foi limpa")
 	_ok(p._slot_em_uso() == "", "nenhum slot ficou 'em uso' (era o que congelava a recarga)")
-	_ok(float(p._movement_locked_timer) <= 0.0, "o travamento de movimento foi solto")
+	# A trava de movimento saiu do `_movement_locked_timer` e virou estado da FSM
+	# (`Player._fsm`, commit "Fix Tela Cinza"). LER o campo aposentado é um `get`
+	# inválido: o erro MATAVA a corrotina aqui, o teste nunca chegava ao `quit()`
+	# e o gate acusava TIMEOUT de 120 s — como se o jogo tivesse travado ao
+	# morrer, que é justamente o bug que este teste veio vigiar.
+	# O equivalente atual é o mesmo critério do `Player.gd`: estar fora dos
+	# estados que travam o movimento.
+	var travado: bool = p._fsm and p._fsm.state and p._fsm.state.name in ["Attacking", "Casting", "Stunned"]
+	_ok(not travado, "o travamento de movimento foi solto (FSM em '%s')"
+		% (p._fsm.state.name if (p._fsm and p._fsm.state) else "<sem FSM>"))
 
 	print("\n-- 2. e os poderes VOLTAM a funcionar --")
 	p.equip_fruit("goro_goro")     # pega a fruta de novo (a morte devolveu ao mapa)

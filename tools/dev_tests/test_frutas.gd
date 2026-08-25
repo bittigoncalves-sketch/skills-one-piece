@@ -103,7 +103,11 @@ func _auditar(fid: String, com_arvore: Array) -> void:
 		# mais desde que a FSM assumiu a trava de movimento (`Player.gd:107`). A
 		# auditoria morria aqui, na PRIMEIRA fruta, e imprimia o resumo vazio —
 		# quebra anterior a esta refatoração, encontrada ao rodá-la.
-		_player.lock_movement(0.0, "")
+		#
+		# Este ponto foi consertado sozinho na época; os outros SEIS ficaram
+		# apodrecendo e derrubaram cinco testes e três golpes até 2026-08-25.
+		# Ver docs/erros.md. Hoje o nome do que se quer aqui é explícito:
+		_player.unlock_movement()
 		_player.energy = _player.max_energy
 
 		var origem: Vector3 = _player.global_position + Vector3.UP

@@ -57,7 +57,7 @@ func _medir(nome: String) -> void:
 
 	var papeis := []
 	for ti in range(anim.get_track_count()):
-		papeis.append(String(anim.track_get_path(ti)).get_slice(":", 0))
+		papeis.append(RigContrato.papel_de(anim.track_get_path(ti)))
 	papeis.sort()
 
 	var amp := {}
@@ -89,7 +89,9 @@ func _medir(nome: String) -> void:
 		print(s)
 
 func _ti(a: Animation, papel: String) -> int:
-	return a.find_track(NodePath(papel + ":rotation"), Animation.TYPE_VALUE)
+	# Aceita o caminho hierárquico atual e o formato antigo (um .res de
+	# referência guardado antes do rebake ainda usa "<Papel>:rotation").
+	return RigContrato.acha_faixa(a, papel)
 
 # Maior ângulo geodésico entre a pose e o repouso (identidade).
 func _amp(a: Animation, papel: String) -> float:

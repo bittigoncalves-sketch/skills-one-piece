@@ -21,9 +21,13 @@ PAPEIS = [
 ]
 
 # Hierarquia canônica, usada quando o personagem NÃO tem ossos e o editor
-# precisa criá-los. Espelha RIG_PARENT do SkeletonDriver.
+# precisa criá-los. Espelha RigContrato.PAI (src/anim/RigContrato.gd).
+#
+# ⚠️ "Head" é filho de "Neck", não de "Torso" — é a árvore real do base.scn e do
+# buggy.scn. Declarar Torso aqui fazia a rotação do pescoço entrar DUAS VEZES na
+# cabeça (até 64° de rotação parasita). Ver docs/AUDITORIA_ANIMACAO.md, achado 7.
 PAI_CANONICO = {
-    "Torso": "", "Neck": "Torso", "Head": "Torso",
+    "Torso": "", "Neck": "Torso", "Head": "Neck",
     "UpperArm_L": "Torso", "ForeArm_L": "UpperArm_L",
     "UpperArm_R": "Torso", "ForeArm_R": "UpperArm_R",
     "Thigh_L": "Torso", "Shin_L": "Thigh_L", "Foot_L": "Shin_L",
@@ -73,6 +77,13 @@ class Rig:
         self.papeis = dados["roles"]
         self.ordem = dados.get("order") or list(self.papeis.keys())
 
+    # Hierarquia REAL deste personagem (papel -> pai). É ela, e não a canônica,
+    # que monta o caminho da faixa na exportação — um modelo pode ter o pescoço
+    # e outro não.
+    @property
+    def pais(self):
+        return {p: self.papeis[p].get("parent", "") for p in self.papeis}
+
     # -- carga ------------------------------------------------------------
     @staticmethod
     def de_arquivo(caminho):
@@ -92,7 +103,9 @@ class Rig:
         papeis = {
             "Torso":      _osso("",           (0, 0.98, 0),        (0.50, 0.60, 0.34), (0, 0, 0)),
             "Neck":       _osso("Torso",      (0, 0.34, 0),        (0.16, 0.10, 0.16), (0, 0.05, 0)),
-            "Head":       _osso("Torso",      (0, 0.54, 0),        (0.42, 0.42, 0.40), (0, 0, 0)),
+            # (0, 0.20, 0) = os 0,54 de antes MENOS os 0,34 do Neck: a cabeça
+            # passou a pendurar no pescoço, então a posição vira relativa a ele.
+            "Head":       _osso("Neck",       (0, 0.20, 0),        (0.42, 0.42, 0.40), (0, 0, 0)),
             "UpperArm_L": _osso("Torso",      (-0.32, 0.20, 0),    (0.16, ua, 0.16),   (0, -ua / 2, 0)),
             "ForeArm_L":  _osso("UpperArm_L", (0, -ua, 0),         (0.145, ua, 0.145), (0, -ua / 2, 0)),
             "UpperArm_R": _osso("Torso",      (0.32, 0.20, 0),     (0.16, ua, 0.16),   (0, -ua / 2, 0)),
@@ -158,6 +171,23 @@ class Rig:
                         cantos.append((p[0] + v[0], p[1] + v[1], p[2] + v[2]))
             saida.append((papel, cantos))
         return saida
+
+
+def caminho(papel, pais=None):
+    """"Head" -> "Torso/Neck/Head". Espelha RigContrato.caminho().
+
+    O caminho da faixa TEM que ser hierárquico: é o que faz o clipe resolver na
+    árvore do personagem e, por consequência, exportar para glTF/Blender. Com o
+    caminho plano antigo ("Head:rotation") 12 das 13 faixas apontavam para lugar
+    nenhum. Ver docs/AUDITORIA_ANIMACAO.md, achado 1.
+    """
+    tabela = pais if pais is not None else PAI_CANONICO
+    partes = [papel]
+    p = tabela.get(papel, "")
+    while p:
+        partes.insert(0, p)
+        p = tabela.get(p, "")
+    return "/".join(partes)
 
 
 def _osso(pai, pos, size, offset):

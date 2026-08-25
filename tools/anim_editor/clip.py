@@ -1,19 +1,28 @@
 """Clipe de animação: keyframes por papel, interpolação e exportação .tres.
 
-O jogo toca `Animation` com faixas "<Papel>:rotation" via
-ProceduralAnimator.play_baked(). O `.res` é binário e Python não escreve; mas o
-Godot lê `.tres` (texto) exatamente igual — testado. Então o editor grava
-`.tres` direto em assets/animations/, sem precisar do Godot no caminho.
+O jogo toca `Animation` com faixas de caminho HIERÁRQUICO
+("Torso/Neck/Head:rotation") — o contrato está em src/anim/RigContrato.gd. O
+`.res` é binário e Python não escreve; mas o Godot lê `.tres` (texto)
+exatamente igual — testado. Então o editor grava `.tres` direto em
+assets/animations/, sem precisar do Godot no caminho.
+
+⚠️ O caminho PLANO antigo ("Head:rotation") ainda toca em jogo (o
+ProceduralAnimator resolve o papel à mão), mas não resolve como NodePath: sem
+hierarquia o clipe não abre no dock de animação do Godot nem atravessa o
+exportador glTF, e é isso que fecha a porta do Blender.
 """
 
 import json
 import os
 
-from rig import PAPEIS
+from rig import PAPEIS, caminho as caminho_da_faixa
 
 
 class Clip:
-    def __init__(self, nome="novo", duracao=1.0, loop=True):
+    def __init__(self, nome="novo", duracao=1.0, loop=True, pais=None):
+        # `pais` = hierarquia do personagem carregado (papel -> pai). Sem ela, o
+        # caminho da faixa sai pela hierarquia canônica do rig.
+        self.pais = pais
         self.nome = nome
         self.duracao = float(duracao)
         self.loop = bool(loop)
@@ -120,7 +129,7 @@ class Clip:
                 'tracks/%d/type = "value"\n' % i,
                 "tracks/%d/imported = false\n" % i,
                 "tracks/%d/enabled = true\n" % i,
-                'tracks/%d/path = NodePath("%s:rotation")\n' % (i, papel),
+                'tracks/%d/path = NodePath("%s:rotation")\n' % (i, caminho_da_faixa(papel, self.pais)),
                 "tracks/%d/interp = 1\n" % i,
                 "tracks/%d/loop_wrap = true\n" % i,
                 "tracks/%d/keys = {\n" % i,

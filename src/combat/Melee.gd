@@ -290,14 +290,10 @@ static func clipe(i: int, weapon: String = "") -> Animation:
 static func espelhar(orig: Animation) -> Animation:
 	var out: Animation = orig.duplicate(true)
 	for i in out.get_track_count():
-		var caminho := String(out.track_get_path(i))
-		var papel := caminho.get_slice(":", 0)
-		var resto := caminho.substr(papel.length())
-		if papel.ends_with("_L"):
-			papel = papel.substr(0, papel.length() - 2) + "_R"
-		elif papel.ends_with("_R"):
-			papel = papel.substr(0, papel.length() - 2) + "_L"
-		out.track_set_path(i, NodePath(papel + resto))
+		# O caminho é hierárquico ("Torso/Thigh_L/Shin_L:rotation"), então TODO
+		# segmento precisa virar de lado — trocar só o último deixaria o caminho
+		# apontando para um nó que não existe. Ver src/anim/RigContrato.gd.
+		out.track_set_path(i, RigContrato.espelha_caminho(out.track_get_path(i)))
 		for k in out.track_get_key_count(i):
 			var v = out.track_get_key_value(i, k)
 			if v is Vector3:

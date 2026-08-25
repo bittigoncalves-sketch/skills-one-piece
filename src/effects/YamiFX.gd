@@ -484,10 +484,11 @@ class KurouzuController extends Node:
 
 	func _unlock_caster() -> void:
 		if is_instance_valid(caster):
-			if "movement_locked_timer" in caster:
-				caster.movement_locked_timer = 0.0
-			elif "_movement_locked_timer" in caster:
-				caster._movement_locked_timer = 0.0
+			# Ambos os nomes de campo que estavam aqui foram aposentados pela FSM,
+			# então NENHUM dos dois `if` entrava e o caster nunca era solto —
+			# sem erro, sem aviso. Ver docs/erros.md, 2026-08-25.
+			if caster.has_method("unlock_movement"):
+				caster.unlock_movement()
 			if caster.has_meta("custom_pose") and caster.get_meta("custom_pose") == "kurouzu":
 				caster.set_meta("custom_pose", "")
 			if caster.has_meta("is_casting"):
@@ -876,10 +877,8 @@ class BlackHoleController extends Node:
 		if is_instance_valid(caster):
 			if caster.get_meta("custom_pose", "") == "black_hole":
 				caster.set_meta("custom_pose", "")
-			if "movement_locked_timer" in caster:
-				caster.movement_locked_timer = 0.0
-			elif "_movement_locked_timer" in caster:
-				caster._movement_locked_timer = 0.0
+			if caster.has_method("unlock_movement"):
+				caster.unlock_movement()
 			if caster.has_meta("yami_black_hole_active"):
 				caster.set_meta("yami_black_hole_active", false)
 

@@ -86,6 +86,25 @@ marcadores, sai **99%**.
 
 **Controles do 3D:** arrastar = orbitar · roda = zoom · clique num osso = selecionar.
 
+### Preferir o Blender
+
+Este editor continua sendo o caminho leve (Python puro, sem instalar nada) para
+ajustar um clipe. Para autoria de verdade, o caminho agora é o Blender:
+
+```bash
+GODOT=/caminho/do/godot
+# .res -> .glb (todos os clipes num arquivo, cada um vira uma Action)
+$GODOT --headless --path . -s tools/exportar_para_blender.gd
+#   ... edita em assets/blender/rig_base_completo.glb ...
+# .glb -> .res
+$GODOT --headless --path . -s tools/importar_do_blender.gd -- assets/blender/rig_base_completo.glb
+```
+
+A ida-e-volta é verificada por `tools/dev_tests/test_ida_e_volta_blender.gd`,
+que está no `./validar.sh rapido`: **os 33 clipes voltam com a duração idêntica
+e desvio ≤ 0,999°** — a tolerância da decimação que o importador aplica. O
+transporte glTF em si é exato (0,000°).
+
 ---
 
 ## O que ele grava
@@ -97,9 +116,21 @@ Dois arquivos por clipe:
 | `tools/anim_editor/clips/<nome>.json` | formato de trabalho — reabre no editor |
 | `assets/animations/<nome>.tres` | o que o jogo toca |
 
-O `.tres` é `Animation` em **texto**, com faixas `"<Papel>:rotation"` — o mesmo
-contrato que o baker do Mixamo produz em binário. `Player.play_style_anim()`
-aceita os dois: procura `.res` primeiro, depois `.tres`.
+O `.tres` é `Animation` em **texto**, com faixas de caminho **hierárquico**
+(`"Torso/Neck/Head:rotation"`) — o mesmo contrato que o baker do Mixamo produz
+em binário. `Player.play_style_anim()` aceita os dois: procura `.res` primeiro,
+depois `.tres`.
+
+O caminho sai da hierarquia REAL do personagem carregado (`Rig.pais`), não de
+uma tabela fixa: um modelo pode ter o nó `Neck` e outro não. O contrato canônico
+está em `src/anim/RigContrato.gd`, e o `rig.py` o espelha em `PAI_CANONICO` /
+`caminho()`.
+
+> ⚠️ Até 2026-08-25 o caminho era plano (`"Head:rotation"`). Isso **tocava** no
+> jogo — o `ProceduralAnimator` resolve o papel lendo a string — mas não
+> resolvia como `NodePath`, e por isso o clipe não abria no dock de animação do
+> Godot nem atravessava o exportador glTF. Era a porta fechada do Blender. Ver
+> [`docs/AUDITORIA_ANIMACAO.md`](../../docs/AUDITORIA_ANIMACAO.md).
 
 ---
 
@@ -109,6 +140,9 @@ Quebrar qualquer uma faz a animação sair torta no runtime.
 
 - Frente é **−Z**.
 - O membro pende em **−Y**; girar **+X** leva a ponta para a **frente**.
+- **`Head` pende do `Neck`**, e o `Neck` do `Torso`. Declarar `Head` sob `Torso`
+  (como este editor e o resto do projeto faziam) põe a rotação do pescoço DUAS
+  VEZES na cabeça — até 64° de giro parasita.
 - Rotação é Euler XYZ aplicado como `Rz · Ry · Rx` (igual ao `Basis` do Godot).
 - A rotação editada é **offset sobre a pose de repouso**, não absoluta — mesma
   semântica do `ProceduralAnimator`.

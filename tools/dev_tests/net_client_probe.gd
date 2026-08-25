@@ -160,8 +160,16 @@ func _dump(rotulo: String) -> void:
 	await process_frame
 	print("  [%s] energy=%.0f _charging=%s _charge_slot='%s' _rapid_fire=%s "
 		% [rotulo, _player.energy, _player._charging, _player._charge_slot, _player._rapid_fire]
-		+ "lock=%.2f suppressed=%s is_casting=%s cds=%s frozen=%s vortex=%s kurouzu=%s bh=%s"
-		% [_player._movement_locked_timer, _player.is_suppressed,
+		+ "fsm=%s suppressed=%s is_casting=%s cds=%s frozen=%s vortex=%s kurouzu=%s bh=%s"
+		% [_estado_fsm(), _player.is_suppressed,
 			_player.get_meta("is_casting", false), str(_player._skill_cooldowns),
 			_player.get_meta("is_frozen", false), _player.get_meta("in_vortex", false),
 			_player.get_meta("in_kurouzu", false), _player.get_meta("in_black_hole", false)])
+
+# A trava de movimento virou estado da FSM; LER o `_movement_locked_timer`
+# aposentado era um `get` inválido, e o erro matava esta corrotina de log — a
+# sonda parava de imprimir no meio. Ver docs/erros.md, 2026-08-25.
+func _estado_fsm() -> String:
+	if _player and _player.get("_fsm") and _player._fsm.state:
+		return String(_player._fsm.state.name)
+	return "?"

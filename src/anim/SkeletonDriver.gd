@@ -34,40 +34,16 @@ extends Node
 # intermediários não mapeados — Shoulder, Spine01, Neck — entram na cadeia entre
 # um papel e outro e precisam da pose global correta.
 
-# Aliases de nome de osso por papel. Meshy AI usa os nomes do Mixamo SEM o
-# prefixo "mixamorig_"; a lista aceita as duas convenções (e o "neck" minúsculo
-# que o Meshy exporta), então um modelo rigado no Mixamo também entra de graça.
-const BONE_ALIASES := {
-	"Torso":      ["Spine", "mixamorig_Spine1", "Spine1", "Chest"],
-	"Neck":       ["neck", "Neck", "mixamorig_Neck"],
-	"Head":       ["Head", "mixamorig_Head"],
-	"UpperArm_L": ["LeftArm", "mixamorig_LeftArm"],
-	"ForeArm_L":  ["LeftForeArm", "mixamorig_LeftForeArm"],
-	"UpperArm_R": ["RightArm", "mixamorig_RightArm"],
-	"ForeArm_R":  ["RightForeArm", "mixamorig_RightForeArm"],
-	"Thigh_L":    ["LeftUpLeg", "mixamorig_LeftUpLeg"],
-	"Shin_L":     ["LeftLeg", "mixamorig_LeftLeg"],
-	"Foot_L":     ["LeftFoot", "mixamorig_LeftFoot"],
-	"Thigh_R":    ["RightUpLeg", "mixamorig_RightUpLeg"],
-	"Shin_R":     ["RightLeg", "mixamorig_RightLeg"],
-	"Foot_R":     ["RightFoot", "mixamorig_RightFoot"],
-}
-
-# Hierarquia do RIG (a mesma do MAP em tools/bake_mixamo.gd). É por ela que o
-# delta é acumulado — NÃO pela hierarquia dos ossos, que tem juntas a mais.
-const RIG_PARENT := {
-	"Torso": "", "Neck": "Torso", "Head": "Torso",
-	"UpperArm_L": "Torso", "ForeArm_L": "UpperArm_L",
-	"UpperArm_R": "Torso", "ForeArm_R": "UpperArm_R",
-	"Thigh_L": "Torso", "Shin_L": "Thigh_L", "Foot_L": "Shin_L",
-	"Thigh_R": "Torso", "Shin_R": "Thigh_R", "Foot_R": "Shin_R",
-}
-# Pais antes dos filhos — a acumulação depende disso.
-const ROLE_ORDER := [
-	"Torso", "Neck", "Head",
-	"UpperArm_L", "ForeArm_L", "UpperArm_R", "ForeArm_R",
-	"Thigh_L", "Shin_L", "Foot_L", "Thigh_R", "Shin_R", "Foot_R",
-]
+# ---------------------------------------------------------------------------
+# O CONTRATO DO RIG (papéis, hierarquia, aliases de osso) mora em
+# `src/anim/RigContrato.gd`. Ficava duplicado aqui e no `tools/bake_mixamo.gd`,
+# e as duas cópias discordavam da árvore real dos modelos — era o bug dos 64° de
+# rotação parasita na cabeça (ver o cabeçalho do RigContrato).
+# ---------------------------------------------------------------------------
+const BONE_ALIASES := RigContrato.ALIASES
+const RIG_PARENT := RigContrato.PAI
+# Pais antes dos filhos — a acumulação de `push()` depende disso.
+const ROLE_ORDER := RigContrato.PAPEIS
 
 # Comprimento de perna do rig voxel de referência (Thigh->Shin->Foot = 0.30+0.30).
 # Serve pra normalizar deslocamentos (bob) em modelos de escala diferente.

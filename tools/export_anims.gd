@@ -31,7 +31,7 @@ func _run() -> void:
 		var faixas := {}
 		for i in anim.get_track_count():
 			var caminho := String(anim.track_get_path(i))
-			var papel := caminho.get_slice(":", 0)
+			var papel := RigContrato.papel_de(caminho)
 			var prop := caminho.get_slice(":", 1)
 			if prop != "rotation":
 				continue

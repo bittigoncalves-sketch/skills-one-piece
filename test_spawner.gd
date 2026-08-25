@@ -2,7 +2,7 @@ extends SceneTree
 
 func _init():
     var peer = OfflineMultiplayerPeer.new()
-    multiplayer.multiplayer_peer = peer
+    get_multiplayer().multiplayer_peer = peer
     
     var root = Node.new()
     root.name = "Root"

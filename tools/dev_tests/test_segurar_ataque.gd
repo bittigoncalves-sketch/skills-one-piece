@@ -135,9 +135,11 @@ func _plantar() -> void:
 	_player.global_position = Vector3(0, 1.2, 0)
 	_player.velocity = Vector3.ZERO
 	_player._yaw = 0.0
-	_player._fsm.transition_to("Idle")
+	_player._fsm.transition_to("Idle")   # é a FSM que trava/destrava o movimento
 	_player._melee._trava = 0.0
-	_player._movement_locked_timer = 0.0
+	_player.unlock_movement()
+	# (aqui havia `_player._movement_locked_timer = 0.0`, campo aposentado pela
+	#  FSM — o `set` inválido mataria a corrotina. Ver docs/erros.md, 2026-08-25.)
 	var espera := 0
 	while not _player.is_on_floor() and espera < 240:
 		await _quadros(1)

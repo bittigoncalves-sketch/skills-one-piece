@@ -1595,6 +1595,21 @@ func lock_movement(duration: float, skill_id: String = "") -> void:
 	# Ignora o timer (FSM cuida), mas mantém metadata
 	set_meta("active_skill", skill_id)
 
+# O INVERSO EXATO do `lock_movement` acima: solta o que ele arma.
+#
+# Existe porque os efeitos que precisam devolver o corpo ao jogador no fim do
+# golpe (`YamiFX._unlock_caster`, `GoroFXGrande._liberar_jogador`) escreviam em
+# `_movement_locked_timer` — campo que a FSM aposentou. `caster.set(...)` numa
+# propriedade inexistente é **no-op silencioso** no Godot, e um `if "campo" in
+# caster` simplesmente não entra: os três pontos achavam que estavam soltando o
+# jogador e não faziam nada, sem erro nenhum.
+#
+# Só desfaz o que o `lock_movement` faz hoje. Quem é dono do resto da trava é a
+# FSM (`_fsm`), e ela sai sozinha — mexer nela daqui seria adivinhação.
+# Ver docs/erros.md, 2026-08-25.
+func unlock_movement() -> void:
+	set_meta("active_skill", "")
+
 # CAST — a decisão mora em src/player/cast_controller.gd (passo 6c). Aqui ficam
 # as cascas: a API pública que o input, a HUD e a rede já conhecem.
 func begin_charge(slot: String) -> void:

@@ -49,7 +49,7 @@ class Editor(tk.Tk):
         self.configure(bg="#15181e")
 
         self.rig = None
-        self.clip = Clip()
+        self.clip = Clip(pais=self._pais_do_rig())
         self.tempo = 0.0
         self.papel = "Torso"
         self.tocando = False
@@ -227,7 +227,18 @@ class Editor(tk.Tk):
         self._preenche_lista()
         self._redesenha()
 
+    def _pais_do_rig(self):
+        """Hierarquia REAL do personagem carregado (papel -> pai), ou None.
+
+        É ela que monta o caminho hierárquico da faixa na exportação `.tres`
+        (ver clip.py). Um modelo pode ter o nó `Neck` e outro não, e o caminho
+        precisa refletir a árvore daquele personagem.
+        """
+        return self.rig.pais if self.rig else None
+
     def _preenche_lista(self):
+        # o clipe aberto passa a exportar com a hierarquia deste personagem
+        self.clip.pais = self._pais_do_rig()
         self.lista.delete(0, "end")
         for p in PAPEIS:
             if p in self.rig.papeis:
@@ -259,7 +270,7 @@ class Editor(tk.Tk):
         if not nome:
             return
         self.clip = Clip(nome.strip().replace(" ", "_"), float(self.sp_dur.get()),
-                         bool(self.var_loop.get()))
+                         bool(self.var_loop.get()), pais=self._pais_do_rig())
         self.tempo = 0.0
         self._status("clipe novo: %s" % self.clip.nome)
         self._redesenha()

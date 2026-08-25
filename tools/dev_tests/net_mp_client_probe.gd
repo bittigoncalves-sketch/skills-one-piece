@@ -107,7 +107,8 @@ func _init() -> void:
 	var mapa: Dictionary = _p.get_script().get_script_constant_map()
 	_tabela = mapa.get("RECARGA_POR_SLOT", {})
 	print("[CLI] RECARGA_POR_SLOT lida do Player.gd: %s" % str(_tabela))
-	print("[CLI] REGEN_ENERGIA = %.0f/s (HealthController)" % HealthController.REGEN_ENERGIA)
+	print("[CLI] regen de energia = %.1f/s (%.1f%% de %.0f, HealthController)"
+		% [_regen_energia(), HealthController.REGEN_ENERGIA_PCT * 100.0, float(_p.max_energy)])
 
 	# A sonda entra no lugar da HUD e fica lá o teste inteiro.
 	var hud_real = get_first_node_in_group("hud")
@@ -315,14 +316,14 @@ func _fase_energia() -> void:
 	var t_m: float = float(amostras[i_meio][0])
 	var e_m: float = float(amostras[i_meio][1])
 	var taxa: float = e_m / maxf(t_m, 0.0001)
-	var esperado: float = HealthController.REGEN_ENERGIA
+	var esperado: float = _regen_energia()
 	print("   [dono] TAXA MEDIDA no meio da subida: %.1f/s (esperado %.1f/s, erro %+.2f%%)"
 		% [taxa, esperado, (taxa - esperado) / esperado * 100.0])
 	print("   [dono] tempo teórico do 0 ao teto: %.2f s | tempo medido até %.0f: %.3f s"
 		% [float(_p.max_energy) / esperado, e_fim, t_fim])
 	_ok(e_fim > 0.0, "a energia SUBIU sozinha no dono (0 -> %.1f)" % e_fim)
 	_ok(absf(taxa - esperado) / esperado < 0.10,
-		"a taxa medida (%.1f/s) bate com REGEN_ENERGIA=%.0f/s dentro de 10%%" % [taxa, esperado])
+		"a taxa medida (%.1f/s) bate com a regen esperada (%.1f/s) dentro de 10%%" % [taxa, esperado])
 	await _esperar(1.0)
 
 
@@ -526,7 +527,7 @@ func _fase_vida() -> void:
 		% [taxa_penal, esperado_penal])
 	print("      taxa medida FORA da janela  (t=7->8 s): %.2f hp/s   (esperado %.2f)"
 		% [taxa_livre, esperado_livre])
-	print("   [dono] comparação: a ENERGIA, no mesmo corpo, sobe %.0f/s (base)." % HealthController.REGEN_ENERGIA)
+	print("   [dono] comparação: a ENERGIA, no mesmo corpo, sobe %.1f/s (base)." % _regen_energia())
 	_ok(hp_fim > hp1,
 		"a vida REGENEROU: %.1f -> %.1f em %.2f s (Δ = %+.1f)" % [hp1, hp_fim, float(amostras[-1][0]), hp_fim - hp1])
 	_ok(absf(taxa_penal - esperado_penal) < esperado_penal * 0.5 + 0.5,
@@ -590,3 +591,11 @@ func _esperar(secs: float) -> void:
 	while Time.get_ticks_msec() < fim:
 		await process_frame
 		Engine.time_scale = 1.0
+
+# A regen de energia virou PERCENTUAL do máximo (`REGEN_ENERGIA_PCT`); a
+# constante absoluta `REGEN_ENERGIA` não existe mais, e lê-la fazia esta sonda
+# NÃO COMPILAR — o que reprovava o `test_compila` e derrubava o `net_mp_probe`
+# junto. Derivar da constante viva mantém a sonda honesta se a taxa mudar.
+# Ver docs/erros.md, 2026-08-25.
+func _regen_energia() -> float:
+	return HealthController.REGEN_ENERGIA_PCT * float(_p.max_energy)

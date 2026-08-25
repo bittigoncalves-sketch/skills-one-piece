@@ -44,7 +44,7 @@ func _medir(nome: String) -> void:
 	var pior_perc_papel := "-"
 	var pior_perc_t := 0.0
 	for ti in range(anim.get_track_count()):
-		var papel := String(anim.track_get_path(ti)).get_slice(":", 0)
+		var papel := RigContrato.papel_de(anim.track_get_path(ti))
 		var n := anim.track_get_key_count(ti)
 		chaves += n
 		for k in range(1, n):

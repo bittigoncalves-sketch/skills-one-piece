@@ -143,6 +143,9 @@ Este guia diz **como construir**. Os outros dizem **o que existe**:
 | como se divide trabalho entre agentes? | [`AGENTES.md`](AGENTES.md) |
 | o que a bateria de testes cobre e o que não cobre? | [`VALIDACAO.md`](VALIDACAO.md) |
 | pipeline Mixamo → rig | [`ANIMACOES_MIXAMO.md`](ANIMACOES_MIXAMO.md) |
+| **vou mexer em animação — por onde começo?** | [`PLANO_ANIMACAO_FASES_2_3_4.md`](PLANO_ANIMACAO_FASES_2_3_4.md) |
+| o que está errado no sistema de animação e no esqueleto? | [`AUDITORIA_ANIMACAO.md`](AUDITORIA_ANIMACAO.md) |
+| como editar um clipe no Blender? | [`PLANO_ANIMACAO_FASES_2_3_4.md`](PLANO_ANIMACAO_FASES_2_3_4.md) §0 |
 | o porquê de decisões antigas | `MUDANCAS_*.md`, `PEDIDO_*.md` — **nada ali é apagado** |
 
 > ⚠️ **`DOCUMENTACAO.md`** (na raiz) é a visão geral **de 2026-08-02** e

@@ -5,11 +5,9 @@ extends RefCounted
 # escalar passada, balanço e IK ao porte real do personagem.
 #
 # Papéis esperados (nomes dos nós do rig articulado):
-const ROLES := [
-	"Torso", "Neck", "Head",
-	"UpperArm_L", "ForeArm_L", "UpperArm_R", "ForeArm_R",
-	"Thigh_L", "Shin_L", "Foot_L", "Thigh_R", "Shin_R", "Foot_R",
-]
+# A lista mora em `src/anim/RigContrato.gd` (fonte única: papéis + hierarquia
+# + aliases de osso). Aqui fica só o apelido que o resto do código já usava.
+const ROLES := RigContrato.PAPEIS
 
 # Devolve: { nodes:{papel:Node3D}, rest:{papel:Vector3(rot)}, metrics:{...},
 #            driver:SkeletonDriver|null }

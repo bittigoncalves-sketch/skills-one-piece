@@ -55,7 +55,7 @@ func _init() -> void:
 func _impacto(a: Animation, cadeia: Array) -> Vector2:
 	var tis := []
 	for papel in cadeia:
-		tis.append(a.find_track(NodePath(String(papel) + ":rotation"), Animation.TYPE_VALUE))
+		tis.append(RigContrato.acha_faixa(a, String(papel)))
 	var melhor_t := 0.0
 	var melhor := -INF
 	var passos := int(a.length / PASSO) + 1

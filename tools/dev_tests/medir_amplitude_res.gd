@@ -30,7 +30,7 @@ func _medir(nome: String) -> void:
 	var linha := "%-26s dur=%.2fs " % [nome, anim.length]
 	var soma_membros := 0.0
 	for papel in PAPEIS:
-		var ti := anim.find_track(NodePath(papel + ":rotation"), Animation.TYPE_VALUE)
+		var ti := RigContrato.acha_faixa(anim, papel)
 		if ti < 0:
 			linha += "%s=SEM_FAIXA " % papel
 			continue

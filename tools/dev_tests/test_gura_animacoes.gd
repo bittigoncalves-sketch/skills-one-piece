@@ -178,7 +178,13 @@ func _conjurar(slot: String) -> Array:
 	_player.set_meta("is_casting", false)
 	_player._cast.abortar()
 	_player._rapid_fire = false
-	_player._movement_locked_timer = 0.0
+	# A trava de movimento saiu do `_movement_locked_timer` e virou estado da FSM
+	# (`Player._fsm`, commit "Fix Tela Cinza"). Escrever no campo antigo era um
+	# `set` inválido, e o erro MATAVA a corrotina aqui — `_conjurar` nunca
+	# devolvia amostra e os quatro golpes reprovavam com "não consegui amostrar
+	# o corpo", como se a animação estivesse quebrada. Estava é a sonda.
+	if _player._fsm:
+		_player._fsm.transition_to("Idle")
 	_player.energy = _player.max_energy
 	_player.remove_meta("custom_pose")
 	await _quadros(20)
