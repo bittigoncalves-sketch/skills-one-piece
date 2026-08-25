@@ -160,37 +160,140 @@ static func _todas_as_definicoes() -> Array[Dictionary]:
 	]
 
 # Criar Modelo 3D de Árvore Voxel com Cores Personalizadas
+# ============================================================================
+#  A ÁRVORE (2026-08-25) — modelo 3D no lugar das seis caixas
+#
+#  Até aqui a árvore era construída à mão: um `BoxMesh` de tronco (0,8 × 4 × 0,8)
+#  e seis blocos de copa. Agora é `assets/models/arvore_voxel.glb`, feita no
+#  Meshy AI a partir de uma referência 2D e preparada por
+#  `tools/blender/preparar_arvore.py`.
+#
+#  ⚠️ AS CORES POR FRUTA CONTINUAM VALENDO, e isto é o ponto do desenho.
+#
+#  Cada fruta declara `foliage_color` e `trunk_color` logo acima: a Mera Mera é
+#  copa laranja-fogo sobre tronco ébano, a Hie Hie é azul-gelo sobre cinza
+#  glacial, a Yami Yami é roxo-trevas sobre obsidiana. É assim que o jogador
+#  acha a fruta que quer do outro lado do mapa — trocar tudo por nove cópias
+#  verdes idênticas ganharia forma e perderia leitura.
+#
+#  Para isso o modelo chega com duas coisas prontas do Blender:
+#   • **dois objetos**, `Folhagem` e `Tronco`, para cada um receber a sua cor;
+#   • a textura em **tons de cinza normalizados**. O Godot multiplica
+#     `albedo_texture × albedo_color`: textura verde × tinta laranja daria um
+#     marrom sujo, textura CINZA × tinta laranja dá laranja com todo o relevo
+#     de voxel preservado.
+#
+#  A árvore mede 6,4 m e tem o pivô na BASE — a mesma altura da torre de caixas
+#  que ela substitui, para não mexer em enquadramento nem em alcance de fruta.
+const CAMINHO_ARVORE := "res://assets/models/arvore_voxel.glb"
+static var _cena_arvore: PackedScene = null
+
+static func _carregar_arvore() -> PackedScene:
+	if _cena_arvore == null and ResourceLoader.exists(CAMINHO_ARVORE):
+		_cena_arvore = load(CAMINHO_ARVORE)
+	return _cena_arvore
+
 static func create_tree_3d(def: Dictionary) -> Node3D:
 	var tree_root := Node3D.new()
 	tree_root.name = "Tree_" + def["id"]
 
-	# --- 1. TRONCO ---
+	var cena := _carregar_arvore()
+	if cena != null:
+		var modelo: Node3D = cena.instantiate()
+		modelo.name = "Modelo"
+		tree_root.add_child(modelo)
+		_pintar(modelo, def)
+	else:
+		# ⚠️ RESERVA: sem o .glb, volta a árvore de caixas. Não é perfeccionismo
+		# — o modelo é um arquivo importado, e projeto recém-clonado (ou import
+		# ainda não rodado) ficaria com o mapa SEM ÁRVORE NENHUMA, ou seja sem
+		# nenhuma fruta pegável, e isso não daria erro em lugar nenhum.
+		push_warning("[Árvores] %s ausente — usando a árvore de caixas" % CAMINHO_ARVORE)
+		tree_root.add_child(_arvore_de_caixas(def))
+
+	# --- FRUTA 3D (AKUMA NO MI), ao lado do tronco ---
+	var fruit_3d := create_fruit_3d(def)
+	fruit_3d.position = Vector3(0.6, 0.38, 0.6)
+	tree_root.add_child(fruit_3d)
+
+	return tree_root
+
+# Pinta as duas partes do modelo com as cores da fruta. Procura por NOME, e cai
+# para "o maior pedaço é a copa" se o modelo vier de outro exportador — assim
+# uma árvore nova não precisa nascer com os nomes certos para funcionar.
+static func _pintar(modelo: Node3D, def: Dictionary) -> void:
+	var folhagem: MeshInstance3D = null
+	var tronco: MeshInstance3D = null
+	var malhas: Array[MeshInstance3D] = []
+	_coletar_malhas(modelo, malhas)
+	for m in malhas:
+		var n := m.name.to_lower()
+		if n.begins_with("folhagem") or n.begins_with("foliage"):
+			folhagem = m
+		elif n.begins_with("tronco") or n.begins_with("trunk"):
+			tronco = m
+	if folhagem == null and malhas.size() == 2:
+		malhas.sort_custom(func(a, b): return a.mesh.get_faces().size() > b.mesh.get_faces().size())
+		folhagem = malhas[0]
+		tronco = malhas[1]
+
+	if folhagem:
+		folhagem.material_override = _material_tingido(
+			folhagem, def["foliage_color"], 0.6, def["foliage_color"] * 0.25)
+	if tronco:
+		tronco.material_override = _material_tingido(tronco, def["trunk_color"], 0.85, Color.BLACK)
+
+static func _coletar_malhas(n: Node, fora: Array[MeshInstance3D]) -> void:
+	if n is MeshInstance3D:
+		fora.append(n)
+	for f in n.get_children():
+		_coletar_malhas(f, fora)
+
+# Reaproveita a TEXTURA que veio no modelo e troca só a cor. É por isso que a
+# textura foi exportada em cinza: aqui ela é multiplicada pela cor da fruta.
+static func _material_tingido(mi: MeshInstance3D, cor: Color, rugosidade: float,
+		emissao: Color) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = cor
+	mat.roughness = rugosidade
+	var original := mi.mesh.surface_get_material(0) if mi.mesh and mi.mesh.get_surface_count() > 0 else null
+	if original is BaseMaterial3D:
+		mat.albedo_texture = (original as BaseMaterial3D).albedo_texture
+	# ⚠️ NEAREST, não linear. A textura desenha voxel; filtro linear borra a
+	# quina do cubo e devolve exatamente o aspecto que o modelo veio evitar.
+	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
+	if emissao != Color.BLACK:
+		mat.emission_enabled = true
+		mat.emission = emissao
+	return mat
+
+# A árvore antiga, de seis caixas. Só roda se o modelo faltar (ver a reserva
+# em `create_tree_3d`).
+static func _arvore_de_caixas(def: Dictionary) -> Node3D:
+	var raiz := Node3D.new()
+	raiz.name = "ArvoreDeCaixas"
+
 	var trunk_mesh := BoxMesh.new()
 	trunk_mesh.size = Vector3(0.8, 4.0, 0.8)
 	var trunk_inst := MeshInstance3D.new()
 	trunk_inst.mesh = trunk_mesh
-	trunk_inst.position.y = 2.0 # eleva para apoiar na base
-	
+	trunk_inst.position.y = 2.0
 	var trunk_mat := StandardMaterial3D.new()
 	trunk_mat.albedo_color = def["trunk_color"]
 	trunk_mat.roughness = 0.85
 	trunk_inst.material_override = trunk_mat
-	tree_root.add_child(trunk_inst)
+	raiz.add_child(trunk_inst)
 
-	# --- 2. FOLHAGEM (CORES E FORM A ÚNICA) ---
 	var leaf_mat := StandardMaterial3D.new()
 	leaf_mat.albedo_color = def["foliage_color"]
 	leaf_mat.roughness = 0.6
-	
-	# Glow sutil na folhagem para destaque visual
 	leaf_mat.emission_enabled = true
 	leaf_mat.emission = def["foliage_color"] * 0.25
 
 	var foliage_container := Node3D.new()
 	foliage_container.position.y = 4.2
-	tree_root.add_child(foliage_container)
+	raiz.add_child(foliage_container)
 
-	# Bloco Central da Copa
 	var center_leaf := MeshInstance3D.new()
 	var center_box := BoxMesh.new()
 	center_box.size = Vector3(2.8, 2.4, 2.8)
@@ -198,13 +301,8 @@ static func create_tree_3d(def: Dictionary) -> Node3D:
 	center_leaf.material_override = leaf_mat
 	foliage_container.add_child(center_leaf)
 
-	# Blocos Auxiliares para dar volume Voxel à árvore
-	var offset_positions := [
-		Vector3(1.2, 0.4, 0), Vector3(-1.2, 0.4, 0),
-		Vector3(0, 0.4, 1.2), Vector3(0, 0.4, -1.2),
-		Vector3(0, 1.4, 0)
-	]
-	for pos in offset_positions:
+	for pos in [Vector3(1.2, 0.4, 0), Vector3(-1.2, 0.4, 0),
+			Vector3(0, 0.4, 1.2), Vector3(0, 0.4, -1.2), Vector3(0, 1.4, 0)]:
 		var sub_leaf := MeshInstance3D.new()
 		var sub_box := BoxMesh.new()
 		sub_box.size = Vector3(1.8, 1.6, 1.8)
@@ -213,12 +311,7 @@ static func create_tree_3d(def: Dictionary) -> Node3D:
 		sub_leaf.material_override = leaf_mat
 		foliage_container.add_child(sub_leaf)
 
-	# --- 3. FRUTA 3D (AKUMA NO MI) SPAWNADA DEBAIXO DA ÁRVORE ---
-	var fruit_3d := create_fruit_3d(def)
-	fruit_3d.position = Vector3(0.6, 0.38, 0.6) # Posicionada debaixo da árvore, ao lado do tronco
-	tree_root.add_child(fruit_3d)
-
-	return tree_root
+	return raiz
 
 # Dicionário estático para rastrear todas as frutas 3D no mapa
 static var active_fruits_map: Dictionary = {}
