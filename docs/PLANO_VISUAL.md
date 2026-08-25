@@ -212,7 +212,133 @@ Territórios que não se cruzam, no padrão do [`AGENTES.md`](AGENTES.md):
 
 ---
 
-## 7. O que este plano NÃO cobre
+## 7. Mais sugestões — o catálogo, com custo e motivo
+
+Levantadas depois do plano base, a pedido do dono. Ordenadas por **retorno por
+hora**, não por vontade. Cada uma diz de que fase depende.
+
+### 7.1 As quatro baratas que mudam mais
+
+#### a) Céu com nuvens estilizadas — *provavelmente o maior ganho de identidade do plano*
+
+O céu hoje é um `ProceduralSkyMaterial`: um degradê azul limpo, e nada mais.
+One Piece **é** céu — cúmulos enormes, brancos, de borda dura, sobre azul
+saturado. Um shader de céu com nuvens chapadas (ruído em degraus, que é
+exatamente a mesma matemática da banda de luz do cel) muda **todo quadro do
+jogo**, inclusive os que não têm nada acontecendo.
+
+Custo: **um shader, zero geometria, zero mudança de material**. Não depende de
+fase nenhuma — pode entrar junto com a Fase 1.
+
+#### b) Luz de contorno (*rim light*)
+
+Uma linha de luz na borda do personagem, vinda de trás. É metade do que faz um
+personagem de anime "descolar" do fundo — e aqui **não é decoração, é função**:
+numa arena PvP você precisa achar o adversário em um quadro.
+
+Custo: ~5 linhas dentro do shader de cel (Fase 3). Antes disso, dá para
+aproximar com uma segunda `DirectionalLight3D` de trás, na Fase 1.
+
+#### c) ⚠️ O BURACO PRECISA LER COMO BURACO
+
+O mapa é uma **grade com buracos quadrados**, e cair (`VOID_Y = −40`) é a
+principal forma de morrer — o próprio `Melee.gd` diz "quem mata é o buraco, não
+o dano". **E o buraco hoje não é desenhado.** É só ausência de malha: você olha
+para baixo e vê o céu do outro lado.
+
+O jogador precisa ver **perigo** ali. Três camadas, todas baratas:
+
+1. névoa de altura escura dentro do poço (o mesmo sistema da Fase 1, só que
+   por altura);
+2. borda da plataforma marcada — com contorno (Fase 2) isso sai quase de graça;
+3. um plano escuro bem abaixo, para o poço ter fundo visual sem ter fundo de
+   colisão.
+
+Isto é **comunicação de regra**, não enfeite. Está listado aqui porque é o item
+de maior impacto em JOGABILIDADE de toda a lista visual.
+
+#### d) Paleta declarada, num arquivo só
+
+As cores nascem espalhadas em 34 arquivos. O projeto **já sabe** que isso é
+problema: o `GoroFX.gd` tem uma "REGRA DE OURO DA PALETA" escrita à mão porque
+a nuvem clarear faria o raio sumir dentro dela.
+
+Uma paleta central — o que `Balance.gd` é para dano — dá harmonia e um lugar só
+para retocar o jogo inteiro. **Ela não substitui as paletas por fruta**: cada
+fruta continua dona do seu contraste interno; a paleta global cuida do MUNDO
+(chão, blocos, céu, névoa) e das cores de leitura (jogador, inimigo, perigo).
+
+### 7.2 Custo médio, retorno alto
+
+#### e) Linguagem de impacto de mangá — **três peças que já existem**
+
+Não precisa de tecnologia nova. Precisa de ligação:
+
+| peça | estado hoje |
+|---|---|
+| `ProceduralAnimator.trigger_hitstop()` | **existe e ninguém chama do lado de quem bate** (é o bug B6 do plano de combate) |
+| `ScreenFX.set_speed_lines()` | existe, usado só no sprint |
+| `ScreenFX.flash()` | existe, usado só ao levar dano |
+
+Anime de luta é: **congela o quadro do impacto, estoura linhas radiais a partir
+do ponto de contato, dá um flash de forma.** As três peças estão prontas e
+desligadas. Some-se a isso o "quadro de contato congelado" que os quatro M1
+novos já trazem (§6.3 do plano de combate) e o golpe passa a ter pontuação.
+
+Custo: ligação e calibragem. Depende da Fase 1 só para o flash não estourar.
+
+#### f) Leitura de jogador na arena
+
+Personagens são azul e vermelho chapados. Com contorno (Fase 2) entra de graça
+uma alavanca forte: **cor e espessura de contorno por jogador** — você, o
+adversário, o boneco de treino. Num jogo em que o combo trava por 1,9 s, saber
+instantaneamente quem é quem vale mais que qualquer textura.
+
+#### g) Vento na vegetação
+
+As árvores voxel estão paradas. Um deslocamento de vértice por ruído no shader
+(só nas folhas, nunca no tronco) custa pouco e tira o mundo do congelamento.
+Depende da fábrica de material (Fase 3).
+
+### 7.3 Baratas, para o fim
+
+- **Color grading por LUT** — uma textura unifica o look inteiro e dá um botão
+  só para "mais quente/mais frio". Entra depois que o cel estabilizar, senão
+  você calibra duas vezes.
+- **Partículas de ambiente** (poeira/pólen pegando o sol) — dá volume ao ar e
+  escala ao mundo. Um `GPUParticles3D` preso à câmera.
+- **Anti-aliasing**: hoje `msaa_3d = 1` (2×). Com contorno, subir para 4× no PC.
+
+### 7.4 ⚠️ O que NÃO fazer — e por quê
+
+Vale escrever, porque são coisas que parecem melhoria e brigam com o alvo:
+
+| não fazer | por quê |
+|---|---|
+| **TAA** | borra e faz cintilar exatamente a linha do contorno. Cel quer **MSAA** |
+| **Depth of field** | num jogo de luta rápido o jogador precisa ler o fundo; DOF esconde o adversário |
+| **Névoa volumétrica pesada** | bonita e cara; `GameFlow.device` inclui celular. Névoa de profundidade dá o mesmo em cel |
+| **Glow com limiar baixo** | o chão é quase branco: limiar baixo transforma a tela em leite. Limiar **acima de 1.0**, e só o emissivo brilha |
+| **SSR / reflexos** | caro, e reflexo especular é o oposto da linguagem chapada |
+| **Contorno em toda aresta** | o personagem é voxel, ou seja só quina. Contorno por ÂNGULO de normal, não por aresta (risco 1) |
+
+### 7.5 A ferramenta que falta: capturas comparáveis
+
+Todo o resto deste plano se julga com o olho, e olho não lembra. O projeto já
+tem `tools/dev_tests/captura_*.gd`.
+
+**Sugestão:** `captura_visual.gd`, que sobe o jogo e salva SEMPRE as mesmas
+cinco cenas (mundo aberto, borda de buraco, personagem perto, um golpe
+emissivo, o céu). Rodada antes e depois de cada fase, ela vira o portão do plano
+inteiro — e é o que impede "eu acho que melhorou".
+
+Vale junto uma medida objetiva por captura: **histograma**. Hoje o chão está
+colado no branco; depois da Fase 1 ele tem que sair do topo, e isso é um número,
+não uma opinião.
+
+---
+
+## 8. O que este plano NÃO cobre
 
 - **Câmera e impacto** (o "Dynamic Camera & Impact Feedback System" que já está
   na fila) — é game feel, não estilo de render. Anda em paralelo.
