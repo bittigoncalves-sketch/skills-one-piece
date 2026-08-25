@@ -64,8 +64,62 @@ TOLERANCIA = 1e-3
 
 # C: Godot -> Blender. Só troca de eixos, sem escala.
 C = Matrix(((1, 0, 0), (0, 0, -1), (0, 1, 0))).to_4x4()
-# F: o giro que faz o osso apontar ao longo do membro (−Y do Godot).
-F = Matrix.Rotation(math.pi, 4, 'X')
+# ============================================================================
+#  PARA ONDE CADA OSSO APONTA (só aparência — a deformação não depende disto)
+#
+#  O osso do Blender tem o comprimento no +Y LOCAL dele. O rig do jogo pendura
+#  os MEMBROS no −Y local, mas nem todo papel é membro:
+#
+#    tronco, pescoço, cabeça  crescem para CIMA  (+Y)
+#    braços e pernas          descem              (−Y)
+#    PÉS                      apontam para a FRENTE (−Z, a frente do Godot)
+#
+#  A primeira versão usava um giro de 180° em X para TODOS. Resultado visto em
+#  tela: o osso do tronco descia atravessando o peito e os dois ossos dos pés
+#  furavam o chão. Nada quebrava — mas rig com osso no lugar errado é rig que
+#  não se anima.
+#
+#  ⚠️ POR QUE PODE SER QUALQUER GIRO, DESDE QUE CONSISTENTE. O osso de repouso é
+#  `C · W_repouso · F` e a pose é `C · W_pose · F`. A deformação da malha é
+#  `pose · repouso⁻¹`, e nela o F CANCELA. Ou seja: mudar a direção do osso não
+#  move um vértice — desde que o MESMO F seja usado nos dois lugares (aqui e na
+#  conjugação de `pose_local_blender`). É exatamente essa consistência que o
+#  novo `conferir_malha()` verifica.
+F_MEMBRO = Matrix.Rotation(math.pi, 4, 'X')          # +Y -> −Y  (desce o membro)
+F_CIMA = Matrix.Identity(4)                          # +Y -> +Y  (cresce)
+F_FRENTE = Matrix.Rotation(-math.pi / 2.0, 4, 'X')   # +Y -> −Z  (aponta à frente)
+
+F_POR_PAPEL = {
+    "Torso": F_CIMA, "Neck": F_CIMA, "Head": F_CIMA,
+    "Foot_L": F_FRENTE, "Foot_R": F_FRENTE,
+}
+
+
+def flip(papel):
+    return F_POR_PAPEL.get(papel, F_MEMBRO)
+
+
+# Comprimento de exibição de cada osso, em metros do modelo. Vem da ANATOMIA
+# (distância até a junta seguinte), não de uma regra genérica: a regra genérica
+# dava 0,125 para o tronco — um toco — porque a coxa nasce quase na mesma altura.
+def comprimento(rig, papel):
+    d = rig["roles"][papel]
+    caixa = d["box"]["size"]
+    # quem tem junta seguinte NA MESMA DIREÇÃO usa a distância até ela
+    seguinte = {
+        "Torso": "Neck", "Neck": "Head",
+        "UpperArm_L": "ForeArm_L", "UpperArm_R": "ForeArm_R",
+        "Thigh_L": "Shin_L", "Thigh_R": "Shin_R",
+        "Shin_L": "Foot_L", "Shin_R": "Foot_R",
+    }.get(papel)
+    if seguinte and seguinte in rig["roles"]:
+        c = Vector(rig["roles"][seguinte]["pos"]).length
+        if c > 0.02:
+            return c
+    # pontas: o próprio tamanho da caixa, no eixo em que o osso aponta
+    if papel.startswith("Foot"):
+        return max(0.05, caixa[2])          # o pé é comprido no Z
+    return max(0.05, caixa[1])              # cabeça e antebraço, no Y
 
 
 # ⚠️ A ARMADILHA QUE CUSTOU UMA RODADA INTEIRA.
@@ -149,20 +203,12 @@ def montar_armature(rig):
     bpy.ops.object.mode_set(mode='EDIT')
 
     repouso = fk_godot(rig)
-    comprimentos = {}
-    for papel in rig["order"]:
-        # Comprimento do osso = distância até o primeiro filho; sem filho, usa a
-        # caixa. Osso de comprimento zero o Blender APAGA sem avisar.
-        filhos = [p for p in rig["order"] if rig["roles"][p]["parent"] == papel]
-        if filhos:
-            comprimentos[papel] = max(
-                0.02, min(Vector(rig["roles"][f]["pos"]).length for f in filhos))
-        else:
-            comprimentos[papel] = max(0.02, max(rig["roles"][papel]["box"]["size"]) * 0.8)
+    # Osso de comprimento zero o Blender APAGA sem avisar.
+    comprimentos = {p: comprimento(rig, p) for p in rig["order"]}
 
     for papel in rig["order"]:
         eb = arm_data.edit_bones.new(papel)
-        M = C @ repouso[papel] @ F          # base do osso = base do nó, virada
+        M = C @ repouso[papel] @ flip(papel)   # base do osso = base do nó, virada
         eb.head = (0, 0, 0)
         eb.tail = (0, comprimentos[papel], 0)
         eb.matrix = M @ Matrix.Translation(Vector((0, 0, 0)))
@@ -192,7 +238,7 @@ def montar_caixas(rig, arm):
     um personagem de verdade é montado.
     """
     repouso = fk_godot(rig)
-    verts, faces, grupos = [], [], {}
+    verts, faces, grupos, locais = [], [], {}, {}
     FACES_CUBO = [(0,1,3,2),(4,6,7,5),(0,4,5,1),(2,3,7,6),(0,2,6,4),(1,5,7,3)]
     for papel in rig["order"]:
         d = rig["roles"][papel]
@@ -209,6 +255,10 @@ def montar_caixas(rig, arm):
                     verts.append(M @ v)
         faces.extend([tuple(base + i for i in f) for f in FACES_CUBO])
         grupos[papel] = list(range(base, base + 8))
+        # guarda o vértice em coordenadas LOCAIS do papel: é isso que o
+        # `conferir_malha()` precisa para reconstruir onde ele deveria parar.
+        locais[papel] = [Vector((gx + off[0], gy + off[1], gz + off[2]))
+                         for gx in (-sx, sx) for gy in (-sy, sy) for gz in (-sz, sz)]
 
     malha = bpy.data.meshes.new("CorpoVoxel")
     malha.from_pydata([tuple(v) for v in verts], [], faces)
@@ -221,13 +271,64 @@ def montar_caixas(rig, arm):
     obj.parent = arm
     mod = obj.modifiers.new("Armature", 'ARMATURE')
     mod.object = arm
+    obj["papeis_locais"] = {p: [list(v) for v in vs] for p, vs in locais.items()}
+    obj["papeis_indices"] = {p: list(i) for p, i in grupos.items()}
     return obj
 
 
+# ------------------------------------------------------- conferência da MALHA
+def conferir_malha(rig, arm, corpo, clipes):
+    """Onde a MALHA para, contra onde ela deveria parar.
+
+    ⚠️ ESTA É A CONFERÊNCIA QUE FALTAVA. A outra (`conferir`) compara a CABEÇA
+    dos ossos, e cabeça de osso não muda quando a direção dele muda — então ela
+    é cega para dois defeitos que já aconteceram neste arquivo:
+
+      • as caixas presas ao osso pela ponta, espalhadas pela cena (a primeira
+        versão usava parenteamento por osso em vez de skinning);
+      • um F inconsistente entre o osso de repouso e a conjugação da pose.
+
+    A referência é `C · W_pose · v_local` — cinemática direta pura, sem passar
+    por osso nenhum."""
+    idx = {p: list(i) for p, i in corpo["papeis_indices"].to_dict().items()} \
+        if hasattr(corpo["papeis_indices"], "to_dict") else dict(corpo["papeis_indices"])
+    loc = {p: [Vector(v) for v in vs] for p, vs in (
+        corpo["papeis_locais"].to_dict().items()
+        if hasattr(corpo["papeis_locais"], "to_dict") else dict(corpo["papeis_locais"]).items())}
+
+    piores = []
+    for nome, clip in clipes[:6]:
+        arm.animation_data.action = bpy.data.actions[nome]
+        for quadro_i in (0, int(round(clip["length"] * 0.5 * FPS))):
+            bpy.context.scene.frame_set(1 + quadro_i)
+            bpy.context.view_layer.update()
+            dg = bpy.context.evaluated_depsgraph_get()
+            ev = corpo.evaluated_get(dg)
+            m = ev.to_mesh()
+            pose = {}
+            t = quadro_i / float(FPS)
+            for papel in rig["order"]:
+                chaves = clip["tracks"].get(papel)
+                pose[papel] = _amostrar(chaves, t) if chaves else rig["roles"][papel]["rest"]
+            mundo = fk_godot(rig, pose)
+            for papel, indices in idx.items():
+                for k, iv in enumerate(indices):
+                    esperado = (C @ mundo[papel]) @ loc[papel][k]
+                    obtido = corpo.matrix_world @ m.vertices[iv].co
+                    piores.append(((esperado - obtido).length, nome, papel))
+            ev.to_mesh_clear()
+    piores.sort(reverse=True)
+    return piores[:5]
+
+
 # ------------------------------------------------------------------- actions
-def pose_local_blender(rot_godot):
-    """Rotação local do Godot -> rotação local do OSSO (conjugada por F)."""
-    return (F.inverted() @ euler_godot(rot_godot) @ F).to_euler(ORDEM_MATHUTILS)
+def pose_local_blender(papel, rot_godot):
+    """Rotação local do Godot -> rotação local do OSSO.
+
+    Conjugada pelo F DAQUELE papel: é a mesma virada usada para montar o osso de
+    repouso, e é por serem a mesma que a deformação sai correta."""
+    Fp = flip(papel)
+    return (Fp.inverted() @ euler_godot(rot_godot) @ Fp).to_euler(ORDEM_MATHUTILS)
 
 
 def montar_actions(rig, arm, clipes):
@@ -254,7 +355,7 @@ def montar_actions(rig, arm, clipes):
             pb = arm.pose.bones[papel]
             pb.rotation_mode = ORDEM_MATHUTILS
             for t, rot in chaves:
-                pb.rotation_euler = pose_local_blender(rot)
+                pb.rotation_euler = pose_local_blender(papel, rot)
                 pb.keyframe_insert("rotation_euler", frame=1 + t * FPS, group=papel)
     return
 
@@ -330,8 +431,17 @@ def main():
     limpar_cena()
     bpy.context.scene.render.fps = FPS
     arm = montar_armature(rig)
-    montar_caixas(rig, arm)
+    corpo = montar_caixas(rig, arm)
     montar_actions(rig, arm, clipes)
+
+    piores_malha = conferir_malha(rig, arm, corpo, clipes)
+    print("\n-- conferência da MALHA deformada x cinemática direta (metros) --")
+    for erro, nome, papel in piores_malha:
+        print("   %.6f  %s / %s" % (erro, nome, papel))
+    if piores_malha and piores_malha[0][0] > TOLERANCIA:
+        print("✗ A MALHA NÃO SEGUE OS OSSOS (pior erro %.6f m > %.6f). Nada foi salvo."
+              % (piores_malha[0][0], TOLERANCIA))
+        sys.exit(5)
 
     piores = conferir(rig, arm, clipes)
     controle = conferir(rig, arm, clipes, sabotar=True)
