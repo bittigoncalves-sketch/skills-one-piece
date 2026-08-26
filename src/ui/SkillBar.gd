@@ -32,11 +32,10 @@ func _anchor_bottom_left() -> void:
 var _title_lbl: Label
 
 func _build() -> void:
-	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0.10, 0.12, 0.15, 0.40)
-	bg.set_corner_radius_all(10)
-	bg.border_color = Color(0.85, 0.88, 0.92, 0.50)
-	bg.set_border_width_all(1)
+	# Fase 6 do plano visual: a caixa passou a usar o estilo compartilhado, para
+	# falar a mesma língua das barras e do contorno 3D. Antes era borda de 1 px
+	# clara — que a 1 px some, e clara briga com a linha escura da cena.
+	var bg := Estilo.painel()
 	bg.shadow_color = Color(0.0, 0.0, 0.0, 0.25)
 	bg.shadow_size = 10
 	add_theme_stylebox_override("panel", bg)

@@ -43,7 +43,7 @@ const ATALHOS := [
 	{"tecla": KEY_F2, "rotulo": "F2", "tipo": "AutoDummy",     "nome": "Boneco automático"},
 ]
 
-var _painel: ColorRect
+var _painel: Panel
 var _linhas: Array = []      # [{ "raiz": Control, "marca": Label, "nome": Label }]
 
 func _ready() -> void:
@@ -78,8 +78,11 @@ func _process(_dt: float) -> void:
 func _construir() -> void:
 	# Ancorado no canto inferior direito por OFFSET, não por conta em `_process`:
 	# assim ele acompanha redimensionamento de janela de graça.
-	_painel = ColorRect.new()
-	_painel.color = COR_FUNDO
+	# Fase 6: `Panel` no lugar de `ColorRect`, para o painel ganhar a MESMA
+	# borda das barras e do contorno 3D. `ColorRect` não tem borda nenhuma — era
+	# por isso que ele lia como um retângulo colado na tela.
+	_painel = Panel.new()
+	_painel.add_theme_stylebox_override("panel", Estilo.painel())
 	_painel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	_painel.offset_left = -(LARGURA + MARGEM)
 	_painel.offset_top = -(ALTURA + MARGEM)

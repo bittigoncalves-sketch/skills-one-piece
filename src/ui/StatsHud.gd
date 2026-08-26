@@ -12,9 +12,9 @@ const PlayerScript := preload("res://Player.gd")
 const BAR_W := 340.0
 const BAR_H := 28.0
 
-var _hp_fill: ColorRect
+var _hp_fill: BarraHud
 var _hp_label: Label
-var _en_fill: ColorRect
+var _en_fill: BarraHud
 var _en_label: Label
 var _assist_label: Label
 var _dmg_label: Label
@@ -28,20 +28,18 @@ func _ready() -> void:
 
 	var x := 20.0
 	var y := 20.0
-	_add_bar_bg(x, y)
-	_hp_fill = _add_fill(x, y, Color(0.22, 0.86, 0.34))     # verde
+	_hp_fill = _add_barra(x, y, Estilo.VIDA)
 	_hp_label = _add_bar_label(x, y)
 
 	y += BAR_H + 10.0
-	_add_bar_bg(x, y)
-	_en_fill = _add_fill(x, y, Color(0.28, 0.56, 1.0))      # azul
+	_en_fill = _add_barra(x, y, Estilo.ENERGIA)
 	_en_label = _add_bar_label(x, y)
 
 	y += BAR_H + 16.0
-	_dmg_label = _add_text(x, y, 22, Color(1.0, 0.85, 0.4))
+	_dmg_label = _add_text(x, y, 22, Estilo.AVISO)
 	_dmg_label.text = "DANO TOTAL: 0"
 	y += 32.0
-	_assist_label = _add_text(x, y, 20, Color(0.8, 0.5, 0.5))
+	_assist_label = _add_text(x, y, 20, Estilo.APAGADO)
 	set_aim_assist(false)
 
 	# ID da sala (topo-centro) — só aparece quando você é o HOST e a tecla M é pressionada/menu aberto.
@@ -98,18 +96,18 @@ func _process(_dt: float) -> void:
 	_set_bar(_hp_fill, _hp_label, p.get("health"), p.get("max_health"), "VIDA")
 	_set_bar(_en_fill, _en_label, p.get("energy"), p.get("max_energy"), "ENERGIA")
 
-func _set_bar(fill: ColorRect, label: Label, val, mx, nome: String) -> void:
+func _set_bar(fill: BarraHud, label: Label, val, mx, nome: String) -> void:
 	if val == null or mx == null:
 		return
 	var r: float = clampf(float(val) / maxf(float(mx), 1.0), 0.0, 1.0)
-	fill.size.x = (BAR_W - 4.0) * r
+	fill.valor(r)
 	label.text = "%s  %d / %d" % [nome, int(round(float(val))), int(round(float(mx)))]
 
 func set_aim_assist(on: bool) -> void:
 	if _assist_label == null:
 		return
 	_assist_label.text = "MIRA ASSISTIDA (E): " + ("LIGADA" if on else "DESLIGADA")
-	_assist_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.5) if on else Color(0.8, 0.5, 0.5))
+	_assist_label.add_theme_color_override("font_color", Estilo.LIGADO if on else Estilo.APAGADO)
 
 func add_damage_dealt(amount: float) -> void:
 	_total_damage += amount
@@ -120,33 +118,23 @@ func on_player_damaged(_amount: float, _hp: float, _mhp: float) -> void:
 	pass   # a barra já atualiza sozinha no _process
 
 # ---- construtores de widget ----
-func _add_bar_bg(x: float, y: float) -> void:
-	var bg := ColorRect.new()
-	bg.color = Color(0, 0, 0, 0.5)
-	bg.position = Vector2(x - 2, y - 2)
-	bg.size = Vector2(BAR_W, BAR_H)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bg)
-
-func _add_fill(x: float, y: float, col: Color) -> ColorRect:
-	var f := ColorRect.new()
-	f.color = col
-	f.position = Vector2(x, y)
-	f.size = Vector2(BAR_W - 4.0, BAR_H - 4.0)
-	f.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(f)
-	return f
+# ⚠️ UM NÓ POR BARRA, não três. A versão antiga empilhava um `ColorRect` de
+# fundo e outro de preenchimento e andava mudando `fill.size.x` — o que impede
+# qualquer forma que não seja retângulo, e é justamente o "retângulo chapado"
+# que a Fase 6 do plano visual veio resolver.
+func _add_barra(x: float, y: float, col: Color) -> BarraHud:
+	var b := BarraHud.new()
+	b.cor = col
+	b.position = Vector2(x - 2.0, y - 2.0)
+	b.size = Vector2(BAR_W, BAR_H)
+	add_child(b)
+	return b
 
 func _add_bar_label(x: float, y: float) -> Label:
-	return _add_text(x + 10.0, y + 3.0, 16, Color(1, 1, 1))
+	return _add_text(x + 14.0, y + 3.0, 16, Color(1, 1, 1))
 
 func _add_text(x: float, y: float, size: int, col: Color) -> Label:
-	var l := Label.new()
+	var l := Estilo.texto(size, col)
 	l.position = Vector2(x, y)
-	l.add_theme_font_size_override("font_size", size)
-	l.add_theme_color_override("font_color", col)
-	l.add_theme_color_override("font_outline_color", Color(0, 0, 0))
-	l.add_theme_constant_override("outline_size", 4)
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(l)
 	return l
