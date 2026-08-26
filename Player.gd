@@ -22,7 +22,24 @@ const MOUSE_SENS := 0.0035
 # dono do tremor, do soco de FOV, do balanço, da perspectiva e da distância;
 # aqui só sobra a referência a ele e o `_cam` de conveniência para a mira.
 
-var current_fruit_id: String = "bara_bara"
+# ⚠️ ATALHO DE DESENVOLVIMENTO, E ELE TEM UMA FONTE SÓ DESDE 2026-08-25.
+#
+# Havia TRÊS escritores da fruta inicial, e os três discordavam: este padrão
+# dizia `bara_bara`, o `Main._spawn_player` equipava `mera_mera` (e vencia, por
+# ser adiado), e o `test_initial_fruit` cobrava `gura_gura` — nome de uma sessão
+# ainda mais antiga. O teste ficou vermelho e ninguém sabia qual dos três estava
+# certo, porque não havia "certo": havia três opiniões.
+#
+# Agora o número mora aqui e os outros dois LEEM. Trocar a fruta de trabalho é
+# mexer nesta linha.
+#
+# ⚠️ E ISTO NÃO É REGRA DE JOGO. A economia das frutas é achar a árvore,
+# disputar o fruto e perdê-lo ao morrer (ver `docs/frutas/README.md`). Se este
+# atalho chegar ao jogador final, essa economia deixa de existir.
+# GATILHO para apagar: quando houver escolha de fruta/personagem no menu.
+const FRUTA_INICIAL := "mera_mera"
+
+var current_fruit_id: String = FRUTA_INICIAL
 var active_style: String = "basic"
 var combat_mode: String = "fruit" # "fruit" ou "style"
 var speed_multiplier: float = 1.0
@@ -89,6 +106,22 @@ func _consume_input(action: String) -> bool:
 	return false
 
 var hit_confirmed: bool = false
+
+# ---------------------------------------------------------- GRUPOS DE ESTADO
+# O "Attacking" único virou três fases em 2026-08-25 (§4.1 do
+# PLANO_COMBATE_BATTLEGROUNDS). Quem só quer saber "está no meio de um golpe?"
+# pergunta a estas listas em vez de repetir os três nomes — repetir era como o
+# `in ["Attacking", "Casting", "Stunned"]` foi ficando para trás.
+#
+# "Casting" nunca existiu como nó (mesma armadilha do "Stunned"); fica na lista
+# porque o dia que existir já entra funcionando, e listar um nome a mais não
+# custa nada — o teste é de pertinência, não de existência.
+const ESTADOS_DE_ATAQUE := ["AttackStartup", "AttackActive", "AttackRecovery"]
+const ESTADOS_TRAVADOS := ["AttackStartup", "AttackActive", "AttackRecovery", "Casting", "Stunned"]
+
+# Está no meio de um golpe do combo (qualquer das três fases)?
+func esta_atacando() -> bool:
+	return _fsm != null and _fsm.state != null and _fsm.state.name in ESTADOS_DE_ATAQUE
 
 # O cast vive em src/player/cast_controller.gd (passo 6c). Aqui só as VISTAS —
 # `_charging` é lido por 5 arquivos de fora.
@@ -250,7 +283,7 @@ func _slot_em_uso() -> String:
 		var s := str(get_meta("active_skill", ""))
 		if s != "":
 			return s
-	var combat_locked = _fsm and _fsm.state and _fsm.state.name in ["Attacking", "Casting", "Stunned"]
+	var combat_locked = _fsm and _fsm.state and _fsm.state.name in ESTADOS_TRAVADOS
 	if combat_locked:
 		return str(get_meta("active_skill", ""))
 	return ""
@@ -386,14 +419,34 @@ func _ready() -> void:
 	_fsm.name = "CombatFSM"
 	_fsm.set_physics_process(false)
 	
+	# ⚠️ O NOME DO NÓ É O ENDEREÇO. `PlayerStateMachine.transition_to` resolve por
+	# `has_node(nome)` e faz `return` calado quando não acha — foi assim que
+	# "Stunned" ficou sendo pedido em sete pontos do arquivo sem nunca existir
+	# (ver o cabeçalho de `CombatStateStunned.gd`). Estado novo entra AQUI, ou
+	# ele não entra em lugar nenhum.
 	var state_idle = CombatStateIdle.new()
 	state_idle.name = "Idle"
 	_fsm.add_child(state_idle)
-	
-	var state_attacking = CombatStateAttacking.new()
-	state_attacking.name = "Attacking"
-	_fsm.add_child(state_attacking)
-	
+
+	# As TRÊS fases do golpe (§4.1 do PLANO_COMBATE_BATTLEGROUNDS). Substituem o
+	# antigo "Attacking", que não distinguia preparar de estar preso no rabo do
+	# golpe — e era nessa diferença que morava o contra-jogo inteiro.
+	var state_startup = CombatStateAttackStartup.new()
+	state_startup.name = "AttackStartup"
+	_fsm.add_child(state_startup)
+
+	var state_active = CombatStateAttackActive.new()
+	state_active.name = "AttackActive"
+	_fsm.add_child(state_active)
+
+	var state_recovery = CombatStateAttackRecovery.new()
+	state_recovery.name = "AttackRecovery"
+	_fsm.add_child(state_recovery)
+
+	var state_stunned = CombatStateStunned.new()
+	state_stunned.name = "Stunned"
+	_fsm.add_child(state_stunned)
+
 	var state_dashing = CombatStateDashing.new()
 	state_dashing.name = "Dashing"
 	_fsm.add_child(state_dashing)
@@ -986,16 +1039,29 @@ func _etapa_locomocao(delta: float) -> void:
 
 	# ESQUIVA (Q) -> src/player/dash_controller.gd. Ele cuida de mira, recarga,
 	# direção travada e tempo restante; aqui só se pergunta o que ele quer.
+	# DASH-CANCEL — agora só na RECUPERAÇÃO, e só se o golpe conectou.
+	#
+	# Antes valia em "Attacking" inteiro, o que incluía o startup: dava para
+	# apertar, ver que ia acertar e sumir antes mesmo de a hitbox nascer. Com
+	# as três fases a regra fica onde o §4.1 a colocou — startup e ativo são
+	# compromisso, recuperação é onde há escolha.
+	#
+	# Quem responde é o próprio estado (`pode_cancelar_para_dash`), não um `if`
+	# aqui: a regra do cancelamento é do estado que a sofre.
 	var dash_bloqueado := _charging or _rapid_fire or _yami_pistol_active
 	if _fsm and _fsm.state and _fsm.state.name != "Idle":
-		if _fsm.state.name == "Attacking" and get("hit_confirmed"):
+		dash_bloqueado = true
+		if _fsm.state.name == "AttackRecovery" and _fsm.state.pode_cancelar_para_dash():
 			dash_bloqueado = false # Dash cancel liberado!
-		else:
-			dash_bloqueado = true
-			
+
 	_dash.atualizar(delta, q, dash_bloqueado)
-	
+
 	if _dash.ativo() and _fsm and _fsm.state and _fsm.state.name != "Idle":
+		# O golpe em voo morre junto com o estado. Sem isso o `MeleeController`
+		# seguiria contando as fases de um golpe que a esquiva já cancelou, e a
+		# `fase()` mentiria para a FSM no quadro seguinte.
+		if _melee and _fsm.state.name in ESTADOS_DE_ATAQUE:
+			_melee.cancelar_golpe()
 		_fsm.transition_to("Idle") # Quebra o estado de combate se o dash conseguiu disparar
 
 	# GOLPE EM CURSO: o corpo fica plantado até a animação acabar (2026-08-15).
@@ -1419,7 +1485,26 @@ func _feedback_de_dano(amount: float, hitstun_duration: float = 0.3) -> void:
 		remove_meta("knockdown_dur")
 	else:
 		RecepcaoDeDano.aplicar(self, hitstun_duration)
-	if _fsm:
+	# ⚠️ SÓ NA AUTORIDADE — e isto NÃO é otimização, é o bug B2 do §2.4 do plano.
+	#
+	# `_feedback_de_dano` roda em TODA cópia que sabe do dano (é o que faz o
+	# adversário te ver apanhar, item 20). Mas quem TIRA do "Stunned" é o
+	# `RecepcaoDeDano.tick` lá em cima, e ele fica ATRÁS do
+	# `if not _is_authority: return`. Numa cópia remota o estado entraria e não
+	# sairia nunca: stun eterno, visível só para os outros jogadores.
+	#
+	# Até 2026-08-25 isso era inofensivo por acidente — não existia nó "Stunned"
+	# e a transição era um no-op calado. Criar o estado ACORDA o defeito, então
+	# ele é fechado no mesmo movimento.
+	#
+	# Não custa nada visualmente: o tranco em tela é a pose do
+	# `RecepcaoDeDano`, aplicada logo acima em todas as cópias. A FSM da cópia
+	# remota não governa movimento nenhum (quem governa é `_remote_process`).
+	#
+	# ESCOPO: isto fecha a metade do B2 que esta frente acordou. A outra metade
+	# — a corrida entre a escrita do estado e o reset — continua sendo trabalho
+	# da frente de REDE (§7, Ordem 1, B1-B6).
+	if _fsm and _is_authority:
 		_fsm.transition_to("Stunned")
 	FxUtil.damage_number(get_tree().current_scene, global_position + Vector3.UP * 1.7, amount, Color(1.0, 0.75, 0.2))
 	var hud := get_tree().get_first_node_in_group("hud")
@@ -1638,7 +1723,17 @@ func find_best_melee_target(radius: float = 12.0) -> Node3D:
 			continue
 			
 		var dir_to_target = (c.global_position - global_position).normalized()
-		var forward = -Vector3.FORWARD.rotated(Vector3.UP, _yaw)
+		# ⚠️ FRENTE INVERTIDA ATÉ 2026-08-25 — medido, não deduzido.
+		#
+		# Era `-Vector3.FORWARD.rotated(Vector3.UP, _yaw)`. `Vector3.FORWARD` já é
+		# (0, 0, −1); negá-la dá (0, 0, +1), que é PARA TRÁS. Comparada com a
+		# direção que a hitbox usa (`-Basis.from_euler(...).z`, em
+		# `melee_controller.pedir`), o produto escalar é **−1,00 em todo yaw**.
+		#
+		# Consequência: o cone frontal selecionava alvos ATRÁS do jogador, e o
+		# lunge o empurrava para longe do alvo — e para longe de onde a hitbox
+		# ia nascer. Ver `docs/erros.md`.
+		var forward = -Basis.from_euler(Vector3(0, _yaw, 0)).z
 		
 		var dot_prod = forward.dot(dir_to_target)
 		
@@ -1664,7 +1759,13 @@ func perform_melee_lunge(target: Node3D, lunge_force: float = 18.0) -> void:
 			_char_model.rotation.y = _yaw
 			
 	# 2. Lunge (Impulso Frontal Instantâneo)
-	var forward = -Vector3.FORWARD.rotated(Vector3.UP, _yaw)
+	# Mesma correção de frente do `find_best_melee_target` — ver a nota lá.
+	var forward = -Basis.from_euler(Vector3(0, _yaw, 0)).z
+	# ⚠️ `lunge_force` NÃO FOI RECALIBRADO, e isso é medida, não omissão.
+	# O §3.3 do plano pede um puxão de ~0,30 m por golpe. Isto aqui é um impulso
+	# de UM QUADRO: `_etapa_locomocao` reescreve `velocity.x/z` no quadro
+	# seguinte, então 18 m/s ÷ 60 = **0,30 m** — o número-alvo, já de pé. Trocar
+	# 18 por 1,5 ("0,3 m/s") daria um puxão 60x menor.
 	velocity = forward * lunge_force
 
 # ----------------- COMBO BREAKER -----------------
@@ -1811,7 +1912,15 @@ func _net_play_melee(passo: int) -> void:
 		var clipe := Melee.clipe(passo, equipped_weapon)
 		if clipe:
 			var g := Melee.passo(passo, equipped_weapon)
-			_proc_anim.play_baked(clipe, float(g["vel"]), float(g.get("inicio", 0.0)), String(g.get("melee_guarda", "")))
+			# `inicio` e `fim` DERIVADOS do frame data (2026-08-25): a janela é
+			# posicionada para o pico medido do membro cair no fim do startup e
+			# fechada na trava. Para a espada, que não foi convertida, os dois
+			# devolvem o comportamento antigo (campo `inicio` da tabela, clipe
+			# até o fim).
+			_proc_anim.play_baked(clipe, float(g["vel"]),
+				Melee.inicio(passo, equipped_weapon),
+				String(g.get("melee_guarda", "")),
+				Melee.fim_da_janela(passo, equipped_weapon))
 
 # --- GURA GURA Z: INVESTIDA FÍSICA ---
 func start_gura_rush(aim_dir: Vector3) -> void:

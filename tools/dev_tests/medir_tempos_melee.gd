@@ -33,15 +33,25 @@ func _init() -> void:
 			var a := Melee.clipe(i, arma)
 			var bruto: float = a.length if a else 0.0
 			var anim := Melee.duracao_tocada(i, arma)
-			var atraso := float(g["atraso"])
+			# ⚠️ ACESSORES, NÃO CAMPOS (2026-08-25). `atraso` e `inicio` deixaram
+			# de ser chaves do dicionário no combo de mão livre: o primeiro virou
+			# `startup` e o segundo é derivado do `pico` medido. Ler o dicionário
+			# direto aqui estourava — e a espada, que não foi convertida, continua
+			# atendida pelos mesmos acessores.
+			var atraso := Melee.startup(i, arma)
+			var ini := Melee.inicio(i, arma)
 			var recuo := Melee.recuo(i, arma)
 			var parada := _fim_do_movimento(a)
-			var util: float = maxf(parada - float(g.get("inicio", 0.0)), 0.0) / float(g["vel"])
+			var util: float = maxf(parada - ini, 0.0) / float(g["vel"])
 			print("  %-22s %6.2fs %6.2f %5.2f | %6.2fs %6.2fs %6.2fs %+7.2fs | %6.2fs %6.2fs" % [
-				g["nome"], bruto, float(g.get("inicio", 0.0)), float(g["vel"]),
+				g["nome"], bruto, ini, float(g["vel"]),
 				anim, atraso, recuo, recuo - anim, util,
 				Melee.JANELA - recuo + MeleeController.BUFFER])
 		print("")
+		print("  ⚠️ Desde 2026-08-25 a SOBRA do combo de mão livre é ZERO por construção:")
+		print("     a trava saiu do frame data e o CLIPE é janelado por ela (ver")
+		print("     `Melee.fim_da_janela`). Esta sonda passou a medir a espada, que ainda")
+		print("     roda no modelo antigo. Para o frame data novo use medir_frame_data.gd.")
 		print("  SOBRA negativa = o clique seguinte abre com a animação AINDA correndo.")
 		print("  ÚTIL = até o corpo PARAR de se mexer.")
 		print("  ENCADEAR = quanto sobra da JANELA (%.1fs) para o próximo clique, já com o buffer" % Melee.JANELA)

@@ -59,7 +59,13 @@ var _titulo: Label
 var _linhas: Dictionary = {}    # slot -> {"icone": ArmaIcone, "nome": Label, "estado": Label}
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# ⚠️ ERA `set_anchors_preset`, e o painel de munição NUNCA chegava à tela
+	# (achado em 2026-08-23, ao pôr um vizinho neste canto). Sem os offsets o
+	# retângulo fica (0,0), e a conta do `_process` logo abaixo — que parte de
+	# `size.x`/`size.y` — mandava o painel para (−270, −136): fora da tela pela
+	# esquerda e por cima. Exatamente o defeito que o `MatchHud` já descreve
+	# desde 2026-08-12; este arquivo nasceu depois e repetiu a chamada errada.
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_construir()
 	visible = false
@@ -77,7 +83,12 @@ func _process(_dt: float) -> void:
 	_bloco_arsenal.visible = not com_arma
 	var alt := ALTURA if com_arma else ALTURA_ARSENAL
 	_painel.size = Vector2(LARGURA, alt)
-	_painel.position = Vector2(size.x - LARGURA - MARGEM, size.y - alt - MARGEM)
+	# ⚠️ O canto inferior direito passou a ter DOIS moradores (2026-08-23): o
+	# interruptor dos bonecos de treino nasceu embaixo, e o painel de munição
+	# sobe a altura dele para os dois empilharem em vez de se sobreporem. O
+	# número vem de lá porque quem chegou depois é quem se apresenta.
+	_painel.position = Vector2(size.x - LARGURA - MARGEM,
+		size.y - alt - MARGEM - DummyToggleHud.ALTURA_TOTAL)
 
 	if com_arma:
 		_atualizar_arma(eu, slot)

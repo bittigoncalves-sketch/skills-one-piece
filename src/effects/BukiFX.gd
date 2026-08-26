@@ -242,10 +242,7 @@ static func onda_de_aco(membro: Node) -> void:
 	toro.rings = 12
 	anel.mesh = toro
 	var m := StandardMaterial3D.new()
-	m.albedo_color = Color(1.0, 0.78, 0.35, 0.9)
-	m.emission_enabled = true
-	m.emission = ACO_QUENTE
-	m.emission_energy_multiplier = 5.0
+	m.albedo_color = FxUtil.brilho(Color(1.0, 0.78, 0.35, 0.9), 5.0)
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	anel.material_override = m

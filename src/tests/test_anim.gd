@@ -119,10 +119,20 @@ func _init() -> void:
 	p.equipped_weapon = ""
 	p._net_play_melee(0)
 	_ok(pa.is_playing_baked(), "sem espada o golpe é clipe assado (Mixamo retargetado)")
-	var amp_punho := _amplitude_pernas(pa)
-	print("     amplitude das pernas DURANTE o soco assado: %.1f°" % amp_punho)
-	_ok(amp_punho < amp_espada,
-		"o clipe assado prende as pernas mais que o corte de espada (%.1f° x %.1f°)" % [amp_punho, amp_espada])
+	# A janela é a TRAVA do golpe, lida do frame data — não um número escrito à
+	# mão que envelhece junto com a tabela.
+	var quadros_golpe: int = int(ceil(Melee.recuo(0) / DT))
+	var amp_punho := _amplitude_pernas(pa, quadros_golpe)
+	# Referência justa: a mesma régua, mas sem golpe nenhum. Comparar uma amostra
+	# de 24 quadros com outra de 40 compararia réguas, não comportamentos.
+	pa._baked = null
+	pa._sword_slash_type = -1
+	var amp_livre_curta := _amplitude_pernas(pa, quadros_golpe)
+	print("     amplitude das pernas DURANTE o soco assado: %.1f° (livre na mesma janela de %d quadros: %.1f°)"
+		% [amp_punho, quadros_golpe, amp_livre_curta])
+	_ok(amp_punho < amp_livre_curta * 0.9,
+		"o clipe assado PRENDE as pernas: %.1f° contra %.1f° livres na mesma janela (%.0f%%)"
+			% [amp_punho, amp_livre_curta, 100.0 * amp_punho / maxf(amp_livre_curta, 0.001)])
 
 	# devolve o rig ao estado neutro (o jogo segue rodando até o quit)
 	pa._baked = null
@@ -140,10 +150,18 @@ func _init() -> void:
 # ⚠️ Roda SEM `await`: cada chamada de `update()` é uma função pura sobre os nós
 # do rig, e esperar quadro deixaria a locomoção do jogo (velocity = 0, sem
 # teclado) escrever por cima entre as amostras.
-func _amplitude_pernas(pa) -> float:
+# `quadros` = tamanho da amostra. O padrão (`QUADROS`, 40) serve para a
+# locomoção livre e para o corte de espada, que são contínuos.
+#
+# ⚠️ O CLIPE ASSADO PRECISA DE JANELA PRÓPRIA DESDE 2026-08-25. Com frame data
+# ele toma o corpo por 0,40 s — 24 quadros — e não mais pelos 2,23 s do clipe
+# inteiro. Amostrar 40 quadros mede 24 de golpe e 16 de MARCHA LIVRE, e a média
+# resultante (338,8°) empatava com a do corte de espada (338,6°): a contraprova
+# deixava de contrastar por causa do tamanho da régua, não do comportamento.
+func _amplitude_pernas(pa, quadros: int = QUADROS) -> float:
 	var lo := {}
 	var hi := {}
-	for i in QUADROS:
+	for i in quadros:
 		pa.update(VEL_MARCHA, true, false, DT, 0.0)
 		for papel in PERNAS:
 			var n = pa._n.get(papel)

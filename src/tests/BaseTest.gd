@@ -78,10 +78,36 @@ func _init() -> void:
 	# avisar — apontar para a arena deixa o teste mais perto do jogo real.
 	current_scene = arena
 
+	# ---------------------------------------------------------------- O BONECO
+	# ⚠️ ELE NÃO MORA MAIS NA CENA (2026-08-23). Os bonecos de treino viraram
+	# ligáveis por interruptor (F1/F2) e quem os cria passou a ser o SERVIDOR,
+	# via `Main.pedir_dummy()` + `MultiplayerSpawner` — o nó fixo saiu do
+	# `TestArena.tscn` no mesmo commit.
+	#
+	# A suíte inteira de `src/tests/` parou de montar naquele dia, com a
+	# mensagem "TrainingDummy não encontrado em TestArena.tscn": três testes
+	# abortando por CENÁRIO, o que é justamente o que a "segunda armadilha" do
+	# cabeçalho manda nunca deixar passar despercebido — e passou, porque o
+	# aborto é uma linha só no fim de uma saída longa.
+	#
+	# A correção não é devolver o nó à cena: a cena deixou de ser o lugar dele
+	# de propósito. É o TESTE que monta o próprio alvo, que aliás é o certo —
+	# assim o boneco não depende de decisão de mundo nenhuma, e os testes que
+	# não querem alvo simplesmente o afastam (é o que `test_fsm.gd` faz).
 	dummy = arena.get_node_or_null("TrainingDummy")
-	var spawn: Node3D = arena.get_node_or_null("SpawnPoint")
 	if dummy == null:
-		_abortar("TrainingDummy não encontrado em TestArena.tscn")
+		var script_dummy: GDScript = load("res://src/entities/TrainingDummy.gd")
+		if script_dummy == null or not script_dummy.can_instantiate():
+			_abortar("res://src/entities/TrainingDummy.gd não compilou")
+			return
+		dummy = script_dummy.new()
+		dummy.name = "TrainingDummy"
+		arena.add_child(dummy)
+		dummy.global_position = Vector3(0, 0, -8)   # onde o nó da cena ficava
+
+	var spawn: Node3D = arena.get_node_or_null("SpawnPoint")
+	if not is_instance_valid(dummy):
+		_abortar("TrainingDummy não pôde ser montado")
 		return
 	if spawn == null:
 		_abortar("SpawnPoint não encontrado em TestArena.tscn")
@@ -99,6 +125,11 @@ func _init() -> void:
 	# ⚠️ `_ready()` roda AQUI, sozinho. Não chame de novo.
 	arena.add_child(player)
 	player.global_position = spawn.global_position
+	# ⚠️ A ESPADA É O PADRÃO DA BASE, e o teste que quiser o punho tem que dizer.
+	# Ela entrou aqui no commit `18d9c24` para o `test_anim.gd`; quem for testar
+	# o combo de mão livre (frame data, FSM de combate) precisa zerar isto no
+	# `preparar()`, senão `Melee.passo()` devolve `COMBO_SWORD` e os tempos
+	# medidos são de outra tabela.
 	player.equipped_weapon = "sword"
 
 	# Cenário montado — só a partir daqui o teste pode falar em sucesso.

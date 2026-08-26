@@ -15,10 +15,44 @@ const CONFIG_PATH := "user://settings.cfg"
 var mode: int = Mode.NONE
 var room_id: String = ""
 var device: String = "pc"          # "celular" | "tablet" | "pc"
+
 var is_dedicated: bool = false     # servidor dedicado (headless, sem player local)
 # Farol da LAN: anuncia esta máquina por UDP enquanto ela hospeda, para quem
 # entrar não precisar digitar ID nem IP. Ver network/LanDiscovery.gd.
 var _farol: LanDiscovery = null
+
+## BONECOS DE TREINO — preferência do jogador, LIGADA por padrão (2026-08-23).
+##
+## Mora aqui, e não no `Main`, por dois motivos:
+##   • o MENU precisa mexer nisto ANTES de a cena do mundo existir — o `Main`
+##   nem foi instanciado quando o jogador marca a caixinha;
+##   • é preferência, e preferência deste projeto se guarda em `settings.cfg`,
+##   pelo mesmo par `_load_settings`/`_save_settings` que já serve o `device`.
+##
+## São DOIS interruptores e não um: o boneco parado é alvo de aferição de dano
+## (toda medição da tabela do `Balance` é feita nele) e o automático é sparring
+## que revida. Quem quer medir um golpe em paz desliga o segundo e mantém o
+## primeiro — juntá-los num só tiraria justamente essa combinação.
+const DUMMIES := {"TrainingDummy": "Boneco de treino", "AutoDummy": "Boneco automático"}
+var dummies: Dictionary = {"TrainingDummy": true, "AutoDummy": true}
+
+func dummy_ligado(tipo: String) -> bool:
+	return bool(dummies.get(tipo, true))
+
+## Liga/desliga um boneco E APLICA NO MUNDO se já houver mundo. Os dois passos
+## andam juntos de propósito: o menu principal chama isto sem cena carregada (só
+## grava), e a HUD chama em partida (grava e o mapa muda na hora). Quem chama não
+## precisa saber em qual dos dois casos está.
+func set_dummy(tipo: String, ligado: bool) -> void:
+	if not DUMMIES.has(tipo):
+		push_warning("[GameFlow] boneco desconhecido: '%s'" % tipo)
+		return
+	dummies[tipo] = ligado
+	_save_settings()
+	var arv := get_tree()
+	var mundo: Node = arv.current_scene if arv else null
+	if mundo and mundo.has_method("pedir_dummy"):
+		mundo.pedir_dummy(tipo, ligado)
 
 func _ready() -> void:
 	print("[GameFlow] Display Server (Driver): ", DisplayServer.get_name())
@@ -202,9 +236,13 @@ func _load_settings() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(CONFIG_PATH) == OK:
 		device = str(cfg.get_value("client", "device", "pc"))
+		for tipo in DUMMIES:
+			dummies[tipo] = bool(cfg.get_value("client", "dummy_" + tipo, true))
 
 func _save_settings() -> void:
 	var cfg := ConfigFile.new()
 	cfg.load(CONFIG_PATH)   # preserva outras chaves
 	cfg.set_value("client", "device", device)
+	for tipo in DUMMIES:
+		cfg.set_value("client", "dummy_" + tipo, dummy_ligado(tipo))
 	cfg.save(CONFIG_PATH)

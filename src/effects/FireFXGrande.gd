@@ -66,10 +66,7 @@ static func _hibashira_legado(world: Node, pos: Vector3, damage: float, caster: 
 	var ring_mat := StandardMaterial3D.new()
 	ring_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	ring_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	ring_mat.albedo_color = Color(1.0, 0.5, 0.1, 0.9)
-	ring_mat.emission_enabled = true
-	ring_mat.emission = Color(1.0, 0.4, 0.05)
-	ring_mat.emission_energy_multiplier = 4.0
+	ring_mat.albedo_color = FxUtil.brilho(Color(1.0, 0.5, 0.1, 0.9), 4.0)
 	ring.material_override = ring_mat
 	ring.scale = Vector3(0.2, 0.2, 0.2)
 	zone.add_child(ring)

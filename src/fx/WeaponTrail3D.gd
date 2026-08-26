@@ -15,11 +15,8 @@ func _ready() -> void:
 	
 	var mat = StandardMaterial3D.new()
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_color = Color.WHITE
+	mat.albedo_color = FxUtil.brilho(Color.WHITE, 2.0)
 	mat.vertex_color_use_as_albedo = true
-	mat.emission_enabled = true
-	mat.emission = Color(1.0, 1.0, 1.0)
-	mat.emission_energy_multiplier = 2.0
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material_override = mat	

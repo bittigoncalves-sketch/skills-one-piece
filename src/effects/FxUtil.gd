@@ -26,7 +26,66 @@ static func curve(points: Array) -> CurveTexture:
 	t.curve = c
 	return t
 
-# Material de partícula billboard (unshaded, alpha, emissivo opcional/aditivo).
+# ============================================================================
+#  ⚠️ COMO SE FAZ UM EFEITO BRILHAR NESTE JOGO — leia antes de escrever material
+#
+#  `SHADING_MODE_UNSHADED` **DESCARTA A EMISSÃO**. Um material unshaded devolve
+#  só o `albedo_color`, que é limitado a 1,0 — e o limiar do glow é 1,05. Ou
+#  seja: `emission_enabled` + `emission_energy_multiplier` num material unshaded
+#  não fazem absolutamente nada.
+#
+#  E era assim que o jogo inteiro estava escrito: 32 combinações em 16 arquivos,
+#  todas declarando energia de emissão entre 2,5 e 4,0 e jogando fora. Ninguém
+#  notou porque, até 2026-08-25, não existia glow no projeto — dois defeitos
+#  escondidos um no outro. Ver `docs/erros.md`.
+#
+#  MEDIDO (halo em volta de uma esfera, com glow menos sem glow):
+#
+#      unshaded + emissão 4.0            +0,0000   não brilha
+#      unshaded SÓ albedo                +0,0000   idêntico, ao dígito
+#      unshaded + albedo ×2,5            +0,0597   brilha
+#      unshaded + albedo ×2,5, alpha 0,6 +0,0422   brilha (atenuado pelo alpha)
+#      unshaded + albedo ×2,5, aditivo   +0,0625   brilha
+#
+#  Então: para brilhar, o ALBEDO passa de 1,0. É o que `brilho()` faz.
+#
+#  ⚠️ E POR QUE NÃO TIRAR O `unshaded`. Material sombreado também brilha
+#  (+0,0355), mas aí o efeito passa a ESCURECER quando o golpe atravessa a
+#  sombra de um bloco — fogo não apaga na sombra. O unshaded é intencional; o
+#  que estava errado era o caminho do brilho.
+#  ⚠️ O PISO DE 1,0 NÃO É DETALHE. Alguns materiais declaravam energia MENOR
+#  que 1 (o `SandFX` usa 0,8). Como a emissão era descartada, esse número nunca
+#  fez nada; aplicá-lo ao albedo deixaria a areia mais ESCURA do que está hoje —
+#  a correção viraria regressão silenciosa. Esta função existe para CLAREAR;
+#  energia abaixo de 1 significa "não brilha", não "escurece".
+#
+#  ------------------------------------------------------ ⭐ O BOTÃO DO BRILHO
+#  `ESCALA` é a alavanca ÚNICA de "quão fortes são os efeitos". Baixar aqui
+#  apaga todos os golpes de todas as frutas de uma vez; subir, o contrário.
+#
+#  ⚠️ POR QUE COMPRIME EM VEZ DE MULTIPLICAR. As energias escritas nos efeitos
+#  (2,5 · 3,0 · 4,0 · 5,0 · 6,0 · 8,0) NUNCA FORAM CALIBRADAS: elas viviam num
+#  campo de emissão que era descartado, então ninguém nunca viu o efeito delas.
+#  Aplicadas ao pé da letra ficaram fortes demais — relato do dono em
+#  2026-08-25, e medido: 3,0% da tela estourada numa cena de um golpe só.
+#
+#  Uma multiplicação simples (`e * ESCALA`) achataria tudo por igual e mataria a
+#  diferença entre um golpe de 2,5 e um de 8,0. A compressão em torno de 1,0
+#  preserva a ORDEM que o autor quis e encurta a distância:
+#
+#      e = 1 + (energia − 1) × ESCALA
+#
+#      energia   2,5    4,0    6,0    8,0
+#      com 0,45  1,68   2,35   3,25   4,15
+const ESCALA := 0.45
+
+static func brilho(cor: Color, energia: float, alpha: float = -1.0) -> Color:
+	var e: float = 1.0 + (maxf(energia, 1.0) - 1.0) * ESCALA
+	var a: float = cor.a if alpha < 0.0 else alpha
+	return Color(cor.r * e, cor.g * e, cor.b * e, a)
+
+
+# Material de partícula billboard (unshaded, alpha, brilho opcional/aditivo).
 static func particle_material(base: Color, emission_energy: float, additive: bool) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -34,14 +93,12 @@ static func particle_material(base: Color, emission_energy: float, additive: boo
 	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	m.billboard_keep_scale = true
 	m.vertex_color_use_as_albedo = true
-	m.albedo_color = base
 	m.disable_receive_shadows = true
 	if additive:
 		m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	if emission_energy > 0.0:
-		m.emission_enabled = true
-		m.emission = base
-		m.emission_energy_multiplier = emission_energy
+	# O brilho vai no ALBEDO, não na emissão — ver a nota acima. Este é o ponto
+	# de maior alcance da correção: 13 chamadas em 6 arquivos passam por aqui.
+	m.albedo_color = brilho(base, emission_energy) if emission_energy > 0.0 else base
 	return m
 
 # Cria um GPUParticles3D já configurado.
@@ -201,10 +258,7 @@ static func geppo_effect(world: Node, feet_pos: Vector3, move_dir: Vector3 = Vec
 	var mat_out := StandardMaterial3D.new()
 	mat_out.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat_out.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat_out.albedo_color = Color(0.85, 0.95, 1.0, 0.85)
-	mat_out.emission_enabled = true
-	mat_out.emission = Color(0.8, 0.95, 1.0)
-	mat_out.emission_energy_multiplier = 3.0
+	mat_out.albedo_color = brilho(Color(0.85, 0.95, 1.0, 0.85), 3.0)
 	mat_out.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mi_out.material_override = mat_out
 	mi_out.scale = Vector3(0.35, 0.25, 0.35)
@@ -226,10 +280,7 @@ static func geppo_effect(world: Node, feet_pos: Vector3, move_dir: Vector3 = Vec
 	var mat_in := StandardMaterial3D.new()
 	mat_in.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat_in.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat_in.albedo_color = Color(1.0, 1.0, 1.0, 0.95)
-	mat_in.emission_enabled = true
-	mat_in.emission = Color(1.0, 1.0, 1.0)
-	mat_in.emission_energy_multiplier = 4.0
+	mat_in.albedo_color = brilho(Color(1.0, 1.0, 1.0, 0.95), 4.0)
 	mat_in.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mi_in.material_override = mat_in
 	mi_in.scale = Vector3(0.2, 0.35, 0.2)
@@ -321,10 +372,7 @@ static func dash_effect(world: Node, base_pos: Vector3, move_dir: Vector3) -> vo
 	var mat_out := StandardMaterial3D.new()
 	mat_out.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat_out.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat_out.albedo_color = Color(0.85, 0.95, 1.0, 0.85)
-	mat_out.emission_enabled = true
-	mat_out.emission = Color(0.8, 0.95, 1.0)
-	mat_out.emission_energy_multiplier = 3.0
+	mat_out.albedo_color = brilho(Color(0.85, 0.95, 1.0, 0.85), 3.0)
 	mat_out.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mi_out.material_override = mat_out
 	mi_out.scale = Vector3(0.35, 0.25, 0.35)
@@ -349,10 +397,7 @@ static func dash_effect(world: Node, base_pos: Vector3, move_dir: Vector3) -> vo
 	var mat_in := StandardMaterial3D.new()
 	mat_in.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat_in.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat_in.albedo_color = Color(1.0, 1.0, 1.0, 0.95)
-	mat_in.emission_enabled = true
-	mat_in.emission = Color(1.0, 1.0, 1.0)
-	mat_in.emission_energy_multiplier = 4.0
+	mat_in.albedo_color = brilho(Color(1.0, 1.0, 1.0, 0.95), 4.0)
 	mat_in.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mi_in.material_override = mat_in
 	mi_in.scale = Vector3(0.2, 0.35, 0.2)

@@ -258,14 +258,39 @@ mas ainda precisa da prioridade explícita entre estados concorrentes).
 
 | # | Golpe | startup | ativo | recuperação | **trava total** | hitstun causado | vantagem no acerto | vantagem no bloqueio |
 |---|---|---|---|---|---|---|---|---|
-| 1 | Jab | 0,20 s | 0,06 s | 0,14 s | **0,40 s** | 0,75 s | **+0,21 s** | ~ −0,05 s |
-| 2 | Soco 2 | 0,20 s | 0,06 s | 0,14 s | **0,40 s** | 0,75 s | **+0,21 s** | ~ −0,05 s |
-| 3 | Chute | 0,20 s | 0,06 s | 0,17 s | **0,43 s** | 0,80 s | **+0,23 s** | ~ −0,05 s |
-| 4 | Finalizador | 0,25 s | 0,08 s | 0,35 s | **0,68 s** | ragdoll 2,0 s | n/a | punição garantida |
+| 1 | Jab | 0,20 s | 0,06 s | 0,14 s | **0,40 s** | 0,75 s | **+0,55 s** | ~ −0,05 s |
+| 2 | Soco 2 | 0,20 s | 0,06 s | 0,14 s | **0,40 s** | 0,75 s | **+0,55 s** | ~ −0,05 s |
+| 3 | Chute | 0,20 s | 0,06 s | 0,17 s | **0,43 s** | 0,80 s | **+0,57 s** | ~ −0,05 s |
+| 4 | Finalizador | 0,25 s | 0,08 s | 0,35 s | **0,68 s** | 0,80 s + knockdown 2,0 s | **+0,37 s** | punição garantida |
 
-**Combo completo ≈ 1,6-1,9 s** (contra 4,8-5,0 s hoje), com vantagem
-**positiva** em todos os golpes — o combo trava de verdade, ao contrário de
-hoje.
+**Combo completo ≈ 1,91 s** (contra 4,8-5,0 s antes), com vantagem **positiva**
+em todos os golpes — o combo trava de verdade.
+
+> **⚠️ CORREÇÃO DE ARITMÉTICA (2026-08-25, apurada na implementação).**
+> Esta tabela dizia **+0,21 s** de vantagem nos socos. Está errado, e o erro é
+> desta tabela, não dos números-alvo: a conta subtraía a recuperação DUAS vezes
+> (`0,75 − 0,40 − 0,14`), sendo que os 0,14 s já estão dentro dos 0,40 s.
+>
+> Pela fórmula do §2.3 — `vantagem = hitstun − (ativo + recuperacao)` — e pelos
+> valores pesquisados do §3.1/§3.2, o número é `0,75 − 0,06 − 0,14 = +0,55 s`.
+> Medido em `tools/dev_tests/medir_frame_data.gd`.
+>
+> **A consequência é de jogo, não de planilha.** Com +0,55 s contra um startup
+> de 0,20 s sobram **0,35 s de folga** entre um golpe e o seguinte: o alvo fica
+> preso muito além do instante em que o atacante já poderia bater de novo. O
+> combo não só encadeia — ele encadeia com margem larga, e **não há janela
+> nenhuma para o alvo agir entre os golpes**.
+>
+> Isso é o padrão do gênero (cadeia de M1 É true combo em TSB/JJS), mas torna o
+> contra-jogo do §4.3 **obrigatório, não opcional**: enquanto o bloqueio (F) não
+> existir, o único escape de um combo de 4 golpes é o dash lateral, um por
+> combo. Se ao jogar o combo parecer opressivo antes de o bloqueio entrar, a
+> alavanca é o `hitstun` de `src/combat/Melee.gd` — uma linha por golpe.
+>
+> A linha do Finalizador também foi corrigida: o §4.2 pedia "ragdoll 2,0 s", e
+> `CombatStateRagdoll` é Ordem 3. O implementado é o **knockdown** de 2,0 s, que
+> já existia inteiro no projeto (`DamageZone.derruba`). Ver a nota no
+> Finalizador em `Melee.gd`.
 
 ### 4.3 Contra-jogo (por que não é "quem clica primeiro ganha")
 
@@ -434,7 +459,7 @@ Seguindo a regra de território fechado do [`AGENTES.md`](AGENTES.md):
 
 | Ordem | Frente | Território | Depende de |
 |---|---|---|---|
-| 1 | **Frame data + FSM** | `src/player/hsm/*.gd` (novos estados), `Melee.gd` (tabela nova) | nada — pode começar já |
+| 1 | ✅ **Frame data + FSM** — FEITO em 2026-08-25 | `src/player/hsm/*.gd` (novos estados), `Melee.gd` (tabela nova) | nada — pode começar já |
 | 1 | **Rede — correções B1-B6** | `Player.gd` (RPCs), `DamageZone.gd`, `GameFlow.gd` (hitstop) | nada — independe da animação |
 | 2 | **Animação — Fases A-D (os 4 M1)** | `assets/animations/*.tres`, `tools/anim_editor` | frame data (1) define a duração-alvo |
 | 2 | **Bloqueio/guarda** | `src/anim/` (pose nova), `src/player/hsm/CombatStateBlocking.gd` | FSM (1) |
@@ -499,5 +524,40 @@ pesquisa — pedir se for preciso auditar uma fonte específica.
 5. Parte da infraestrutura já existe no working tree local (auto-mira, lunge,
    overlay de guarda por membro, threading de hitstun) — o plano estende isso,
    não compete com isso.
-6. Uma decisão pendente do dono: estender a exceção de cancelamento (hoje só
-   dash-on-hit-confirmed) para também cobrir bloqueio durante a recuperação.
+6. ~~Uma decisão pendente do dono~~ — **RESOLVIDA em 2026-08-25: o dono
+   confirmou que SIM**, a exceção de cancelamento se estende ao bloqueio
+   durante a recuperação. A permissão está implementada e medida
+   (`CombatStateAttackRecovery.pode_cancelar_para_bloqueio()`, carência de
+   0,05 s); ela só passa a ter efeito quando `CombatStateBlocking` entrar, que
+   é a frente de Ordem 2.
+
+---
+
+## Estado da implementação (atualizado em 2026-08-25)
+
+| Frente | Estado | Onde |
+|---|---|---|
+| Frame data (§4.2) | ✅ feito | `src/combat/Melee.gd`, `medir_frame_data.gd` |
+| FSM em três fases (§4.1) | ✅ feito | `src/player/hsm/CombatStateAttack{Startup,Active,Recovery}.gd` |
+| `CombatStateStunned` | ✅ feito | era referenciado em 7 pontos e não existia — ver `erros.md` |
+| Punição de whiff (§4.3) | ✅ feito | `Melee.WHIFF_MULT`, `MeleeController._resolver_whiff` |
+| Dash-cancel restrito à recuperação | ✅ feito | `Player._etapa_locomocao` + o estado decide |
+| Cancelar para bloqueio | 🔶 permissão pronta, **sem efeito** até a Ordem 2 | `CombatStateAttackRecovery` |
+| Bug B2 (stun em cópia remota) | 🔶 metade fechada por necessidade | `Player._feedback_de_dano` |
+| Bugs B1, B3-B6 | ⬜ frente de REDE | — |
+| Animações Fases A-D (§6) | ✅ feito em 2026-08-25 | `tools/autorar_combo_m1.py`, `assets/animations/m1_*.tres` |
+| Fase B (guardas distintas, portão) | ✅ medido: 168°–430° entre pares, mínimo exigido 40° | mesmo script |
+| Personagem + 29+4 animações no Blender | ✅ feito | `tools/blender/montar_personagem.py` → `art_src/blender/personagem_base.blend` |
+| Bloqueio/guarda, ragdoll | ⬜ Ordens 2 e 3 | — |
+
+✅ **A JANELA DEIXOU DE CORTAR** (2026-08-25). Os quatro M1 são agora clipes
+autorais que JÁ nascem com a duração do frame data (`vel = 1.0`, `inicio = 0`,
+janela = clipe inteiro). O mecanismo de janela continua no código porque é ele
+que segura a `COMBO_SWORD` e qualquer clipe do Mixamo que volte ao combo.
+
+⚠️ **E refazer não era só questão de tempo.** Medido nos 29 clipes do acervo:
+**onze começam com o tronco rolado mais de 25°** no eixo Z — e dois eram do
+combo: `boxing_1` (jab) a −32,8° e `roundhouse_kick` (chute) entre −52° e −86°
+o clipe INTEIRO, ou seja nunca de pé. Confirmado no jogo: o "up" do torso ficava
+a 51,4° da vertical. Defeito de retarget que janela nenhuma consertaria. A lista
+completa está em [`ESQUELETO.md`](ESQUELETO.md).

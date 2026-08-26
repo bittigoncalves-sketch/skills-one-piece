@@ -60,6 +60,12 @@ _falhou() {
 	[ "$cod" -ne 0 ] && return 0
 	grep -qE '✗|❌|^  XX  ' "$log" && return 0
 	grep -qE 'scripts que nao compilam: [1-9]' "$log" && return 0
+	# ⚠️ CENÁRIO QUE NÃO MONTA NÃO É TESTE QUE PASSOU (2026-08-25). O `BaseTest`
+	# aborta com esta frase quando falta um pré-requisito da cena, e o aborto é
+	# UMA linha no fim de centenas de `MoveFrame: ...`. Entre 2026-08-23 e
+	# 2026-08-25 os três testes de `src/tests/` abortaram assim, todo dia, e
+	# ninguém viu — ver `docs/erros.md`.
+	grep -qE 'cenário não montou|cenario nao montou' "$log" && return 0
 	_parse_error_real "$log" && return 0
 	return 1
 }
@@ -153,6 +159,21 @@ for arq in tools/dev_tests/test_*.gd; do
 	if [ $RAPIDO -eq 1 ] && [[ " $LENTOS " == *" $nome "* ]]; then
 		printf '  %-24s %s\n' "$nome" "$(amarelo pulado)"; PULADO=$((PULADO+1)); continue
 	fi
+	roda "$nome" "$GODOT" --headless --path "$PROJ" --script "$arq"
+done
+
+# --------------------------------------------- 1b. testes de cena (src/tests)
+# ⚠️ ESTES ESTAVAM FORA DA BATERIA ATÉ 2026-08-25, e foi por isso que a suíte
+# inteira de `src/tests/` pôde abortar por dois dias sem ninguém notar: o laço
+# acima varre só `tools/dev_tests/test_*.gd`.
+#
+# Eles montam uma arena mínima com um Player de verdade (`src/tests/BaseTest.gd`)
+# e por isso disputam a mesma porta 24565 — rodam em série, como o bloco 1.
+echo
+echo "-- testes de cena (src/tests: arena mínima com Player de verdade) --"
+for arq in src/tests/test_*.gd; do
+	nome="$(basename "$arq" .gd)"
+	quer "$nome" || continue
 	roda "$nome" "$GODOT" --headless --path "$PROJ" --script "$arq"
 done
 

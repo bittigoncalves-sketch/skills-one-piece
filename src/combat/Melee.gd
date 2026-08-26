@@ -146,37 +146,136 @@ const JANELA := 2.0        # tempo pra encadear o próximo golpe (pedido do usu�
 # linha de frame data (`vel`, `inicio`, `atraso`, `vida`, `shake`) e separar só
 # a coluna `dano` para outro arquivo tornaria ilegível a leitura de um golpe.
 # O `test_balance.gd` confere que as duas tabelas continuam batendo.
+# ============================================================================
+#  ⏱️ FRAME DATA — REESCRITO EM 2026-08-25
+#  (Frente 1 de `docs/PLANO_COMBATE_BATTLEGROUNDS.md`, §4.2)
+#
+#  Cada passo declara agora as TRÊS fases que um golpe de battlegrounds tem,
+#  em segundos de TELA:
+#
+#    `startup`      do clique até a hitbox nascer. Era o `atraso` escrito à
+#                   mão; agora é ele quem manda e o `atraso` sai derivado.
+#    `ativo`        quanto tempo a hitbox fica viva. Era o `vida`.
+#    `recuperacao`  o rabo do golpe, em que o corpo ainda está preso.
+#
+#  `trava = startup + ativo + recuperacao`. Não existe mais "trava = clipe
+#  inteiro": a trava virou frame data, e é o CLIPE que se ajusta a ela.
+#
+#  ------------------------------------------------------------ POR QUE MUDOU
+#  A regra do dono ("não se move até a animação acabar", 2026-08-15) continua
+#  valendo ao pé da letra. O que muda é a duração do clipe que ela tranca:
+#  0,40 s em vez de 1,2-1,5 s.
+#
+#  Com trava = clipe inteiro e hitstun fixo de 0,30 s, a vantagem no acerto
+#  era NEGATIVA nos quatro golpes (−49 quadros no primeiro soco): acertar um
+#  M1 era jogada PERDEDORA, porque o atacante ainda estava preso quando o
+#  alvo já podia responder. Isto não é gosto, é aritmética (§2.3 do plano):
+#
+#      vantagem_no_acerto = hitstun − (ativo + recuperacao)
+#      o combo encadeia  ⟺  vantagem ≥ startup do próximo golpe
+#
+#  Com a tabela abaixo a vantagem é +0,21 s nos socos e +0,23 s no chute,
+#  contra um startup de 0,20 s: o combo trava de verdade.
+#
+#  --------------------------------------------- `pico` É O NÚMERO MEDIDO
+#  É o instante, em tempo de CLIPE, em que o efetor (punho ou pé) chega ao
+#  deslocamento máximo — a medição está na tabela do cabeçalho deste arquivo e
+#  sai do `medir_impacto_res.gd`.
+#
+#  `inicio` NÃO é mais escrito à mão: é DERIVADO, de forma que o pico caia
+#  exatamente no fim do `startup` (ver `inicio()` embaixo). Mexeu em `startup`
+#  ou em `vel`, a janela do clipe se reposiciona sozinha — que é a mesma razão
+#  pela qual o `recuo` deixou de ser escrito à mão em 2026-08-15.
+#
+#  -------------------------------- ⚠️ O QUE ESTÁ EM TELA HOJE É UMA JANELA
+#  Interino, declarado, com gatilho. Os quatro clipes do Mixamo têm 1,37-2,23 s
+#  e em 0,40 s só cabe um pedaço. A janela é escolhida para conter o GOLPE (a
+#  aproximação e o impacto) e cortar a VOLTA À GUARDA.
+#
+#  NÃO se acelera o clipe para caber. Para o `boxing_1` caber inteiro em
+#  0,40 s seria preciso 5,6x — e a 1,9x o soco já virava borrão, que é
+#  exatamente o defeito de 2026-08-11 documentado lá em cima. Janela na
+#  velocidade natural mostra o movimento de verdade; acelerar mostra um risco.
+#
+#  ✅ GATILHO CUMPRIDO EM 2026-08-25 — as Fases A-D entregaram os quatro clipes
+#  autorais (`m1_jab`, `m1_soco_esquerdo`, `m1_chute`, `m1_finalizador`, feitos
+#  por `tools/autorar_combo_m1.py`). Eles JÁ nascem com a duração do frame data,
+#  então `vel = 1.0`, `pico = startup`, `inicio` derivado = 0 e a janela cobre o
+#  clipe inteiro: nada é cortado.
+#
+#  A janela CONTINUA implementada, e não é código morto: é ela que segura a
+#  `COMBO_SWORD` e qualquer clipe do Mixamo que volte a entrar no combo.
+#
+#  ⚠️ E REFAZER NÃO ERA SÓ QUESTÃO DE TEMPO. Medido nos 29 clipes do acervo:
+#  ONZE começam com o tronco rolado mais de 25° no eixo Z, e dois eram do combo
+#  — `boxing_1` (jab) a −32,8° e `roundhouse_kick` (chute) entre −52° e −86° o
+#  clipe INTEIRO, ou seja nunca de pé. Conferido no jogo e não só no dado: o
+#  "up" do torso ficava a 51° da vertical. Defeito de retarget que janela
+#  nenhuma conserta. Ver `docs/erros.md`.
+#
+#  ⚠️ `COMBO_SWORD` NÃO FOI CONVERTIDO. O plano trata dos quatro M1 do punho;
+#  a espada nem está no mapa hoje (saiu do spawn em 2026-08-23). Ela continua
+#  na tabela antiga (`atraso`/`vida`/`inicio` escritos à mão) e os acessores
+#  embaixo caem para esses campos quando o frame data não existe. Converter a
+#  espada sem o plano cobri-la seria inventar números.
+
+# Punição de whiff (§4.3): errar alonga a RECUPERAÇÃO. É o que impede o rusher
+# de clicar sem alcance e sair impune — e não toca no startup nem no ativo,
+# porque o que se pune é ter ficado exposto, não ter tentado.
+const WHIFF_MULT := 1.35
+
 const COMBO := [
 	{
-		"nome": "Soco Direito", "anim": "boxing_1", "espelhar": false,
-		"vel": 1.5, "inicio": 0.00,
-		"dano": 48.0, "kb": 11.0, "alcance": 1.5, "raio": 1.5,
-		"atraso": 0.3780, "vida": 0.18, "shake": 0.25,
+		"nome": "Jab", "anim": "m1_jab", "espelhar": false,
+		"vel": 1.0, "pico": 0.20,
+		"startup": 0.20, "ativo": 0.06, "recuperacao": 0.14,
+		"hitstun": 0.75,
+		"dano": 48.0, "kb": 11.0, "alcance": 1.5, "raio": 1.5, "shake": 0.25,
 		"melee_guarda": "R",
 	},
 	{
-		"nome": "Soco Esquerdo", "anim": "left_uppercut_from_guard", "espelhar": false,
-		"vel": 1.05, "inicio": 0.10,
-		"dano": 54.0, "kb": 13.0, "alcance": 1.5, "raio": 1.5,
-		"atraso": 0.25, "vida": 0.18, "shake": 0.30,
+		"nome": "Soco Esquerdo", "anim": "m1_soco_esquerdo", "espelhar": false,
+		"vel": 1.0, "pico": 0.20,
+		"startup": 0.20, "ativo": 0.06, "recuperacao": 0.14,
+		"hitstun": 0.75,
+		"dano": 54.0, "kb": 13.0, "alcance": 1.5, "raio": 1.5, "shake": 0.30,
 		"melee_guarda": "L",
 	},
 	{
-		# Chute LATERAL (2026-08-18, era "Chute Frontal" com `kicking`). Ver a
-		# nota datada no cabeçalho do arquivo pra escolha do clipe e a conta do
-		# `atraso`. Perna que golpeia é a ESQUERDA — daí `melee_guarda` ser
-		# "perna_L" e não "perna_R".
-		"nome": "Chute Lateral", "anim": "roundhouse_kick", "espelhar": false,
-		"vel": 1.5, "inicio": 0.40,
-		"dano": 64.0, "kb": 15.0, "alcance": 2.0, "raio": 1.9,
-		"atraso": 0.4667, "vida": 0.22, "shake": 0.4,
+		# Chute LATERAL (2026-08-18). Ver a nota datada no cabeçalho para a
+		# escolha do clipe. A perna que golpeia é a ESQUERDA — daí o
+		# `melee_guarda` ser "perna_L".
+		#
+		# Recuperação 0,03 s mais longa que a dos socos, e hitstun 0,05 s maior:
+		# é o golpe de alcance do combo (2,0 m contra 1,5 m), e o plano paga o
+		# alcance com exposição. A vantagem sai +0,23 s, ainda acima do startup.
+		"nome": "Chute Lateral", "anim": "m1_chute", "espelhar": false,
+		"vel": 1.0, "pico": 0.20,
+		"startup": 0.20, "ativo": 0.06, "recuperacao": 0.17,
+		"hitstun": 0.80,
+		"dano": 64.0, "kb": 15.0, "alcance": 2.0, "raio": 1.9, "shake": 0.4,
 		"melee_guarda": "perna_L",
 	},
 	{
-		"nome": "Finalizador", "anim": "meia_lua_de_compasso", "espelhar": false,
-		"vel": 1.5, "inicio": 0.00,
-		"dano": 112.0, "kb": 26.0, "alcance": 2.2, "raio": 2.0,
-		"atraso": 0.7113, "vida": 0.25, "shake": 0.6,
+		# FINALIZADOR. Startup e recuperação maiores de propósito: é o golpe
+		# que se vê chegar e que pune quem erra.
+		#
+		# ⚠️ `derruba` NO LUGAR DO RAGDOLL. O §4.2 pede ragdoll de 2,0 s aqui, e
+		# `CombatStateRagdoll` é Ordem 3 do §7 — ainda não existe. O que existe
+		# HOJE e chega mais perto é o KNOCKDOWN, que já está inteiro de ponta a
+		# ponta (`DamageZone.derruba` -> meta `knockdown_dur` ->
+		# `RecepcaoDeDano.derrubar_com_animacao` -> `pose_knockdown` ->
+		# `_etapa_locomocao` congela o corpo). Usar o que existe é honesto; um
+		# `hitstun: 2.0` no flinch normal deixaria o alvo de pé, tremendo por
+		# 2 s, que lê como travamento de jogo e não como derrubada.
+		#
+		# GATILHO: quando `CombatStateRagdoll` entrar (Ordem 3), este campo vira
+		# o gatilho do ragdoll e o knockdown volta a ser só o do plano B.
+		"nome": "Finalizador", "anim": "m1_finalizador", "espelhar": false,
+		"vel": 1.0, "pico": 0.25,
+		"startup": 0.25, "ativo": 0.08, "recuperacao": 0.35,
+		"hitstun": 0.80, "derruba": 2.0,
+		"dano": 112.0, "kb": 26.0, "alcance": 2.2, "raio": 2.0, "shake": 0.6,
 	},
 ]
 
@@ -209,58 +308,156 @@ static func passo(i: int, weapon: String = "") -> Dictionary:
 		return COMBO_SWORD[clampi(i, 0, COMBO_SWORD.size() - 1)]
 	return COMBO[clampi(i, 0, COMBO.size() - 1)]
 
+# ============================================================================
+#  ACESSORES DE FRAME DATA
+#
+#  Uma função por grandeza, e TODAS caem para o campo antigo do dicionário
+#  quando o frame data não existe. É isso que deixa `COMBO_SWORD` (tabela
+#  antiga, `atraso`/`vida`/`inicio` na mão) continuar funcionando sem uma
+#  linha de mudança enquanto o `COMBO` do punho já roda no modelo novo.
+#
+#  A alternativa era converter as duas tabelas de uma vez. Foi descartada: a
+#  espada não está no mapa (saiu do spawn em 2026-08-23), o plano não a cobre,
+#  e escrever startup/ativo/recuperação para ela seria inventar números que
+#  ninguém mediu.
+# ============================================================================
+
+# Tem frame data novo? É o que decide qual dos dois caminhos vale.
+static func tem_frame_data(i: int, weapon: String = "") -> bool:
+	return passo(i, weapon).has("startup")
+
+# ------------------------------------------------------------- as três fases
+static func startup(i: int, weapon: String = "") -> float:
+	var g := passo(i, weapon)
+	return float(g.get("startup", g.get("atraso", 0.0)))
+
+static func ativo(i: int, weapon: String = "") -> float:
+	var g := passo(i, weapon)
+	return float(g.get("ativo", g.get("vida", 0.0)))
+
+static func recuperacao(i: int, weapon: String = "") -> float:
+	var g := passo(i, weapon)
+	if g.has("recuperacao"):
+		return float(g["recuperacao"])
+	# Tabela antiga: a recuperação é o que sobra da trava depois do golpe.
+	return maxf(recuo(i, weapon) - startup(i, weapon) - ativo(i, weapon), 0.0)
+
+# Quanto tempo o alvo fica preso ao levar este golpe. Era um 0,30 s fixo
+# enterrado na assinatura da `DamageZone` — e era metade da causa de a vantagem
+# no acerto ser negativa (§2.3 do plano).
+static func hitstun(i: int, weapon: String = "") -> float:
+	return float(passo(i, weapon).get("hitstun", 0.3))
+
+# Quanto tempo o alvo fica DERRUBADO. 0 = não derruba. Ver a nota do
+# Finalizador sobre por que é knockdown e não ragdoll ainda.
+static func derruba(i: int, weapon: String = "") -> float:
+	return float(passo(i, weapon).get("derruba", 0.0))
+
+# ------------------------------------------------------------------- a conta
+#
+#  vantagem_no_acerto = hitstun − (ativo + recuperacao)
+#
+#  Positiva = quem acertou volta a agir ANTES do alvo, e o combo encadeia.
+#  Negativa = acertar é jogada perdedora, que era o estado até 2026-08-25.
+#  Comparar com o `startup` do golpe seguinte responde se o combo TRAVA.
+#
+#  Fica aqui, e não só no teste, porque é a regra que justifica a tabela
+#  inteira: quem mexer num `recuperacao` sem olhar isto quebra o combo sem
+#  perceber.
+static func vantagem(i: int, weapon: String = "") -> float:
+	return hitstun(i, weapon) - ativo(i, weapon) - recuperacao(i, weapon)
+
 # ---------------------------------------------------------------- RECUPERAÇÃO
 #
-#  ⏱️ A TRAVA É A ANIMAÇÃO (2026-08-15, pedido do dono).
+#  ⏱️ A TRAVA ERA A ANIMAÇÃO (2026-08-15). AGORA É O FRAME DATA (2026-08-25).
 #
-#  Até aqui `recuo` era um número escrito à mão em cada golpe, sem nada que o
-#  ligasse ao clipe que estava em tela. Medido pelo
-#  `tools/dev_tests/medir_tempos_melee.gd`, a defasagem era de 0,30 s a 1,00 s
-#  nos SETE golpes — o clique seguinte SEMPRE abria com o golpe anterior ainda
-#  correndo, e o clipe novo cortava o antigo no meio. Era a causa mecânica do
-#  sintoma que o cabeçalho lá em cima já descrevia por outro ângulo ("os dois
-#  socos liam igual"): o que sobrava em tela era a guarda, comum aos dois.
+#  Histórico, porque a ordem das trocas importa para quem vier depois:
 #
-#  Agora sai da conta `(comprimento − inicio) / vel` — a mesma que a espada já
-#  usava. Mexer em `vel` ou `inicio` reajusta a trava sozinho, que é o ponto.
+#   • Até 2026-08-15 `recuo` era um número escrito à mão em cada golpe, sem
+#     nada que o ligasse ao clipe em tela. Medido pelo `medir_tempos_melee.gd`,
+#     a defasagem era de 0,30 s a 1,00 s nos sete golpes — o clique seguinte
+#     SEMPRE abria com o golpe anterior ainda correndo.
+#   • De 2026-08-15 a 2026-08-25 saía de `(comprimento − inicio) / vel`: a
+#     trava passou a ser o clipe inteiro. Consertou a defasagem e criou outra
+#     coisa — travas de 1,2-1,5 s, e com elas a vantagem negativa do §2.3.
+#   • Agora sai de `startup + ativo + recuperacao`. O clipe deixou de mandar na
+#     trava e passou a ser JANELADO por ela (ver `fim_da_janela`).
 #
-#  ⚠️ A CAUDA FOI MEDIDA ANTES DE DECIDIR. Clipe com sobra parada no fim faria a
-#  trava prender o jogador olhando para um boneco imóvel. Medido: a cauda é
-#  0,00–0,03 s nos sete golpes — os clipes se mexem até o último quadro. Por isso
-#  a duração cheia serve como trava sem ajuste.
+#  A regra do dono não mudou em nenhum dos três momentos: a trava continua
+#  sendo "não se move até a animação acabar". Mudou quem decide quanto a
+#  animação dura.
 const MARGEM_POS_IMPACTO := 0.15
 
-# A ÚNICA ALAVANCA. 1,0 = trava até o último quadro da animação. Baixar para
-# ~0,55 devolve o combo antigo (2,6 s nos quatro golpes contra 5,0 s de hoje)
-# sem tocar em mais nada.
+# ⚠️ LEGADO — só vale para quem NÃO tem frame data (hoje: `COMBO_SWORD`).
+# 1,0 = trava até o último quadro da animação.
 const TRAVA_DA_ANIMACAO := 1.0
 
 # Quanto tempo o golpe segura o CLIQUE seguinte e o CORPO. São o mesmo número de
 # propósito: é isso que "correlacionar a animação com o próximo clique" quer.
-static func recuo(i: int, weapon: String = "") -> float:
+#
+# `errou` alonga só a recuperação (§4.3 do plano) — ver `WHIFF_MULT`.
+static func recuo(i: int, weapon: String = "", errou: bool = false) -> float:
 	var g := passo(i, weapon)
+	if g.has("startup"):
+		var rec: float = float(g["recuperacao"]) * (WHIFF_MULT if errou else 1.0)
+		return float(g["startup"]) + float(g["ativo"]) + rec
+	# ------ caminho antigo: a trava é o clipe inteiro
 	var d := duracao_tocada(i, weapon) * TRAVA_DA_ANIMACAO
 	# PISO: a regra antiga (`recuo >= atraso + 0,15`) não era capricho — garante
 	# ~9 quadros de membro estendido depois de a hitbox nascer. Ela sobrevive para
 	# o dia em que entrar um clipe curto demais.
 	return maxf(d, float(g["atraso"]) + MARGEM_POS_IMPACTO)
 
+# ------------------------------------------------------- o clipe e sua janela
+#
+# `inicio` DERIVADO: onde a janela do clipe abre, de forma que o `pico` medido
+# caia exatamente no fim do `startup`.
+#
+#     tempo_de_tela(pico) = (pico − inicio) / vel = startup
+#     =>  inicio = pico − startup * vel
+#
+# Escrever `inicio` à mão de novo seria voltar ao erro que o cabeçalho do
+# arquivo já documenta duas vezes: número de tempo desacoplado do clipe
+# envelhece em silêncio.
+static func inicio(i: int, weapon: String = "") -> float:
+	var g := passo(i, weapon)
+	if not g.has("pico"):
+		return float(g.get("inicio", 0.0))
+	var a := clipe(i, weapon)
+	var teto := 0.0 if a == null else maxf(a.length - 0.01, 0.0)
+	return clampf(float(g["pico"]) - float(g["startup"]) * float(g["vel"]), 0.0, teto)
+
+# Onde a janela FECHA, em tempo de clipe. É isto que corta a volta à guarda:
+# sem este corte o clipe de 2,23 s continuaria correndo por 1,8 s depois de o
+# corpo já estar livre, e o clique seguinte trocaria o clipe no meio — que é o
+# defeito de INTERRUPÇÃO de 2026-08-11, agravado por travas 3x menores.
+static func fim_da_janela(i: int, weapon: String = "") -> float:
+	var a := clipe(i, weapon)
+	if a == null:
+		return 0.0
+	if not tem_frame_data(i, weapon):
+		return a.length
+	var g := passo(i, weapon)
+	return minf(inicio(i, weapon) + recuo(i, weapon) * float(g["vel"]), a.length)
+
 # Quanto tempo o clipe do passo `i` fica em tela, já com `inicio` e `vel`.
-# É o teto de tudo que é temporal no golpe — e, desde 2026-08-15, também o CHÃO:
-# a trava do próximo clique e a do corpo saem daqui (ver `recuo`).
+# Com frame data isto é a JANELA (= a trava); sem ele é o clipe inteiro, e aí
+# é ele quem define a trava (ver `recuo`).
 static func duracao_tocada(i: int, weapon: String = "") -> float:
 	var a := clipe(i, weapon)
 	if a == null:
 		return 0.0
 	var g := passo(i, weapon)
+	if tem_frame_data(i, weapon):
+		return maxf(fim_da_janela(i, weapon) - inicio(i, weapon), 0.0) / float(g["vel"])
 	return maxf(a.length - float(g.get("inicio", 0.0)), 0.0) / float(g["vel"])
 
 # Instante do clipe (tempo de CLIPE, não de tela) em que a hitbox nasce. Serve
-# para o teste conferir que o `atraso` continua casado com o pico medido do membro
-# depois de qualquer mexida em `vel`/`inicio`.
+# para o teste conferir que o `startup` continua casado com o pico medido do
+# membro depois de qualquer mexida em `vel`.
 static func impacto_no_clipe(i: int, weapon: String = "") -> float:
 	var g := passo(i, weapon)
-	return float(g.get("inicio", 0.0)) + float(g["atraso"]) * float(g["vel"])
+	return inicio(i, weapon) + startup(i, weapon) * float(g["vel"])
 
 # ------------------------------------------------------------------ animação
 # Devolve o clipe do passo, já espelhado se for o caso (e memorizado — espelhar
@@ -270,9 +467,19 @@ static func clipe(i: int, weapon: String = "") -> Animation:
 	var chave: String = "%s|%s" % [g["anim"], g["espelhar"]]
 	if _cache.has(chave):
 		return _cache[chave]
-	var caminho: String = "res://assets/animations/%s.res" % g["anim"]
-	if not ResourceLoader.exists(caminho):
-		push_warning("[Melee] clipe ausente: " + caminho)
+	# ⚠️ `.res` E `.tres`. O caminho era `%s.res` fixo, e o editor de animação do
+	# projeto (`tools/anim_editor/`, e o `autorar_combo_m1.py`) grava `.tres` —
+	# texto, que o Godot carrega igual. Todo clipe autoral entrava aqui como
+	# "clipe ausente" e o golpe ficava sem animação nenhuma, com um warning que
+	# some no meio do log.
+	var caminho := ""
+	for ext in [".tres", ".res"]:
+		var tentativa: String = "res://assets/animations/%s%s" % [g["anim"], ext]
+		if ResourceLoader.exists(tentativa):
+			caminho = tentativa
+			break
+	if caminho == "":
+		push_warning("[Melee] clipe ausente (nem .tres nem .res): " + String(g["anim"]))
 		return null
 	var a: Animation = load(caminho)
 	if g["espelhar"]:
@@ -317,7 +524,10 @@ static func golpear(world: Node, caster: Node3D, i: int, origem: Vector3, dir: V
 	if "scale" in caster:
 		s = caster.scale.y
 		
-	var timer := world.get_tree().create_timer(float(g["atraso"]) * s)
+	# ⚠️ A HITBOX NASCE NO FIM DO STARTUP. Era `g["atraso"]`, escrito à mão; com
+	# frame data o startup É o atraso, e `startup()` devolve o campo antigo
+	# quando a tabela é a velha (espada). Um número só, uma fonte só.
+	var timer := world.get_tree().create_timer(startup(i, weapon) * s)
 	timer.timeout.connect(func():
 		if not is_instance_valid(caster) or not is_instance_valid(world):
 			return
@@ -345,10 +555,20 @@ static func golpear(world: Node, caster: Node3D, i: int, origem: Vector3, dir: V
 			forma = box
 			zone.basis = Basis.looking_at(fwd, Vector3.UP)
 			
+		# DERRUBAR: o Finalizador põe o alvo no chão. `derruba` é campo público
+		# da zona e precisa estar escrito ANTES do `setup`, porque é o `_on_body`
+		# — disparado já no primeiro quadro de sobreposição — que o lê.
+		zone.derruba = derruba(i, weapon)
+
 		# vel = 0: a hitbox do corpo a corpo fica onde nasceu; alcance é o braço,
 		# não um projétil.
+		#
+		# ⚠️ `ativo` NO LUGAR DE `vida`, e `hitstun` VINDO DA TABELA. O hitstun
+		# era o default 0,30 s da assinatura da `DamageZone` nos quatro golpes —
+		# metade da causa de a vantagem no acerto ser negativa (§2.3 do plano).
+		# Agora é 0,75-0,80 s, declarado por golpe.
 		zone.setup(float(g["dano"]) * s, float(g["kb"]) * s, Vector3.ZERO,
-			float(g["vida"]) * s, caster, float(g["raio"]) * s, forma, float(g.get("hitstun", 0.3)))
+			ativo(i, weapon) * s, caster, float(g["raio"]) * s, forma, hitstun(i, weapon))
 		_impacto(world, zone.global_position, i, cor_do_impacto(caster), s)
 		
 		# Dispara projétil se o passo definir
@@ -381,10 +601,7 @@ static func _spawn_air_slash(world: Node, caster: Node3D, fwd: Vector3, g: Dicti
 	
 	var mat := StandardMaterial3D.new()
 	var cor = cor_do_impacto(caster).lightened(0.2)
-	mat.albedo_color = cor
-	mat.emission_enabled = true
-	mat.emission = cor
-	mat.emission_energy_multiplier = 4.0
+	mat.albedo_color = FxUtil.brilho(cor, 4.0)
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.material_override = mat
@@ -427,13 +644,10 @@ static func _impacto(world: Node, pos: Vector3, i: int, cor: Color = Color(1.0, 
 	anel.outer_radius = 0.45
 	m.mesh = anel
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(cor.r, cor.g, cor.b, 0.55)
-	mat.emission_enabled = true
+	mat.albedo_color = FxUtil.brilho(Color(cor.r, cor.g, cor.b, 0.55), 2.5)
 	# A emissão é a mesma cor puxada pro brilho — `lightened` em vez de um segundo
 	# valor escrito à mão, senão cada cor de estilo precisaria de DUAS entradas na
 	# tabela e as duas poderiam divergir.
-	mat.emission = cor.lightened(0.15)
-	mat.emission_energy_multiplier = 2.5
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.material_override = mat

@@ -105,6 +105,7 @@ func trigger_hitstop(duration: float, shake_intensity: float = 0.04) -> void:
 var _baked: Animation = null
 var _baked_t := 0.0
 var _baked_speed := 1.0
+var _baked_fim := -1.0   # fim da janela, em tempo de clipe. Ver play_baked().
 
 # Presente só em personagens SKINNADOS: espelha os proxies nos ossos.
 var _driver: SkeletonDriver = null
@@ -132,11 +133,24 @@ func play_procedural_slash(type: int, speed: float = 1.0) -> void:
 	_sword_slash_t = 0.0
 	_sword_slash_speed = maxf(speed, 0.01)
 	_baked = null # Cancela baked clip para liberar as pernas
+	_baked_fim = -1.0
 
-func play_baked(anim: Animation, speed: float = 1.0, start: float = 0.0, melee_guarda: String = "") -> void:
+# `fim` = onde a JANELA do clipe fecha, em tempo de clipe. -1 (padrão) = toca
+# até o fim do clipe, que é o que todo chamador fazia antes de 2026-08-25.
+#
+# ⚠️ POR QUE UMA JANELA. Com frame data o combo trava por 0,40 s e os clipes do
+# Mixamo têm 1,37-2,23 s: sem corte, o braço continuaria voando por mais de um
+# segundo depois de o corpo já estar livre, e o clique seguinte trocaria o
+# clipe no meio do anterior. É o defeito de INTERRUPÇÃO de 2026-08-11 (ver o
+# cabeçalho de `Melee.gd`), que travas 3x menores só agravariam.
+#
+# Cortar não é acelerar: a janela é escolhida em `Melee` para conter o golpe e
+# descartar a volta à guarda, na velocidade natural do clipe.
+func play_baked(anim: Animation, speed: float = 1.0, start: float = 0.0, melee_guarda: String = "", fim: float = -1.0) -> void:
 	_baked = anim
 	_baked_t = 0.0 if anim == null else clampf(start, 0.0, maxf(anim.length - 0.01, 0.0))
 	_baked_speed = maxf(speed, 0.01)
+	_baked_fim = -1.0 if anim == null else (anim.length if fim < 0.0 else clampf(fim, _baked_t, anim.length))
 	_sword_slash_type = -1 # Cancela procedural
 	_melee_guarda = melee_guarda
 
@@ -176,7 +190,9 @@ func _apply_baked(delta: float) -> void:
 			(_n["Torso"] as Node3D).rotation += MeleePoses.balanco_torso(t_progresso, lado) * _melee_stance_w
 	if _driver:
 		_driver.push()
-	if _baked_t >= _baked.length:
+	# Fecha na JANELA, não no fim do clipe. `_baked_fim` só é menor que
+	# `length` quando o passo tem frame data (ver `Melee.fim_da_janela`).
+	if _baked_t >= (_baked.length if _baked_fim < 0.0 else _baked_fim):
 		_baked = null
 
 func setup(profile: Dictionary) -> void:

@@ -71,10 +71,7 @@ static func _ring(parent: Node, start_r: float, end_r: float, color: Color, life
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_color = Color(color.r, color.g, color.b, 0.6)
-	mat.emission_enabled = true
-	mat.emission = color
-	mat.emission_energy_multiplier = 2.2
+	mat.albedo_color = FxUtil.brilho(Color(color.r, color.g, color.b, 0.6), 2.2)
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mi.material_override = mat
 	mi.scale = Vector3(start_r, 1.0, start_r)
@@ -94,10 +91,7 @@ static func _bubble(parent: Node, radius: float, life: float) -> void:
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_color = Color(QUAKE.r, QUAKE.g, QUAKE.b, 0.22)
-	mat.emission_enabled = true
-	mat.emission = QUAKE
-	mat.emission_energy_multiplier = 1.2
+	mat.albedo_color = FxUtil.brilho(Color(QUAKE.r, QUAKE.g, QUAKE.b, 0.22), 1.2)
 	mi.material_override = mat
 	mi.scale = Vector3.ONE * 0.2
 	parent.add_child(mi)

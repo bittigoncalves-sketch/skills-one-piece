@@ -47,10 +47,7 @@ static func spawn(parent: Node, pos: Vector3, scale_factor: float = 1.0,
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_color = color
-	mat.emission_enabled = true
-	mat.emission = color
-	mat.emission_energy_multiplier = 2.0
+	mat.albedo_color = FxUtil.brilho(color, 2.0)
 	mi.material_override = mat
 	
 	# ⚠️ POSIÇÃO SÓ DEPOIS DO `add_child` — a rachadura nascia no DOBRO do lugar.

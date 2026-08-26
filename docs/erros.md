@@ -7,6 +7,548 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-25 — o transformador que consertava 28 sítios quebrou 6 e esvaziou 3 blocos
+
+**Sintoma:** depois de rodar um script que converteu "emissão → albedo HDR" em
+16 arquivos, o projeto passou de 3 para **6 scripts sem compilar**, com erros
+que não pareciam ter relação: `Cannot infer the type of "arma" variable`,
+`... "papel" ...`, `... "tw" ...` — em arquivos que o script nem tocou.
+
+**Duas causas, as duas do script:**
+
+**1. Escopo por ARQUIVO em vez de por FUNÇÃO.** Ele colhia os nomes de variável
+marcados como unshaded no arquivo inteiro. No `WaterFX.gd` há duas funções que
+chamam o material de `m`:
+
+```gdscript
+static func _mat_agua(...):   # SOMBREADO
+    var m := StandardMaterial3D.new()
+static func _mat_luz(...):    # unshaded
+    var m := StandardMaterial3D.new()
+    m.shading_mode = ...UNSHADED
+```
+
+O `m` de `_mat_luz` marcou o nome, e o `m` de `_mat_agua` foi convertido junto.
+Em material **sombreado a emissão FUNCIONA** — apagar ali não era conserto, era
+regressão. Aconteceu em 6 sítios (`BukiFX`, `BukiProjeteis`, `FireFX` ×3,
+`WaterFX`).
+
+**2. Bloco esvaziado.** As três linhas de emissão às vezes são o corpo inteiro
+de um `if energia > 0.0:`. Apagá-las deixa
+
+```gdscript
+	if energia > 0.0:
+	return m
+```
+
+que é erro de sintaxe — e derruba **todo script que dependa daquele**, que é o
+motivo de os erros aparecerem em arquivos não tocados. Aconteceu em 3 blocos.
+
+**Como detectar:** transformação em massa precisa de auditoria pós-fato, não só
+de revisão do diff. As duas que usei:
+- procurar linha terminada em `:` seguida de linha com indentação MENOR ou igual
+  (bloco vazio);
+- reconferir a premissa do transformador *por função*: para cada `brilho(`
+  aplicado, o material daquela variável é unshaded **naquela função**?
+
+A segunda achou os 6. Ambas ficaram no fim do trabalho: 28 conversões em
+material unshaded, **0** em sombreado, **0** sítios com emissão ainda descartada.
+
+**E o número mudou.** A heurística original dizia "32 sítios em 16 arquivos".
+Contando por função, são **28** — os outros 4 eram material sombreado que a
+janela de ±25 linhas juntou por engano. Contagem por proximidade de texto não é
+contagem.
+
+---
+
+## 2026-08-25 — `SHADING_MODE_UNSHADED` descarta a emissão, e o jogo inteiro depende disso
+
+**Sintoma:** liguei o glow no `WorldEnv` e NADA brilhou. As configurações
+estavam certas (conferidas em runtime: `glow_enabled=true`, limiar 1,05,
+intensidade 0,90, níveis 0/1,0/0,9/0,6/0,35/0/0) e o `Environment` era mesmo o
+vivo — provei zerando a saturação e vendo a esfera ficar cinza.
+
+**Causa raiz:** em material `StandardMaterial3D` com
+`shading_mode = SHADING_MODE_UNSHADED`, a **emissão é ignorada**. A saída é só o
+albedo, que é limitado a 1,0 — e o limiar do glow é 1,05. Nada cruza, nunca.
+
+**Medido**, três esferas, halo no anel em volta com glow ligado menos desligado:
+
+```
+unshaded + emission_energy 4.0    +0,0000   <- não brilha
+unshaded SÓ albedo                +0,0000   <- IDÊNTICO ao de cima, ao dígito
+sombreada + emission_energy 4.0   +0,0355   <- brilha
+unshaded + albedo 2.5 (HDR)       +0,0586   <- brilha MAIS
+```
+
+As duas primeiras linhas serem iguais ao dígito é a prova: a emissão não chega
+ao buffer.
+
+**Por que dói tanto neste projeto:** `unshaded + emissivo` é exatamente a receita
+dos efeitos daqui — **32 combinações em 16 arquivos** (`FxUtil`, `YamiFX`,
+`FireFX`, `GoroFX`, `GuraFX`, `Melee`, `BukiFX`…). Todas escrevem
+`emission_energy_multiplier` entre 2,5 e 4,0 e **jogam esse número fora** desde
+sempre. Ninguém notou porque, sem glow no projeto, emissão não fazia diferença
+visível de qualquer jeito — dois defeitos que se escondiam um no outro.
+
+**Correção:** albedo acima de 1,0 no lugar da emissão. Preserva o motivo de o
+efeito ser unshaded (não escurecer quando o golpe passa pela sombra) e brilha
+mais que o caminho sombreado. É trabalho da Fase 5 do `PLANO_VISUAL.md`.
+
+**Como detectar:** glow é invisível quando nada passa do limiar. O teste é
+sempre comparativo e com o objeto PARADO — minha primeira medição comparou
+glow on/off em dois quadros diferentes de um efeito com `RigidBody3D` voando, e
+os números mudaram por causa do movimento, não do glow. Emissivo estático,
+mesma câmera, mede o anel em volta.
+
+**Lição de método:** eu afirmei duas vezes, em documento, que ligar o glow faria
+"os quatro golpes de nove frutas lerem sem tocar numa linha de VFX". Era
+dedução a partir de `grep emission_energy_multiplier`, não medição. O grep
+provava que a emissão era ESCRITA; não provava que ela era USADA.
+
+---
+
+## 2026-08-25 — a névoa não pode clarear ao longe e escurecer para baixo
+
+**Sintoma:** o buraco do mapa, que aparecia VERDE (a cor do "chão" do céu
+procedural, e portanto lia como grama), passou a aparecer AZUL-CLARO depois do
+meu conserto — passou a ler como água. Troquei a cor do erro.
+
+**Causa raiz:** tentei fazer um mecanismo só cumprir duas funções opostas. O
+`Environment` tem **uma cor de névoa**. Ela precisa ser clara para a perspectiva
+aérea funcionar à distância; e eu liguei `fog_height_density = 0.16` para
+escurecer o poço com a mesma névoa. Descendo, ela satura — e névoa opaca CLARA
+é o azul que apareceu. De quebra escondeu o plano escuro que eu tinha posto
+em `y = −60` para ser o fundo.
+
+**Medido** (cor no meio do poço, mesma câmera):
+
+```
+névoa on,  fundo on    (0,263  0,369  0,467)   azul lavado
+névoa OFF, fundo on    (0,000  0,000  0,000)   preto
+névoa OFF, fundo off   (0,000  0,000  0,016)   preto
+```
+
+Duas conclusões: quem lavava era a névoa sozinha, e o plano de fundo era
+**redundante** — o `ground_bottom_color` escuro do céu já entrega preto.
+
+**Correção:** `fog_height_density = 0` (o ar só clareia ao longe) e o poço
+escurecido pelo céu. O plano foi removido: ele nunca seria visto de perto,
+porque o jogador morre em `VOID_Y = −40`, seis metros acima de onde ele estava.
+
+**Como detectar:** quando um ajuste "conserta" trocando um problema por outro
+do mesmo tamanho, quase sempre é um mecanismo sendo usado para duas coisas
+contrárias. Isolar é ligar e desligar cada um e medir o pixel.
+
+---
+
+## 2026-08-25 — `set_glow_level()` é base ZERO e o inspetor é base UM
+
+**Sintoma:** `ERROR: Index p_level = 7 is out of bounds
+(RenderingServer::MAX_GLOW_LEVELS = 7)`, no meio do log de subida.
+
+**Causa raiz:** as propriedades aparecem como `glow_levels/1` .. `glow_levels/7`
+no inspetor, então escrevi `set_glow_level(1..7)`. O método é **base zero**
+(0..6). O nível 7 estourava e o nível 0 nunca era zerado — o glow ficava
+configurado errado, com um erro que some no meio da saída.
+
+**Como detectar:** erro de índice em `_ready` não derruba nada e não falha
+teste. Vale conferir a configuração LENDO de volta em runtime
+(`get_glow_level(i)`), que foi o que expôs o buraco no nível 0.
+
+---
+
+## 2026-08-25 — onze clipes retargetados têm o tronco tombado ~50°
+
+**Sintoma:** nenhum reclamado, e é o que assusta. Descoberto ao montar o
+personagem no Blender: toda pose animada saía "caída". A primeira suspeita foi
+da minha conversão — era do dado.
+
+**Causa raiz:** o retarget do Mixamo deixou uma ROLAGEM no `Torso` (eixo Z) que
+nunca foi zerada. Medido no primeiro quadro dos 29 clipes: **11 passam de 25°**.
+
+```
+roundhouse_kick   −81,4°   (faixa −85,7 … −51,8 — NUNCA fica de pé)
+kicking           −60,6°
+gunplay           −53,8°
+bouncing_idle     −50,7°
+boxing_1 (jab)    −32,8°
+```
+
+**Confirmado no jogo, não só no JSON:** tocando `bouncing_fight_idle` por
+`play_baked`, o vetor "para cima" do torso fica a **51,4° da vertical**.
+
+**Por que ninguém viu:** dos 11, só dois estavam em uso no combo (`boxing_1` e
+`roundhouse_kick`), e ali o defeito se confundia com o problema já conhecido de
+LEITURA dos socos ("os dois liam igual", 2026-08-11). O resto do acervo é
+material de reserva que nunca chegou à tela.
+
+**Como detectar:** `Torso.z` no primeiro quadro de cada clipe. Ele deve estar
+perto de zero — rolagem é o eixo que um humano quase não usa parado. Uma
+varredura de 10 linhas sobre `tools/anim_editor/clips/*.json` acha todos.
+
+**Correção:** os quatro M1 do combo foram REAUTORADOS
+(`tools/autorar_combo_m1.py`), com portão medido que exige `|Torso.z| <= 20°`.
+Os outros 7 clipes tombados continuam como estão — estão fora de uso e a lista
+ficou registrada em `docs/ESQUELETO.md`, em ordem de gravidade.
+
+---
+
+## 2026-08-25 — a conferência do rig no Blender comparava o erro consigo mesma
+
+**Sintoma:** o `.blend` gerado abria com a pose de repouso PERFEITA e todas as
+poses animadas embaralhadas — e o script dizia "✓ a conta fecha, pior erro
+0,4 mm".
+
+**Causa raiz:** o Godot reporta `Node3D.rotation_order = 2`, que a documentação
+dele chama de **YXZ**. A string equivalente no mathutils do Blender é **`ZXY`**:
+as duas bibliotecas nomeiam a ordem de Euler em sentidos opostos. Eu usei
+`'YXZ'`.
+
+O que fez o defeito sobreviver a um teste foi outra coisa, e é a lição:
+**a conferência comparava a cinemática direta com o Blender, e os dois liam o
+Euler pela MESMA função.** Errando junto, concordavam. A pose de repouso
+disfarçava porque com todos os ângulos em zero qualquer ordem acerta.
+
+**Como detectar:** teste sem referência EXTERNA não prova conversão. A correção
+foi colar no script uma base medida dentro do Godot (`ANCORA_COLUNAS`) e
+recusar montar se a conversão não a reproduzir. Junto entrou um CONTROLE: a
+mesma conta com os eixos errados de propósito, que precisa explodir — se o
+controle não reprovar, o teste não vale e o script também recusa.
+
+Medido depois: âncora 3×10⁻⁷, pior erro 0,099 mm, controle 2,243 m.
+
+**Lição de método:** todo teste de conversão precisa de (a) uma referência
+externa e (b) um controle que falhe. Sem (b), "passou" e "não sabe reprovar"
+são indistinguíveis — foi a mesma classe de cegueira do `transition_to`
+silencioso registrado acima.
+
+---
+
+## 2026-08-25 — `Melee.clipe()` só achava `.res`, e o editor grava `.tres`
+
+**Sintoma:** golpe sem animação nenhuma, com um `push_warning` de "clipe
+ausente" que some no meio do log.
+
+**Causa raiz:** o caminho era montado como `"res://assets/animations/%s.res"` —
+extensão fixa. O editor de animação do próprio projeto
+(`tools/anim_editor/clip.py::para_tres`) grava **`.tres`**, que o Godot carrega
+exatamente igual. Ou seja: todo clipe AUTORAL era invisível para o combo.
+
+**Como detectar:** `push_warning` não falha teste nenhum. Vale procurar
+`"%s.res"`, `"%s.tres"` e afins — extensão escrita à mão é sempre uma aposta
+sobre quem gravou o arquivo.
+
+**Correção:** `clipe()` tenta `.tres` e depois `.res`.
+
+---
+
+## 2026-08-25 — o auto-mira e o lunge do corpo a corpo apontavam PARA TRÁS
+
+**Sintoma:** nenhum visível, e é o que torna o caso instrutivo. O golpe acertava
+normalmente (a hitbox sempre usou a direção certa), então nada parecia errado —
+o que faltava era o auxílio: o jogador nunca era puxado para o alvo.
+
+**Causa raiz:** `find_best_melee_target` e `perform_melee_lunge` calculavam a
+frente como
+
+```gdscript
+var forward = -Vector3.FORWARD.rotated(Vector3.UP, _yaw)
+```
+
+`Vector3.FORWARD` **já é** `(0, 0, −1)`. Negá-la dá `(0, 0, +1)` — para trás. O
+resto do combate usa `-Basis.from_euler(Vector3(0, yaw, 0)).z`
+(`melee_controller.pedir`, que é quem posiciona a hitbox).
+
+**Medido** (`dot` entre as duas expressões, três ângulos):
+
+```
+yaw= 0.00 | lunge/auto-mira=( 0.00, 0.00, 1.00)  hitbox=( 0.00, 0.00,-1.00)  dot=-1.00
+yaw= 1.57 | lunge/auto-mira=( 1.00, 0.00, 0.00)  hitbox=(-1.00, 0.00, 0.00)  dot=-1.00
+yaw= 3.14 | lunge/auto-mira=( 0.00, 0.00,-1.00)  hitbox=( 0.00, 0.00, 1.00)  dot=-1.00
+```
+
+−1,00 em todo yaw: exatamente opostas, não "um pouco fora".
+
+**Duas consequências, ambas silenciosas:**
+
+1. o cone frontal (`dot_prod > 0.0`) selecionava alvos **atrás** do jogador;
+2. o lunge empurrava o corpo **para longe** do alvo recém-selecionado — e para
+   longe de onde a hitbox ia nascer.
+
+**Como detectar:** duas expressões de "frente" no mesmo sistema é o cheiro. O
+teste é uma linha: `print(a.dot(b))` para alguns yaws. `-Vector3.FORWARD` é
+armadilha de nome — lê-se "a frente", vale o contrário.
+
+**O que NÃO era bug:** o `lunge_force` de 18,0. Parece absurdo para um puxão de
+0,30 m (§3.3 do plano), mas é impulso de UM QUADRO — `_etapa_locomocao` reescreve
+`velocity.x/z` no quadro seguinte. 18 ÷ 60 = 0,30 m, o número-alvo. Quase
+"corrigi" um valor correto por ler a unidade errada.
+
+## 2026-08-25 — o estado "Stunned" era pedido em 7 pontos e NÃO EXISTIA
+
+**Sintoma:** nenhum. É o pior tipo — o jogo não reclamava de nada, e cinco
+mecânicas estavam desligadas em silêncio.
+
+**Causa raiz:** `Player._feedback_de_dano` chamava `_fsm.transition_to("Stunned")`
+e outros seis pontos checavam `_fsm.state.name == "Stunned"`. Nunca houve um nó
+com esse nome: `PlayerStateMachine.transition_to` começa com
+
+```gdscript
+if not has_node(target_state_path):
+    return
+```
+
+ou seja, a transição era um **no-op calado** e as seis comparações eram falsas
+para sempre. O que estava morto por causa disso:
+
+- `_request_melee` não recusava clique sob hitstun — dava para socar apanhando;
+- `golpe_prende` nunca cedia ao tranco — atacar era imunidade a empurrão, o
+  oposto do que o comentário ao lado afirmava;
+- o wall bounce do knockback (depois do `move_and_slide`) nunca disparou uma vez;
+- o combo breaker (G) exigia estar em "Stunned" e só conseguia ler o
+  `_hitstop_timer`;
+- `_slot_em_uso` nunca via combate travado por stun.
+
+**Como detectar:** `grep -n 'transition_to("' *.gd src/**/*.gd` e conferir cada
+alvo contra os `add_child` da montagem da FSM. Uma transição para nó inexistente
+é indistinguível de uma transição que aconteceu — a máquina não avisa.
+
+**Correção:** `src/player/hsm/CombatStateStunned.gd`, registrado no `_ready` do
+Player junto com as outras fases, e uma nota no ponto de montagem dizendo que o
+NOME DO NÓ é o endereço.
+
+**Lição de método:** `return` silencioso em resolvedor de nome é o mesmo defeito
+de classe do `_fire_skill` que "engole quase tudo" (ver `docs/frutas/README.md`):
+o caminho de erro é indistinguível do caminho de sucesso. Onde não dá para
+mudar a assinatura, o teste tem que afirmar a EXISTÊNCIA do alvo — foi o que
+`src/tests/test_fsm.gd` passou a fazer.
+
+---
+
+## 2026-08-25 — tirar o boneco da cena derrubou a suíte `src/tests/` inteira
+
+**Sintoma:** `>>> TEST FAIL (cenário não montou): TrainingDummy não encontrado em
+TestArena.tscn` nos três testes de `src/tests/`. Nenhum deles rodou uma asserção
+desde 2026-08-23.
+
+**Causa raiz:** o commit de 2026-08-23 (interruptores F1/F2) tirou o nó
+`TrainingDummy` do `TestArena.tscn` — correto, porque os bonecos passaram a ser
+criados pelo SERVIDOR via `Main.pedir_dummy()` + `MultiplayerSpawner`. O que não
+acompanhou foi o `BaseTest.gd`, que buscava o nó na cena e abortava sem ele.
+
+**Por que passou despercebido:** o aborto é uma linha só, no fim de uma saída de
+centenas de linhas de `MoveFrame: ...`, e a contagem "6 falham" da validação de
+08-23 não distingue teste que FALHOU de teste que nem MONTOU. É exatamente a
+"segunda armadilha" que o cabeçalho do próprio `BaseTest.gd` manda nunca deixar
+passar — e passou.
+
+**Correção:** o `BaseTest` monta o próprio boneco quando a cena não traz um.
+Devolver o nó à cena seria o conserto errado: a cena deixou de ser o lugar dele
+de propósito.
+
+**Como detectar:** `grep -c "cenário não montou"` na saída da suíte. Vale a pena
+o `validar.sh` tratar isso como categoria própria, separada de asserção falhada.
+
+---
+
+## 2026-08-25 — o corpo de teste nasce a 1,7 m da parede (falso negativo de dash)
+
+**Sintoma:** no `test_fsm.gd`, a asserção "o corpo saiu de verdade" lia
+**0,0 m/s** e acusava um dash que não tinha saído. O dash havia saído: medido a
+**42,9 m/s** no quadro do disparo.
+
+**Causa raiz:** duas coisas somadas.
+
+1. O Player, montado em `SpawnPoint` (0, 1, 0), aparece em **z = −9,77** entre os
+   quadros 2 e 3 — um teleporte de 9,77 m que ninguém pediu. **A causa disso
+   continua ABERTA**; medido, não explicado (`velocity` é zero antes e depois, e
+   `Scoreboard.RESPAWN` é (0, 6, 0), então não é o respawn).
+2. A parede da arena está em z = −11,5 e a esquiva percorre ~12 m em 0,28 s. A
+   asserção media dois quadros depois do disparo, quando o `move_and_slide` já
+   tinha zerado a velocidade contra a parede.
+
+**Correção (do teste):** medir no PRIMEIRO quadro da esquiva — que é também o
+instante certo semanticamente — e reposicionar o corpo antes do round que mede
+deslocamento.
+
+**Como detectar:** asserção de movimento que lê exatamente 0,0 num corpo que
+deveria estar voando é quase sempre colisão, não ausência de impulso. Imprimir
+`is_on_wall()` e a posição junto com a velocidade separa os dois casos em um
+quadro.
+
+**Pendência:** o teleporte do item 1. Está registrado aqui para não se perder;
+quem for mexer em spawn de teste começa por ele.
+
+## 2026-08-23 — o Kurouzu (X da Yami) virava zumbi por um argumento faltando
+
+**Sintoma:** relatado pelo dono — "o X da Yami Yami não está atraindo o inimigo e
+não está desaparecendo após o uso". O orbe do buraco negro ficava colado na palma
+da mão para sempre, e os X seguintes abriam e morriam sem puxar ninguém.
+
+**Causa raiz:** `KurouzuController` chamava `caster.pedir_cancelar_hold("X")` com
+UM argumento; `Player.pedir_cancelar_hold(slot, fruit)` pede DOIS. O erro de
+runtime aborta a função em curso — e no caminho SEM captura o `queue_free()` vinha
+na linha **seguinte**, então nunca rodava. O controlador virava zumbi: `_exit_tree`
+é quem libera o `vortex_root`, e ele nunca disparava.
+
+O segundo sintoma sai do mesmo zumbi. A linha `set_meta("yami_kurouzu_active",
+false)` vem ANTES da chamada que falha, então continuava rodando a cada quadro.
+Passados os 5 s de vida do zumbi, ela desligava o X **seguinte** no primeiro
+quadro — o golpe nascia já cancelado. Não era o X que estava quebrado: era o X
+anterior que não tinha morrido.
+
+**Evidência:** sonda de dois processos e de processo único
+(`--script` com `GameFlow.start_singleplayer`):
+
+```
+X nº1 sem alvo -> controladores vivos: 1 | orbes vivos: 1 | kurouzu_active=false
+X nº2 (6 s depois, alvo a 8,81 m):
+   kurouzu_active logo após comecar = true
+   kurouzu_active 0,2 s depois      = false      <- o zumbi desligou
+   controladores vivos: 2 | orbes vivos: 2       <- acumulando
+SCRIPT ERROR: Invalid call to function 'pedir_cancelar_hold' in base
+  'CharacterBody3D (Player)'. Expected 2 argument(s).
+  at: KurouzuController._physics_process (res://src/effects/YamiFX.gd:542)
+```
+
+O erro repetia a **cada quadro de física**, indefinidamente.
+
+**Descartado:** a oclusão (`cached_los`), a força de sucção, a guarda
+`caster.is_multiplayer_authority()` e o teto `KUROUZU_DURATION` — todos corretos.
+Com um alvo capturado o golpe puxava 8,42 m -> 1,78 m normalmente; o defeito só
+aparece quando a tecla é solta **sem captura**, que é o caso comum em jogo.
+
+**Correção:** `src/effects/YamiFX.gd:542` e `:684` passam a fruta
+(`pedir_cancelar_hold("X", "yami_yami")`), e o `queue_free()` foi movido para
+**antes** de tocar no caster — a saída do controlador não pode depender de uma
+chamada externa dar certo.
+
+**Como detectar de novo:** conjurar X sem ninguém por perto, soltar, e contar os
+nós que respondem a `_throw_target` na árvore. Depois da correção: 0 controladores
+e 0 orbes após 5 conjurações seguidas (contagem de cena estável em ~1.000 nós).
+
+---
+
+## 2026-08-23 — `world.get_tree()` é null no primeiro golpe de cada vida
+
+**Sintoma:** a primeira conjuração do X da Yami em cada vida não marcava alvo
+nenhum: sem `in_kurouzu`, sem o ícone `SUGADO`, sem os 4 s de silêncio. O vórtice
+abria na mão e era só enfeite por ~150 ms.
+
+**Causa raiz:** `YamiFX._find_closest_entity` fazia
+`world.get_tree().get_nodes_in_group(...)`. O `world` é o `Skills_<jogador>` de
+`Player._get_skills_container()`, que entra na cena por
+`add_child.call_deferred(...)` — no primeiro cast ele **ainda não está na árvore**,
+e `get_tree()` devolve null.
+
+É literalmente a mesma armadilha que `FxUtil.autofree` documenta desde
+2026-08-22, no mesmo repositório. Ela voltou porque a correção de lá foi aplicada
+**num ponto só**, e não à classe de problema: qualquer código que receba `world`
+como parâmetro está sujeito a ele.
+
+**Evidência:**
+
+```
+SCRIPT ERROR: Cannot call method 'get_nodes_in_group' on a null value.
+  at: _find_closest_entity (res://src/effects/YamiFX.gd:444)
+  [1] _kurouzu  [2] cast  [3] _fire_skill  [4] _net_play_cast
+```
+
+O que mascarava: a revarredura do `KurouzuController` 150 ms depois roda a partir
+de um nó já na árvore e achava o alvo. Por isso o golpe "quase" funcionava — a
+distância no primeiro instante media 4,79 m em vez de 2,71 m.
+
+**Correção:** `src/effects/YamiFX.gd:441` cai para
+`Engine.get_main_loop() as SceneTree` quando `world.get_tree()` é null — o mesmo
+SceneTree, sem depender de o nó estar pendurado.
+
+**Como detectar de novo:** `grep -rn "world.get_tree()" src/effects/` deve voltar
+vazio. Em jogo: conjurar o golpe na **primeira** vez de uma vida e procurar
+`Cannot call method ... on a null value` no console.
+
+---
+
+## 2026-08-23 — o AutoDummy andava dentro do Black Hole
+
+**Sintoma:** relatado pelo dono — "o C da Yami Yami não deve possibilitar que o
+inimigo se mova". O boneco automático perseguia e socava normalmente com o poço
+aberto em cima dele.
+
+**Causa raiz:** `AutoDummy._physics_process` chama `super._physics_process(delta)`
+e **continua**. O pai (`TrainingDummy`) sai cedo em `in_vortex`, `in_kurouzu` e
+`in_black_hole`, mas `super` não interrompe o corpo do filho — o próprio arquivo
+já documentava isso para a guarda de autoridade em 2026-08-22 e repetiu **só** o
+`is_frozen`. As três metas de controle de multidão ficaram de fora.
+
+**Evidência:** sonda em singleplayer com o C aberto, medindo os dois bonecos lado
+a lado (`in_bh=true` nos dois o tempo todo):
+
+```
+             AutoDummy          TrainingDummy
+t=5,4 s      0,18 m/s           0,32 m/s
+t=5,7 s      1,45 m/s   <-      0,48 m/s
+t=6,0 s      3,10 m/s   <-      0,40 m/s     (3,5 m/s = perseguição cheia)
+```
+
+O TrainingDummy fica nos ~0,4 m/s da sucção; o AutoDummy acelerava para a
+velocidade de perseguição e escapava do poço.
+
+**Descartado:** o jogador humano. Duas sondas de **dois processos** (host
+conjurando/cliente vítima e o inverso), com W fisicamente segurado via
+`Input.parse_input_event`, mostraram `velocity=(0,0,0)` na vítima durante todo o
+poço — `Player._etapa_travamento` já respeitava `in_black_hole` nos dois sentidos
+da rede. O deslocamento residual de 0,48 m/s era a sucção, não a tecla.
+
+**Correção:** `src/entities/AutoDummy.gd` repete a mesma lista de metas do pai
+antes de rodar a IA.
+
+**Como detectar de novo:** abrir o C ao lado dos dois bonecos e comparar a
+velocidade dos dois. Divergência = a IA está ignorando o controle.
+
+---
+
+## 2026-08-23 — `set_anchors_preset` sozinho: painel de HUD fora da tela
+
+**Sintoma:** o painel novo dos bonecos de treino não aparecia no canto inferior
+direito. Ao investigar, descobriu-se que o **painel de munição da Buki Buki
+(`AmmoHud`) nunca tinha aparecido também** — erro silencioso desde que o arquivo
+nasceu.
+
+**Causa raiz:** `set_anchors_preset(PRESET_FULL_RECT)` recalcula as âncoras para
+**manter** o retângulo atual, que num `Control` recém-criado é `(0,0)`. Todo
+cálculo que parte de `size.x`/`size.y` resolve contra zero. O que faz o `Control`
+preencher a viewport é `set_anchors_**and_offsets**_preset`.
+
+**Evidência:** print do jogo rodando —
+
+```
+[DBG] DummyToggleHud visible=true  size=(0.0, 0.0)
+[DBG]   ColorRect size=(250,72)  position=(-270,-92)   <- fora da tela
+[DBG] AmmoHud size=(0.0, 0.0)
+[DBG] MatchHud size=(1280.0, 1280.0)                   <- o que usa o preset certo
+```
+
+**Descartado:** `visible`, `mouse_filter`, ordem dos filhos na `CanvasLayer` e a
+`z_index` — todos corretos.
+
+**Correção:** `src/ui/DummyToggleHud.gd` e `src/ui/AmmoHud.gd` passam a usar
+`set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)`.
+
+**Como detectar de novo:** `grep -rn "set_anchors_preset(Control.PRESET_FULL_RECT)"
+src/ui/` — em `_ready()` de HUD raiz, é sempre o errado. E, no jogo rodando,
+imprimir `size` do nó: `(0,0)` num painel que deveria preencher a tela é o defeito.
+
+**Lição de método (o erro é meu, e repetido):** o `MatchHud` documenta este exato
+defeito desde 2026-08-12, com a mesma explicação, no mesmo repositório — e eu
+escrevi a chamada errada de novo. O motivo de escapar é que **ela não vira erro em
+teste nenhum**: compila, instancia, `visible` é `true`, os filhos existem, e todas
+as sondas de árvore passam. Só a captura de tela do jogo rodando denuncia. Por isso
+o `AmmoHud` conviveu meses com o defeito. Regra prática: HUD nova só conta como
+entregue depois de **aparecer numa captura de tela**, nunca por sonda de árvore.
+
+---
+
 ## 2026-08-10 — `--editor --quit` não detecta script que não compila
 
 **Sintoma:** uma edição minha quebrou o `IceFX.gd` inteiro (usei a variável

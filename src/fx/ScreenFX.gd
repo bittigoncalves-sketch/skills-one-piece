@@ -100,7 +100,7 @@ func _ready() -> void:
 	_red_target_mat = StandardMaterial3D.new()
 	_red_target_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_red_target_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_red_target_mat.albedo_color = Color(1.0, 0.15, 0.18, 0.82)
+	_red_target_mat.albedo_color = FxUtil.brilho(Color(1.0, 0.15, 0.18, 0.82), 2.8)
 	# ⚠️ ISTO É O QUE FAZ "VER ATRAVÉS DA PAREDE" (2026-08-22). O destaque já
 	# existia, mas era ocluído como qualquer malha: só aparecia quando o alvo já
 	# estava à vista — ou seja, quando não fazia falta. `no_depth_test` desliga o
@@ -115,9 +115,6 @@ func _ready() -> void:
 	_skill_mat.albedo_color = Color(1.0, 0.68, 0.12, 0.70)
 	_skill_mat.no_depth_test = true
 	_skill_mat.render_priority = 99
-	_red_target_mat.emission_enabled = true
-	_red_target_mat.emission = Color(1.0, 0.12, 0.12)
-	_red_target_mat.emission_energy_multiplier = 2.8
 
 func _process(delta: float) -> void:
 	# `tempo` anima as estrias de velocidade. Sem ele, as linhas ficam paradas e

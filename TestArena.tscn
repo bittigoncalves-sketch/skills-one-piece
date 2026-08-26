@@ -34,9 +34,6 @@ shape = SubResource("BoxShape3D_wall")
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Wall"]
 mesh = SubResource("BoxMesh_wall")
 
-[node name="TrainingDummy" type="CharacterBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -8)
-script = ExtResource("1_dummy")
 
 [node name="SpawnPoint" type="Node3D" parent="." groups=["spawn"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)

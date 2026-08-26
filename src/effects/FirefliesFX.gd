@@ -124,7 +124,7 @@ class FireflyNode extends Area3D:
 		
 		var mat = StandardMaterial3D.new()
 		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		mat.emission_enabled = true
+		# A cor é escrita a cada quadro no `_process` (ver a nota lá).
 		mesh_inst.material_override = mat
 		add_child(mesh_inst)
 		
@@ -174,12 +174,18 @@ class FireflyNode extends Area3D:
 			position += (offset * sin(time_passed * 2.0) * 1.5 + drift) * delta
 			position.y += cos(time_passed * 1.5) * delta * 1.5
 		
-		# Trocar cores em RGB constantemente
+		# ⚠️ A COR PERCORRE A RODA DE MATIZ INTEIRA — e o golpe se chama
+		# "Vagalumes de FOGO". `Color.from_hsv(fmod(t * 0.5, 1), 1, 1)` passa por
+		# verde, ciano, azul e roxo; em tela os vagalumes saem como cubos
+		# ARCO-ÍRIS, não como brasas. Está registrado em
+		# `docs/LISTA_DE_CORRECOES.md` — é decisão de arte do dono, não conserto
+		# meu, então a linha fica como está.
 		var c = Color.from_hsv(fmod(time_passed * 0.5, 1.0), 1.0, 1.0)
 		if mesh_inst and mesh_inst.material_override:
 			var mat = mesh_inst.material_override as StandardMaterial3D
-			mat.albedo_color = c
-			mat.emission = c
+			# Brilho pelo ALBEDO: o material é unshaded e descarta emissão.
+			# Ver `FxUtil.brilho()`.
+			mat.albedo_color = FxUtil.brilho(c, 3.0)
 		if light:
 			light.light_color = c
 

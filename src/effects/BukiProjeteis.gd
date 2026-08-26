@@ -187,11 +187,8 @@ static func _mat(cor: Color, metal: float, aspereza: float,
 # Material de LUZ pura (risco do traçante): sem sombra, sem iluminação, aditivo.
 static func _mat_luz(cor: Color) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
-	m.albedo_color = cor
+	m.albedo_color = FxUtil.brilho(cor, 2.0)
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	m.emission_enabled = true
-	m.emission = Color(cor.r, cor.g, cor.b)
-	m.emission_energy_multiplier = 2.0
 	return m

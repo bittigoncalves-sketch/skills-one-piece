@@ -165,12 +165,17 @@ func _melee() -> void:
 		var tocada: float = Melee.duracao_tocada(i)
 		var t_imp: float = Melee.impacto_no_clipe(i)          # em tempo de CLIPE
 		var j: Array = _janela_acao(a, membro[i], t_imp)      # [t0, t1, t_pico, frac_no_impacto]
+		# ⚠️ ACESSORES, NÃO CAMPOS (2026-08-25). `atraso`/`vida`/`inicio` saíram do
+		# dicionário do combo de mão livre — viraram `startup`/`ativo` e um
+		# `inicio` derivado do `pico`. Ver o cabeçalho de FRAME DATA em Melee.gd.
+		var su: float = Melee.startup(i)
+		var at: float = Melee.ativo(i)
 		print("     passo %d (%s): vel %.2fx inicio %.2fs -> %.2fs em tela | impacto t_clipe=%.3f, ação [%.3f..%.3f] pico %.3f (%.0f%% no impacto)"
-			% [i, g["nome"], float(g["vel"]), float(g.get("inicio", 0.0)), tocada,
+			% [i, g["nome"], float(g["vel"]), Melee.inicio(i), tocada,
 				t_imp, j[0], j[1], j[2], 100.0 * j[3]])
-		_ok(float(g["atraso"]) + float(g["vida"]) <= tocada,
+		_ok(su + at <= tocada,
 			"passo %d (%s): hitbox (%.2f+%.2f s) cabe na animação de %.2f s"
-				% [i, g["nome"], float(g["atraso"]), float(g["vida"]), tocada])
+				% [i, g["nome"], su, at, tocada])
 		_ok(t_imp >= j[0] and t_imp <= j[1],
 			"passo %d (%s): a hitbox nasce DENTRO do golpe do membro, não na guarda" % [i, g["nome"]])
 		_ok(j[3] >= 0.9,
@@ -184,19 +189,54 @@ func _melee() -> void:
 		# ⚠️ Desde 2026-08-15 o recuo NÃO é mais chave da tabela — ele é derivado
 		# da duração da animação (`Melee.recuo()`), que é o que trava o clique E o
 		# corpo. A asserção continua valendo: ela agora confere o PISO da conta.
+		#
+		# ⚠️ E DESDE 2026-08-25 O PISO CAIU DE 0,15 s PARA `ativo`. Os 0,15 s eram
+		# 9 quadros de membro estendido para impedir que o clique seguinte
+		# cortasse o golpe cedo demais — regra escrita quando a trava era o clipe
+		# INTEIRO (1,2-1,5 s) e sobrava tempo de graça. Com ciclo de 0,40 s, exigir
+		# 0,15 s depois do impacto consumiria 37% do golpe e tornaria o frame data
+		# do §4.2 impossível por construção.
+		#
+		# O que substitui a regra não é frouxidão: é o `ativo` (a hitbox tem que
+		# caber inteira depois do startup) mais a asserção de janela do
+		# `medir_frame_data.gd`. E a legibilidade dos dois socos, que era o
+		# problema que os 0,15 s tentavam resolver por tempo, passou a ser
+		# resolvida por FORMA — guardas de entrada distintas (§6.3), com portão
+		# próprio (`medir_distancia_guarda.gd`, Fase B).
 		var rec: float = Melee.recuo(i)
-		_ok(rec >= float(g["atraso"]) + 0.15,
+		_ok(rec >= su + at,
 			"passo %d (%s): %.0f ms de golpe em tela DEPOIS do impacto (recuo %.2f, impacto %.2f)"
-				% [i, g["nome"], 1000.0 * (rec - float(g["atraso"])), rec, float(g["atraso"])])
+				% [i, g["nome"], 1000.0 * (rec - su), rec, su])
 		# A trava é a animação: o clique seguinte não pode abrir antes do fim.
 		_ok(absf(rec - tocada) < 0.02 or rec > tocada,
 			"passo %d (%s): a trava (%.2f s) cobre a animação inteira (%.2f s)"
 				% [i, g["nome"], rec, tocada])
-	# Ritmo: os dois socos não podem ter a mesma cadência, senão leem igual mesmo
-	# sendo braços opostos (foi o relato do dono em 2026-08-11).
-	_ok(absf(float(Melee.passo(0)["atraso"]) - float(Melee.passo(1)["atraso"])) >= 0.05,
-		"os dois socos conectam em tempos DIFERENTES (%.2f s x %.2f s)"
-			% [float(Melee.passo(0)["atraso"]), float(Melee.passo(1)["atraso"])])
+	# ⚠️ ASSERÇÃO APOSENTADA EM 2026-08-25 — e a razão importa mais que a troca.
+	#
+	# Ela exigia que os dois socos conectassem em tempos DIFERENTES (≥50 ms), na
+	# teoria de que cadência igual faria os dois lerem igual — o relato do dono
+	# em 2026-08-11. Era a melhor hipótese disponível na época.
+	#
+	# O §4.2 do PLANO_COMBATE_BATTLEGROUNDS nivela os dois em 0,20 s de startup
+	# DE PROPÓSITO: num battlegrounds a cadeia de M1 tem ritmo constante, e é
+	# isso que faz o combo ser previsível o bastante para haver contra-jogo. A
+	# asserção antiga proibiria o frame data inteiro.
+	#
+	# A distinção não foi abandonada, MUDOU DE EIXO — de tempo para forma
+	# (§6.3): guardas de entrada geometricamente distintas e trajetórias em eixos
+	# diferentes (jab reto, soco 2 em arco). O portão disso é o
+	# `medir_distancia_guarda.gd` da Fase B, que mede a distância entre as poses
+	# em t=0 e exige ≥40° nos papéis de braço+torso — teste objetivo onde antes
+	# havia só relato humano.
+	#
+	# ⚠️ ENQUANTO A FASE B NÃO ENTRA, ESTA VERIFICAÇÃO NÃO TEM SUBSTITUTA ATIVA.
+	# É dívida declarada, com gatilho: ela volta como asserção de FORMA junto
+	# com os clipes autorais das Fases A-D. Até lá, o que garante a distinção é
+	# o par de clipes ser diferente (asserção logo acima) e a janela conter o
+	# golpe, não a guarda (`medir_frame_data.gd`).
+	_ok(Melee.startup(0) == Melee.startup(1),
+		"os dois socos têm a MESMA cadência (%.2f s), como o §4.2 pede — a distinção é de FORMA, não de tempo"
+			% Melee.startup(0))
 	# Perna que golpeia no passo 2 (lê de `melee_guarda`, ver Melee.gd) contra
 	# CADA braço isoladamente — não a soma dos dois. Chute giratório/lateral de
 	# verdade (ex: `roundhouse_kick`) balança os DOIS braços pra compensar a
@@ -320,7 +360,7 @@ func _melee_dano() -> void:
 		p._request_melee()
 		# Espera em tempo REAL: o `atraso` da hitbox roda num SceneTreeTimer, e no
 		# headless o número de quadros por segundo não é 60.
-		var limite: int = Time.get_ticks_msec() + int(1000.0 * (float(g["atraso"]) + float(g["vida"]) + 0.9))
+		var limite: int = Time.get_ticks_msec() + int(1000.0 * (Melee.startup(i) + Melee.ativo(i) + 0.9))
 		while Time.get_ticks_msec() < limite:
 			await process_frame
 			if d.health < hp - 0.0001:

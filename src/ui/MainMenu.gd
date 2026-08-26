@@ -287,6 +287,42 @@ func _build_ui() -> void:
 	social_hbox.add_child(_create_social_btn("🐙")) # GitHub
 	social_hbox.add_child(_create_social_btn("📖")) # Wiki/Docs
 
+	# --- BONECOS DE TREINO (canto inferior direito, logo acima do SAIR) ---
+	#
+	# Fica no RODAPÉ e não na coluna de CONFIGURAÇÕES por uma razão prática: o
+	# botão de configurações ainda é um `print` de "not implemented", e enterrar
+	# a única preferência que o jogo tem atrás dele seria escondê-la. Aqui ela
+	# está no mesmo canto em que aparece durante a partida, então o jogador
+	# aprende o lugar uma vez só.
+	#
+	# O menu escreve no `GameFlow`, que grava em `user://settings.cfg` e, se já
+	# houver mundo carregado (este menu também abre no ESC, em partida), manda o
+	# pedido para o servidor na hora. O painel não conhece nem `Main` nem rede.
+	var dummy_box := VBoxContainer.new()
+	dummy_box.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	dummy_box.position = Vector2(-260, -190)
+	dummy_box.custom_minimum_size = Vector2(220, 0)
+	dummy_box.add_theme_constant_override("separation", 6)
+	footer.add_child(dummy_box)
+
+	var lbl_dummy := Label.new()
+	lbl_dummy.text = "BONECOS DE TREINO"
+	lbl_dummy.add_theme_font_size_override("font_size", 12)
+	lbl_dummy.add_theme_color_override("font_color", COLOR_TEXT_LIGHT)
+	dummy_box.add_child(lbl_dummy)
+
+	for tipo in GameFlow.DUMMIES:
+		var cb := CheckBox.new()
+		cb.text = str(GameFlow.DUMMIES[tipo])
+		cb.button_pressed = GameFlow.dummy_ligado(str(tipo))
+		cb.add_theme_font_size_override("font_size", 13)
+		cb.add_theme_color_override("font_color", COLOR_TEXT_DARK)
+		cb.add_theme_color_override("font_hover_color", COLOR_TEXT_DARK)
+		cb.add_theme_color_override("font_pressed_color", COLOR_TEXT_DARK)
+		cb.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		cb.toggled.connect(_on_dummy_toggled.bind(str(tipo)))
+		dummy_box.add_child(cb)
+
 	var btn_exit := Button.new()
 	btn_exit.text = "🚪 SAIR DO JOGO"
 	btn_exit.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
@@ -496,6 +532,10 @@ func _on_join_pressed() -> void:
 
 func _on_play_pressed() -> void:
 	close_menu()
+
+func _on_dummy_toggled(ligado: bool, tipo: String) -> void:
+	GameFlow.set_dummy(tipo, ligado)
+	print("🎯 %s: %s" % [GameFlow.DUMMIES.get(tipo, tipo), "LIGADO" if ligado else "DESLIGADO"])
 
 func _on_config_pressed() -> void:
 	print("Settings not implemented yet.")

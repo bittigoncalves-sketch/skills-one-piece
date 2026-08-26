@@ -74,11 +74,8 @@ static func _sand_halo(radius: float, color: Color) -> MeshInstance3D:
 	halo.mesh = mesh
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.albedo_color = Color(color.r, color.g, color.b, 0.48)
+	mat.albedo_color = FxUtil.brilho(Color(color.r, color.g, color.b, 0.48), 0.8)
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.emission_enabled = true
-	mat.emission = color
-	mat.emission_energy_multiplier = 0.8
 	halo.material_override = mat
 	return halo
 
