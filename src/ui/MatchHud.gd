@@ -21,14 +21,14 @@ const COL_M := 244.0
 const RELOGIO_W := 150.0    # caixa do cronômetro, centrada no topo
 const RELOGIO_H := 46.0
 
-var _painel: ColorRect
+var _painel: Panel
 var _relogio: Label
 var _cab: Label
 var _nomes: Label
 var _kills: Label
 var _mortes: Label
 
-var _podio: ColorRect
+var _podio: Panel
 var _podio_titulo: Label
 var _podio_lista: Label
 var _podio_rodape: Label
@@ -104,8 +104,8 @@ func _mmss(segundos: float) -> String:
 
 # ------------------------------------------------------------- construção
 func _build_painel() -> void:
-	_painel = ColorRect.new()
-	_painel.color = Color(0, 0, 0, 0.5)
+	_painel = Panel.new()
+	_painel.add_theme_stylebox_override("panel", Estilo.painel())
 	_painel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	_painel.position = Vector2(-PANEL_W - MARGIN, MARGIN)
 	_painel.size = Vector2(PANEL_W, 100)
@@ -130,8 +130,9 @@ func _build_painel() -> void:
 	#
 	# Ancorado em `PRESET_CENTER_TOP` com `pivot` no meio: assim ele continua
 	# centrado em qualquer resolução, inclusive quando a janela é redimensionada.
-	var caixa := ColorRect.new()
-	caixa.color = Color(0, 0, 0, 0.45)
+	# Fase 6: mesma borda das barras e do contorno 3D — ver `Estilo.painel()`.
+	var caixa := Panel.new()
+	caixa.add_theme_stylebox_override("panel", Estilo.painel())
 	caixa.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	caixa.size = Vector2(RELOGIO_W, RELOGIO_H)
 	caixa.position = Vector2(-RELOGIO_W * 0.5, MARGIN)
@@ -145,8 +146,8 @@ func _build_painel() -> void:
 	_relogio.text = "⏱  05:00"
 
 func _build_podio() -> void:
-	_podio = ColorRect.new()
-	_podio.color = Color(0, 0, 0, 0.72)
+	_podio = Panel.new()
+	_podio.add_theme_stylebox_override("panel", Estilo.painel())
 	_podio.set_anchors_preset(Control.PRESET_CENTER)
 	_podio.size = Vector2(520, 300)
 	_podio.position = Vector2(-260, -150)
