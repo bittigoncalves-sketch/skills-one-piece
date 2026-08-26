@@ -16,8 +16,8 @@ não por impressão.
 
 | achado | evidência |
 |---|---|
-| **Não existe glow/bloom no projeto inteiro** | `grep -rn "glow_enabled\|glow_intensity\|glow_bloom"` devolve **zero** ocorrências |
-| …e o jogo depende de emissão | os efeitos de fruta escrevem `emission_energy_multiplier` entre **2,5 e 4,0**. Sem glow isso é só uma cor chapada mais clara: o tiro da Mera Mera lê como um risquinho laranja |
+| ~~Não existe glow/bloom no projeto inteiro~~ | ✅ **RESOLVIDO na Fase 1** (2026-08-25) |
+| ⚠️ **A emissão dos efeitos é DESCARTADA** | eles escrevem `emission_energy_multiplier` entre 2,5 e 4,0 **e jogam fora**: `SHADING_MODE_UNSHADED` ignora emissão. **32 combinações em 16 arquivos.** Medido — ver Fase 1 |
 | **Nenhum shader 3D próprio** | `find -name "*.gdshader"` devolve **zero**. Todo o visual 3D é `StandardMaterial3D` cru |
 | **94 pontos criam material à mão** | em **34 arquivos** — é este número que decide a arquitetura do cel (ver §2) |
 | **Sem névoa** | `env.fog_enabled = false`, com o comentário "sem parede cinza" |
@@ -133,8 +133,25 @@ contorno entrarem para dar forma. É uma transição declarada, não um retroces
 Um arquivo, ~40 linhas. Sem dependência nenhuma.
 
 1. **Glow ligado**, com limiar acima de 1.0 para só o emissivo brilhar (e não o
-   chão claro virar uma mancha). É o item de maior retorno do plano inteiro:
-   os quatro golpes de nove frutas passam a ler sem tocar em uma linha de VFX.
+   chão claro virar uma mancha).
+
+   ⚠️ **E AQUI ESTE PLANO ESTAVA ERRADO.** Ele afirmava que os golpes de nove
+   frutas passariam a ler "sem tocar em uma linha de VFX". **Não passam.**
+   Medido com esferas de teste — halo com glow menos halo sem glow:
+
+   | material | diferença |
+   |---|---|
+   | unshaded + emissão 4.0 | **+0,0000** |
+   | unshaded SÓ albedo | +0,0000 (idêntico ao de cima) |
+   | sombreada + emissão 4.0 | +0,0355 |
+   | unshaded + **albedo 2,5** | **+0,0586** |
+
+   As duas primeiras serem iguais ao dígito provam que `SHADING_MODE_UNSHADED`
+   **descarta a emissão** — e é assim que os efeitos deste jogo são feitos.
+
+   A afirmação vinha de `grep emission_energy_multiplier`: o grep provava que a
+   emissão era ESCRITA, não que era USADA. A correção é albedo acima de 1,0 em
+   vez de emissão, e é a **Fase 5**.
 2. **Névoa de profundidade**, com `fog_sky_affect` e perspectiva aérea, na cor
    do horizonte do céu — o horizonte deixa de ser uma linha onde o mundo acaba.
 3. **Exposição e tonemap** recalibrados para o chão parar de estourar.
@@ -171,10 +188,21 @@ decidir aqui o que ele precisa: textura, variação de cor por região, borda de
 plataforma marcada. **Depois** das fases 2 e 3 de propósito — o que o chão
 precisa muda completamente quando o render muda.
 
-### Fase 5 — VFX das frutas
+### Fase 5 — VFX das frutas  ⬅ **subiu de prioridade**
 
-Depende do glow (Fase 1). Boa parte melhora sozinha; o que sobrar é trabalho de
-forma, não de brilho.
+Depende do glow (Fase 1), que já está de pé. Mas **não melhora sozinha**: as 32
+combinações `unshaded + emissivo` precisam trocar emissão por **albedo acima de
+1,0** (medido: +0,0586 de halo, mais que o caminho sombreado). Isso preserva o
+motivo de o efeito ser unshaded — não escurecer quando o golpe passa pela sombra.
+
+Sítios por arquivo: `FxUtil` 6, `YamiFX` 5, `FireFX` 4, `GoroFX` 2, `GuraFX` 2,
+`Melee` 2, `ScreenFX` 2, e um em cada de `BukiFX`, `BukiProjeteis`,
+`FirefliesFX`, `FireFXGrande`, `GuraShatterMesh`, `SandFX`, `SeismicOrb`,
+`WaterFX`, `WeaponTrail3D`.
+
+O caminho natural é UMA função no `FxUtil` que devolve o material emissivo
+certo, e os outros 15 arquivos passarem a chamá-la — a fábrica da Fase 3
+chegando mais cedo, puxada por necessidade.
 
 ### Fase 6 — HUD
 

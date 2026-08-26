@@ -7,6 +7,103 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-25 — `SHADING_MODE_UNSHADED` descarta a emissão, e o jogo inteiro depende disso
+
+**Sintoma:** liguei o glow no `WorldEnv` e NADA brilhou. As configurações
+estavam certas (conferidas em runtime: `glow_enabled=true`, limiar 1,05,
+intensidade 0,90, níveis 0/1,0/0,9/0,6/0,35/0/0) e o `Environment` era mesmo o
+vivo — provei zerando a saturação e vendo a esfera ficar cinza.
+
+**Causa raiz:** em material `StandardMaterial3D` com
+`shading_mode = SHADING_MODE_UNSHADED`, a **emissão é ignorada**. A saída é só o
+albedo, que é limitado a 1,0 — e o limiar do glow é 1,05. Nada cruza, nunca.
+
+**Medido**, três esferas, halo no anel em volta com glow ligado menos desligado:
+
+```
+unshaded + emission_energy 4.0    +0,0000   <- não brilha
+unshaded SÓ albedo                +0,0000   <- IDÊNTICO ao de cima, ao dígito
+sombreada + emission_energy 4.0   +0,0355   <- brilha
+unshaded + albedo 2.5 (HDR)       +0,0586   <- brilha MAIS
+```
+
+As duas primeiras linhas serem iguais ao dígito é a prova: a emissão não chega
+ao buffer.
+
+**Por que dói tanto neste projeto:** `unshaded + emissivo` é exatamente a receita
+dos efeitos daqui — **32 combinações em 16 arquivos** (`FxUtil`, `YamiFX`,
+`FireFX`, `GoroFX`, `GuraFX`, `Melee`, `BukiFX`…). Todas escrevem
+`emission_energy_multiplier` entre 2,5 e 4,0 e **jogam esse número fora** desde
+sempre. Ninguém notou porque, sem glow no projeto, emissão não fazia diferença
+visível de qualquer jeito — dois defeitos que se escondiam um no outro.
+
+**Correção:** albedo acima de 1,0 no lugar da emissão. Preserva o motivo de o
+efeito ser unshaded (não escurecer quando o golpe passa pela sombra) e brilha
+mais que o caminho sombreado. É trabalho da Fase 5 do `PLANO_VISUAL.md`.
+
+**Como detectar:** glow é invisível quando nada passa do limiar. O teste é
+sempre comparativo e com o objeto PARADO — minha primeira medição comparou
+glow on/off em dois quadros diferentes de um efeito com `RigidBody3D` voando, e
+os números mudaram por causa do movimento, não do glow. Emissivo estático,
+mesma câmera, mede o anel em volta.
+
+**Lição de método:** eu afirmei duas vezes, em documento, que ligar o glow faria
+"os quatro golpes de nove frutas lerem sem tocar numa linha de VFX". Era
+dedução a partir de `grep emission_energy_multiplier`, não medição. O grep
+provava que a emissão era ESCRITA; não provava que ela era USADA.
+
+---
+
+## 2026-08-25 — a névoa não pode clarear ao longe e escurecer para baixo
+
+**Sintoma:** o buraco do mapa, que aparecia VERDE (a cor do "chão" do céu
+procedural, e portanto lia como grama), passou a aparecer AZUL-CLARO depois do
+meu conserto — passou a ler como água. Troquei a cor do erro.
+
+**Causa raiz:** tentei fazer um mecanismo só cumprir duas funções opostas. O
+`Environment` tem **uma cor de névoa**. Ela precisa ser clara para a perspectiva
+aérea funcionar à distância; e eu liguei `fog_height_density = 0.16` para
+escurecer o poço com a mesma névoa. Descendo, ela satura — e névoa opaca CLARA
+é o azul que apareceu. De quebra escondeu o plano escuro que eu tinha posto
+em `y = −60` para ser o fundo.
+
+**Medido** (cor no meio do poço, mesma câmera):
+
+```
+névoa on,  fundo on    (0,263  0,369  0,467)   azul lavado
+névoa OFF, fundo on    (0,000  0,000  0,000)   preto
+névoa OFF, fundo off   (0,000  0,000  0,016)   preto
+```
+
+Duas conclusões: quem lavava era a névoa sozinha, e o plano de fundo era
+**redundante** — o `ground_bottom_color` escuro do céu já entrega preto.
+
+**Correção:** `fog_height_density = 0` (o ar só clareia ao longe) e o poço
+escurecido pelo céu. O plano foi removido: ele nunca seria visto de perto,
+porque o jogador morre em `VOID_Y = −40`, seis metros acima de onde ele estava.
+
+**Como detectar:** quando um ajuste "conserta" trocando um problema por outro
+do mesmo tamanho, quase sempre é um mecanismo sendo usado para duas coisas
+contrárias. Isolar é ligar e desligar cada um e medir o pixel.
+
+---
+
+## 2026-08-25 — `set_glow_level()` é base ZERO e o inspetor é base UM
+
+**Sintoma:** `ERROR: Index p_level = 7 is out of bounds
+(RenderingServer::MAX_GLOW_LEVELS = 7)`, no meio do log de subida.
+
+**Causa raiz:** as propriedades aparecem como `glow_levels/1` .. `glow_levels/7`
+no inspetor, então escrevi `set_glow_level(1..7)`. O método é **base zero**
+(0..6). O nível 7 estourava e o nível 0 nunca era zerado — o glow ficava
+configurado errado, com um erro que some no meio da saída.
+
+**Como detectar:** erro de índice em `_ready` não derruba nada e não falha
+teste. Vale conferir a configuração LENDO de volta em runtime
+(`get_glow_level(i)`), que foi o que expôs o buraco no nível 0.
+
+---
+
 ## 2026-08-25 — onze clipes retargetados têm o tronco tombado ~50°
 
 **Sintoma:** nenhum reclamado, e é o que assusta. Descoberto ao montar o
