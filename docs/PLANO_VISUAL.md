@@ -333,6 +333,22 @@ antes de ligá-la, porque `superficie()` memoriza por cor — ligar a grade no
 material memorizado a ligaria em tudo que usasse a mesma cor, inclusive num
 bloco.
 
+#### Portão: `tools/dev_tests/medir_grade.gd`
+
+O teste central não é "tem linha?", é **"a linha cai onde a célula de verdade
+acaba?"** — porque uma grade bonita e desalinhada seria PIOR que nenhuma: ela
+mentiria sobre onde o buraco pode estar. Ele pega a fronteira pela matemática do
+próprio `MapBuilder`, projeta o ponto com `unproject_position` e compara com o
+centro da célula.
+
+| verificação | resultado |
+|---|---|
+| a grade está só no chão (o bloco não tem) | ✔ |
+| `grade_celula` == `MapBuilder.CELL` | ✔ 10,0 m |
+| a linha cai na fronteira **real** | ✔ 0,043–0,052 mais escura que o centro |
+| aguenta 12 / 40 / 90 m sem virar moiré | ✔ |
+
+
 ### Fase 5 — VFX das frutas ✅ **FEITA em 2026-08-25**
 
 **28 sítios** (não 32 — contagem por proximidade de texto inflava em 4) trocaram
@@ -386,11 +402,35 @@ Mera percorrem a roda de matiz inteira e agora brilham em ciano, magenta e
 verde. Registrado na [`LISTA_DE_CORRECOES.md`](LISTA_DE_CORRECOES.md) — é
 decisão do dono, não conserto.
 
-### Fase 6 — HUD
+### Fase 6 — HUD ✅ **FEITA em 2026-08-25**
 
-Retângulos chapados e fonte padrão. Fica por último porque é o único que **não**
-depende do render 3D — pode ser feito em paralelo por outra frente, a qualquer
-momento.
+`src/ui/Estilo.gd` (a paleta e as primitivas) + `src/ui/BarraHud.gd`.
+
+O diagnóstico era "retângulos chapados e fonte padrão", mas a causa era outra:
+**cada arquivo de `src/ui/` inventava a sua cor, o seu tamanho de fonte e a sua
+espessura de borda.** Sem um lugar comum, identidade é impossível por
+construção.
+
+**⚠️ A cor da linha do HUD é a MESMA do contorno 3D** — não por gosto, por
+coerência. O jogo passou a ter linha escura na silhueta (Fase 2) e cor chapada
+(Fase 3); um HUD com borda de outra cor, ou com a borda de 1 px clara que o
+`SkillBar` tinha, leria como interface de outro jogo colada por cima.
+
+O que mudou:
+
+- **as barras viraram paralelogramo com contorno grosso**, em `_draw()`. Antes
+  eram dois `ColorRect` empilhados e a barra andava mexendo em `fill.size.x` —
+  retângulo não inclina, e eram três nós por barra;
+- **os painéis** (relógio, placar, pódio, painel de fruta, interruptores dos
+  bonecos) passaram de `ColorRect`/`StyleBoxFlat` improvisado para
+  `Estilo.painel()`;
+- `BarraHud.valor()` só redesenha quando o valor muda de verdade — a vida fica
+  parada a maior parte da partida.
+
+⚠️ **Uma armadilha na troca:** `Panel` **não tem `.color`** (o `ColorRect` tem).
+Três atribuições sobreviveram à conversão e teriam estourado em tempo de
+execução — o mesmo aborto silencioso que já derrubou dois testes nesta sessão.
+Achadas por varredura antes de rodar.
 
 ---
 
