@@ -251,21 +251,21 @@ static func _coletar_malhas(n: Node, fora: Array[MeshInstance3D]) -> void:
 
 # Reaproveita a TEXTURA que veio no modelo e troca só a cor. É por isso que a
 # textura foi exportada em cinza: aqui ela é multiplicada pela cor da fruta.
+# ⚠️ FUNIL DA ÁRVORE, e terceiro ponto da Fase 3 do plano visual.
+#
+# A textura em tons de cinza que veio do Blender continua sendo multiplicada
+# pela cor da fruta — é o mesmo truque de sempre, só que agora dentro do shader
+# de cel (`usar_textura`), que aplica a banda de luz por cima.
+#
+# O filtro NEAREST agora mora no shader (`filter_nearest_mipmap`): a textura
+# desenha voxel, e filtro linear borra a quina do cubo.
 static func _material_tingido(mi: MeshInstance3D, cor: Color, rugosidade: float,
-		emissao: Color) -> StandardMaterial3D:
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = cor
-	mat.roughness = rugosidade
+		emissao: Color) -> Material:
+	var textura: Texture2D = null
 	var original := mi.mesh.surface_get_material(0) if mi.mesh and mi.mesh.get_surface_count() > 0 else null
 	if original is BaseMaterial3D:
-		mat.albedo_texture = (original as BaseMaterial3D).albedo_texture
-	# ⚠️ NEAREST, não linear. A textura desenha voxel; filtro linear borra a
-	# quina do cubo e devolve exatamente o aspecto que o modelo veio evitar.
-	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
-	if emissao != Color.BLACK:
-		mat.emission_enabled = true
-		mat.emission = emissao
-	return mat
+		textura = (original as BaseMaterial3D).albedo_texture
+	return Materiais.superficie(cor, textura)
 
 # A árvore antiga, de seis caixas. Só roda se o modelo faltar (ver a reserva
 # em `create_tree_3d`).

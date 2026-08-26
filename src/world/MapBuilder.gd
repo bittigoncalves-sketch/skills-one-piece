@@ -203,9 +203,14 @@ static func _blocks(parent: Node) -> Array:
 		out.append({"x": px, "z": pz, "top": h, "w": w, "d": d})
 	return out
 
-static func _gray(value: float, rough: float) -> StandardMaterial3D:
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(value, value, value)
-	mat.roughness = rough
-	mat.metallic = 0.0
-	return mat
+# ⚠️ ESTE É O FUNIL DO MUNDO INTEIRO. As duas chamadas dele fazem a plataforma
+# em grade e os 90 blocos — ou seja, quase toda a superfície que aparece na
+# tela. Por isso a Fase 3 do plano visual (banda de luz) começou aqui: um único
+# ponto muda o estilo do mapa todo.
+#
+# `rough` deixou de ser usado: o shader de cel fixa rugosidade 1,0 e desliga o
+# especular, porque brilho especular é gradiente e briga com faixa chapada. O
+# parâmetro fica na assinatura para não mexer nas duas chamadas — e porque ele
+# volta a valer se alguém devolver o material padrão.
+static func _gray(value: float, rough: float) -> Material:
+	return Materiais.superficie(Color(value, value, value))

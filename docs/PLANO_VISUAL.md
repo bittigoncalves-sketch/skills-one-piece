@@ -231,13 +231,54 @@ fundo distante.
 de linha — contra 6.869 / 5.462 / 3.944 antes. Menos linha, e a que ficou é a
 que desenha.
 
-### Fase 3 — Banda de luz (fábrica de material)
+### Fase 3 — Banda de luz ✅ **FEITA em 2026-08-25**
 
-Passo 0: **contar as receitas distintas** por trás dos 94 pontos. Só então
-migrar. A fábrica nasce em `src/fx/Materiais.gd`.
+`src/fx/shaders/cel.gdshader` (redefine `light()`) + `src/fx/Materiais.gd`.
 
-**Portão:** um teste que varre `src/` e falha se aparecer `StandardMaterial3D.new()`
-fora da fábrica — a mesma disciplina do `test_balance.gd` com a tabela de dano.
+**O passo 0 mudou o tamanho da tarefa.** Contando por função, dos 94 pontos:
+
+| | |
+|---|---|
+| materiais **unshaded** (efeitos — NÃO levam banda) | 33 |
+| materiais **iluminados** (alvo) | 58 |
+
+E dos 58, quase toda a TELA passa por **três funis**:
+
+| função | o que faz |
+|---|---|
+| `MapBuilder._gray` | o chão em grade e os 90 blocos |
+| `VoxelMeshes` (a caixa de parte) | o corpo de todos os personagens |
+| `TreeAndFruitGenerator._material_tingido` | as árvores |
+
+Três funções cobrem mais pixel que os outros 55 sítios somados. Foram essas. O
+resto migra quando alguém encostar nele — varrer 58 sítios para pintar efeito
+que dura 0,2 s é trabalho sem retorno.
+
+#### ⚠️ O que a banda entrega NESTE jogo (e o que não entrega)
+
+Banda de luz só aparece onde a normal **varia ao longo da superfície** — numa
+esfera, num cilindro, na copa da árvore. **O mapa é feito de caixas e de um
+plano**: cada face tem normal constante, logo um tom só, com ou sem banda.
+
+Então o ganho aqui não é a banda em si. É:
+
+- **sombra projetada de borda DURA** (o `ATTENUATION` também é quantizado);
+- **fim do gradiente especular**, que é o que mais denunciava "PBR" na cena;
+- um lugar só onde o estilo da superfície se troca.
+
+Ficou registrado assim para ninguém procurar um efeito que a geometria não
+permite. `faixas` nasce em **2** pelo mesmo motivo.
+
+#### Dois erros, corrigidos por medição
+
+1. **piso de sombra alto (0,42).** A face que não olha para o sol recebia quase
+   metade da luz e a cena ficou CHAPADA — menos contraste entre faces do que o
+   Lambert padrão já dava. Baixou para 0,16.
+2. **a sombra era aplicada duas vezes** (uma pelo ângulo, outra pelo
+   `ATTENUATION`), então uma superfície de frente para o sol mas dentro de uma
+   sombra ficava mais escura que o lado de trás dela. Agora o `ATTENUATION`
+   entra como **teto** (`min`), não como fator: sombra não deixa a superfície
+   passar da faixa escura, e é só isso que ela faz.
 
 ### Fase 4 — O chão e o mundo
 

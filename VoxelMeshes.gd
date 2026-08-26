@@ -339,14 +339,19 @@ static func _create_box_part(part_name: String, size: Vector3, color: Color, emi
 	box.size = size
 	mi.mesh = box
 
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.roughness = 0.6
+	# ⚠️ FUNIL DO CORPO. Toda caixa de todo personagem voxel sai daqui, então é
+	# o segundo ponto da Fase 3 do plano visual — depois do `MapBuilder._gray`,
+	# que faz o mundo.
 	if emissive:
-		mat.emission_enabled = true
-		mat.emission = color
-		mat.emission_energy_multiplier = 2.0
-	mi.material_override = mat
+		# Peça que BRILHA (crista, olho, marca): auto-iluminada, sem banda de
+		# luz e sem escurecer na sombra. Ver `FxUtil.brilho()` para o porquê de
+		# o brilho ir no albedo e não na emissão.
+		var lum := StandardMaterial3D.new()
+		lum.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		lum.albedo_color = FxUtil.brilho(color, 2.0)
+		mi.material_override = lum
+	else:
+		mi.material_override = Materiais.superficie(color)
 	return mi
 
 # ---------------------------------------------------------- ANIMAÇÕES PROCEDURAIS (BUGGY)
