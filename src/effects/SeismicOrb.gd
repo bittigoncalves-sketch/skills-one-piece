@@ -36,10 +36,7 @@ func _ready() -> void:
 	
 	var mat_cracks = StandardMaterial3D.new()
 	mat_cracks.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat_cracks.albedo_color = Color(1.0, 1.0, 1.0, 0.8)
-	mat_cracks.emission_enabled = true
-	mat_cracks.emission = Color(1.0, 1.0, 1.0)
-	mat_cracks.emission_energy_multiplier = 2.0
+	mat_cracks.albedo_color = FxUtil.brilho(Color(1.0, 1.0, 1.0, 0.8), 2.0)
 	# Falsa aparência de linhas pra simular rachaduras via subdivisão low poly
 	mat_cracks.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_cracks_mesh.material_override = mat_cracks

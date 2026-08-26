@@ -17,7 +17,7 @@ não por impressão.
 | achado | evidência |
 |---|---|
 | ~~Não existe glow/bloom no projeto inteiro~~ | ✅ **RESOLVIDO na Fase 1** (2026-08-25) |
-| ⚠️ **A emissão dos efeitos é DESCARTADA** | eles escrevem `emission_energy_multiplier` entre 2,5 e 4,0 **e jogam fora**: `SHADING_MODE_UNSHADED` ignora emissão. **32 combinações em 16 arquivos.** Medido — ver Fase 1 |
+| ~~A emissão dos efeitos é DESCARTADA~~ | ✅ **RESOLVIDO na Fase 5** (2026-08-25). Eram **28** sítios (não 32 — a contagem por proximidade de texto inflava), todos passados para albedo HDR via `FxUtil.brilho()` |
 | **Nenhum shader 3D próprio** | `find -name "*.gdshader"` devolve **zero**. Todo o visual 3D é `StandardMaterial3D` cru |
 | **94 pontos criam material à mão** | em **34 arquivos** — é este número que decide a arquitetura do cel (ver §2) |
 | **Sem névoa** | `env.fog_enabled = false`, com o comentário "sem parede cinza" |
@@ -188,21 +188,31 @@ decidir aqui o que ele precisa: textura, variação de cor por região, borda de
 plataforma marcada. **Depois** das fases 2 e 3 de propósito — o que o chão
 precisa muda completamente quando o render muda.
 
-### Fase 5 — VFX das frutas  ⬅ **subiu de prioridade**
+### Fase 5 — VFX das frutas ✅ **FEITA em 2026-08-25**
 
-Depende do glow (Fase 1), que já está de pé. Mas **não melhora sozinha**: as 32
-combinações `unshaded + emissivo` precisam trocar emissão por **albedo acima de
-1,0** (medido: +0,0586 de halo, mais que o caminho sombreado). Isso preserva o
-motivo de o efeito ser unshaded — não escurecer quando o golpe passa pela sombra.
+**28 sítios** (não 32 — contagem por proximidade de texto inflava em 4) trocaram
+emissão por **albedo acima de 1,0**, via `FxUtil.brilho()`. Mais o
+`particle_material`, por onde passam 13 chamadas de 6 arquivos.
 
-Sítios por arquivo: `FxUtil` 6, `YamiFX` 5, `FireFX` 4, `GoroFX` 2, `GuraFX` 2,
-`Melee` 2, `ScreenFX` 2, e um em cada de `BukiFX`, `BukiProjeteis`,
-`FirefliesFX`, `FireFXGrande`, `GuraShatterMesh`, `SandFX`, `SeismicOrb`,
-`WaterFX`, `WeaponTrail3D`.
+Medido pelo portão (`captura_visual.gd`), cena `4_emissivo`:
 
-O caminho natural é UMA função no `FxUtil` que devolve o material emissivo
-certo, e os outros 15 arquivos passarem a chamá-la — a fábrica da Fase 3
-chegando mais cedo, puxada por necessidade.
+| | antes da Fase 5 | depois |
+|---|---|---|
+| brilho médio | 0,530 | **0,620** |
+| **pico** | 0,832 | **1,000** |
+| tela estourada | 0,0% | **3,0%** |
+
+As outras quatro cenas ficaram idênticas ao dígito — o que é a prova de que a
+mudança tocou só o que era emissivo.
+
+**O piso de 1,0 em `brilho()` não é detalhe:** o `SandFX` declarava energia
+**0,8**, e aplicar isso ao albedo deixaria a areia mais escura do que estava. A
+função existe para clarear; energia abaixo de 1 significa "não brilha".
+
+⚠️ **E o glow escancarou um problema de arte:** os "Vagalumes de Fogo" da Mera
+Mera percorrem a roda de matiz inteira e agora brilham em ciano, magenta e
+verde. Registrado na [`LISTA_DE_CORRECOES.md`](LISTA_DE_CORRECOES.md) — é
+decisão do dono, não conserto.
 
 ### Fase 6 — HUD
 

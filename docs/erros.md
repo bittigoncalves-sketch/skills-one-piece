@@ -7,6 +7,60 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-25 — o transformador que consertava 28 sítios quebrou 6 e esvaziou 3 blocos
+
+**Sintoma:** depois de rodar um script que converteu "emissão → albedo HDR" em
+16 arquivos, o projeto passou de 3 para **6 scripts sem compilar**, com erros
+que não pareciam ter relação: `Cannot infer the type of "arma" variable`,
+`... "papel" ...`, `... "tw" ...` — em arquivos que o script nem tocou.
+
+**Duas causas, as duas do script:**
+
+**1. Escopo por ARQUIVO em vez de por FUNÇÃO.** Ele colhia os nomes de variável
+marcados como unshaded no arquivo inteiro. No `WaterFX.gd` há duas funções que
+chamam o material de `m`:
+
+```gdscript
+static func _mat_agua(...):   # SOMBREADO
+    var m := StandardMaterial3D.new()
+static func _mat_luz(...):    # unshaded
+    var m := StandardMaterial3D.new()
+    m.shading_mode = ...UNSHADED
+```
+
+O `m` de `_mat_luz` marcou o nome, e o `m` de `_mat_agua` foi convertido junto.
+Em material **sombreado a emissão FUNCIONA** — apagar ali não era conserto, era
+regressão. Aconteceu em 6 sítios (`BukiFX`, `BukiProjeteis`, `FireFX` ×3,
+`WaterFX`).
+
+**2. Bloco esvaziado.** As três linhas de emissão às vezes são o corpo inteiro
+de um `if energia > 0.0:`. Apagá-las deixa
+
+```gdscript
+	if energia > 0.0:
+	return m
+```
+
+que é erro de sintaxe — e derruba **todo script que dependa daquele**, que é o
+motivo de os erros aparecerem em arquivos não tocados. Aconteceu em 3 blocos.
+
+**Como detectar:** transformação em massa precisa de auditoria pós-fato, não só
+de revisão do diff. As duas que usei:
+- procurar linha terminada em `:` seguida de linha com indentação MENOR ou igual
+  (bloco vazio);
+- reconferir a premissa do transformador *por função*: para cada `brilho(`
+  aplicado, o material daquela variável é unshaded **naquela função**?
+
+A segunda achou os 6. Ambas ficaram no fim do trabalho: 28 conversões em
+material unshaded, **0** em sombreado, **0** sítios com emissão ainda descartada.
+
+**E o número mudou.** A heurística original dizia "32 sítios em 16 arquivos".
+Contando por função, são **28** — os outros 4 eram material sombreado que a
+janela de ±25 linhas juntou por engano. Contagem por proximidade de texto não é
+contagem.
+
+---
+
 ## 2026-08-25 — `SHADING_MODE_UNSHADED` descarta a emissão, e o jogo inteiro depende disso
 
 **Sintoma:** liguei o glow no `WorldEnv` e NADA brilhou. As configurações

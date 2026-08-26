@@ -8,6 +8,31 @@ lista vira palpite.
 
 ---
 
+## 🎨 Os "Vagalumes de Fogo" da Mera Mera saem ARCO-ÍRIS
+
+**Detectado em 2026-08-25**, ao ligar o glow: com brilho, o problema deixou de
+ser sutil — os vagalumes brilham em ciano, magenta, verde e azul.
+
+`FirefliesFX.gd`, no `_process` de cada vagalume:
+
+```gdscript
+# Trocar cores em RGB constantemente
+var c = Color.from_hsv(fmod(time_passed * 0.5, 1.0), 1.0, 1.0)
+```
+
+Isso percorre a **roda de matiz inteira**. O golpe se chama "Vagalumes de
+**Fogo**" e pertence à **Mera Mera**, cuja paleta é laranja/amarelo/vermelho.
+
+**Não foi corrigido** porque é decisão de arte do dono, não defeito técnico: se
+o arco-íris for intencional (leitura de "energia", não de fogo), a linha está
+certa. Se não for, a correção é trocar a faixa de matiz por uma janela quente
+(ex.: 0,00–0,12) e manter o ciclo.
+
+⚠️ E vale notar: cada conjuração cria **10 `RigidBody3D`** com caixa e colisão.
+Para um efeito visual isso é caro; medido no `_diag` da sessão.
+
+---
+
 ## ✅ Resolvidos em 2026-08-11
 
 | # | o que era | conserto | medido |

@@ -601,10 +601,7 @@ static func _spawn_air_slash(world: Node, caster: Node3D, fwd: Vector3, g: Dicti
 	
 	var mat := StandardMaterial3D.new()
 	var cor = cor_do_impacto(caster).lightened(0.2)
-	mat.albedo_color = cor
-	mat.emission_enabled = true
-	mat.emission = cor
-	mat.emission_energy_multiplier = 4.0
+	mat.albedo_color = FxUtil.brilho(cor, 4.0)
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.material_override = mat
@@ -647,13 +644,10 @@ static func _impacto(world: Node, pos: Vector3, i: int, cor: Color = Color(1.0, 
 	anel.outer_radius = 0.45
 	m.mesh = anel
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(cor.r, cor.g, cor.b, 0.55)
-	mat.emission_enabled = true
+	mat.albedo_color = FxUtil.brilho(Color(cor.r, cor.g, cor.b, 0.55), 2.5)
 	# A emissão é a mesma cor puxada pro brilho — `lightened` em vez de um segundo
 	# valor escrito à mão, senão cada cor de estilo precisaria de DUAS entradas na
 	# tabela e as duas poderiam divergir.
-	mat.emission = cor.lightened(0.15)
-	mat.emission_energy_multiplier = 2.5
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.material_override = mat

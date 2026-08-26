@@ -373,10 +373,7 @@ static func _build_sun_model() -> Node3D:
 	core_mesh.size = Vector3(14.0, 14.0, 14.0)
 	var core_mat = StandardMaterial3D.new()
 	core_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	core_mat.albedo_color = yellow
-	core_mat.emission_enabled = true
-	core_mat.emission = yellow
-	core_mat.emission_energy_multiplier = 4.0
+	core_mat.albedo_color = FxUtil.brilho(yellow, 4.0)
 	
 	var core_mi = MeshInstance3D.new()
 	core_mi.mesh = core_mesh
@@ -392,10 +389,7 @@ static func _build_sun_model() -> Node3D:
 		
 		var b_mat = StandardMaterial3D.new()
 		b_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		b_mat.albedo_color = yellow_bright if (i % 4 == 0) else yellow
-		b_mat.emission_enabled = true
-		b_mat.emission = b_mat.albedo_color
-		b_mat.emission_energy_multiplier = 6.0 if (i % 4 == 0) else 3.0
+		b_mat.albedo_color = FxUtil.brilho(yellow_bright if (i % 4 == 0) else yellow, 6.0 if (i % 4 == 0) else 3.0)
 		bump.material_override = b_mat
 		
 		bump.position = Vector3(randf_range(-7.0, 7.0), randf_range(-7.0, 7.0), randf_range(-7.0, 7.0))
@@ -414,10 +408,7 @@ static func _make_unshaded_emissive(node: Node) -> void:
 				mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 				if src is BaseMaterial3D:
 					mat.albedo_texture = (src as BaseMaterial3D).albedo_texture
-					mat.albedo_color = (src as BaseMaterial3D).albedo_color
-				mat.emission_enabled = true
-				mat.emission = mat.albedo_color if mat.albedo_texture == null else Color(1.0, 0.6, 0.1)
-				mat.emission_energy_multiplier = 4.0
+					mat.albedo_color = FxUtil.brilho((src as BaseMaterial3D).albedo_color, 4.0)
 				mi.set_surface_override_material(surf, mat)
 	for child in node.get_children():
 		_make_unshaded_emissive(child)
@@ -488,10 +479,7 @@ static func _box_sun(parent: Node3D, pos: Vector3, size: Vector3, color: Color) 
 	mesh.size = size * 0.05 # Converte para metros
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.albedo_color = color
-	mat.emission_enabled = true
-	mat.emission = color
-	mat.emission_energy_multiplier = 2.0
+	mat.albedo_color = FxUtil.brilho(color, 2.0)
 	mesh.material = mat
 	mi.mesh = mesh
 	mi.position = pos * 0.05

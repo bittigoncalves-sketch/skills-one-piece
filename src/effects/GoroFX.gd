@@ -46,10 +46,7 @@ static func volt_material(col: Color, energy: float) -> StandardMaterial3D:
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	m.albedo_color = col
-	m.emission_enabled = true
-	m.emission = Color(col.r, col.g, col.b)
-	m.emission_energy_multiplier = energy
+	m.albedo_color = FxUtil.brilho(col, energy)
 	m.disable_receive_shadows = true
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED
 	return m

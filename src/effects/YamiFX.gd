@@ -338,10 +338,7 @@ static func _liberation(world: Node, origin: Vector3, dir: Vector3, damage: floa
 	shock_mesh1.ring_segments = 16
 	shock_inst1.mesh = shock_mesh1
 	var sm_mat1 := StandardMaterial3D.new()
-	sm_mat1.albedo_color = LIB_CYAN
-	sm_mat1.emission_enabled = true
-	sm_mat1.emission = LIB_CYAN
-	sm_mat1.emission_energy_multiplier = 8.0
+	sm_mat1.albedo_color = FxUtil.brilho(LIB_CYAN, 8.0)
 	sm_mat1.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	sm_mat1.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	shock_inst1.material_override = sm_mat1
@@ -356,10 +353,7 @@ static func _liberation(world: Node, origin: Vector3, dir: Vector3, damage: floa
 	shock_mesh2.ring_segments = 16
 	shock_inst2.mesh = shock_mesh2
 	var sm_mat2 := StandardMaterial3D.new()
-	sm_mat2.albedo_color = LIB_BLUE
-	sm_mat2.emission_enabled = true
-	sm_mat2.emission = LIB_BLUE
-	sm_mat2.emission_energy_multiplier = 6.0
+	sm_mat2.albedo_color = FxUtil.brilho(LIB_BLUE, 6.0)
 	sm_mat2.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	sm_mat2.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	shock_inst2.material_override = sm_mat2
@@ -753,10 +747,7 @@ class BlackHoleController extends Node:
 		cyl.height = 0.12
 		pool.mesh = cyl
 		var p_mat := StandardMaterial3D.new()
-		p_mat.albedo_color = YamiFX.VOID_BLACK
-		p_mat.emission_enabled = true
-		p_mat.emission = YamiFX.VOID_BLACK
-		p_mat.emission_energy_multiplier = 3.0
+		p_mat.albedo_color = FxUtil.brilho(YamiFX.VOID_BLACK, 3.0)
 		p_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		p_mat.render_priority = 10 # Prioridade de render acima do chão para eliminar Z-fighting!
 		p_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -773,10 +764,7 @@ class BlackHoleController extends Node:
 		h_mesh.ring_segments = 16
 		horizon.mesh = h_mesh
 		var h_mat := StandardMaterial3D.new()
-		h_mat.albedo_color = YamiFX.GLOW_VIOLET
-		h_mat.emission_enabled = true
-		h_mat.emission = YamiFX.GLOW_VIOLET
-		h_mat.emission_energy_multiplier = 5.0
+		h_mat.albedo_color = FxUtil.brilho(YamiFX.GLOW_VIOLET, 5.0)
 		h_mat.render_priority = 15 # Renderiza acima do pântano e do piso
 		h_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		horizon.material_override = h_mat
