@@ -40,8 +40,22 @@ faltando=""
 while read -r classe; do
     [ -z "$classe" ] && continue
     grep -q "\"$classe\"" "$CACHE" || faltando="$faltando $classe"
+# ⚠️ EXCLUI `.claude/` E `art_src/`, e isso não é detalhe.
+#
+# Agente com isolamento por worktree cria árvores de trabalho em
+# `.claude/worktrees/agent-*/` — DENTRO da pasta do projeto. Este `grep -r`
+# enxergava o código MEIO-ESCRITO desses agentes como se fosse do jogo:
+#
+#   Classes novas desde o último preparo: CombatStateBlockBreak CombatStateBlocking ...
+#   AVISO: 'CombatStateBlockBreak' não entrou no cache. Rode ./setup.sh
+#
+# Nenhuma dessas classes existia no projeto — eram de um agente que ainda estava
+# escrevendo. A bateria inteira parava aí. `.gdignore` não resolve: ele fala com
+# o importador do Godot, não com o `grep`.
 done < <(grep -rhoE '^class_name[[:space:]]+[A-Za-z_][A-Za-z0-9_]*' \
-            --include='*.gd' "$PROJ" | awk '{print $2}' | sort -u)
+            --include='*.gd' \
+            --exclude-dir='.claude' --exclude-dir='art_src' --exclude-dir='.godot' \
+            "$PROJ" | awk '{print $2}' | sort -u)
 
 if [ -n "$faltando" ]; then
     echo "Classes novas desde o último preparo:$faltando"

@@ -67,7 +67,6 @@ func ler(yaw: float, menu_fechado: bool = true) -> void:
 	direita = base.x
 
 	dir = frente * f + direita * r
-	print("MoveFrame: ativo=", ativo, " f=", f, " r=", r, " dir=", dir)
 	if dir.length() > 1.0:
 		dir = dir.normalized()
 

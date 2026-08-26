@@ -787,3 +787,128 @@ repositório em paralelo.
 outra pessoa: a (1) muda o comportamento do inimigo novo, a (2) afrouxa um teste
 que existe para pegar exatamente esse tipo de spawn acidental (a seção se chama
 "inimigos fora do mapa").
+
+---
+
+## 🆕 Achados de 2026-08-26 — auditoria de documentação
+
+Os itens abaixo saíram de **leitura de código** durante o levantamento do que
+faltava documentar (`docs/MOVIMENTO.md`, `docs/RODADA_E_PLACAR.md`,
+`docs/NUMEROS_MEDIDOS.md`, `docs/ESTILOS_DE_LUTA.md`). Nenhum foi corrigido: a
+tarefa era de auditoria, e a regra do [`AGENTES.md`](AGENTES.md) é *"agente de
+auditoria não altera arquivo do projeto"*. Nenhum foi reproduzido jogando.
+
+### 46. ✅ RESOLVIDO em 2026-08-26 — `MoveFrame.ler()` imprimia A CADA QUADRO DE FÍSICA
+
+> Corrigido pelo orquestrador na mesma sessão em que a auditoria o achou: era
+> uma linha, e o ruído dela poluía o log de TODO teste desta base (é o
+> `MoveFrame: ativo=...` que aparecia em toda saída). Território de ninguém, sem
+> risco de conflito com os agentes em obra.
+
+`src/player/move_frame.gd:70`:
+
+```gdscript
+print("MoveFrame: ativo=", ativo, " f=", f, " r=", r, " dir=", dir)
+```
+
+`ler()` é chamada uma vez por quadro em `Player._etapa_locomocao`
+(`Player.gd:1025`), ou seja **~60 linhas por segundo por jogador com autoridade**.
+Numa partida cheia o console vira ruído e o log de qualquer sonda fica ilegível.
+
+*Detectado:* lendo `move_frame.gd` inteiro para escrever `docs/MOVIMENTO.md`. É
+resto de depuração do bug de WASD — o relatório dessa correção está em
+`src/player/wasd_bug_report.md`, e o `print` claramente vem dela.
+
+**Não corrigi porque** auditoria não edita código. É **uma linha para apagar**, e
+é o item mais barato desta lista.
+
+⚠️ Vale conferir de carona os `print` de gameplay em
+`src/player/health_controller.gd:152/170/173` (disparam a cada knockback) — a
+mesma classe de ruído, custo menor.
+
+### 47. O cabeçalho do `Scoreboard` diz "rodada de 10 minutos"; o código diz 5
+`src/match/Scoreboard.gd:7` promete *"Rodada de 10 minutos"*. Vinte linhas
+abaixo, `src/match/Scoreboard.gd:27` define `const ROUND_TIME := 300.0`, com o
+comentário certo (*"5 minutos de rodada (pedido do dono, 2026-08-12 — era 600)"*).
+
+O arquivo se contradiz em vinte linhas, e o cabeçalho é a parte que se lê
+primeiro.
+
+*Detectado:* conferindo `ROUND_TIME` contra os docs ao escrever
+`docs/RODADA_E_PLACAR.md`. O erro **vazou para a documentação**:
+`docs/GUIA_DO_PROJETO.md:79`, `docs/guia/ONDE_COLOCAR.md:80` e o item 7 desta
+lista (linha 331) também dizem 10 min — e no item 7 o número é **argumento de
+balanceamento**, então a conclusão muda com ele.
+
+**Não corrigi porque** é código. Os três de `docs/` estão listados no §6 de
+`docs/RODADA_E_PLACAR.md` para quem for passar o pente.
+
+### 48. O comentário do teto de velocidade da sniper ficou para trás em dois pontos
+`src/effects/BukiFX.gd:49-58` diz:
+
+- *"`vel` da sniper (95 -> 125 em 2026-08-13)"* — o valor na linha 60 é **250,0**;
+- *"Enquanto a `DamageZone` não andar em sub-passos, subir daqui é trocar
+  consistência por velocidade"* — a `DamageZone` **passou a varrer o caminho com
+  um raio** (`_varrer_caminho`), que é exatamente o remédio que o comentário
+  pedia.
+
+O comentário continua carregando a melhor medição do projeto (24 disparos por
+velocidade, 79→24/24 até 200→9/24) e **ao mesmo tempo** desaconselha uma mudança
+que já foi feita. Quem ler só o comentário conclui que a sniper está quebrada.
+
+*Detectado:* montando a tabela de números medidos para `docs/NUMEROS_MEDIDOS.md`
+e batendo o número citado contra o valor do `ARSENAL`.
+
+**Não corrigi porque** é código **e** porque a `DamageZone` está sendo editada por
+outro agente em 2026-08-26 — reescrever este comentário exige saber onde o
+`_varrer_caminho` vai parar. Reavaliar quando aquele trabalho fechar.
+
+### 49. `Scoreboard.scores` nunca esquece quem saiu, e o pódio conta o que não mostra
+Dois comportamentos pequenos do mesmo arquivo, os dois por ausência de guarda:
+
+1. **`scores` não é limpo na desconexão.** Um peer que sai continua no dicionário
+   e no `ranking()` até a rodada virar. Se ele estava na frente, o pódio premia um
+   jogador que não está mais na partida.
+2. **Durante o pódio, `_watch_falls` continua rodando.** Passados os 2 s de
+   `_dead_until`, uma morte nos 8 s de pódio **ainda incrementa `scores`** — mas o
+   `podium_snapshot` já foi tirado (o painel não muda) e `_start_new_round()` zera
+   tudo em seguida. O resultado certo sai por **acidente da ordem**, não por uma
+   guarda.
+
+*Detectado:* seguindo os dois caminhos de morte para escrever o §3 de
+`docs/RODADA_E_PLACAR.md`.
+
+**Não corrigi porque** é código, e porque (1) é decisão de design de partida —
+"quem sai perde o lugar" ou "o placar é da rodada, não dos presentes" é escolha do
+dono, não do auditor. O (2) hoje não tem sintoma visível; vira sintoma no dia em
+que o pódio deixar de zerar a rodada.
+
+### 50. `Balance.gd` diz `hits` 8 no V da Yami e declara 6 — e o golpe não alcança o próprio teto
+`src/combat/Balance.gd:162` abre com *"O `hits` de 8 é quantos escombros precisam
+acertar para o golpe chegar ao teto"*. Doze linhas abaixo, a linha 173 declara
+`"hits": 6`.
+
+O parágrafo ⚠️ do meio (2026-08-22, quando a `reserva` da onda entrou) está
+**certo** e fecha a conta: *"6 blocos de 96 + onda de 128 = 704"*. Só a frase de
+abertura ficou com o número velho.
+
+E 704 **não é** o teto do slot V, que é **768**. Ou seja: pelas partes declaradas,
+o Liberation não chega ao próprio teto nem acertando tudo — sobram 64. Pode ser
+intencional (a Mera declara `teto` próprio de 640 justamente para ficar abaixo do
+slot), mas aqui **não há `teto` declarado**, então o golpe herda 768 e nunca o
+usa. As duas leituras são plausíveis, e é por isso que isto é decisão e não
+conserto.
+
+⚠️ Isto se soma ao defeito que a página da fruta já registra
+(`docs/frutas/yami_yami.md:143-150`): `YamiFX.gd:946` ainda faz
+`damage = maxf(d * 0.25, 12.0)`, então cada escombro entrega **24** e não 96. Os
+dois juntos significam que **nenhum número declarado do V da Yami é o número que
+sai**.
+
+*Detectado:* conferindo as tabelas das páginas por fruta contra o `Balance.gd`
+durante a auditoria de documentação de 2026-08-26.
+
+**Não corrigi porque** é código, e porque a escolha entre "apagar o `× 0,25`" e
+"baixar a tabela" é de balanceamento — pertence a quem joga a fruta. `test_balance.gd`
+não pega nenhum dos dois: ele valida a tabela contra a faixa do slot, não os
+arquivos de efeito contra a tabela.
