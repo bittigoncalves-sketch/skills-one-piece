@@ -205,6 +205,33 @@ Medido pelo portão (`captura_visual.gd`), cena `4_emissivo`:
 As outras quatro cenas ficaram idênticas ao dígito — o que é a prova de que a
 mudança tocou só o que era emissivo.
 
+### ⚠️ E o brilho foi BAIXADO no mesmo dia
+
+Relato do dono assim que viu: *"o brilho das skills está muito alto"*. Estava —
+e o motivo é que as energias escritas nos efeitos (2,5 · 3,0 · 4,0 · 5,0 · 6,0 ·
+8,0) **nunca foram calibradas**: elas viviam num campo de emissão descartado,
+então ninguém jamais viu o efeito delas. Aplicadas ao pé da letra, ficaram
+fortes demais.
+
+| | Fase 5 crua | depois do ajuste |
+|---|---|---|
+| tela estourada | 3,0% | **0,3%** |
+| pico | 1,000 | 0,975 |
+| brilho médio | 0,620 | 0,533 |
+
+**Duas alavancas, e vale saber qual é qual:**
+
+- **`FxUtil.ESCALA`** (hoje `0,45`) — a força do EFEITO. Ela **comprime** em vez
+  de multiplicar: `e = 1 + (energia − 1) × ESCALA`. Multiplicar achataria tudo
+  por igual e mataria a diferença entre um golpe de 2,5 e um de 8,0; comprimir
+  preserva a ordem que o autor quis e encurta a distância.
+- **`WorldEnv` → `glow_intensity`** (hoje `0,5`) — o tamanho/força do HALO. Junto
+  saiu o nível 4 do glow (auréola bem aberta) e o limiar subiu para 1,15, para
+  passar só o núcleo de verdade.
+
+Se voltar a incomodar, mexa primeiro na primeira (o núcleo), depois na segunda
+(a auréola).
+
 **O piso de 1,0 em `brilho()` não é detalhe:** o `SandFX` declarava energia
 **0,8**, e aplicar isso ao albedo deixaria a areia mais escura do que estava. A
 função existe para clarear; energia abaixo de 1 significa "não brilha".

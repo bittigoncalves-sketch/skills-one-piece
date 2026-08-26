@@ -138,10 +138,19 @@ static func apply(parent: Node) -> void:
 	#
 	# Limiar ACIMA de 1.0 de propósito (risco 2 do plano): o chão é claro, e
 	# limiar baixo transformaria a tela em leite.
+	# ⭐ A OUTRA ALAVANCA: `glow_intensity` é o TAMANHO/FORÇA DO HALO, enquanto
+	# `FxUtil.ESCALA` é a força do efeito em si. Se o brilho incomodar, mexa
+	# primeiro na de lá (o núcleo), depois nesta (a auréola).
+	#
+	# ⚠️ BAIXADO EM 2026-08-25 a pedido do dono ("o brilho das skills está muito
+	# alto"). Estava intensidade 0,9, limiar 1,05 e quatro níveis ligados —
+	# medido, isso dava 3,0% da tela estourada numa cena com UM golpe. O limiar
+	# subiu junto: 1,15 deixa passar só o núcleo de verdade, e não a borda
+	# meio-clara de tudo que é emissivo.
 	env.glow_enabled = true
-	env.glow_hdr_threshold = 1.05
-	env.glow_hdr_scale = 2.4
-	env.glow_intensity = 0.9 if peso >= 1.0 else 0.7
+	env.glow_hdr_threshold = 1.15
+	env.glow_hdr_scale = 1.6
+	env.glow_intensity = 0.5 if peso >= 1.0 else 0.38
 	env.glow_strength = 1.0
 	env.glow_bloom = 0.0
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
@@ -153,14 +162,15 @@ static func apply(parent: Node) -> void:
 	# respondeu `Index p_level = 7 is out of bounds`: o último nível estourava e
 	# o primeiro nunca era zerado, ou seja o glow saía mal configurado, com um
 	# erro que passa no meio do log.
+	# ⚠️ NÍVEL ALTO = HALO LARGO, e é o que mais incomodava. O nível 4 (auréola
+	# bem aberta) saiu, e o 3 caiu pela metade: o brilho ficou COLADO no efeito
+	# em vez de virar uma mancha em volta.
 	for i in 7:
 		env.set_glow_level(i, 0.0)
 	env.set_glow_level(1, 1.0)      # halo colado
-	env.set_glow_level(2, 0.9)
-	if peso >= 0.7:
-		env.set_glow_level(3, 0.6)
+	env.set_glow_level(2, 0.5)
 	if peso >= 1.0:
-		env.set_glow_level(4, 0.35)  # brilho largo, só no PC
+		env.set_glow_level(3, 0.25)
 
 	# ------------------------------------------------------------------ AR
 	# Névoa só para PERSPECTIVA AÉREA. A profundidade do poço é do FUNDO, não

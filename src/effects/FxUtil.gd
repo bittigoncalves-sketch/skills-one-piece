@@ -58,8 +58,29 @@ static func curve(points: Array) -> CurveTexture:
 #  fez nada; aplicá-lo ao albedo deixaria a areia mais ESCURA do que está hoje —
 #  a correção viraria regressão silenciosa. Esta função existe para CLAREAR;
 #  energia abaixo de 1 significa "não brilha", não "escurece".
+#
+#  ------------------------------------------------------ ⭐ O BOTÃO DO BRILHO
+#  `ESCALA` é a alavanca ÚNICA de "quão fortes são os efeitos". Baixar aqui
+#  apaga todos os golpes de todas as frutas de uma vez; subir, o contrário.
+#
+#  ⚠️ POR QUE COMPRIME EM VEZ DE MULTIPLICAR. As energias escritas nos efeitos
+#  (2,5 · 3,0 · 4,0 · 5,0 · 6,0 · 8,0) NUNCA FORAM CALIBRADAS: elas viviam num
+#  campo de emissão que era descartado, então ninguém nunca viu o efeito delas.
+#  Aplicadas ao pé da letra ficaram fortes demais — relato do dono em
+#  2026-08-25, e medido: 3,0% da tela estourada numa cena de um golpe só.
+#
+#  Uma multiplicação simples (`e * ESCALA`) achataria tudo por igual e mataria a
+#  diferença entre um golpe de 2,5 e um de 8,0. A compressão em torno de 1,0
+#  preserva a ORDEM que o autor quis e encurta a distância:
+#
+#      e = 1 + (energia − 1) × ESCALA
+#
+#      energia   2,5    4,0    6,0    8,0
+#      com 0,45  1,68   2,35   3,25   4,15
+const ESCALA := 0.45
+
 static func brilho(cor: Color, energia: float, alpha: float = -1.0) -> Color:
-	var e: float = maxf(energia, 1.0)
+	var e: float = 1.0 + (maxf(energia, 1.0) - 1.0) * ESCALA
 	var a: float = cor.a if alpha < 0.0 else alpha
 	return Color(cor.r * e, cor.g * e, cor.b * e, a)
 
