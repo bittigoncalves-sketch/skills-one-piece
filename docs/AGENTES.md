@@ -99,6 +99,64 @@ consertado, e o diff dele volta desalinhado.
 
 ---
 
+## ⚠️ A worktree automática falha se a pasta da SESSÃO não for repositório
+
+Descoberto em 2026-08-26 (segunda tentativa).
+
+O isolamento automático por worktree resolve o repositório a partir da pasta da
+**sessão**, não da pasta do projeto. Como esta sessão abre em `~/dev` (que não é
+repositório), o lançamento morre na hora:
+
+```
+Cannot create agent worktree: not in a git repository
+```
+
+E há um efeito colateral pior quando ele FUNCIONA: a árvore nasce em
+`.claude/worktrees/`, ou seja **dentro da pasta do projeto**. Isso já causou dois
+estragos reais:
+
+1. **Envenenou o `checar_cache.sh`.** O `grep -r` na raiz enxergou o código
+   *meio-escrito* dos agentes como classe do jogo, e a bateria parou em
+   `AVISO: 'CombatStateBlockBreak' não entrou no cache` — classe que não existia
+   no projeto. ⚠️ `.gdignore` **não resolve**: ele fala com o importador do
+   Godot, não com o `grep`. O conserto é `--exclude-dir`.
+2. **Um `git add -A` engoliu as worktrees como repositório embutido**, e elas
+   entraram no índice como gitlinks.
+
+**Regra prática:** crie as worktrees na mão e **fora** da pasta do projeto:
+
+```bash
+cd ~/dev/skills-one-piece
+git worktree add -b verif-rede ~/dev/soptrees/rede <base>
+```
+
+Depois lance os agentes **sem** isolamento, dizendo no prompt, com todas as
+letras, a pasta de cada um e que a árvore principal é proibida. Fora do projeto,
+nenhuma ferramenta que varre a raiz tropeça nelas.
+
+---
+
+## Porta de rede: `SOP_PORTA` é o que permite agentes em paralelo
+
+Toda sonda deste projeto sobe uma sala ENet de verdade, e a porta era fixa
+(`const DEFAULT_PORT := 24565`). Dois agentes rodando bateria ao mesmo tempo
+davam `Couldn't create an ENet host` e um deles morria — o `validar.sh` roda em
+série exatamente por isso.
+
+Desde 2026-08-26 a porta lê a variável de ambiente **`SOP_PORTA`** (o padrão
+continua 24565, então o jogo não mudou). O farol de LAN é derivado, `jogo + 1`.
+
+**Regra prática:** dê a cada agente uma porta e escreva no prompt dele:
+
+```
+⚠️ Sua porta é SOP_PORTA=24710. Exporte antes de rodar qualquer teste.
+```
+
+Sugestão: 24700, 24710, 24720, 24730 — espaçadas de 10, porque o farol ocupa a
+seguinte e sobra folga para sondas de dois processos.
+
+---
+
 ## ⚠️ Oito agentes de uma vez pode estourar o limite da sessão
 
 Na mesma tentativa de 2026-08-26, os oito morreram juntos com
