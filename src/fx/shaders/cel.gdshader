@@ -40,6 +40,31 @@ uniform bool usar_textura = false;
 // DURA e o fim do gradiente especular. Está dito assim no plano para ninguém
 // procurar um efeito que a geometria não permite.
 uniform int faixas : hint_range(2, 5) = 2;
+
+// ---------------------------------------------------------------- A GRADE
+//  ⚠️ FASE 4, e ela é FUNCIONAL antes de ser bonita.
+//
+//  O mapa É uma grade de células de 10 m com buracos quadrados do tamanho de
+//  uma célula (`MapBuilder.CELL`). Até aqui o chão era um plano claro e liso —
+//  a maior superfície da tela sem carregar informação nenhuma, e sem dar ao
+//  jogador NENHUMA referência de escala ou de onde os buracos podem estar.
+//
+//  Desenhar a grade de verdade resolve as duas coisas de uma vez: dá escala e
+//  mostra a estrutura do mapa, num jogo em que cair é a principal forma de
+//  morrer. Sem asset nenhum.
+//
+//  ⚠️ EM ESPAÇO DE MUNDO, não em UV. A plataforma é um `MultiMesh` de lajes de
+//  tamanhos diferentes (o `_merge_runs` funde células em faixas), então UV não
+//  tem relação com a grade real — a linha cairia em lugar errado e mentiria
+//  sobre onde a célula acaba.
+//
+//  A largura usa `fwidth`: a linha tem a mesma grossura APARENTE perto e longe,
+//  em vez de virar moiré no horizonte. É o mesmo princípio da espessura em
+//  pixels do contorno.
+uniform bool usar_grade = false;
+uniform float grade_celula = 10.0;
+uniform float grade_forca : hint_range(0.0, 1.0) = 0.16;
+uniform float grade_largura : hint_range(0.5, 4.0) = 1.5;
 uniform float suavidade : hint_range(0.005, 0.2) = 0.035;
 // ⚠️ PISO BAIXO. A primeira tentativa usou 0,42 e a cena ficou CHAPADA: a face
 // que não olha para o sol recebia quase metade da luz, e a diferença entre lado
@@ -52,6 +77,15 @@ void fragment() {
 	vec3 base = cor.rgb;
 	if (usar_textura) {
 		base *= texture(textura, UV).rgb;
+	}
+	if (usar_grade) {
+		// posição no MUNDO — ver a nota da grade
+		vec3 mundo = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+		vec2 c = mundo.xz / grade_celula;
+		// distância até a linha de célula mais próxima, em pixels
+		vec2 d = abs(fract(c - 0.5) - 0.5) / max(fwidth(c), vec2(0.00001));
+		float linha = 1.0 - min(min(d.x, d.y) / grade_largura, 1.0);
+		base *= 1.0 - linha * grade_forca;
 	}
 	ALBEDO = base;
 	ALPHA = cor.a;

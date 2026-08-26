@@ -65,6 +65,22 @@ static func superficie(cor: Color, textura: Texture2D = null) -> Material:
 	return m
 
 
+## O CHÃO. É a superfície com a grade do mapa desenhada — ver a nota da grade
+## em `cel.gdshader`. `celula` vem do `MapBuilder`, para a linha cair onde a
+## célula de verdade acaba.
+static func chao(cor: Color, celula: float) -> Material:
+	var m := superficie(cor)
+	if m is ShaderMaterial:
+		# ⚠️ CÓPIA, não o material do cache. `superficie()` memoriza por cor, e
+		# ligar a grade no objeto memorizado ligaria a grade em TUDO que
+		# usasse a mesma cor — inclusive num bloco.
+		var g := (m as ShaderMaterial).duplicate() as ShaderMaterial
+		g.set_shader_parameter("usar_grade", true)
+		g.set_shader_parameter("grade_celula", celula)
+		return g
+	return m
+
+
 ## Limpa o cache — o respawn do mundo recria tudo, e material de mundo antigo
 ## segurando textura antiga é vazamento.
 static func esquecer() -> void:

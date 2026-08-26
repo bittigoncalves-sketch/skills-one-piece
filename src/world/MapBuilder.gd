@@ -118,7 +118,11 @@ static func _platform(parent: Node) -> void:
 	var mmi := MultiMeshInstance3D.new()
 	mmi.name = "Lajes"
 	mmi.multimesh = mm
-	mmi.material_override = _gray(0.52, 0.85)
+	# ⚠️ O CHÃO É O ÚNICO COM GRADE (Fase 4). Ele é a maior superfície da tela e
+	# era a que menos dizia; a grade dá escala e mostra onde as células — e
+	# portanto os buracos — começam e terminam. Um pouco mais escuro que antes
+	# (era 0,52) para parar de dominar a imagem.
+	mmi.material_override = Materiais.chao(Color(0.46, 0.46, 0.46), CELL)
 	body.add_child(mmi)
 
 	var half := PLATFORM_SIZE * 0.5
