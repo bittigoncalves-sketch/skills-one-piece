@@ -74,19 +74,34 @@ static func apply(parent: Node) -> void:
 	# ------------------------------------------------------------------ CÉU
 	env.background_mode = Environment.BG_SKY
 	var sky := Sky.new()
-	var sky_mat := ProceduralSkyMaterial.new()
-	sky_mat.sky_top_color = Color(0.13, 0.45, 0.90)
-	sky_mat.sky_horizon_color = Color(0.66, 0.86, 0.99)
-	sky_mat.sky_energy_multiplier = 1.0
-	# ⚠️ O "CHÃO" DO CÉU FICOU ESCURO — e isto é conserto de JOGABILIDADE.
+	# ⚠️ TIPO `Material`, não `ShaderMaterial`. A reserva devolve um
+	# `ProceduralSkyMaterial`, e com o tipo inferido pelo `:=` o Godot recusa a
+	# atribuição. Pior: o `test_compila.gd` disse "0 não compilam" mesmo assim,
+	# porque a tolerância dele é por TEXTO do arquivo e este menciona um
+	# autoload. Quem pegou foi subir o jogo. Ver `docs/erros.md`.
+	var sky_mat: Material = _material_do_ceu(sun)
+	if sky_mat == null:
+		# ⚠️ RESERVA: sem o shader o jogo não pode ficar sem céu. E o
+		# `ground_bottom_color` escuro tem que ser repetido aqui, porque é
+		# conserto de JOGABILIDADE (ver a nota embaixo), não estilo.
+		var proc := ProceduralSkyMaterial.new()
+		proc.sky_top_color = Color(0.13, 0.45, 0.90)
+		proc.sky_horizon_color = Color(0.66, 0.86, 0.99)
+		proc.sky_energy_multiplier = 1.0
+		proc.ground_bottom_color = Color(0.03, 0.04, 0.07)
+		proc.ground_horizon_color = Color(0.20, 0.28, 0.38)
+		proc.ground_curve = 0.04
+		sky_mat = proc
+	# ⚠️ O "CHÃO" DO CÉU É ESCURO — e isto é conserto de JOGABILIDADE, não gosto.
 	#
 	# Ele era verde (0.15, 0.32, 0.22). O mapa é uma grade COM BURACOS e cair
 	# é a principal forma de morrer; olhando por um buraco, o jogador via essa
 	# cor e o poço lia como GRAMA LÁ EMBAIXO. Um abismo que parece chão
 	# convida exatamente o erro que mata.
-	sky_mat.ground_bottom_color = Color(0.03, 0.04, 0.07)
-	sky_mat.ground_horizon_color = Color(0.20, 0.28, 0.38)
-	sky_mat.ground_curve = 0.04
+	#
+	# No shader de céu isso vive em `cor_chao_fundo`, e o `sky()` de lá SAI
+	# ANTES de desenhar nuvem, sol ou halo quando está abaixo do horizonte —
+	# por `if`, não por multiplicação: máscara que "quase zera" ainda clareia.
 	sky.sky_material = sky_mat
 	env.sky = sky
 
@@ -231,6 +246,16 @@ static func apply(parent: Node) -> void:
 	env.ssao_detail = 1.0
 	env.ssao_horizon = 0.2
 
+	# Menos oitavas de ruído no aparelho fraco: é o custo por pixel do céu, e o
+	# céu ocupa metade da tela olhando para a frente.
+	if sky_mat is ShaderMaterial:
+		var oit := 5
+		if peso < 0.7:
+			oit = 3
+		elif peso < 1.0:
+			oit = 4
+		(sky_mat as ShaderMaterial).set_shader_parameter("oitavas", oit)
+
 	var we := WorldEnvironment.new()
 	we.name = "Ambiente"
 	we.environment = env
@@ -253,6 +278,26 @@ static func apply(parent: Node) -> void:
 # E ele nunca seria visto de perto: o jogador morre em `Scoreboard.VOID_Y`
 # (−40), seis metros ACIMA de onde o plano estava. Malha de 600×600 para
 # reproduzir o que o céu já faz é peso sem função.
+
+
+# O CÉU. Ver `src/fx/shaders/ceu.gdshader` para o porquê de cada decisão.
+#
+# ⚠️ `dir_sol` é DERIVADO do nó do sol, não escrito à mão. Um vetor copiado
+# aqui envelhece calado no dia em que alguém girar a luz: o disco do sol no céu
+# ficaria num canto e a sombra dos objetos viria de outro, e nada acusaria.
+static func _material_do_ceu(sun: DirectionalLight3D) -> ShaderMaterial:
+	const CAMINHO := "res://src/fx/shaders/ceu.gdshader"
+	if not ResourceLoader.exists(CAMINHO):
+		push_warning("[WorldEnv] shader de céu ausente: " + CAMINHO)
+		return null
+	var m := ShaderMaterial.new()
+	m.shader = load(CAMINHO)
+	# A direção PARA o sol é o +Z da luz: uma DirectionalLight3D ilumina ao
+	# longo do próprio −Z.
+	m.set_shader_parameter("dir_sol", sun.global_transform.basis.z.normalized()
+		if sun.is_inside_tree() else Basis.from_euler(sun.rotation).z.normalized())
+	m.set_shader_parameter("cor_sol", sun.light_color)
+	return m
 
 
 static func _peso(parent: Node) -> float:
