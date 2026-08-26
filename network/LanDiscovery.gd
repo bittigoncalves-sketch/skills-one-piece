@@ -16,14 +16,16 @@ extends Node
 #  endereço de origem do pacote é, por construção, o que consegue falar com este
 #  cliente — não tem como estar errado.
 #
-#  Porta do farol é SEPARADA da porta do jogo: o ENet fica com a 24565 e o farol
+#  Porta do farol é SEPARADA da porta do jogo: o ENet fica com a do jogo e o farol
 #  com a 24566, então um não atrapalha o outro.
 #
 #  ⚠️ Difusão UDP não atravessa roteador. Isto vale para a MESMA rede local. Para
 #  jogar pela internet continua valendo o ID da sala ou o IP direto.
 # ============================================================================
 
-const PORTA_FAROL := 24566
+const NetConf = preload("res://network/NetworkConfig.gd")
+# Segue a porta do jogo (jogo+1), para que SOP_PORTA mova as duas juntas.
+static var PORTA_FAROL: int = NetConf.PORTA_FAROL
 const MAGICA := "SKILLSONEPIECE1"   # prefixo p/ não confundir com tráfego alheio
 const INTERVALO := 1.0              # segundos entre anúncios
 const ESPERA_PADRAO := 4.0          # quanto tempo o cliente escuta antes de desistir
