@@ -50,20 +50,67 @@ tem como saber o que já foi descartado. O que não estiver no prompt, ele
 redescobre — gastando tempo — ou inventa.
 
 1. **A especialidade dele**, na primeira linha. Define o que ele lê primeiro.
-2. **Os caminhos das ferramentas.** `godot` e `blender` **não estão no PATH**:
+2. **Os caminhos das ferramentas.** O `godot` **não está no PATH**:
    - `/home/gabriel-bitti/Downloads/Godot_v4.6.3-stable_linux.x86_64`
-   - `/home/gabriel-bitti/opt/blender/blender` (5.2)
-3. **O diagnóstico que já existe**, com os números. Sem isso ele refaz a
+   - `/home/gabriel-bitti/opt/blender/blender` (5.2) — este TAMBÉM funciona
+     como `blender` no PATH, conferido em 2026-08-26; o texto antigo dizia que
+     não, e agente nenhum precisa perder tempo procurando.
+3. **O briefing.** Mande ler [`ESTADO_ATUAL.md`](ESTADO_ATUAL.md) primeiro. Ele
+   carrega o que é comum a todos (como rodar, portões de medição que já existem,
+   armadilhas desta base) para o prompt não repetir isso oito vezes — e para a
+   correção chegar em todos de uma vez quando algo mudar.
+4. **O diagnóstico que já existe**, com os números. Sem isso ele refaz a
    investigação inteira e chega ao mesmo lugar duas horas depois.
-4. **O que já foi descartado.** Metade do valor de um diagnóstico é saber o que
+5. **O que já foi descartado.** Metade do valor de um diagnóstico é saber o que
    *não* era.
-5. **O critério de sucesso, medível.** "Consertar a animação" não serve.
+6. **O critério de sucesso, medível.** "Consertar a animação" não serve.
    "Amplitude nos membros > 0°, sendo que o `kicking` dá 757°" serve.
-6. **As fronteiras.** Que arquivos ele NÃO pode tocar, nominalmente.
-7. **As armadilhas conhecidas** — as deste projeto estão logo abaixo.
-8. **O formato do relatório.** O relatório do agente não chega ao usuário
+7. **As fronteiras.** Que arquivos ele NÃO pode tocar, nominalmente.
+8. **As armadilhas conhecidas** — as deste projeto estão logo abaixo.
+9. **O formato do relatório.** O relatório do agente não chega ao usuário
    sozinho: quem invocou tem que repassar. Peça as respostas na ordem em que
    você vai precisar delas.
+
+---
+
+## ⚠️ Agente em WORKTREE nasce do RAMO PADRÃO, não do seu
+
+Descoberto em 2026-08-26, com oito agentes de uma vez.
+
+Agente lançado com isolamento por worktree abre a árvore dele a partir do
+**`master`** — não do ramo em que você está trabalhando. Se o briefing (ou
+qualquer coisa que o prompt mande ler) só existe no seu ramo, o agente abre uma
+árvore **sem ele** e o primeiro passo dele já falha.
+
+Foi exatamente o que aconteceu: `ESTADO_ATUAL.md` estava commitado em
+`balanceamento-dano-2048`, e a worktree nasceu de `4d0889f`, que é o `master`.
+Dois agentes reportaram "o arquivo não existe nesta worktree" antes de morrer.
+
+**Regra prática:** antes de lançar agentes em worktree, **funda no `master`**
+tudo o que os prompts mandam ler. Confira com:
+
+```bash
+git log --oneline -1 origin/master -- docs/ESTADO_ATUAL.md
+```
+
+E há um segundo efeito, pior porque é silencioso: o agente trabalha em cima de
+um código **mais velho** que o seu. O que ele "conserta" pode já estar
+consertado, e o diff dele volta desalinhado.
+
+---
+
+## ⚠️ Oito agentes de uma vez pode estourar o limite da sessão
+
+Na mesma tentativa de 2026-08-26, os oito morreram juntos com
+`You've hit your session limit`. Nenhum deles errou: eles foram interrompidos.
+
+O que sobreviveu foi só o que um deles tinha escrito em disco antes de cair — um
+shader, sem relatório e sem verificação nenhuma. **Artefato de agente morto é
+rascunho não conferido**, e o `AGENTES.md` já diz que relatório de agente é
+entrada e não verdade; sem relatório, menos ainda.
+
+**Regra prática:** lance em ondas (3 a 4), e prefira que cada onda termine antes
+da seguinte. Paralelismo que não completa não é paralelismo.
 
 ---
 
