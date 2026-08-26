@@ -120,9 +120,30 @@ Duas consequências que explicam quase todo bug de fruta em rede:
 
 ### Dano — reescrito em 2026-08-21
 
-> ⚠️ **As tabelas numéricas das páginas por fruta ainda citam a escala ANTIGA.**
-> A fonte da verdade é `src/combat/Balance.gd`. Esta seção descreve o modelo que
-> vale hoje; as páginas individuais estão sendo atualizadas.
+> ⚠️ **Conferido linha a linha contra `Balance.gd` em 2026-08-26.** O aviso que
+> estava aqui — *"as tabelas das páginas por fruta ainda citam a escala antiga"* —
+> **já não vale para a maioria delas**. O estado real:
+>
+> | página | tabela de dano |
+> |---|---|
+> | `bara_bara` · `suna_suna` · `gura_gura` · `goro_goro` · `hie_hie` · `buki_buki` | ✅ batem com o `Balance` |
+> | `yami_yami` | 🟡 bate, mas cita `hits` **8** no V; a tabela diz **6** (item 50 da lista — o `Balance.gd` também se contradiz aí) |
+> | `gomu_gomu` | 🔴 o **C** diz `15 × 80 + 160`; o `Balance` diz `3 × 80` + parte `final` de **144** (= 384) |
+> | `mera_mera` | 🔴 o **X** está errado em três pontos — ver abaixo |
+>
+> **`mera_mera.md`**, a mais desatualizada, ficou parada antes da mudança de
+> 2026-08-22:
+> - chama o X de `ÚNICO` (linha 42); o `Balance` declara `MULTI` com parte
+>   `explosao` e `reserva`;
+> - diz que a explosão vale **160** e que "160 + 160 = 320 contra um teto de 256,
+>   então o excedente é cortado" (linhas 87-92). Hoje a explosão vale **96**, e
+>   160 + 96 = **256 exatos** — **nada é cortado**;
+> - a seção de pontas soltas (linhas 197-203) descreve como provável um bug — *"o
+>   X perde a explosão final quando ACERTA"* — que **foi corrigido em 2026-08-22**:
+>   o temporizador de 1,15 s foi removido e a explosão passa a nascer nos dois
+>   gatilhos (`FireFX.gd:328-346`).
+>
+> A fonte da verdade continua sendo `src/combat/Balance.gd`.
 
 **Todo número de dano do jogo mora em `src/combat/Balance.gd`.** Ele é FINAL: é
 o que a barra de vida perde, sem nenhum fator escondido no caminho.

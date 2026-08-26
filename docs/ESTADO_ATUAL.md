@@ -180,3 +180,7 @@ docs/                        planos, erros.md (causa raiz de tudo), este arquivo
 | [`FILA_DE_TAREFAS.md`](FILA_DE_TAREFAS.md) | o que está pedido e não feito |
 | [`LISTA_DE_CORRECOES.md`](LISTA_DE_CORRECOES.md) | defeitos achados e **não** corrigidos |
 | [`frutas/README.md`](frutas/README.md) | como um golpe vai do dedo à hitbox, e o teto de dano |
+| [`NUMEROS_MEDIDOS.md`](NUMEROS_MEDIDOS.md) | **antes de repetir uma medição.** O índice de tudo que já foi medido nesta base |
+| [`MOVIMENTO.md`](MOVIMENTO.md) | mexer em locomoção, parkour, esquiva ou nas travas de movimento |
+| [`RODADA_E_PLACAR.md`](RODADA_E_PLACAR.md) | rodada, kills, morte, respawn — e o padrão de mandar RPC para a cópia certa |
+| [`ESTILOS_DE_LUTA.md`](ESTILOS_DE_LUTA.md) | o **outro** modo de combate (tecla R), e por que ele custa 60 s |

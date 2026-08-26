@@ -13,15 +13,32 @@ find . -name "*.gd" -not -path "./.godot/*" | xargs wc -l | sort -rn | head
 
 ## Estado hoje
 
-| arquivo | linhas | |
-|---|---|---|
-| `Player.gd` | **1.498** | 🟡 **1.498 por `wc -l`, mas 890 de código** — ver o veredito da Fase 9 em [`ARQUITETURA_PLAYER.md`](ARQUITETURA_PLAYER.md) |
-| `src/effects/FireFXGrande.gd` | 553 | ✅ criado no corte de 2026-08-11 |
-| `src/effects/BukiFX.gd` | 537 | ✅ |
-| `src/anim/ProceduralAnimator.gd` | **873** | 🔴 **27 do teto** — o próximo bloco não cabe, extraia antes |
-| `src/anim/GuraPoses.gd` | 445 | ✅ criado em 2026-08-15 (as animações dos 4 golpes da Gura) |
-| `src/effects/YamiFX.gd` | 811 | ⚠️ na mira |
-| `src/effects/FireFX.gd` | 382 | ✅ (era 916) |
+> ⚠️ **Recontado em 2026-08-26** (`wc -l`, projeto inteiro, excluindo `.godot/` e
+> `disabled/`). A tabela anterior estava **muito** desatualizada e se contradizia:
+> dizia `Player.gd` com 1.498 linhas na tabela e 2.167 no corpo do texto. Os
+> números abaixo são os reais.
+
+| arquivo | linhas | antes dizia | |
+|---|---|---|---|
+| `Player.gd` | **2.437** | 1.498 / 2.167 | 🔴 **2,7× o teto.** 1.433 de código (1.004 de comentário e branco) — ainda 1,6× |
+| `src/effects/YamiFX.gd` | **1.045** | 811 | 🔴 **passou o teto** (+145) |
+| `src/effects/GoroFXGrande.gd` | **973** | não estava na tabela | 🔴 **passou o teto** (+73) |
+| `src/anim/ProceduralAnimator.gd` | **921** | 873 "27 do teto" | 🔴 **passou o teto** (+21) — o aviso era certo e ninguém agiu |
+| `src/effects/BaraFX.gd` | **857** | não estava na tabela | 🟡 43 do teto |
+| `src/effects/WaterFX.gd` | **700** | não estava na tabela | 🟡 cresce a cada estilo tratado |
+| `src/combat/Melee.gd` | **662** | — | ✅ |
+| `src/player/cast_controller.gd` | **609** | 168 (na Fase 6c) | ✅ mas 3,6× o que era |
+| `src/effects/BukiFX.gd` | **553** | 537 | ✅ |
+| `src/effects/FireFXGrande.gd` | **487** | 553 | ✅ |
+| `src/effects/FireFX.gd` | **486** | 382 | ✅ (era 916 antes do corte) |
+| `src/anim/GuraPoses.gd` | 445 | 445 | ✅ |
+
+**Quatro arquivos passaram do teto**, e o `ProceduralAnimator` passou exatamente
+como esta página avisou que passaria. A regra existe; o portão não.
+
+⚠️ **Esta tabela envelhece sozinha.** Ela só vale enquanto alguém recontar. O
+comando está logo acima — rodá-lo custa 2 segundos e é a única forma de a página
+não voltar a mentir.
 
 ---
 
@@ -43,9 +60,9 @@ que é o que mantém a fruta coerente.
 
 ---
 
-## O que falta: `Player.gd`, 2.167 linhas
+## O que falta: `Player.gd`, 2.437 linhas
 
-**É 2,4× o limite, e não é um corte mecânico.** `FireFX` era uma coleção de
+**É 2,7× o limite, e não é um corte mecânico.** `FireFX` era uma coleção de
 funções estáticas independentes — dava para separar por bloco. O `Player` é uma
 classe com estado compartilhado: as regiões conversam por variáveis de instância
 (`_buki_weapon`, `_charging`, `_dash_t`, `velocity`, `_is_authority`…), então
@@ -53,19 +70,55 @@ mover funções para outro arquivo exige decidir **quem passa a ser dono de cada
 estado**. Feito às pressas, isso quebra o jogo de um jeito que o teste headless
 não pega — comportamento de input e de rede.
 
-### O plano, quando for a hora
+### ⚠️ O plano desta seção JÁ FOI EXECUTADO — e o arquivo cresceu assim mesmo
 
-Extrair por **componente com estado próprio**, não por "mover funções":
+Atualizado em 2026-08-26. Os quatro candidatos listados aqui **saíram todos**, nas
+Fases 2 a 8 de [`ARQUITETURA_PLAYER.md`](ARQUITETURA_PLAYER.md):
 
-| candidato | linhas aprox. | por que sai bem |
-|---|---|---|
-| Arsenal da Buki (`_buki_*`, RPCs de saque e tiro) | ~280 | estado próprio (`_buki_weapon`, `_buki_municao`, `_srv_buki_*`), fronteira clara |
-| Parkour (wall run, vault, mantle, rolamento) | ~300 | conversa com `velocity` e `is_on_floor`, mas não com combate |
-| Corpo a corpo (`_request_melee`, `_tick_melee`, RPCs) | ~120 | já tem metade em `Melee.gd` |
-| Câmera e efeitos de tela (bob, FOV, shake, aberração) | ~180 | só lê estado, quase não escreve |
+| candidato de então | onde foi parar |
+|---|---|
+| Câmera e efeitos de tela | `src/player/camera_rig.gd` (Fase 2) |
+| Arsenal da Buki | `src/player/buki_controller.gd` (Fase 5) |
+| Corpo a corpo | `src/player/melee_controller.gd` (Fase 7) |
+| Parkour | `src/player/parkour_controller.gd` (Fase 4) — mais `dash_controller.gd` e `move_frame.gd`, que não estavam previstos |
 
-Ordem sugerida: **câmera primeiro** (é a que menos escreve estado, então é a de
-menor risco e valida o padrão de extração), depois Buki, depois parkour.
+E ainda saíram `health_controller.gd` (Fase 8), `cast_controller.gd`,
+`player_rig.gd`, `mira.gd` e `disparo_sustentado.gd`.
+
+**E o número que importa é este:**
+
+| | linhas |
+|---|---|
+| antes da partição (2026-08-11) | 2.167 |
+| depois das 9 fases (2026-08-12) | **1.498** — a partição tirou 669 |
+| hoje (2026-08-26) | **2.437** — voltaram **939** em duas semanas |
+
+**O arquivo recuperou mais do que a partição inteira tinha tirado, e em menos
+tempo do que levou para cortá-lo.** A partição funcionou; o que ela não fez foi
+impedir a volta, porque **não existe portão automático** — nada na bateria
+(`./validar.sh rapido`) reprova por tamanho. Este documento é a regra; a regra não
+tem quem a cobre.
+
+**Este é o achado, e ele vale mais que a lista de candidatos:** o problema deixou
+de ser "como cortar" e passou a ser "como não voltar". Enquanto não houver uma
+checagem que **falhe**, a próxima recontagem vai dar um número maior que este.
+
+### O que ainda dá para extrair (leitura de 2026-08-26)
+
+O que sobrou no `Player.gd` e ainda tem estado próprio:
+
+- **A FSM e o encanamento de combate** — os `@rpc` de melee e cast. ⚠️ Em obra em
+  2026-08-26; não mexer.
+- **A troca de modo de combate e as duas tabelas de recarga** (`combat_mode`,
+  `_fruit_cooldowns`, `_style_cooldowns`, `toggle_combat_mode`,
+  `set_fighting_style`) — fronteira limpa, ver [`ESTILOS_DE_LUTA.md`](ESTILOS_DE_LUTA.md).
+- **Equipar/perder fruta** (`equip_fruit`, `limpar_skills_em_todos`, a conversa
+  com `FruitNet`).
+
+⚠️ **RPC se resolve por CAMINHO DE NÓ.** Mover um método `@rpc` para outro nó
+**muda o protocolo** — foi por isso que a Fase 5 moveu o *estado* e a *regra* da
+Buki e deixou os quatro `@rpc` no Player. Qualquer extração nova esbarra na mesma
+parede.
 
 ### Rede de segurança que já existe
 
