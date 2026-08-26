@@ -269,6 +269,24 @@ Então o ganho aqui não é a banda em si. É:
 Ficou registrado assim para ninguém procurar um efeito que a geometria não
 permite. `faixas` nasce em **2** pelo mesmo motivo.
 
+#### Portão: `tools/dev_tests/medir_banda.gd`
+
+⚠️ **Não é o portão que estava escrito aqui**, e a troca é declarada. O plano
+pedia "um teste que varre `src/` e falha se aparecer `StandardMaterial3D.new()`
+fora da fábrica" — esse teste falharia por algo que **ninguém pretende fazer**
+(migrar os 55 sítios de efeito). Portão que reprova o que não se quer fazer não
+é portão, é ruído.
+
+Ele afirma o que a fase entrega, e passa:
+
+| verificação | resultado |
+|---|---|
+| os funis devolvem `ShaderMaterial` com `cel.gdshader` | ✔ |
+| numa **esfera**, a luz sai em degraus contáveis | ✔ 3 faixas com peso |
+| a **sombra projetada** tem borda dura | ✔ queda de 0,135 em **0 pixels** |
+
+A esfera é de propósito: no mapa de caixas não haveria onde a banda aparecer.
+
 #### Dois erros, corrigidos por medição
 
 1. **piso de sombra alto (0,42).** A face que não olha para o sol recebia quase
@@ -280,12 +298,40 @@ permite. `faixas` nasce em **2** pelo mesmo motivo.
    entra como **teto** (`min`), não como fator: sombra não deixa a superfície
    passar da faixa escura, e é só isso que ela faz.
 
-### Fase 4 — O chão e o mundo
+### Fase 4 — O chão ✅ **FEITA em 2026-08-25**
 
-O plano claro é a maior superfície da tela. Com contorno e banda já valendo,
-decidir aqui o que ele precisa: textura, variação de cor por região, borda de
-plataforma marcada. **Depois** das fases 2 e 3 de propósito — o que o chão
-precisa muda completamente quando o render muda.
+Com contorno e banda já valendo, ficou claro o que o chão precisava — e **não
+era textura**. Era **informação**.
+
+O mapa É uma grade de células de 10 m com buracos do tamanho de uma célula
+(`MapBuilder.CELL`). O chão era um plano liso: a maior superfície da tela, sem
+escala, sem profundidade, e sem dizer ao jogador onde os buracos podem estar —
+num jogo em que cair é a principal forma de morrer.
+
+A grade de verdade resolve as duas coisas de uma vez, **sem asset nenhum**:
+escala e estrutura. É funcional antes de ser bonita.
+
+| | antes | depois |
+|---|---|---|
+| brilho médio (mundo) | 0,493 | **0,446** |
+| brilho médio (perto) | 0,521 | **0,464** |
+
+O tom caiu de 0,52 para 0,46 junto: o chão parou de dominar a imagem.
+
+**Duas decisões dentro:**
+
+- **em espaço de MUNDO, não em UV.** A plataforma é um `MultiMesh` de lajes de
+  tamanhos diferentes (`_merge_runs` funde células em faixas), então UV não tem
+  relação com a grade real — a linha cairia em lugar errado e **mentiria** sobre
+  onde a célula acaba.
+- **largura por `fwidth`**, para a linha ter a mesma grossura aparente perto e
+  longe em vez de virar moiré no horizonte. Mesmo princípio da espessura em
+  pixels do contorno.
+
+⚠️ E a grade vale **só para o chão**: `Materiais.chao()` DUPLICA o material
+antes de ligá-la, porque `superficie()` memoriza por cor — ligar a grade no
+material memorizado a ligaria em tudo que usasse a mesma cor, inclusive num
+bloco.
 
 ### Fase 5 — VFX das frutas ✅ **FEITA em 2026-08-25**
 
