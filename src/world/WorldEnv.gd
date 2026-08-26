@@ -236,6 +236,12 @@ static func apply(parent: Node) -> void:
 	we.environment = env
 	parent.add_child(we)
 
+	# CONTORNO (Fase 2). Entra aqui e não junto da câmera de propósito: o quad
+	# vai para a tela inteira pelo `vertex()` do shader, então não depende de
+	# onde está no mundo — e a câmera do jogo nasce dentro do `CameraRig` de
+	# cada jogador, que é lugar ruim para pendurar estilo de render.
+	Contorno.criar(parent)
+
 # ⚠️ NÃO EXISTE PLANO DE FUNDO NO POÇO, e a ausência é uma decisão medida.
 #
 # Cheguei a criar um: um `PlaneMesh` de 600×600 escuro em y = −46, para o
