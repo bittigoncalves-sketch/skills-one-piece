@@ -50,18 +50,24 @@ tem como saber o que já foi descartado. O que não estiver no prompt, ele
 redescobre — gastando tempo — ou inventa.
 
 1. **A especialidade dele**, na primeira linha. Define o que ele lê primeiro.
-2. **Os caminhos das ferramentas.** `godot` e `blender` **não estão no PATH**:
+2. **Os caminhos das ferramentas.** O `godot` **não está no PATH**:
    - `/home/gabriel-bitti/Downloads/Godot_v4.6.3-stable_linux.x86_64`
-   - `/home/gabriel-bitti/opt/blender/blender` (5.2)
-3. **O diagnóstico que já existe**, com os números. Sem isso ele refaz a
+   - `/home/gabriel-bitti/opt/blender/blender` (5.2) — este TAMBÉM funciona
+     como `blender` no PATH, conferido em 2026-08-26; o texto antigo dizia que
+     não, e agente nenhum precisa perder tempo procurando.
+3. **O briefing.** Mande ler [`ESTADO_ATUAL.md`](ESTADO_ATUAL.md) primeiro. Ele
+   carrega o que é comum a todos (como rodar, portões de medição que já existem,
+   armadilhas desta base) para o prompt não repetir isso oito vezes — e para a
+   correção chegar em todos de uma vez quando algo mudar.
+4. **O diagnóstico que já existe**, com os números. Sem isso ele refaz a
    investigação inteira e chega ao mesmo lugar duas horas depois.
-4. **O que já foi descartado.** Metade do valor de um diagnóstico é saber o que
+5. **O que já foi descartado.** Metade do valor de um diagnóstico é saber o que
    *não* era.
-5. **O critério de sucesso, medível.** "Consertar a animação" não serve.
+6. **O critério de sucesso, medível.** "Consertar a animação" não serve.
    "Amplitude nos membros > 0°, sendo que o `kicking` dá 757°" serve.
-6. **As fronteiras.** Que arquivos ele NÃO pode tocar, nominalmente.
-7. **As armadilhas conhecidas** — as deste projeto estão logo abaixo.
-8. **O formato do relatório.** O relatório do agente não chega ao usuário
+7. **As fronteiras.** Que arquivos ele NÃO pode tocar, nominalmente.
+8. **As armadilhas conhecidas** — as deste projeto estão logo abaixo.
+9. **O formato do relatório.** O relatório do agente não chega ao usuário
    sozinho: quem invocou tem que repassar. Peça as respostas na ordem em que
    você vai precisar delas.
 
