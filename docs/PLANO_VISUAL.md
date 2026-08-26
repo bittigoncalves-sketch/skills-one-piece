@@ -165,13 +165,41 @@ Um arquivo, ~40 linhas. Sem dependência nenhuma.
 lado a lado. Mais uma medida objetiva: o histograma do chão hoje está colado no
 branco — depois, ele tem que sair do topo.
 
-### Fase 2 — Contorno (nó novo, shader `spatial`)
+### Fase 2 — Contorno ✅ **FEITA em 2026-08-25**
 
-Sobel de profundidade + descontinuidade de normal. Espessura em pixels,
-constante com a distância (senão o contorno some de longe e engrossa de perto).
+`src/fx/shaders/contorno.gdshader` + `src/fx/Contorno.gd`, criado pelo
+`WorldEnv`. Espessura em PIXELS (1,0–1,3 conforme o dispositivo), constante com
+a distância.
 
-**Portão novo:** `medir_contorno.gd` — conta pixels de linha numa captura fixa e
-prova que a silhueta do personagem tem contorno em três distâncias diferentes.
+**Medido** por `tools/dev_tests/medir_contorno.gd`, que fotografa o mesmo quadro
+com o nó ligado e desligado e conta os pixels que ESCURECERAM — comparar com um
+limiar absoluto de "escuro" contaria a sombra do personagem junto:
+
+| distância | pixels de linha | % da janela |
+|---|---|---|
+| 6 m | 6.869 | 3,68% |
+| 18 m | 5.462 | 2,93% |
+| 45 m | 3.944 | 2,11% |
+
+A queda é suave — a linha não some de longe, que era o modo clássico de errar
+isto (limiar em metros em vez de relativo à distância).
+
+E o portão das cinco cenas registrou o efeito colateral bom: o **"preto" saiu de
+0,0% para 1,1–1,5%** em TODAS as cenas. Pela primeira vez existe tom escuro na
+imagem — que era exatamente o diagnóstico do §0.
+
+**⚠️ SILHUETA, NÃO ARESTA.** O peso está na PROFUNDIDADE, que só quebra onde um
+objeto termina e o fundo começa. A normal entra com `peso_normal = 0,18` e
+limiar alto, e sai inteira no celular. O personagem é voxel — ele é só quina, e
+contorno em toda descontinuidade de normal desenharia cada aresta de cada cubo
+(risco 1 do §6). Subir `peso_normal` é decisão de arte, não ajuste técnico.
+
+**⚠️ E o limiar de profundidade é RELATIVO à distância do pixel.** Fixo em
+metros, ele desenha tudo de perto e nada de longe: a 60 m, dois objetos
+separados por 30 cm têm quase a mesma profundidade.
+
+De quebra, as bordas das plataformas e dos buracos ficaram marcadas — que é o
+item 2 do §7.1c, o buraco ler como buraco, chegando de graça.
 
 ### Fase 3 — Banda de luz (fábrica de material)
 
