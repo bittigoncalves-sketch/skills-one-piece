@@ -201,6 +201,36 @@ separados por 30 cm têm quase a mesma profundidade.
 De quebra, as bordas das plataformas e dos buracos ficaram marcadas — que é o
 item 2 do §7.1c, o buraco ler como buraco, chegando de graça.
 
+#### ⚠️ Conferido em imagem depois de pronto — e tinha dois defeitos
+
+Capturando a PARTE DE BAIXO das marcações (pé do personagem, base do bloco,
+borda do buraco) com e sem o nó, e olhando a imagem de DIFERENÇA:
+
+1. **o contorno do personagem não fechava embaixo** — cabeça e tronco tinham
+   linha, pernas e pés não;
+2. **o horizonte virava uma barra preta** de dezenas de pixels de altura.
+
+Os dois tinham a **mesma causa**: a versão original comparava a profundidade do
+pixel com a dos vizinhos (diferença PRIMEIRA), o que confunde **degrau** com
+**inclinação**. O chão visto de raspão tem gradiente enorme sem nenhuma
+descontinuidade — daí a barra. E o remédio óbvio (subir o limiar até a barra
+sumir) matava junto o degrau pequeno do pé encostando no chão.
+
+**A correção foi trocar a conta, não os limiares:** diferença SEGUNDA,
+`d(+x) + d(−x) − 2·d(0)`. Numa superfície de inclinação constante isso dá zero
+por mais inclinada que ela esteja; num degrau dá valor alto mesmo que o degrau
+seja pequeno. Uma conta resolveu os dois — que era o sinal de que eram o mesmo
+problema, não dois.
+
+Junto, o `alcance` caiu de 150 m para **70 m**, e isso é estilo, não economia: a
+arena tem 200 m e a grade é cheia de buracos; vistas de raspão, dezenas de
+bordas distantes empilham 1-2 pixels cada e borram. Anime também não contorna o
+fundo distante.
+
+**Depois da correção**, nas mesmas três distâncias: 3.492 / 2.108 / 3.087 pixels
+de linha — contra 6.869 / 5.462 / 3.944 antes. Menos linha, e a que ficou é a
+que desenha.
+
 ### Fase 3 — Banda de luz (fábrica de material)
 
 Passo 0: **contar as receitas distintas** por trás dos 94 pontos. Só então
