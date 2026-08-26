@@ -23,3 +23,9 @@ assets/models/inbox/*
 !assets/models/inbox/.gitkeep
 assets/models/environment/sol3D.glb
 art_src/blender/*.blend1
+
+# Worktrees de agente (isolamento). Ficam DENTRO do projeto e NÃO são do jogo:
+# um `git add -A` as engole como repositório embutido, e o `checar_cache.sh`
+# enxergaria o código meio-escrito delas como classe do projeto.
+# Ver .claude/LEIA-ME.md.
+.claude/worktrees/
