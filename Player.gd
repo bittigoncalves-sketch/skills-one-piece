@@ -1733,7 +1733,7 @@ func find_best_melee_target(radius: float = 12.0) -> Node3D:
 		# Consequência: o cone frontal selecionava alvos ATRÁS do jogador, e o
 		# lunge o empurrava para longe do alvo — e para longe de onde a hitbox
 		# ia nascer. Ver `docs/erros.md`.
-		var forward = -Basis.from_euler(Vector3(0, _yaw, 0)).z
+		var forward = RosaDosVentos.frente(_yaw)   # definição canônica: RosaDosVentos
 		
 		var dot_prod = forward.dot(dir_to_target)
 		
@@ -1760,7 +1760,7 @@ func perform_melee_lunge(target: Node3D, lunge_force: float = 18.0) -> void:
 			
 	# 2. Lunge (Impulso Frontal Instantâneo)
 	# Mesma correção de frente do `find_best_melee_target` — ver a nota lá.
-	var forward = -Basis.from_euler(Vector3(0, _yaw, 0)).z
+	var forward = RosaDosVentos.frente(_yaw)   # definição canônica: RosaDosVentos
 	# ⚠️ `lunge_force` NÃO FOI RECALIBRADO, e isso é medida, não omissão.
 	# O §3.3 do plano pede um puxão de ~0,30 m por golpe. Isto aqui é um impulso
 	# de UM QUADRO: `_etapa_locomocao` reescreve `velocity.x/z` no quadro

@@ -158,7 +158,7 @@ func empurrar(base: Vector3, no_chao: bool, yaw: float) -> float:
 	if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN):  f -= 1.0
 	if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT): r += 1.0
 	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):  r -= 1.0
-	var base_cam := Basis.from_euler(Vector3(0, yaw, 0))
+	var base_cam := RosaDosVentos.base_do_corpo(yaw)   # definição canônica
 	var tentativa := (-base_cam.z) * f + (base_cam.x) * r
 	if tentativa.length_squared() > 0.01:
 		tentativa = tentativa.normalized()

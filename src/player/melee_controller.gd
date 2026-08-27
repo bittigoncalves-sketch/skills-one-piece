@@ -151,7 +151,7 @@ func pedir(yaw: float) -> void:
 	if _dono and "hit_confirmed" in _dono:
 		_dono.hit_confirmed = false
 
-	var fwd := -Basis.from_euler(Vector3(0, yaw, 0)).z
+	var fwd := RosaDosVentos.frente(yaw)   # definição canônica: RosaDosVentos
 	var origem: Vector3 = _dono.global_position + Vector3.UP * (1.0 * s)
 
 	# ⚠️ O TRANCO DE CÂMERA SAI NO SOCO, NÃO NO CLIQUE. Ele já foi disparado
