@@ -1824,3 +1824,55 @@ quase reportei "o soco tomba o boneco". Era **contaminação da sequência** —
 caso anterior (dash) ainda estava em curso quando a medição do soco começou.
 Isolado, o soco dá 6,4°. **Caso de teste que não parte de estado limpo mede o
 caso anterior.**
+
+---
+
+## 2026-08-27 — o rig do personagem está SÃO; o alarme foi meu
+
+Vendo o vídeo do dono eu reportei que o boneco "desmonta em movimento". **Medindo,
+isso não se sustenta.** Sonda `tools/dev_tests/medir_rig_por_pitch.gd`, varrendo
+toda a faixa de mira do jogo (`_pitch` de +0,5 a −1,2), parado e correndo:
+
+```
+PARADO    tronco 1,2°–2,6°  | altura do rig 99,6% em TODOS os pitches
+CORRENDO  tronco 14,7°      | altura do rig 88,1%–88,4%, sem variação por pitch
+```
+
+Nenhum sinal de colapso, e **nenhuma dependência da direção da câmera** — que era
+a hipótese que amarraria os três defeitos relatados. A pose de corrida
+(tronco 14,7°, corpo a 88% da altura) é uma corrida agachada normal, não um
+defeito.
+
+**Lição:** eu li "desmontado" num modelo voxel de poucos polígonos, recortado e
+reescalado de um vídeo de 1316×736. Baixa resolução + pose inclinada + modelo
+sem cabeça destacada é o suficiente para parecer quebrado. **Impressão sobre
+pixel ampliado não é diagnóstico** — e eu já tinha registrado nesta mesma sessão
+que "controle tem que ter o mesmo brilho do caso"; aqui o erro é o irmão disso:
+*comparar aparência sem comparar com a mesma coisa medida em condição conhecida.*
+
+Ficam como portão, porque agora existem e são baratos:
+`medir_tronco_movimento.gd`, `medir_tronco_combinado.gd`, `medir_corpo_encolhe.gd`
+e `medir_rig_por_pitch.gd`.
+
+### E o defeito do chão continua ABERTO, com mais duas hipóteses mortas
+
+No enquadramento do rumo 90° (esquerda com blocos, direita sem):
+
+```
+cel como está           esq 30,0% | dir 0,5%
+cel sem a grade         esq 29,8%
+cel SEM sombra do sol   esq 30,0%
+cel com sombra MACIA    esq 30,0%   (sem o smoothstep que endurece a borda)
+cel com sombra_min=1,0  esq 30,0%   (luz constante à força)
+StandardMaterial3D      esq  0,0%   (mesmo albedo 0,46)
+```
+
+Nove hipóteses derrubadas ao todo. O que sobra é a diferença entre o `light()`
+do cel e a iluminação padrão do Godot — e nenhum parâmetro isolado do `light()`
+reproduz a diferença, o que é contraditório e indica que **alguma dessas
+medições ainda está errada**.
+
+**Próximo experimento, e só ele:** bisseção real — copiar o `cel.gdshader`
+REMOVENDO o `light()` inteiro (deixando o Godot iluminar), mantendo o
+`fragment()` igual. Isso separa fragment de light de uma vez, sem depender de
+adivinhar qual parâmetro importa.
