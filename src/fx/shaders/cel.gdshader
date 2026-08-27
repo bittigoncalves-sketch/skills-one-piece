@@ -88,7 +88,29 @@ void fragment() {
 		base *= 1.0 - linha * grade_forca;
 	}
 	ALBEDO = base;
-	ALPHA = cor.a;
+	// ⚠️ NÃO ESCREVER `ALPHA` AQUI. Medido em 2026-08-27.
+	//
+	// No Godot 4 a transparência é decidida em tempo de COMPILAÇÃO: basta o
+	// shader ESCREVER em `ALPHA` — mesmo que o valor seja sempre 1,0 — para o
+	// material inteiro ir para o pipeline de transparência. Ali ele deixa de
+	// participar do prepass de profundidade e passa a ser iluminado por um
+	// caminho diferente, e o resultado é um escurecimento em FAIXA no chão que
+	// muda conforme a câmera gira.
+	//
+	// Medido no mesmo quadro, mesma câmera, mesma luz, chão 100% plano
+	// (a linha de leitura foi validada por raio: 560 de 560 pixels acertam a
+	// Plataforma, zero blocos, zero céu):
+	//     com `ALPHA = cor.a;`   metade esquerda 29,8% escurecida
+	//     sem a linha            metade esquerda  0,0%
+	// Uma linha, uma medição, tudo o mais idêntico.
+	//
+	// Foi o que sobrou depois de derrubar, medindo: cascata de sombra, grade do
+	// chão, quantização do cel, contorno de tela, SSAO, névoa, o `light()`
+	// inteiro (removê-lo não muda nada) e o `render_mode`.
+	//
+	// Se algum dia este shader precisar de superfície TRANSLÚCIDA, faça uma
+	// VARIANTE separada que escreva `ALPHA` e use-a só onde for preciso — não
+	// devolva a linha aqui, porque ela custa o chão inteiro.
 	ROUGHNESS = 1.0;
 }
 
