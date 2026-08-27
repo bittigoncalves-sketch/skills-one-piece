@@ -1876,3 +1876,74 @@ medições ainda está errada**.
 REMOVENDO o `light()` inteiro (deixando o Godot iluminar), mantendo o
 `fragment()` igual. Isso separa fragment de light de uma vez, sem depender de
 adivinhar qual parâmetro importa.
+
+---
+
+## ⚠️ RESOLVIDO — escurecimento em faixa no chão: escrever `ALPHA` tornava o material TRANSPARENTE
+
+**Quando:** 2026-08-27. **Arquivo:** `src/fx/shaders/cel.gdshader`, uma linha.
+
+### Causa raiz
+
+O `fragment()` fazia `ALPHA = cor.a;`. No Godot 4 a transparência é decidida em
+tempo de **COMPILAÇÃO**: basta o shader **escrever** em `ALPHA` — mesmo que o
+valor seja sempre 1,0 — para o material inteiro ir para o **pipeline de
+transparência**. Ali ele deixa de participar do prepass de profundidade e passa
+a ser iluminado por outro caminho. No chão isso aparecia como faixas escuras que
+mudavam ao girar a câmera.
+
+`cor.a` era 1,0 em **todos os 100 materiais** que usam o shader (auditado em
+runtime). A transparência nunca foi usada — só o custo dela.
+
+### Evidência
+
+Mesma cena, mesma câmera, mesma luz, chão 100% plano. A linha de leitura foi
+**validada por raio**: 560 de 560 pixels acertam a `Plataforma` — zero blocos,
+zero céu. (A métrica anterior comparava metades da TELA sem conferir conteúdo, e
+por isso não valia.)
+
+| variante | esquerda |
+|---|---|
+| A — cel do jogo | **29,8%** |
+| B — mesmo `fragment()`, **`light()` REMOVIDO** | 29,8% |
+| G — sem `light()` **e** sem grade | 29,8% |
+| J — sem `render_mode` | 29,8% |
+| **M — só sem a linha `ALPHA = cor.a;`** | **0,0%** |
+| C — `StandardMaterial3D` (controle) | 0,5% |
+
+Uma linha, uma medição, tudo o mais idêntico.
+
+### A contradição da Etapa 5, explicada
+
+*"Trocar o material inteiro resolve, mas parâmetro nenhum reproduz."* Havia
+**duas causas sobrepostas** nos quadros que eu media: o artefato da
+transparência **e sombra de bloco de verdade**. A métrica conta qualquer pixel de
+chão abaixo de 92% da média, e sombra legítima cai nisso. Por isso nenhum toggle
+isolado zerava o número — cada um matava só metade.
+
+Confirmado desligando a sombra do sol **depois** da correção:
+
+```
+rumo 270° pitch -0,25   com sombra 32,1%  sem sombra 0,7%  -> sombra legítima
+rumo  45° pitch -0,70   com sombra 39,6%  sem sombra 0,8%  -> sombra legítima
+rumo 135° pitch -0,25   com sombra 50,0%  sem sombra 1,6%  -> sombra legítima
+rumo  90° pitch -0,25   com sombra  0,7%  sem sombra 0,7%  -> limpo (era o defeito)
+```
+
+### Antes/depois no MESMO quadro, 96 casos (8 rumos × 3 posições × 2 alturas × 2 luzes)
+
+```
+rumo  90°  27,1% -> 0,7%      rumo 135°  46,4% -> 1,1%
+rumo 225°  59,6% -> 1,8%      rumo 180°  12,1% -> 0,7%
+rumo 270° (pitch -0,70)  19,3% -> 1,0%
+```
+
+Nenhum caso piorou. O que não mudou era sombra de verdade, não artefato.
+
+### Por que isso escapou por tanto tempo
+
+Nove hipóteses foram derrubadas antes de chegar aqui, e o `ALPHA` nunca esteve
+entre elas porque *escrever alfa 1,0 parece inofensivo*. A lição é do formato do
+defeito, não do lugar: **no Godot 4 o que importa é o shader ESCREVER no campo,
+não o valor escrito.** O mesmo vale para `NORMAL`, `AO` e outros — escrever
+liga um caminho.
