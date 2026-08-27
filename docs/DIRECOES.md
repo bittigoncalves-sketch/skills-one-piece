@@ -110,3 +110,27 @@ parecida:
    deslocamento quase nulo, e normalizar vetor curto amplia ruído: a mesma célula
    deu −0,86 e +1,00 em rodadas diferentes. O bug real do lunge era **consistente**
    em todo yaw — então célula acusada é medida até 3× e só vale se repetir.
+
+### A prova de que ela sabe reprovar
+
+Uma sonda que nunca reprova não prova nada, e este projeto já teve uma
+(a conferência do rig no Blender comparava o erro consigo mesma e dizia "✓").
+
+Por isso `medir_direcoes_skills.gd` tem sabotagem embutida: com `--inverter` ela
+entrega ao jogo o **oposto** do pedido e continua comparando com o pedido.
+Resultado medido:
+
+```
+❗ INVERTIDAS: 108
+   ❌ bara_bara Z→NORTE (-1.00, real=SUL)
+   ❌ buki_buki Z→LESTE (-1.00, real=OESTE)
+   ...
+✓ com o `aim` invertido a sonda pegou 108 célula(s) — ela SABE reprovar.
+```
+
+108 das 121 células com direção, todas em **−1,00** — o mesmo número do bug real
+de 2026-08-25. As 13 restantes são as que não criam hitbox e por isso não podem
+ser julgadas.
+
+⚠️ A sabotagem é um **flag de linha de comando**, não uma edição no código: não há
+o que desfazer depois, e por isso ela não pode ficar ligada por esquecimento.
