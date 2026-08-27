@@ -1657,6 +1657,49 @@ e preparar o ambiente antes de testar é justamente o que o esconde.
 
 ---
 
+## 2026-08-27 — as "discordâncias colisão↔visual" eram da SONDA, não do jogo
+
+**Sintoma:** de 1.851 pontos de chão conferidos, 4 tinham o raio acertando a
+`Plataforma` enquanto a tela mostrava o vazio. Parecia rasgo de renderização na
+beirada dos buracos.
+
+**Causa raiz:** duas falhas somadas, ambas da sonda `medir_blocos_sumindo.gd`.
+
+**1. Limiar absoluto de cor.** O chão era pintado de verde puro e o teste exigia
+`g > 0,35`. A névoa escurece o chão distante bem abaixo disso: a ~130 m o verde
+puro chega como **(0,00 · 0,22 · 0,04)** — inconfundivelmente verde, e reprovado.
+Isso acusava "o chão sumiu" na borda externa da plataforma, longe da câmera.
+
+**2. Sem margem de silhueta.** Raio e rasterizador decidem coisas diferentes: o
+raio acerta se a linha CRUZA o sólido; o pixel é pintado por COBERTURA, e na
+quina a cobertura é parcial. Some a isso o `Contorno`, que pinta uma linha escura
+**por cima** da silhueta — os últimos pixels da beirada da laje são contorno, não
+chão. Discordar a milímetros da quina é o comportamento correto dos dois.
+
+**Evidência:** os 3 casos que sobraram após corrigir (1) eram todos idênticos —
+`y = −1,9946`, ou seja **5,4 mm** do canto de baixo (`PLATFORM_THICK = 2,0`), com
+a mesma cor, sempre no rumo 100°. Consistência assim é geometria, não acaso. A
+vizinhança fechou: no pixel discordante, **2 px para a esquerda** ou **4 px para
+cima** já acham chão desenhado, e a cor lida é **(0,00 · 0,00 · 0,03)** — preto de
+contorno.
+
+**Descartado:** rasgo na face lateral da laje, culling da face, desencontro entre
+a caixa de colisão e a instância do MultiMesh (as duas usam `Vector3(w,
+PLATFORM_THICK, CELL)` na mesma origem — conferido no código).
+
+**Correção:** `tools/dev_tests/medir_blocos_sumindo.gd` — detecção de chão por
+**dominância de canal** em vez de limiar absoluto (não depende do brilho, logo
+atravessa a névoa), mais uma **guarda de silhueta**: só conta como "sumiu" se
+nenhum chão for desenhado num raio de 6 px. Nenhuma mudança no jogo.
+
+**Como detectar de novo:** a sonda agora fecha em 1.851 pontos de chão e 3.880 de
+bloco com **zero** discordâncias. Regra que fica: **sonda que compara raio com
+pixel precisa de margem na silhueta** — sem ela, ela acusa a própria borda da
+geometria. E **limiar absoluto de cor não sobrevive à névoa**; dominância, sim.
+
+
+---
+
 ## 2026-08-27 — o chão escurecia em faixa porque o shader ESCREVIA `ALPHA`
 
 **Sintoma:** o chão ganhava faixas escuras que mudavam ao girar a câmera. No mesmo
