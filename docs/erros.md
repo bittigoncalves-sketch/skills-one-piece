@@ -1639,3 +1639,77 @@ cache e regenera quando falta algum.
 **Lição de método:** *toda* fase seguinte da partição do Player cria classe
 nova. Um bug que só aparece fora do ambiente de teste continua sendo um bug —
 e preparar o ambiente antes de testar é justamente o que o esconde.
+
+---
+
+## Faixas escuras no chão ao virar a câmera — e o buraco na bateria visual
+
+**Quando:** 2026-08-26. **Relato do dono:** defeito visual ao mudar a direção do
+personagem/câmera, "por exemplo ao olhar para trás", e os pilares da plataforma
+bugando.
+
+### O buraco que permitiu o defeito passar
+
+`tools/dev_tests/captura_visual.gd` — o portão visual do projeto, com cinco
+cenas fixas — **cria uma `Camera3D` própria** e a posiciona na mão. Ele nunca
+passa pelo `CameraRig` (pivô → Ombro → SpringArm → Camera3D), que é a câmera de
+verdade do jogo.
+
+Ou seja: **todo defeito que dependa da câmera do jogo era invisível para a
+bateria, por construção.** Olhar para trás é exatamente o que aquela sonda não
+sabe fazer. Sonda nova: `tools/dev_tests/captura_giro.gd`, 8 rumos + 3
+inclinações, pela câmera real.
+
+### O que está MEDIDO sobre o defeito
+
+Chão liso (`StandardMaterial3D`) contra o material do jogo, mesma coluna de
+pixels, mesmo quadro:
+
+```
+material do jogo   | degraus 6 | maior salto 0,135
+grade desligada    | degraus 3 | maior salto 0,091
+StandardMaterial3D | degraus 0 | maior salto 0,003
+```
+
+As bordas estão presas ao **MUNDO**, não à tela: andando 5 m, o Y na tela vai de
+374 → 400 → 437, mas a coordenada de mundo fica **z = 10,01 / 10,01 / 10,00**;
+virando para 90°, caem em **x = −10 e x = 0**. Múltiplos exatos de
+`MapBuilder.CELL` (10 m).
+
+E o raio disparado por cada pixel da faixa acerta `Main/Plataforma` em **altura
++0,00 em todos eles** — o chão é plano, não há geometria variando.
+
+### Sete hipóteses derrubadas MEDINDO (todas erradas)
+
+1. **cascata de sombra (PSSM)** — desligar a sombra do sol não mudou nada
+2. **grade do chão** — responde por cerca de metade (0,135 → 0,091), não pelo resto
+3. **quantização do cel** — mexer em `faixas` e `suavidade` não cura
+4. **contorno de tela** — esconder o nó `Contorno` não muda (0,138 → 0,138)
+5. **SSAO** — idêntico com e sem
+6. **névoa / perspectiva aérea** — tirar a névoa PIOROU (0,152)
+7. **o próprio `light()` do cel** — pintando o valor interno `luz` na tela ele sai
+   CONSTANTE (1 nível, 0 degraus), e a normal do chão e o `ATTENUATION` também
+
+### ⚠️ Dois erros MEUS de medição, no meio do caminho
+
+- **A coluna de leitura passava por cima do personagem.** Eu lia a coluna do meio
+  da tela (x=640), que cruza o boneco, o contorno e a sombra dele — parte dos
+  "degraus" era a silhueta, não o chão. Isso invalidou os vereditos de SSAO e
+  névoa, que tiveram de ser refeitos (e aí sim se confirmaram inocentes). Ler em
+  x=200 e x=1080 resolve.
+- **Os shaders de depuração usavam `=` no lugar de `+=`.** `light()` roda UMA VEZ
+  POR LUZ, e o jogo tem sol + contraluz. Com `=`, eu estava medindo só a última
+  das duas. Refeito com `+=`.
+
+Lição das duas: **antes de acreditar num veredito de "inocente", conferir se a
+métrica estava olhando para o lugar certo.** Comparar número de um teste com
+número de outro só vale se a métrica e a região forem as mesmas — e não eram.
+
+### O que continua ABERTO
+
+Com a grade desligada sobram **3 degraus de ~0,09** que vêm do material do jogo e
+que não são explicados por nenhuma das sete hipóteses acima. Como `luz`, normal e
+`ATTENUATION` são todos constantes, a soma do `light()` deveria ser constante —
+e não é. **Não fechei essa parte.** Próximo passo sugerido: comparar cel e
+`StandardMaterial3D` com o MESMO albedo pintando o buffer antes do tonemap, já
+que o branco dos shaders de depuração satura e pode ter escondido a variação.
