@@ -1657,6 +1657,50 @@ e preparar o ambiente antes de testar é justamente o que o esconde.
 
 ---
 
+## 2026-08-27 — o `:=` do GDScript não infere sobre Variant, e isso pegou 4 vezes
+
+**Sintoma:** `Parse Error: Cannot infer the type of "X" variable because the value
+doesn't have a set type.` O script inteiro deixa de carregar.
+
+**Causa raiz:** iterar um `Array` ou `Dictionary` **não tipado** dá um `Variant`, e
+qualquer método chamado nele devolve `Variant` — que o `:=` não consegue inferir.
+Os quatro casos do mesmo dia:
+
+```gdscript
+for d in [Vector2i(6,0), ...]:      var vx := x + d.x            # ❌
+for chave in dicionario:            var partes := chave.split("/")  # ❌
+for x in _todos(no):                var pai := x.get_parent()     # ❌
+```
+
+Dois eram meus e dois de um agente — ou seja, não é distração de uma pessoa, é a
+forma da linguagem.
+
+**Evidência:** `medir_direcoes_skills.gd` (do agente) não carregava; três sondas
+minhas quebraram na primeira execução com a mesma mensagem.
+
+**Correção:** tipar a variável, ou o laço:
+
+```gdscript
+var passos: Array[Vector2i] = [...]      # laço tipado resolve na origem
+var partes: PackedStringArray = String(chave).split("/")
+var pai: Node = (x as Node).get_parent()
+```
+
+**Como detectar de novo:** o erro é de PARSE, então `--check-only` no arquivo já
+denuncia — não precisa subir o jogo. Vale rodar antes de qualquer sonda nova:
+
+```bash
+godot --headless --path . --check-only --script res://tools/dev_tests/<sonda>.gd
+```
+
+**⚠️ E a armadilha vizinha, que custa mais caro:** pôr `await` numa função chamada
+SEM `await` não dá erro nenhum — a função simplesmente ENCERRA ali, e o resto não
+roda. Foi assim que uma sonda passou de 33 para 31 asserções em silêncio, e eu
+quase tomei o placar menor por bom. Ver a entrada da conferência do rig no Blender:
+teste que encolhe sozinho é primo do teste que compara o erro consigo mesmo.
+
+---
+
 ## 2026-08-27 — as "discordâncias colisão↔visual" eram da SONDA, não do jogo
 
 **Sintoma:** de 1.851 pontos de chão conferidos, 4 tinham o raio acertando a

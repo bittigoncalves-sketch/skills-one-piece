@@ -157,6 +157,7 @@ var _geppo_count: int:
 	get: return _parkour.geppos()
 
 var _camera: CameraRig        # componente: câmera, tremor, FOV, balanço, tela
+var _gear2: Gear2Controller   # componente: a transformação Gear 2 (slot V da Gomu)
 var _cam: Camera3D            # atalho para `_camera.camera()` — a mira usa muito
 
 
@@ -479,6 +480,14 @@ func _ready() -> void:
 	add_child(_camera)
 	_camera.montar(self, _is_authority)
 	_cam = _camera.camera()
+
+	# Gear 2: a primeira TRANSFORMAÇÃO. Componente próprio porque tem estado com
+	# entrada, duração e quatro saídas distintas (relógio, morte, troca de fruta,
+	# troca de personagem) — ver o cabeçalho de `gear2_controller.gd`.
+	_gear2 = Gear2Controller.new()
+	_gear2.name = "Gear2"
+	add_child(_gear2)
+	_gear2.montar(self, _rig)
 
 	# Mira + captura de mouse SÓ para o player local (players remotos não têm HUD/mira).
 	if _is_authority:
@@ -861,6 +870,8 @@ func _process(delta: float) -> void:
 	# O rig recebe o estado de que precisa em vez de ir buscá-lo no Player —
 	# é o que mantém a fronteira honesta e permite testá-lo sozinho.
 	_camera.atualizar(delta, velocity, SPEED, is_on_floor(), _is_sprinting(), _yaw, _buki_scope)
+	if _gear2:
+		_gear2.atualizar(delta)
 
 # (Antiga função _processar_estados_de_combate removida, lógica movida para os States)
 
@@ -1364,6 +1375,11 @@ func _tingir_modelo() -> void:
 		(m as MeshInstance3D).material_override = mat
 
 func _setup_character_model(cid: String) -> void:
+	# ⚠️ SAÍDA POR TROCA DE PERSONAGEM. `_rig.montar` constrói um modelo NOVO: as
+	# malhas pintadas e o nó do chapéu vão embora com o antigo. Desligar antes
+	# evita o chapéu órfão e faz o `_gear2` reapontar para o rig novo.
+	if _gear2:
+		_gear2.desativar()
 	if not ELENCO_LIBERADO.has(cid):
 		cid = ELENCO_LIBERADO[0]
 
@@ -1585,6 +1601,11 @@ func _aplicar_knockback(base_knockback: Vector3) -> void:
 # faz nada de propósito — o servidor enxerga a queda pela `position` replicada e
 # declara a morte de lá. Sem placar na árvore (testes isolados), respawna direto.
 func die_and_respawn() -> void:
+	# ⚠️ SAÍDA POR MORTE. Sem isto o corpo renasce com a pele do Gear 2 e o
+	# chapéu, sem o estado — e a transformação viraria permanente pela porta dos
+	# fundos. É um dos quatro caminhos de saída listados no `gear2_controller`.
+	if _gear2:
+		_gear2.desativar()
 	var caiu := global_position.y < Scoreboard.VOID_Y
 	var placar := get_tree().get_first_node_in_group("scoreboard")
 	if placar and placar.has_method("report_death"):
@@ -2193,7 +2214,17 @@ func _fire_skill(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.
 		print("⚡ FRUTA ", fid.to_upper(), ": ", sdata.get("nome", slot))
 
 		match fid:
-			"gomu_gomu": GomuFX.cast(world, origin, aim, variant, dano, self, spec)
+			# ⚠️ O V DA GOMU NÃO É MAIS UM GOLPE — é a transformação Gear 2
+			# (decisão do dono, 2026-08-27). Entra ANTES do `GomuFX.cast` porque
+			# não cria hitbox nenhuma: é estado, não conjuração. O Red Hawk, que
+			# era o V, segue vivo em `GomuFX._red_hawk` esperando o conjunto de
+			# golpes transformado.
+			"gomu_gomu":
+				if slot == "V":
+					if _gear2:
+						_gear2.ativar()
+				else:
+					GomuFX.cast(world, origin, aim, variant, dano, self, spec)
 			"suna_suna": SandFX.cast(world, origin, aim, variant, dano, self, spec)
 			"mera_mera": FireFX.cast(world, origin, aim, variant, dano, self, charge, spec)
 			"hie_hie":   IceFX.cast(world, origin, aim, variant, dano, self, spec)
@@ -2253,6 +2284,11 @@ func _cycle_fruit() -> void:
 	print("🔀 Fruta de teste: ", nxt)
 
 func equip_fruit(fruit_id: String) -> void:
+	# ⚠️ SAÍDA POR TROCA DE FRUTA. O Gear 2 é da Gomu Gomu; sair dela tem de
+	# largar a transformação junto, senão a pele e o chapéu ficam num personagem
+	# que já é de outra fruta.
+	if _gear2 and _gear2.esta_ativo():
+		_gear2.desativar()
 	# ⚠️ A FRUTA SOME DA ÁRVORE AO SER EQUIPADA — por QUALQUER caminho.
 	#
 	# Isto vive aqui, e não no `pickup_fruit`, porque equipar tem TRÊS entradas e
