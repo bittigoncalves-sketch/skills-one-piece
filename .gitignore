@@ -29,3 +29,7 @@ art_src/blender/*.blend1
 # enxergaria o código meio-escrito delas como classe do projeto.
 # Ver .claude/LEIA-ME.md.
 .claude/worktrees/
+
+# Clipes de diagnóstico gravados pelo tools/dev_tests/gravar_clipes.gd.
+# São megabytes de vídeo regeráveis por um comando — não entram no histórico.
+clipes_diagnostico/

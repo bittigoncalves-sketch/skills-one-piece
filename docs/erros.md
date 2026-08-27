@@ -1713,3 +1713,55 @@ que não são explicados por nenhuma das sete hipóteses acima. Como `luz`, norm
 e não é. **Não fechei essa parte.** Próximo passo sugerido: comparar cel e
 `StandardMaterial3D` com o MESMO albedo pintando o buffer antes do tonemap, já
 que o branco dos shaders de depuração satura e pode ter escondido a variação.
+
+---
+
+## Blocos invisíveis: NÃO é culling — 3.879 testes dizem que não
+
+**Quando:** 2026-08-26. Relato do dono: blocos ficando invisíveis, além dos
+defeitos ao olhar para trás e ao pular.
+
+"Bloco some" quase sempre soa como descarte de renderização, e é uma explicação
+confortável porque culling não gera erro nenhum — o objeto simplesmente não está
+lá. Por isso valia medir antes de sair mexendo em AABB.
+
+**Método** (`tools/dev_tests/medir_blocos_sumindo.gd`): todos os 77 blocos
+pintados de VERMELHO PURO sem iluminação. Para cada bloco e cada rumo:
+`unproject_position` diz em que pixel o centro cai; um raio da câmera até ele diz
+se há algo na frente (se houver, está escondido legitimamente); se está na tela e
+desobstruído, TEM que haver vermelho ali.
+
+Pintar de vermelho é o que tira a ambiguidade: bloco cinza contra chão cinza é
+indistinguível por cor, e foi por isso que olhar as capturas não decidia nada.
+
+**Resultado: 3.879 casos testados, em 6 postos de observação — incluindo alturas
+de pulo (y = 8, 12 e 16) — e ZERO blocos sumidos.** Culling está descartado.
+
+**Achado lateral, esse real:** de 1.851 pontos de chão conferidos, **4** têm o
+raio acertando `Plataforma` enquanto a tela mostra o vazio (cor lida
+`(0.17, 0.25, 0.34)`, que é o azul do horizonte). Três deles em **y ≈ −1,99**, ou
+seja a face LATERAL da laje, vista através de um buraco. Colisão e visual
+discordam na beirada dos buracos.
+
+## E a assimetria do chão, quantificada
+
+No enquadramento do clipe `03_pulo_de_lado` (rumo 90°), varredura horizontal:
+
+```
+como está          | esq 30,0% escurecido | dir  0,5%
+sem grade          | esq 29,8%            | dir  0,0%
+SEM sombra do sol  | esq 30,0%            | dir  0,5%
+sombra_min = 1,0   | esq 30,0%            | dir  0,5%   (luz constante à força)
+StandardMaterial3D | esq  0,0%            | dir  0,0%   (mesmo albedo 0,46)
+```
+
+Metade da tela 60× mais escurecida que a outra, no mesmo quadro, no mesmo chão
+plano. Sobrevive a desligar grade, sombra e a própria conta do `light()`; morre
+ao trocar o material por um comum de mesmo albedo. **A causa está no
+`cel.gdshader` e ainda não foi isolada dentro dele.**
+
+⚠️ **Armadilha de medição que me pegou DUAS vezes:** testar com albedo branco não
+prova nada — o branco satura no tonemap e esconde justamente a variação que se
+quer medir. Foi por isso que o teste `7_albedo_branco` deu 0,0% e o
+`5_liso_mesmo_albedo` também: só o segundo é evidência. **Controle tem que ter o
+mesmo brilho do caso, senão a saturação vira "conserto" falso.**
