@@ -62,7 +62,11 @@ func ler(yaw: float, menu_fechado: bool = true) -> void:
 
 	# Base do pivô da câmera PURA (só yaw), sem distorção de pitch — é o que faz
 	# o dash ser sempre horizontal e olhar pra cima não virar empuxo.
-	var base := Basis.from_euler(Vector3(0, yaw, 0))
+	# A base canônica mora em `RosaDosVentos`. Aqui era a 1ª de CINCO cópias da
+	# mesma expressão espalhadas pelo projeto — e foi quando a 5ª saiu negada
+	# (`-Vector3.FORWARD`) que o auto-mira passou a apontar para trás sem que
+	# houvesse contra o que conferir. Uma definição só.
+	var base := RosaDosVentos.base_do_corpo(yaw)
 	frente = -base.z
 	direita = base.x
 

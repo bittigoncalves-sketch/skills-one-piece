@@ -59,6 +59,33 @@ implementação:
 - Um golpe só conta como pronto se criar `DamageZone` — os seis critérios do
   `PLANO_FRUTAS.md` valem.
 
+### ⚠️ DECISÃO DO DONO (2026-08-27): o slot V vira TRANSFORMAÇÃO
+
+O V deixa de ser "mais um golpe". Ele passa a ser a **primeira transformação
+completa do jogo**: enquanto ativa, o personagem **ganha golpes novos** e o
+**efeito do Gear 2**.
+
+Isso muda o que a pesquisa tem que devolver, e muda a arquitetura:
+
+- **Não é um golpe, é um ESTADO.** Tem entrada, duração, saída e custo — mais
+  perto de uma passiva temporária que de um `DamageSpec`. Precisa decidir o que
+  acontece se o jogador morrer, tomar hitstun ou trocar de fruta durante ela.
+- **"Ganha golpes novos" = os slots Z/X/C são REMAPEADOS enquanto dura.** Então
+  a pesquisa não escolhe 4 golpes, escolhe **dois conjuntos**: o de base e o de
+  Gear 2. O que hoje é "o resto anotado como reserva" passa a ser candidato de
+  verdade ao conjunto transformado.
+- **O efeito do Gear 2 é visual E mecânico.** Na obra é vapor, cor da pele e
+  aumento de velocidade. Vale decidir desde já quais desses entram, porque
+  velocidade mexe em `Balance` e em rede, e vapor mexe em VFX — são frentes
+  diferentes, com donos diferentes.
+- **É o primeiro do jogo**, então o que for construído aqui vira o molde para
+  Gear 3/4/5 e para transformação de outras frutas. Isso justifica separar
+  "motor de transformação" de "conteúdo da Gear 2" — o primeiro é reusável, o
+  segundo não.
+
+**Gatilho para virar plano próprio:** assim que a pesquisa devolver os dois
+conjuntos de golpes, isto sai da fila e vira `PLANO_TRANSFORMACOES.md`.
+
 ### Onde o resultado deve morar
 
 `docs/frutas/gomu_gomu.md` (o arquivo já existe) e, se a pesquisa virar
