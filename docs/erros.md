@@ -14,7 +14,7 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 que não pareciam ter relação: `Cannot infer the type of "arma" variable`,
 `... "papel" ...`, `... "tw" ...` — em arquivos que o script nem tocou.
 
-**Duas causas, as duas do script:**
+**Causa raiz:** duas, as duas do script:
 
 **1. Escopo por ARQUIVO em vez de por FUNÇÃO.** Ele colhia os nomes de variável
 marcados como unshaded no arquivo inteiro. No `WaterFX.gd` há duas funções que
@@ -43,6 +43,10 @@ de um `if energia > 0.0:`. Apagá-las deixa
 
 que é erro de sintaxe — e derruba **todo script que dependa daquele**, que é o
 motivo de os erros aparecerem em arquivos não tocados. Aconteceu em 3 blocos.
+
+**Correção:** os 6 sítios sombreados foram revertidos — em material SOMBREADO a
+emissão funciona, apagar ali era regressão — e os 3 blocos esvaziados, refeitos à
+mão. A contagem real de sítios a converter era **28**, não 32.
 
 **Como detectar:** transformação em massa precisa de auditoria pós-fato, não só
 de revisão do diff. As duas que usei:
@@ -152,6 +156,9 @@ no inspetor, então escrevi `set_glow_level(1..7)`. O método é **base zero**
 (0..6). O nível 7 estourava e o nível 0 nunca era zerado — o glow ficava
 configurado errado, com um erro que some no meio da saída.
 
+**Correção:** `set_glow_level()` passou a ser chamado com índices **0..6**, e a
+configuração é lida de volta em runtime para conferir.
+
 **Como detectar:** erro de índice em `_ready` não derruba nada e não falha
 teste. Vale conferir a configuração LENDO de volta em runtime
 (`get_glow_level(i)`), que foi o que expôs o buraco no nível 0.
@@ -209,6 +216,10 @@ O que fez o defeito sobreviver a um teste foi outra coisa, e é a lição:
 **a conferência comparava a cinemática direta com o Blender, e os dois liam o
 Euler pela MESMA função.** Errando junto, concordavam. A pose de repouso
 disfarçava porque com todos os ângulos em zero qualquer ordem acerta.
+
+**Correção:** `'ZXY'` no mathutils (não `'YXZ'`), mais a âncora `ANCORA_COLUNAS`
+medida DENTRO do Godot, que o script recusa montar se não reproduzir — e um
+controle com os eixos errados de propósito, que precisa explodir.
 
 **Como detectar:** teste sem referência EXTERNA não prova conversão. A correção
 foi colar no script uma base medida dentro do Godot (`ANCORA_COLUNAS`) e
@@ -275,6 +286,10 @@ yaw= 3.14 | lunge/auto-mira=( 0.00, 0.00,-1.00)  hitbox=( 0.00, 0.00, 1.00)  dot
 1. o cone frontal (`dot_prod > 0.0`) selecionava alvos **atrás** do jogador;
 2. o lunge empurrava o corpo **para longe** do alvo recém-selecionado — e para
    longe de onde a hitbox ia nascer.
+
+**Correção:** `find_best_melee_target` e `perform_melee_lunge` passaram a usar
+`-Basis.from_euler(Vector3(0, yaw, 0)).z` — a MESMA expressão que o resto do
+combate já usava para posicionar a hitbox.
 
 **Como detectar:** duas expressões de "frente" no mesmo sistema é o cheiro. O
 teste é uma linha: `print(a.dot(b))` para alguns yaws. `-Vector3.FORWARD` é
@@ -1642,308 +1657,198 @@ e preparar o ambiente antes de testar é justamente o que o esconde.
 
 ---
 
-## Faixas escuras no chão ao virar a câmera — e o buraco na bateria visual
+## 2026-08-27 — as "discordâncias colisão↔visual" eram da SONDA, não do jogo
 
-**Quando:** 2026-08-26. **Relato do dono:** defeito visual ao mudar a direção do
-personagem/câmera, "por exemplo ao olhar para trás", e os pilares da plataforma
-bugando.
+**Sintoma:** de 1.851 pontos de chão conferidos, 4 tinham o raio acertando a
+`Plataforma` enquanto a tela mostrava o vazio. Parecia rasgo de renderização na
+beirada dos buracos.
 
-### O buraco que permitiu o defeito passar
+**Causa raiz:** duas falhas somadas, ambas da sonda `medir_blocos_sumindo.gd`.
 
-`tools/dev_tests/captura_visual.gd` — o portão visual do projeto, com cinco
-cenas fixas — **cria uma `Camera3D` própria** e a posiciona na mão. Ele nunca
-passa pelo `CameraRig` (pivô → Ombro → SpringArm → Camera3D), que é a câmera de
-verdade do jogo.
+**1. Limiar absoluto de cor.** O chão era pintado de verde puro e o teste exigia
+`g > 0,35`. A névoa escurece o chão distante bem abaixo disso: a ~130 m o verde
+puro chega como **(0,00 · 0,22 · 0,04)** — inconfundivelmente verde, e reprovado.
+Isso acusava "o chão sumiu" na borda externa da plataforma, longe da câmera.
 
-Ou seja: **todo defeito que dependa da câmera do jogo era invisível para a
-bateria, por construção.** Olhar para trás é exatamente o que aquela sonda não
-sabe fazer. Sonda nova: `tools/dev_tests/captura_giro.gd`, 8 rumos + 3
-inclinações, pela câmera real.
+**2. Sem margem de silhueta.** Raio e rasterizador decidem coisas diferentes: o
+raio acerta se a linha CRUZA o sólido; o pixel é pintado por COBERTURA, e na
+quina a cobertura é parcial. Some a isso o `Contorno`, que pinta uma linha escura
+**por cima** da silhueta — os últimos pixels da beirada da laje são contorno, não
+chão. Discordar a milímetros da quina é o comportamento correto dos dois.
 
-### O que está MEDIDO sobre o defeito
+**Evidência:** os 3 casos que sobraram após corrigir (1) eram todos idênticos —
+`y = −1,9946`, ou seja **5,4 mm** do canto de baixo (`PLATFORM_THICK = 2,0`), com
+a mesma cor, sempre no rumo 100°. Consistência assim é geometria, não acaso. A
+vizinhança fechou: no pixel discordante, **2 px para a esquerda** ou **4 px para
+cima** já acham chão desenhado, e a cor lida é **(0,00 · 0,00 · 0,03)** — preto de
+contorno.
 
-Chão liso (`StandardMaterial3D`) contra o material do jogo, mesma coluna de
-pixels, mesmo quadro:
+**Descartado:** rasgo na face lateral da laje, culling da face, desencontro entre
+a caixa de colisão e a instância do MultiMesh (as duas usam `Vector3(w,
+PLATFORM_THICK, CELL)` na mesma origem — conferido no código).
 
-```
-material do jogo   | degraus 6 | maior salto 0,135
-grade desligada    | degraus 3 | maior salto 0,091
-StandardMaterial3D | degraus 0 | maior salto 0,003
-```
+**Correção:** `tools/dev_tests/medir_blocos_sumindo.gd` — detecção de chão por
+**dominância de canal** em vez de limiar absoluto (não depende do brilho, logo
+atravessa a névoa), mais uma **guarda de silhueta**: só conta como "sumiu" se
+nenhum chão for desenhado num raio de 6 px. Nenhuma mudança no jogo.
 
-As bordas estão presas ao **MUNDO**, não à tela: andando 5 m, o Y na tela vai de
-374 → 400 → 437, mas a coordenada de mundo fica **z = 10,01 / 10,01 / 10,00**;
-virando para 90°, caem em **x = −10 e x = 0**. Múltiplos exatos de
-`MapBuilder.CELL` (10 m).
+**Como detectar de novo:** a sonda agora fecha em 1.851 pontos de chão e 3.880 de
+bloco com **zero** discordâncias. Regra que fica: **sonda que compara raio com
+pixel precisa de margem na silhueta** — sem ela, ela acusa a própria borda da
+geometria. E **limiar absoluto de cor não sobrevive à névoa**; dominância, sim.
 
-E o raio disparado por cada pixel da faixa acerta `Main/Plataforma` em **altura
-+0,00 em todos eles** — o chão é plano, não há geometria variando.
-
-### Sete hipóteses derrubadas MEDINDO (todas erradas)
-
-1. **cascata de sombra (PSSM)** — desligar a sombra do sol não mudou nada
-2. **grade do chão** — responde por cerca de metade (0,135 → 0,091), não pelo resto
-3. **quantização do cel** — mexer em `faixas` e `suavidade` não cura
-4. **contorno de tela** — esconder o nó `Contorno` não muda (0,138 → 0,138)
-5. **SSAO** — idêntico com e sem
-6. **névoa / perspectiva aérea** — tirar a névoa PIOROU (0,152)
-7. **o próprio `light()` do cel** — pintando o valor interno `luz` na tela ele sai
-   CONSTANTE (1 nível, 0 degraus), e a normal do chão e o `ATTENUATION` também
-
-### ⚠️ Dois erros MEUS de medição, no meio do caminho
-
-- **A coluna de leitura passava por cima do personagem.** Eu lia a coluna do meio
-  da tela (x=640), que cruza o boneco, o contorno e a sombra dele — parte dos
-  "degraus" era a silhueta, não o chão. Isso invalidou os vereditos de SSAO e
-  névoa, que tiveram de ser refeitos (e aí sim se confirmaram inocentes). Ler em
-  x=200 e x=1080 resolve.
-- **Os shaders de depuração usavam `=` no lugar de `+=`.** `light()` roda UMA VEZ
-  POR LUZ, e o jogo tem sol + contraluz. Com `=`, eu estava medindo só a última
-  das duas. Refeito com `+=`.
-
-Lição das duas: **antes de acreditar num veredito de "inocente", conferir se a
-métrica estava olhando para o lugar certo.** Comparar número de um teste com
-número de outro só vale se a métrica e a região forem as mesmas — e não eram.
-
-### O que continua ABERTO
-
-Com a grade desligada sobram **3 degraus de ~0,09** que vêm do material do jogo e
-que não são explicados por nenhuma das sete hipóteses acima. Como `luz`, normal e
-`ATTENUATION` são todos constantes, a soma do `light()` deveria ser constante —
-e não é. **Não fechei essa parte.** Próximo passo sugerido: comparar cel e
-`StandardMaterial3D` com o MESMO albedo pintando o buffer antes do tonemap, já
-que o branco dos shaders de depuração satura e pode ter escondido a variação.
 
 ---
 
-## Blocos invisíveis: NÃO é culling — 3.879 testes dizem que não
+## 2026-08-27 — o chão escurecia em faixa porque o shader ESCREVIA `ALPHA`
 
-**Quando:** 2026-08-26. Relato do dono: blocos ficando invisíveis, além dos
-defeitos ao olhar para trás e ao pular.
+**Sintoma:** o chão ganhava faixas escuras que mudavam ao girar a câmera. No mesmo
+quadro, chão plano e mesma luz: metade esquerda 29,8% escurecida, direita 0,5%.
 
-"Bloco some" quase sempre soa como descarte de renderização, e é uma explicação
-confortável porque culling não gera erro nenhum — o objeto simplesmente não está
-lá. Por isso valia medir antes de sair mexendo em AABB.
+**Causa raiz:** `src/fx/shaders/cel.gdshader` fazia `ALPHA = cor.a;`. No Godot 4 a
+transparência é decidida em tempo de **COMPILAÇÃO** — basta o shader **escrever**
+em `ALPHA`, mesmo que o valor seja sempre 1,0, para o material inteiro ir para o
+pipeline de transparência. Ali ele sai do prepass de profundidade e passa a ser
+iluminado por outro caminho. `cor.a` era 1,0 nos **100 materiais** que usam o
+shader (auditado em runtime): a transparência nunca foi usada, só o custo dela.
 
-**Método** (`tools/dev_tests/medir_blocos_sumindo.gd`): todos os 77 blocos
-pintados de VERMELHO PURO sem iluminação. Para cada bloco e cada rumo:
-`unproject_position` diz em que pixel o centro cai; um raio da câmera até ele diz
-se há algo na frente (se houver, está escondido legitimamente); se está na tela e
-desobstruído, TEM que haver vermelho ali.
-
-Pintar de vermelho é o que tira a ambiguidade: bloco cinza contra chão cinza é
-indistinguível por cor, e foi por isso que olhar as capturas não decidia nada.
-
-**Resultado: 3.879 casos testados, em 6 postos de observação — incluindo alturas
-de pulo (y = 8, 12 e 16) — e ZERO blocos sumidos.** Culling está descartado.
-
-**Achado lateral, esse real:** de 1.851 pontos de chão conferidos, **4** têm o
-raio acertando `Plataforma` enquanto a tela mostra o vazio (cor lida
-`(0.17, 0.25, 0.34)`, que é o azul do horizonte). Três deles em **y ≈ −1,99**, ou
-seja a face LATERAL da laje, vista através de um buraco. Colisão e visual
-discordam na beirada dos buracos.
-
-## E a assimetria do chão, quantificada
-
-No enquadramento do clipe `03_pulo_de_lado` (rumo 90°), varredura horizontal:
-
-```
-como está          | esq 30,0% escurecido | dir  0,5%
-sem grade          | esq 29,8%            | dir  0,0%
-SEM sombra do sol  | esq 30,0%            | dir  0,5%
-sombra_min = 1,0   | esq 30,0%            | dir  0,5%   (luz constante à força)
-StandardMaterial3D | esq  0,0%            | dir  0,0%   (mesmo albedo 0,46)
-```
-
-Metade da tela 60× mais escurecida que a outra, no mesmo quadro, no mesmo chão
-plano. Sobrevive a desligar grade, sombra e a própria conta do `light()`; morre
-ao trocar o material por um comum de mesmo albedo. **A causa está no
-`cel.gdshader` e ainda não foi isolada dentro dele.**
-
-⚠️ **Armadilha de medição que me pegou DUAS vezes:** testar com albedo branco não
-prova nada — o branco satura no tonemap e esconde justamente a variação que se
-quer medir. Foi por isso que o teste `7_albedo_branco` deu 0,0% e o
-`5_liso_mesmo_albedo` também: só o segundo é evidência. **Controle tem que ter o
-mesmo brilho do caso, senão a saturação vira "conserto" falso.**
-
----
-
-## O vídeo do dono (2026-08-27): o boneco desmonta em jogo, e eu não reproduzi
-
-O dono gravou 20 s de partida. Recortando o personagem em 8 instantes, o padrão é
-limpo: **parado ele está correto; em movimento ele desmonta.**
-
-Ampliado, o defeito é específico:
-- **cabeça não aparece** — o topo do corpo é uma laje grande e inclinada
-- tronco tombado ~40° para a frente
-- braços atravessando as pernas
-- **pés como lajes horizontais abertas para os lados**
-
-### O que eu MEDI, e que NÃO explica o vídeo
-
-Ângulo do tronco com a vertical, por estado (sonda
-`tools/dev_tests/medir_tronco_combinado.gd`):
-
-```
-parado 1,5°  andando 3,9°  correndo 12,7°  de lado 4,4°  de ré 4,3°
-pulando 1,2°  correndo+pulo 15,9°  dash 2,0°  socar 6,4°
-skills Z/X/C/V 1,4° a 2,1°   trocar fruta 1,5° a 2,7°
-```
-
-Todos passam. **As combinações somam**: `correr + dash + socar` chega a **26,4°
-por 7 quadros** — acima do limite de 25°, mas ainda longe dos ~40° do vídeo.
-
-E a extensão vertical do rig (a medida que enxerga "corpo amassado", que ângulo
-de tronco não enxerga) nunca cai abaixo de **85%** da altura de repouso. Ou seja,
-**nas minhas sondas o rig não colapsa.**
-
-### Hipóteses eliminadas no caminho
-
-- **clipes tombados do Mixamo** — os 4 clipes do combo M1 não têm faixa de
-  rotação de tronco nenhuma (todos 0,0°). O problema dos 11 clipes tombados é
-  real (`ESQUELETO.md`) mas não é este.
-- **tremor de hitstop** — `ProceduralAnimator.trigger_hitstop()` **nunca é
-  chamado** por ninguém. É código morto; o `_hitstop_shake` fica sempre em 0.
-- **`MeleePoses.balanco_torso`** — máximo 0,12 rad ≈ 6,9°.
-- **troca de fruta** — medida, máximo 2,7°.
-
-### A pista que eu NÃO segui, e é a mais promissora
-
-Os 8 sistemas de parkour (vault, salto longo, wall run, pouso, agarrar, mantle,
-escalada, travessia) estão implementados **sem animação procedural dedicada**.
-Um estado de parkour sem pose é exatamente o que produziria um rig com aparência
-desmontada — e as minhas sondas nunca disparam parkour, porque rodam em chão
-aberto, sem obstáculo.
-
-**Para fechar:** repetir a medição com o personagem encostando em bloco (vault /
-mantle / wall run). Se for isso, o conserto é dar pose a esses estados, não mexer
-no `ProceduralAnimator`.
-
-⚠️ **Erro meu de método, de novo:** a primeira bateria mediu 51,0° no soco e eu
-quase reportei "o soco tomba o boneco". Era **contaminação da sequência** — o
-caso anterior (dash) ainda estava em curso quando a medição do soco começou.
-Isolado, o soco dá 6,4°. **Caso de teste que não parte de estado limpo mede o
-caso anterior.**
-
----
-
-## 2026-08-27 — o rig do personagem está SÃO; o alarme foi meu
-
-Vendo o vídeo do dono eu reportei que o boneco "desmonta em movimento". **Medindo,
-isso não se sustenta.** Sonda `tools/dev_tests/medir_rig_por_pitch.gd`, varrendo
-toda a faixa de mira do jogo (`_pitch` de +0,5 a −1,2), parado e correndo:
-
-```
-PARADO    tronco 1,2°–2,6°  | altura do rig 99,6% em TODOS os pitches
-CORRENDO  tronco 14,7°      | altura do rig 88,1%–88,4%, sem variação por pitch
-```
-
-Nenhum sinal de colapso, e **nenhuma dependência da direção da câmera** — que era
-a hipótese que amarraria os três defeitos relatados. A pose de corrida
-(tronco 14,7°, corpo a 88% da altura) é uma corrida agachada normal, não um
-defeito.
-
-**Lição:** eu li "desmontado" num modelo voxel de poucos polígonos, recortado e
-reescalado de um vídeo de 1316×736. Baixa resolução + pose inclinada + modelo
-sem cabeça destacada é o suficiente para parecer quebrado. **Impressão sobre
-pixel ampliado não é diagnóstico** — e eu já tinha registrado nesta mesma sessão
-que "controle tem que ter o mesmo brilho do caso"; aqui o erro é o irmão disso:
-*comparar aparência sem comparar com a mesma coisa medida em condição conhecida.*
-
-Ficam como portão, porque agora existem e são baratos:
-`medir_tronco_movimento.gd`, `medir_tronco_combinado.gd`, `medir_corpo_encolhe.gd`
-e `medir_rig_por_pitch.gd`.
-
-### E o defeito do chão continua ABERTO, com mais duas hipóteses mortas
-
-No enquadramento do rumo 90° (esquerda com blocos, direita sem):
-
-```
-cel como está           esq 30,0% | dir 0,5%
-cel sem a grade         esq 29,8%
-cel SEM sombra do sol   esq 30,0%
-cel com sombra MACIA    esq 30,0%   (sem o smoothstep que endurece a borda)
-cel com sombra_min=1,0  esq 30,0%   (luz constante à força)
-StandardMaterial3D      esq  0,0%   (mesmo albedo 0,46)
-```
-
-Nove hipóteses derrubadas ao todo. O que sobra é a diferença entre o `light()`
-do cel e a iluminação padrão do Godot — e nenhum parâmetro isolado do `light()`
-reproduz a diferença, o que é contraditório e indica que **alguma dessas
-medições ainda está errada**.
-
-**Próximo experimento, e só ele:** bisseção real — copiar o `cel.gdshader`
-REMOVENDO o `light()` inteiro (deixando o Godot iluminar), mantendo o
-`fragment()` igual. Isso separa fragment de light de uma vez, sem depender de
-adivinhar qual parâmetro importa.
-
----
-
-## ⚠️ RESOLVIDO — escurecimento em faixa no chão: escrever `ALPHA` tornava o material TRANSPARENTE
-
-**Quando:** 2026-08-27. **Arquivo:** `src/fx/shaders/cel.gdshader`, uma linha.
-
-### Causa raiz
-
-O `fragment()` fazia `ALPHA = cor.a;`. No Godot 4 a transparência é decidida em
-tempo de **COMPILAÇÃO**: basta o shader **escrever** em `ALPHA` — mesmo que o
-valor seja sempre 1,0 — para o material inteiro ir para o **pipeline de
-transparência**. Ali ele deixa de participar do prepass de profundidade e passa
-a ser iluminado por outro caminho. No chão isso aparecia como faixas escuras que
-mudavam ao girar a câmera.
-
-`cor.a` era 1,0 em **todos os 100 materiais** que usam o shader (auditado em
-runtime). A transparência nunca foi usada — só o custo dela.
-
-### Evidência
-
-Mesma cena, mesma câmera, mesma luz, chão 100% plano. A linha de leitura foi
-**validada por raio**: 560 de 560 pixels acertam a `Plataforma` — zero blocos,
-zero céu. (A métrica anterior comparava metades da TELA sem conferir conteúdo, e
-por isso não valia.)
+**Evidência:** bisseção, mesma cena/câmera/luz, linha de leitura validada por raio
+(560 de 560 pixels acertam a `Plataforma`, zero blocos, zero céu):
 
 | variante | esquerda |
 |---|---|
-| A — cel do jogo | **29,8%** |
-| B — mesmo `fragment()`, **`light()` REMOVIDO** | 29,8% |
-| G — sem `light()` **e** sem grade | 29,8% |
-| J — sem `render_mode` | 29,8% |
-| **M — só sem a linha `ALPHA = cor.a;`** | **0,0%** |
-| C — `StandardMaterial3D` (controle) | 0,5% |
+| cel do jogo | 29,8% |
+| mesmo `fragment()`, `light()` REMOVIDO | 29,8% |
+| sem `light()` e sem grade | 29,8% |
+| sem `render_mode` | 29,8% |
+| **só sem a linha `ALPHA = cor.a;`** | **0,0%** |
+| `StandardMaterial3D` (controle) | 0,5% |
 
-Uma linha, uma medição, tudo o mais idêntico.
+Antes/depois em 96 casos (8 rumos × 3 posições × 2 alturas × 2 energias de sol):
+rumo 90° 27,1%→0,7%; 135° 46,4%→1,1%; 225° 59,6%→1,8%. Nenhum caso piorou.
 
-### A contradição da Etapa 5, explicada
+**Descartado (todos medidos, nenhum era):** cascata de sombra, grade do chão,
+quantização do cel, contorno de tela, SSAO, névoa/perspectiva aérea, o `light()`
+inteiro (removê-lo não muda nada) e o `render_mode`.
 
-*"Trocar o material inteiro resolve, mas parâmetro nenhum reproduz."* Havia
-**duas causas sobrepostas** nos quadros que eu media: o artefato da
-transparência **e sombra de bloco de verdade**. A métrica conta qualquer pixel de
-chão abaixo de 92% da média, e sombra legítima cai nisso. Por isso nenhum toggle
-isolado zerava o número — cada um matava só metade.
+**Correção:** `src/fx/shaders/cel.gdshader` — a linha `ALPHA = cor.a;` removida.
+Uma linha. Se algum dia precisar de superfície translúcida, faça uma VARIANTE do
+shader; devolver a linha custa o chão inteiro.
 
-Confirmado desligando a sombra do sol **depois** da correção:
+**Como detectar de novo:** `tools/dev_tests/baseline_chao.gd` (esquerda deve ficar
+abaixo de 5%) e `tools/dev_tests/checar_residuo_chao.gd`, que separa artefato de
+sombra legítima. Regra geral: **no Godot 4 o que liga um caminho de renderização é
+o shader ESCREVER no campo, não o valor escrito** — vale para `ALPHA`, `NORMAL`,
+`AO` e afins.
 
-```
-rumo 270° pitch -0,25   com sombra 32,1%  sem sombra 0,7%  -> sombra legítima
-rumo  45° pitch -0,70   com sombra 39,6%  sem sombra 0,8%  -> sombra legítima
-rumo 135° pitch -0,25   com sombra 50,0%  sem sombra 1,6%  -> sombra legítima
-rumo  90° pitch -0,25   com sombra  0,7%  sem sombra 0,7%  -> limpo (era o defeito)
-```
+---
 
-### Antes/depois no MESMO quadro, 96 casos (8 rumos × 3 posições × 2 alturas × 2 luzes)
+## 2026-08-27 — minha métrica comparava metades da TELA sem conferir o que havia nelas
 
-```
-rumo  90°  27,1% -> 0,7%      rumo 135°  46,4% -> 1,1%
-rumo 225°  59,6% -> 1,8%      rumo 180°  12,1% -> 0,7%
-rumo 270° (pitch -0,70)  19,3% -> 1,0%
-```
+**Sintoma:** hipóteses eram "descartadas" uma após a outra sem que o número mudasse,
+e o defeito parecia não ter causa. Também produziu a contradição *"trocar o material
+resolve, mas parâmetro nenhum reproduz"*.
 
-Nenhum caso piorou. O que não mudou era sombra de verdade, não artefato.
+**Causa raiz (erro meu, de método):** eu media o escurecimento varrendo uma linha
+de pixels e comparando a metade esquerda com a direita da TELA — **sem nunca
+verificar se as duas metades mostram a mesma coisa**, e calculando a média sobre
+pixels que incluíam os próprios escurecidos. Duas consequências:
+1. bloco, céu e chão entravam na mesma conta;
+2. **sombra de bloco legítima contava como defeito**, porque qualquer pixel abaixo
+   de 92% da média era marcado.
 
-### Por que isso escapou por tanto tempo
+Havia **duas causas sobrepostas** nos quadros medidos — o artefato de transparência
+E sombra de verdade. Por isso nenhum toggle isolado zerava o número: cada um matava
+só metade. Isso "inocentou" grade, SSAO e sombra cedo demais, e as três tiveram de
+ser reabertas.
 
-Nove hipóteses foram derrubadas antes de chegar aqui, e o `ALPHA` nunca esteve
-entre elas porque *escrever alfa 1,0 parece inofensivo*. A lição é do formato do
-defeito, não do lugar: **no Godot 4 o que importa é o shader ESCREVER no campo,
-não o valor escrito.** O mesmo vale para `NORMAL`, `AO` e outros — escrever
-liga um caminho.
+**Evidência:** com a métrica corrigida (cada pixel classificado por raio ANTES de
+entrar na conta), a mesma cena mostra 560/560 pixels de `Plataforma` nas duas
+metades — a comparação passou a valer. E desligando a sombra depois da correção,
+os resíduos caem de 32%/40%/50% para 0,7%/0,8%/1,6%, provando que eram sombra.
+
+**Correção:** `tools/dev_tests/baseline_chao.gd` classifica cada pixel por raio e
+conta escurecimento só onde o pixel é mesmo o chão.
+
+**Como detectar de novo:** antes de aceitar um veredito de "inocente", conferir se
+a métrica olhava para o lugar certo. **Comparar número de um teste com número de
+outro só vale se a métrica e a região forem as mesmas.** Corolário já pago duas
+vezes: controle tem que ter o mesmo brilho do caso — testar com albedo branco não
+prova nada, porque o branco satura no tonemap e esconde a variação.
+
+---
+
+## 2026-08-27 — eu diagnostiquei "o boneco desmonta" olhando pixel ampliado
+
+**Sintoma:** vendo o vídeo do dono, afirmei que o personagem colapsava em
+movimento — tronco tombado ~40°, pernas dobradas, cabeça sumida.
+
+**Causa raiz (erro meu):** li "desmontado" num modelo voxel de poucos polígonos,
+recortado e reescalado de um vídeo de 1316×736. Baixa resolução, pose inclinada e
+um modelo sem cabeça destacada bastam para parecer quebrado. **Impressão sobre
+pixel ampliado não é diagnóstico.**
+
+**Evidência:** varrendo toda a faixa de mira do jogo (`_pitch` de +0,5 a −1,2),
+parado e correndo: parado tronco 1,2°–2,6° e altura do rig 99,6%; correndo tronco
+14,7° e altura 88,1%–88,4%, **sem variação por pitch**. A pose de corrida é uma
+corrida agachada normal.
+
+**Descartado no caminho:** os 4 clipes do combo M1 não têm faixa de rotação de
+tronco (0,0° nos três eixos); `ProceduralAnimator.trigger_hitstop()` **nunca é
+chamado** (o tremor é código morto); `balanco_torso` dá no máximo 6,9°; troca de
+fruta, 2,7°.
+
+**Correção:** nenhuma no código — não havia defeito. O alarme foi retirado.
+
+**Como detectar de novo:** `medir_rig_por_pitch.gd`, `medir_corpo_encolhe.gd`,
+`medir_tronco_combinado.gd`. Antes de afirmar que algo visual está quebrado,
+medir a geometria — não descrever a imagem.
+
+---
+
+## 2026-08-26 — o portão visual do projeto nunca usou a câmera do jogo
+
+**Sintoma:** defeitos visíveis em jogo (faixas ao girar a câmera) nunca apareciam
+na bateria, que tem cinco cenas fixas justamente para isso.
+
+**Causa raiz:** `tools/dev_tests/captura_visual.gd` **cria uma `Camera3D` própria**
+e a posiciona na mão. Ele nunca passa pelo `CameraRig` (pivô → Ombro → SpringArm →
+Camera3D), que é a câmera de verdade. Todo defeito que dependa da câmera do jogo
+era invisível para a bateria **por construção** — e "olhar para trás" é exatamente
+o que aquela sonda não sabe fazer.
+
+**Evidência:** o defeito das faixas (29,8% de escurecimento) não aparece em
+nenhuma das cinco cenas e aparece no primeiro rumo da sonda nova.
+
+**Correção:** `tools/dev_tests/captura_giro.gd` — 8 rumos e 3 inclinações, pela
+câmera do jogo, com entrada simulada por `InputEventKey` de verdade (o
+`move_frame.gd` lê `Input.is_physical_key_pressed`, então tecla de mentira não
+funciona).
+
+**Como detectar de novo:** ao criar sonda visual, perguntar se ela passa pelo
+mesmo caminho que o jogador vê. Sonda que monta o próprio caminho testa a si mesma.
+
+---
+
+## 2026-08-26 — "blocos invisíveis" não era descarte de renderização
+
+**Sintoma:** o dono relatou blocos ficando invisíveis em jogo.
+
+**Causa raiz:** nenhuma no culling — a explicação confortável estava errada. Culling
+é o suspeito natural porque não gera erro nenhum: o objeto simplesmente não está lá.
+
+**Evidência:** os 77 blocos pintados de vermelho puro; para cada um,
+`unproject_position` + raio de oclusão + verificação de vermelho no pixel. **3.879
+casos em 6 postos de observação, incluindo alturas de pulo (y = 8, 12 e 16): zero
+sumidos.** Pintar de vermelho é o que tira a ambiguidade — bloco cinza contra chão
+cinza é indistinguível por cor, e foi por isso que olhar capturas não decidia nada.
+
+**Descartado:** culling por distância, por frustum e por altura de câmera.
+
+**Correção:** nenhuma — não havia o defeito procurado. Achado lateral REAL, ainda
+aberto: de 1.851 pontos de chão, **4** têm o raio acertando a `Plataforma` enquanto
+a tela mostra o vazio; três deles em y ≈ −1,99, a face LATERAL da laje vista
+através de um buraco.
+
+**Como detectar de novo:** `tools/dev_tests/medir_blocos_sumindo.gd`.
+

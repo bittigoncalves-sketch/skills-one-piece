@@ -137,7 +137,37 @@ func _init() -> void:
 					continue
 				testados_chao += 1
 				var c := img.get_pixel(int(px.x), int(px.y))
-				if not (c.g > 0.35 and c.g > c.r * 1.8 and c.g > c.b * 1.8):
+				# ⚠️ DOMINÂNCIA DE CANAL, não limiar absoluto. A primeira versão exigia
+				# `g > 0.35`, e a névoa escurece o chão distante bem abaixo disso: a 130 m
+				# o verde puro chega como (0,00 · 0,22 · 0,04) — ainda inconfundivelmente
+				# verde, mas reprovado pelo limiar. Isso gerava FALSO POSITIVO de "o chão
+				# sumiu" na beirada da plataforma, longe da câmera. Dominância não depende
+				# do brilho: só pergunta se o verde manda no pixel, e por isso atravessa
+				# a névoa.
+				if not (c.g > c.r * 1.6 and c.g > c.b * 1.6 and c.g > 0.04):
+					# ⚠️ MARGEM DE SILHUETA. Raio e rasterizador decidem coisas diferentes:
+					# o raio acerta se a linha CRUZA o sólido; o pixel é pintado por COBERTURA,
+					# e na quina a cobertura é parcial. Some a isso o `Contorno`, que pinta
+					# uma linha escura por cima da silhueta — os últimos pixels da beirada
+					# da laje são contorno, não chão.
+					#
+					# Medido: no pixel discordante, andar 2 px para a esquerda ou 4 para cima
+					# já acha chão desenhado, e a cor lida é (0,00 · 0,00 · 0,03) — preto de
+					# contorno. Discordar A 5 mm DA QUINA é o comportamento correto dos dois.
+					#
+					# Então: só conta como "o chão sumiu" se o buraco tiver CORPO — nenhum
+					# chão desenhado num raio de 6 px. Sem isso a sonda acusa a própria
+					# borda da geometria.
+					var perto_da_borda := false
+					for d: Vector2i in [Vector2i(6,0), Vector2i(-6,0), Vector2i(0,6), Vector2i(0,-6)]:
+						var vx: int = clampi(int(px.x) + d.x, 0, larg - 1)
+						var vy: int = clampi(int(px.y) + d.y, 0, alt - 1)
+						var cc := img.get_pixel(vx, vy)
+						if cc.g > cc.r * 1.6 and cc.g > cc.b * 1.6 and cc.g > 0.04:
+							perto_da_borda = true
+							break
+					if perto_da_borda:
+						continue
 					chao_sumido.append({"posto": posto, "yaw": rad_to_deg(yaw),
 						"tela": px, "mundo": h2["position"], "cor": c})
 					img.save_png("%s/chao_sumiu_y%03d_p%d.png" % [saida, int(rad_to_deg(yaw)), int(posto.y)])
