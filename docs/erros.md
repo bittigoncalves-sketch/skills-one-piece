@@ -1765,3 +1765,62 @@ prova nada — o branco satura no tonemap e esconde justamente a variação que 
 quer medir. Foi por isso que o teste `7_albedo_branco` deu 0,0% e o
 `5_liso_mesmo_albedo` também: só o segundo é evidência. **Controle tem que ter o
 mesmo brilho do caso, senão a saturação vira "conserto" falso.**
+
+---
+
+## O vídeo do dono (2026-08-27): o boneco desmonta em jogo, e eu não reproduzi
+
+O dono gravou 20 s de partida. Recortando o personagem em 8 instantes, o padrão é
+limpo: **parado ele está correto; em movimento ele desmonta.**
+
+Ampliado, o defeito é específico:
+- **cabeça não aparece** — o topo do corpo é uma laje grande e inclinada
+- tronco tombado ~40° para a frente
+- braços atravessando as pernas
+- **pés como lajes horizontais abertas para os lados**
+
+### O que eu MEDI, e que NÃO explica o vídeo
+
+Ângulo do tronco com a vertical, por estado (sonda
+`tools/dev_tests/medir_tronco_combinado.gd`):
+
+```
+parado 1,5°  andando 3,9°  correndo 12,7°  de lado 4,4°  de ré 4,3°
+pulando 1,2°  correndo+pulo 15,9°  dash 2,0°  socar 6,4°
+skills Z/X/C/V 1,4° a 2,1°   trocar fruta 1,5° a 2,7°
+```
+
+Todos passam. **As combinações somam**: `correr + dash + socar` chega a **26,4°
+por 7 quadros** — acima do limite de 25°, mas ainda longe dos ~40° do vídeo.
+
+E a extensão vertical do rig (a medida que enxerga "corpo amassado", que ângulo
+de tronco não enxerga) nunca cai abaixo de **85%** da altura de repouso. Ou seja,
+**nas minhas sondas o rig não colapsa.**
+
+### Hipóteses eliminadas no caminho
+
+- **clipes tombados do Mixamo** — os 4 clipes do combo M1 não têm faixa de
+  rotação de tronco nenhuma (todos 0,0°). O problema dos 11 clipes tombados é
+  real (`ESQUELETO.md`) mas não é este.
+- **tremor de hitstop** — `ProceduralAnimator.trigger_hitstop()` **nunca é
+  chamado** por ninguém. É código morto; o `_hitstop_shake` fica sempre em 0.
+- **`MeleePoses.balanco_torso`** — máximo 0,12 rad ≈ 6,9°.
+- **troca de fruta** — medida, máximo 2,7°.
+
+### A pista que eu NÃO segui, e é a mais promissora
+
+Os 8 sistemas de parkour (vault, salto longo, wall run, pouso, agarrar, mantle,
+escalada, travessia) estão implementados **sem animação procedural dedicada**.
+Um estado de parkour sem pose é exatamente o que produziria um rig com aparência
+desmontada — e as minhas sondas nunca disparam parkour, porque rodam em chão
+aberto, sem obstáculo.
+
+**Para fechar:** repetir a medição com o personagem encostando em bloco (vault /
+mantle / wall run). Se for isso, o conserto é dar pose a esses estados, não mexer
+no `ProceduralAnimator`.
+
+⚠️ **Erro meu de método, de novo:** a primeira bateria mediu 51,0° no soco e eu
+quase reportei "o soco tomba o boneco". Era **contaminação da sequência** — o
+caso anterior (dash) ainda estava em curso quando a medição do soco começou.
+Isolado, o soco dá 6,4°. **Caso de teste que não parte de estado limpo mede o
+caso anterior.**
