@@ -35,8 +35,9 @@ const COR_BORDA := Color(0.35, 0.58, 0.95, 1.0)
 const COR_TEXTO := Color(0.95, 0.97, 1.0, 1.0)
 const COR_TEXTO_FRACO := Color(0.68, 0.78, 0.92, 1.0)
 
-const CATEGORIAS := ["acessorios", "raca", "cor"]
-const ROTULO_CATEGORIA := {"acessorios": "ACESSÓRIOS", "raca": "RAÇA", "cor": "COR"}
+const CATEGORIAS := ["acessorios", "raca", "corpo", "cor"]
+const ROTULO_CATEGORIA := {"acessorios": "ACESSÓRIOS", "raca": "RAÇA",
+	"corpo": "CORPO", "cor": "COR"}
 
 signal fechado
 
@@ -48,6 +49,7 @@ var _botoes_categoria: Dictionary = {}
 var _cor_idx := -1
 var _giro := 0.0
 var _camera: Camera3D = null
+var _arrastando := false
 
 
 func _ready() -> void:
@@ -55,7 +57,6 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_montar()
 	_selecionar_categoria("acessorios")
-	set_process(true)
 	# ⚠️ ENQUADRAR SÓ NO QUADRO SEGUINTE. `_caixa_visual` lê `global_transform`
 	# de cada malha, e o Godot só propaga as transformações depois que a árvore
 	# processa. Enquadrar dentro do `_ready` mede a hierarquia ainda em repouso e
@@ -64,11 +65,21 @@ func _ready() -> void:
 	_enquadrar()
 
 
-func _process(delta: float) -> void:
-	# Giro lento: mostra o acessório de todos os lados sem o jogador ter de
-	# arrastar. Um chapéu só se julga de frente E de lado.
-	if _modelo != null and is_instance_valid(_modelo):
-		_giro += delta * 0.5
+## ⚠️ SEM GIRO AUTOMÁTICO. O personagem girava sozinho, e isso atrapalha o que o
+## menu existe para fazer: comparar duas opções. Quando ele nunca para, cada
+## escolha aparece num ângulo diferente e a comparação vira memória. Agora ele
+## fica parado e gira quando o jogador ARRASTA — quem quer ver as costas vê, na
+## hora que quiser.
+func _ao_arrastar(e: InputEvent) -> void:
+	if _modelo == null or not is_instance_valid(_modelo):
+		return
+	if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT:
+		_arrastando = e.pressed
+	elif e is InputEventMouseMotion and _arrastando:
+		# 0,01 rad por pixel: uma volta completa em ~630 px, que é
+		# aproximadamente a largura do painel. Assim o gesto natural (arrastar de
+		# ponta a ponta) dá a volta inteira.
+		_giro -= (e as InputEventMouseMotion).relative.x * 0.01
 		_modelo.rotation.y = _giro
 
 
@@ -151,6 +162,9 @@ func _centro() -> Control:
 
 	var cont := SubViewportContainer.new()
 	cont.stretch = true
+	# O container é quem recebe o arrasto: é ele que ocupa a área do personagem.
+	cont.mouse_filter = Control.MOUSE_FILTER_STOP
+	cont.gui_input.connect(_ao_arrastar)
 	cont.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cont.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	caixa.add_child(cont)
@@ -284,6 +298,7 @@ func _encher_direita() -> void:
 	match _categoria:
 		"acessorios": _itens_acessorios()
 		"raca": _itens_raca()
+		"corpo": _itens_corpo()
 		_: _itens_cor()
 
 
@@ -351,6 +366,33 @@ func _itens_raca() -> void:
 		_lista_direita.add_child(b)
 
 
+func _itens_corpo() -> void:
+	var t := Label.new()
+	t.text = "OLHOS"
+	t.add_theme_font_size_override("font_size", 13)
+	t.add_theme_color_override("font_color", COR_TEXTO_FRACO)
+	_lista_direita.add_child(t)
+
+	var atual := Corpo.atual(_modelo)
+	var nenhum := _botao("Sem olhos", atual == "")
+	nenhum.gui_input.connect(func(e):
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+			Corpo.remover(_modelo)
+			_encher_direita())
+	_lista_direita.add_child(nenhum)
+
+	for id in Corpo.ids():
+		var d := Corpo.dados(id)
+		var b := _botao(String(d["nome"]), atual == id)
+		b.gui_input.connect(func(e, cid = id):
+			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+				# Exclusão entre OLHOS: escolher um tira o outro, mas não mexe em
+				# raça nem em acessório — são eixos independentes.
+				Corpo.aplicar(_modelo, cid)
+				_encher_direita())
+		_lista_direita.add_child(b)
+
+
 func _itens_cor() -> void:
 	var t := Label.new()
 	t.text = "COR DO PERSONAGEM"
@@ -398,13 +440,13 @@ func _pintar() -> void:
 		if _cor_idx < 0:
 			(m as MeshInstance3D).material_override = null
 			continue
+		# ⚠️ O MESMO MATERIAL DO JOGO (`Materiais.superficie` = cel shading), e
+		# não um `StandardMaterial3D` avulso. A prévia existe para o jogador
+		# decidir como vai ficar EM PARTIDA — se ela usa outra iluminação, ela
+		# mente, e a cor escolhida aqui aparece diferente lá. É o mesmo motivo de
+		# a paleta ser a do jogo em vez de uma lista só do menu.
 		var c: Color = Paleta.CORES[_cor_idx]["cor"]
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = c
-		mat.emission_enabled = true
-		mat.emission = c
-		mat.emission_energy_multiplier = 0.35
-		(m as MeshInstance3D).material_override = mat
+		(m as MeshInstance3D).material_override = Materiais.superficie(c)
 
 
 ## Acessório ou peça de raça — o que NÃO é corpo.
@@ -412,7 +454,8 @@ func _e_adorno(n: Node) -> bool:
 	var p: Node = n
 	while p != null:
 		var nome := String(p.name)
-		if nome.begins_with(Acessorios.MARCA) or nome.begins_with(Racas.MARCA):
+		if nome.begins_with(Acessorios.MARCA) or nome.begins_with(Racas.MARCA) \
+				or nome.begins_with(Corpo.MARCA):
 			return true
 		p = p.get_parent()
 	return false

@@ -36,8 +36,10 @@ extends RefCounted
 # ============================================================================
 
 const MARCA := "Raca_"
-const META_SEGUE_COR := "segue_cor"
-const META_ESCALA := "escala_antes"
+## Mantidos como apelido: a bateria e o menu já os usavam por este nome, e o
+## núcleo comum agora mora em `Adornos`.
+const META_SEGUE_COR := Adornos.META_SEGUE_COR
+const META_ESCALA := Adornos.META_ESCALA
 
 const PELE := Color(0.93, 0.78, 0.62)
 const OSSO := Color(0.92, 0.90, 0.82)
@@ -61,10 +63,10 @@ const CATALOGO := {
 		"nome": "Oni",
 		"descricao": "chifres",
 		"pecas": [
-			{"no": "Head", "tam": Vector3(0.16, 0.50, 0.16), "ancora": Vector3(0.24, 1.0, 0.55),
-			 "rot": Vector3(0.0, 0.0, 0.22), "cor": OSSO},
-			{"no": "Head", "tam": Vector3(0.16, 0.50, 0.16), "ancora": Vector3(0.76, 1.0, 0.55),
-			 "rot": Vector3(0.0, 0.0, -0.22), "cor": OSSO},
+			{"no": "Head", "tam": Vector3(0.26, 0.95, 0.26), "ancora": Vector3(0.20, 1.0, 0.55),
+			 "rot": Vector3(0.0, 0.0, 0.30), "cor": OSSO},
+			{"no": "Head", "tam": Vector3(0.26, 0.95, 0.26), "ancora": Vector3(0.80, 1.0, 0.55),
+			 "rot": Vector3(0.0, 0.0, -0.30), "cor": OSSO},
 		],
 	},
 	"sharkman": {
@@ -112,13 +114,13 @@ const CATALOGO := {
 		"nome": "Mink Coelho",
 		"descricao": "orelhas e rabinho",
 		"pecas": [
-			{"no": "Head", "tam": Vector3(0.16, 0.85, 0.12), "ancora": Vector3(0.32, 1.0, 0.5),
+			{"no": "Head", "tam": Vector3(0.26, 1.45, 0.18), "ancora": Vector3(0.30, 1.0, 0.5),
 			 "rot": Vector3(0.0, 0.0, 0.10), "cor": PELE},
-			{"no": "Head", "tam": Vector3(0.16, 0.85, 0.12), "ancora": Vector3(0.68, 1.0, 0.5),
+			{"no": "Head", "tam": Vector3(0.26, 1.45, 0.18), "ancora": Vector3(0.70, 1.0, 0.5),
 			 "rot": Vector3(0.0, 0.0, -0.10), "cor": PELE},
 			# "rabinho de coelho QUADRADO" — o dono foi explícito, e cubo é o que
 			# combina com um jogo feito de caixas.
-			{"no": "Torso", "tam": Vector3(0.26, 0.26, 0.26), "ancora": Vector3(0.5, 0.12, 1.0),
+			{"no": "Torso", "tam": Vector3(0.46, 0.46, 0.46), "ancora": Vector3(0.5, 0.14, 1.0),
 			 "cor": Color(0.98, 0.97, 0.95)},
 		],
 	},
@@ -126,11 +128,11 @@ const CATALOGO := {
 		"nome": "Mink Lobo",
 		"descricao": "orelhas e rabo na cor do personagem",
 		"pecas": [
-			{"no": "Head", "tam": Vector3(0.20, 0.42, 0.14), "ancora": Vector3(0.28, 1.0, 0.5),
+			{"no": "Head", "tam": Vector3(0.32, 0.80, 0.22), "ancora": Vector3(0.26, 1.0, 0.5),
 			 "rot": Vector3(0.0, 0.0, 0.28), "segue_cor": true},
-			{"no": "Head", "tam": Vector3(0.20, 0.42, 0.14), "ancora": Vector3(0.72, 1.0, 0.5),
+			{"no": "Head", "tam": Vector3(0.32, 0.80, 0.22), "ancora": Vector3(0.74, 1.0, 0.5),
 			 "rot": Vector3(0.0, 0.0, -0.28), "segue_cor": true},
-			{"no": "Torso", "tam": Vector3(0.24, 0.24, 2.1), "ancora": Vector3(0.5, 0.22, 1.0),
+			{"no": "Torso", "tam": Vector3(0.40, 0.40, 3.0), "ancora": Vector3(0.5, 0.26, 1.0),
 			 "rot": Vector3(-0.60, 0.0, 0.0), "segue_cor": true},
 		],
 	},
@@ -145,25 +147,12 @@ static func dados(id: String) -> Dictionary:
 	return CATALOGO.get(id, {})
 
 
-## Qual raça está aplicada, ou "" se nenhuma.
 static func atual(modelo: Node3D) -> String:
-	if modelo == null or not is_instance_valid(modelo):
-		return ""
-	for n in _todos(modelo):
-		var nome := String(n.name)
-		if nome.begins_with(MARCA):
-			# `Raca_<id>_<i>` — o id é o miolo.
-			var resto := nome.substr(MARCA.length())
-			var corte := resto.rfind("_")
-			return resto.substr(0, corte) if corte > 0 else resto
-	# Raça só de escala não deixa peça: a marca fica no próprio nó escalado.
-	for n in _todos(modelo):
-		if n is Node3D and (n as Node3D).has_meta(META_ESCALA):
-			return String((n as Node3D).get_meta("raca_id", ""))
-	return ""
+	return Adornos.id_aplicado(modelo, MARCA, MARCA)
 
 
 ## Troca a raça. Tira a anterior INTEIRA antes — ninguém é de duas raças.
+## É esta a diferença para os acessórios, que excluem só por parte do corpo.
 static func aplicar(modelo: Node3D, id: String) -> bool:
 	if modelo == null or not is_instance_valid(modelo):
 		return false
@@ -174,84 +163,24 @@ static func aplicar(modelo: Node3D, id: String) -> bool:
 	if d.is_empty():
 		push_warning("[Racas] raça desconhecida: " + id)
 		return false
-
 	var i := 0
 	for p in d.get("pecas", []):
-		_criar_peca(modelo, id, p, i)
+		Adornos.criar_peca(modelo, MARCA, id, p, i)
 		i += 1
-	for nome_no in d.get("escalas", {}):
-		var no := modelo.find_child(String(nome_no), true, false) as Node3D
-		if no == null:
-			push_warning("[Racas] nó '%s' não existe neste modelo" % nome_no)
-			continue
-		# ⚠️ Guardar a escala ORIGINAL, e não assumir Vector3.ONE: um rig pode
-		# nascer com escala própria, e devolver ONE deformaria o corpo.
-		no.set_meta(META_ESCALA, no.scale)
-		no.set_meta("raca_id", id)
-		no.scale = no.scale * (d["escalas"][nome_no] as Vector3)
+	var escalas: Dictionary = d.get("escalas", {})
+	if not escalas.is_empty():
+		Adornos.aplicar_escalas(modelo, escalas, MARCA)
+		for nome_no in escalas:
+			var no := modelo.find_child(String(nome_no), true, false) as Node3D
+			if no:
+				no.set_meta("item_id", id)
 	return true
 
 
 static func remover(modelo: Node3D) -> void:
-	if modelo == null or not is_instance_valid(modelo):
-		return
-	for n in _todos(modelo):
-		if String(n.name).begins_with(MARCA):
-			n.get_parent().remove_child(n)
-			n.queue_free()
-	for n in _todos(modelo):
-		if n is Node3D and (n as Node3D).has_meta(META_ESCALA):
-			var no := n as Node3D
-			no.scale = no.get_meta(META_ESCALA)
-			no.remove_meta(META_ESCALA)
-			if no.has_meta("raca_id"):
-				no.remove_meta("raca_id")
+	Adornos.remover_marca(modelo, MARCA)
+	Adornos.restaurar_escalas(modelo, MARCA)
 
 
-## true se a malha é peça de raça que deve acompanhar a cor do personagem.
 static func segue_cor(n: Node) -> bool:
-	var p: Node = n
-	while p != null:
-		if p is Node3D and (p as Node3D).has_meta(META_SEGUE_COR):
-			return bool((p as Node3D).get_meta(META_SEGUE_COR))
-		p = p.get_parent()
-	return false
-
-
-# --------------------------------------------------------------------------
-static func _criar_peca(modelo: Node3D, id: String, p: Dictionary, i: int) -> void:
-	var destino := modelo.find_child(String(p["no"]), true, false) as Node3D
-	if destino == null:
-		push_warning("[Racas] nó '%s' não existe neste modelo" % p["no"])
-		return
-	var cx := Acessorios.caixa_do_no(destino)
-
-	var m := MeshInstance3D.new()
-	m.name = "%s%s_%d" % [MARCA, id, i]
-	var caixa := BoxMesh.new()
-	var tam: Vector3 = p["tam"]
-	caixa.size = Vector3(cx.size.x * tam.x, cx.size.y * tam.y, cx.size.z * tam.z)
-	m.mesh = caixa
-
-	# A âncora é 0..1 DENTRO da caixa do destino; a peça nasce centrada nela.
-	var a: Vector3 = p["ancora"]
-	m.position = cx.position + Vector3(cx.size.x * a.x, cx.size.y * a.y, cx.size.z * a.z)
-	if p.has("rot"):
-		m.rotation = p["rot"]
-
-	if bool(p.get("segue_cor", false)):
-		# Sem material próprio: quem pinta o corpo pinta esta peça junto.
-		m.set_meta(META_SEGUE_COR, true)
-	else:
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = p.get("cor", CINZA)
-		mat.roughness = 1.0
-		m.material_override = mat
-	destino.add_child(m)
-
-
-static func _todos(n: Node) -> Array:
-	var out: Array = [n]
-	for f in n.get_children():
-		out.append_array(_todos(f))
-	return out
+	return Adornos.segue_cor(n)

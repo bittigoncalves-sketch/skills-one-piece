@@ -69,12 +69,12 @@ func _build_ui() -> void:
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for m in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
-		margin.add_theme_constant_override(m, 40)
+		margin.add_theme_constant_override(m, 18)
 	add_child(margin)
 
 	var main_vbox := VBoxContainer.new()
 	main_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	main_vbox.add_theme_constant_override("separation", 40)
+	main_vbox.add_theme_constant_override("separation", 14)
 	margin.add_child(main_vbox)
 
 	# --- LOGO ---
@@ -86,20 +86,20 @@ func _build_ui() -> void:
 	var lbl_skills := Label.new()
 	lbl_skills.text = "S  K  I  L  L  S"
 	lbl_skills.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl_skills.add_theme_font_size_override("font_size", 24)
+	lbl_skills.add_theme_font_size_override("font_size", 18)
 	lbl_skills.add_theme_color_override("font_color", COLOR_TEXT_DARK)
 	logo_vbox.add_child(lbl_skills)
 
 	var lbl_op := RichTextLabel.new()
 	lbl_op.bbcode_enabled = true
 	lbl_op.text = "[center][b][color=#1a5fb4]ONE[/color] [color=#c01c28]P I E C E[/color][/b][/center]"
-	lbl_op.custom_minimum_size = Vector2(0, 80)
-	lbl_op.add_theme_font_size_override("normal_font_size", 72)
-	lbl_op.add_theme_font_size_override("bold_font_size", 72)
+	lbl_op.custom_minimum_size = Vector2(0, 58)
+	lbl_op.add_theme_font_size_override("normal_font_size", 52)
+	lbl_op.add_theme_font_size_override("bold_font_size", 52)
 	lbl_op.scroll_active = false
 	# Simula o contorno e sombra via outline nativo do texto
 	lbl_op.add_theme_color_override("font_outline_color", Color.BLACK)
-	lbl_op.add_theme_constant_override("outline_size", 12)
+	lbl_op.add_theme_constant_override("outline_size", 9)
 	logo_vbox.add_child(lbl_op)
 
 	var lbl_jp := Label.new()
@@ -118,7 +118,7 @@ func _build_ui() -> void:
 	# Esquerda: Botões Principais
 	var left_vbox := VBoxContainer.new()
 	left_vbox.custom_minimum_size = Vector2(450, 0)
-	left_vbox.add_theme_constant_override("separation", 15)
+	left_vbox.add_theme_constant_override("separation", 10)
 	center_hbox.add_child(left_vbox)
 
 	var btn_single = _create_main_button("JOGAR SINGLEPLAYER", "COMECE SUA AVENTURA", "☠️", true)
@@ -351,7 +351,12 @@ func _create_main_button(title: String, subtitle: String, icon: String, center_y
 	style.shadow_color = Color(0, 0, 0, 0.05)
 	style.shadow_size = 10
 	panel.add_theme_stylebox_override("panel", style)
-	panel.custom_minimum_size = Vector2(0, 90)
+	# ⚠️ ALTURA MEDIDA CONTRA A TELA, não escolhida a olho. Com 90 px e cinco
+	# botões o conteúdo somava 831 px numa tela de 720 — o último ficava
+	# INTEIRAMENTE fora, e nada avisava. A sonda `medir_menu_principal.gd` agora
+	# reprova se qualquer controle passar da tela, para a próxima adição não
+	# quebrar em silêncio como esta quebrou.
+	panel.custom_minimum_size = Vector2(0, 62)
 	panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
 	var hbox := HBoxContainer.new()

@@ -29,10 +29,9 @@ func _init() -> void:
 
 	# ---------- estrutura ----------
 	var cats: Dictionary = menu._botoes_categoria
-	_ok("há três categorias à esquerda", cats.size() == 3)
-	_ok("uma delas é ACESSÓRIOS", cats.has("acessorios"))
-	_ok("outra é RAÇA", cats.has("raca"))
-	_ok("outra é COR", cats.has("cor"))
+	_ok("há quatro categorias à esquerda", cats.size() == 4)
+	for c in ["acessorios", "raca", "corpo", "cor"]:
+		_ok("categoria '%s' existe" % c, cats.has(c))
 	_ok("o personagem foi montado no centro", menu._modelo != null and is_instance_valid(menu._modelo))
 	_ok("o viewport tem mundo próprio (não mostra a arena)", menu._viewport.own_world_3d)
 
@@ -161,6 +160,58 @@ func _init() -> void:
 	menu._cor_idx = 1
 	menu._pintar()
 
+	# ---------- corpo: os olhos ----------
+	print("\n--- olhos ---")
+	Racas.remover(modelo)
+	_ok("os três tamanhos estão no catálogo", Corpo.ids().size() == 3)
+	_ok("começa sem olhos", Corpo.atual(modelo) == "")
+	var largs: Dictionary = {}
+	for id in Corpo.ids():
+		Corpo.aplicar(modelo, id)
+		for i in 3: await process_frame
+		_ok("%s foi aplicado" % id, Corpo.atual(modelo) == id)
+		_ok("%s cria 4 peças (2 olhos + 2 pupilas)" % id, _contar_marca(modelo, Corpo.MARCA) == 4)
+		largs[id] = _larg_olho(modelo)
+	print("   largura do branco do olho: pequeno %.4f | médio %.4f | grande %.4f" % [
+		largs["olho_pequeno"], largs["olho_medio"], largs["olho_grande"]])
+	_ok("pequeno < médio < grande", largs["olho_pequeno"] < largs["olho_medio"]
+		and largs["olho_medio"] < largs["olho_grande"])
+	_ok("trocar de tamanho não empilha", _contar_marca(modelo, Corpo.MARCA) == 4)
+
+	# os três eixos são independentes
+	print("\n--- os eixos não se atropelam ---")
+	Racas.aplicar(modelo, "oni")
+	Acessorios.equipar(modelo, "chapeu_palha")
+	Corpo.aplicar(modelo, "olho_grande")
+	for i in 4: await process_frame
+	_ok("raça + acessório + olhos convivem",
+		Racas.atual(modelo) == "oni" and Acessorios.equipado_na_parte(modelo, "cabeca") == "chapeu_palha"
+		and Corpo.atual(modelo) == "olho_grande")
+	Corpo.aplicar(modelo, "olho_pequeno")
+	for i in 3: await process_frame
+	_ok("trocar o olho NÃO tira a raça", Racas.atual(modelo) == "oni")
+	_ok("trocar o olho NÃO tira o chapéu",
+		Acessorios.equipado_na_parte(modelo, "cabeca") == "chapeu_palha")
+	Racas.remover(modelo); Corpo.remover(modelo); Acessorios.desequipar(modelo, "cabeca")
+
+	# ---------- o giro é por arrasto, não automático ----------
+	print("\n--- giro ---")
+	_ok("o menu não roda `_process` (sem giro automático)", not menu.is_processing())
+	var y0: float = modelo.rotation.y
+	var apertar := InputEventMouseButton.new()
+	apertar.button_index = MOUSE_BUTTON_LEFT
+	apertar.pressed = true
+	menu._ao_arrastar(apertar)
+	var mover := InputEventMouseMotion.new()
+	mover.relative = Vector2(100, 0)
+	menu._ao_arrastar(mover)
+	_ok("arrastar com o botão apertado GIRA", absf(modelo.rotation.y - y0) > 0.5)
+	apertar.pressed = false
+	menu._ao_arrastar(apertar)
+	var y1: float = modelo.rotation.y
+	menu._ao_arrastar(mover)
+	_ok("mover SEM apertar não gira", is_equal_approx(modelo.rotation.y, y1))
+
 	# ---------- captura ----------
 	menu._selecionar_categoria("acessorios")
 	for i in 25: await process_frame
@@ -168,6 +219,10 @@ func _init() -> void:
 	menu._selecionar_categoria("raca")
 	for i in 20: await process_frame
 	get_root().get_texture().get_image().save_png("%s/menu_raca.png" % saida)
+	Corpo.aplicar(menu._modelo, "olho_grande")
+	menu._selecionar_categoria("corpo")
+	for i in 20: await process_frame
+	get_root().get_texture().get_image().save_png("%s/menu_corpo.png" % saida)
 	menu._selecionar_categoria("cor")
 	for i in 20: await process_frame
 	get_root().get_texture().get_image().save_png("%s/menu_cor.png" % saida)
@@ -203,12 +258,23 @@ func _fracao(modelo: Node) -> float:
 	var a := Acessorios.caixa_do_no(cab)
 	return (a.end.y - no.position.y) / a.size.y
 
+## ⚠️ Lê os DOIS tipos. A prévia passou a usar o material do jogo
+## (`Materiais.superficie`, um `ShaderMaterial` de cel shading), onde a cor mora
+## no parâmetro `cor` e não em `albedo_color`. Ler só `StandardMaterial3D`
+## reprovava a mudança certa.
+func _cor_do_material(mo: Material) -> Color:
+	if mo is StandardMaterial3D:
+		return (mo as StandardMaterial3D).albedo_color
+	if mo is ShaderMaterial:
+		var v = (mo as ShaderMaterial).get_shader_parameter("cor")
+		if v != null:
+			return v
+	return Color(0, 0, 0, 0)
+
 func _cor_de(modelo: Node, nome: String) -> Color:
 	for x in _todos(modelo):
 		if x.name == nome and x is MeshInstance3D:
-			var mo := (x as MeshInstance3D).material_override
-			if mo is StandardMaterial3D:
-				return (mo as StandardMaterial3D).albedo_color
+			return _cor_do_material((x as MeshInstance3D).material_override)
 	return Color(0, 0, 0, 0)
 
 func _acessorio_pintado(modelo: Node) -> bool:
@@ -221,6 +287,21 @@ func _acessorio_pintado(modelo: Node) -> bool:
 		if m is MeshInstance3D and (m as MeshInstance3D).material_override != null:
 			return true
 	return false
+
+func _contar_marca(modelo: Node, marca: String) -> int:
+	var n := 0
+	for x in _todos(modelo):
+		if String(x.name).begins_with(marca):
+			n += 1
+	return n
+
+func _larg_olho(modelo: Node) -> float:
+	for x in _todos(modelo):
+		if String(x.name).begins_with(Corpo.MARCA) and x is MeshInstance3D:
+			var mm := (x as MeshInstance3D).mesh
+			if mm is BoxMesh:
+				return (mm as BoxMesh).size.x
+	return 0.0
 
 func _contar_racas(modelo: Node) -> int:
 	var n := 0
@@ -238,9 +319,7 @@ func _tem_escala_mudada(modelo: Node) -> bool:
 func _cor_da_peca_raca(modelo: Node) -> Color:
 	for x in _todos(modelo):
 		if String(x.name).begins_with(Racas.MARCA) and x is MeshInstance3D:
-			var mo := (x as MeshInstance3D).material_override
-			if mo is StandardMaterial3D:
-				return (mo as StandardMaterial3D).albedo_color
+			return _cor_do_material((x as MeshInstance3D).material_override)
 	return Color(0, 0, 0, 0)
 
 func _todos(n: Node) -> Array:
