@@ -25,6 +25,11 @@ const VELOCIDADE_FACING := 26.0
 ## Altura do eixo do rolamento de costas, a partir dos pés. É a cintura: uma
 ## cambalhota gira em torno do centro de massa, não do chão nem da cabeça.
 const ALTURA_DO_ROLAMENTO := 0.55
+
+## Estado do rolamento de costas. `_pose_repouso` é a posição do modelo ANTES do
+## giro — guardada, nunca suposta.
+var _rolando_de_costas := false
+var _pose_repouso := Vector3.ZERO
 const GRAVITY := 32.0        # gravidade reforcada (Godot padrao ~9.8)
 const MOUSE_SENS := 0.0035
 
@@ -1170,17 +1175,30 @@ func _etapa_locomocao(delta: float) -> void:
 	if _char_model:
 		var g := _dash.giro_do_rolamento() if _dash.ativo() and _dash.rumo_nome() == "tras" else 0.0
 		if g > 0.0:
+			# ⚠️ GUARDA O REPOUSO NO PRIMEIRO QUADRO DO GIRO, e soma o arco A
+			# PARTIR dele. A primeira versão devolvia a posição para ZERO no fim —
+			# mas o repouso do modelo NÃO é zero: é `y = −0,80` (o rig o abaixa
+			# para os pés encostarem no chão). Resultado medido: o personagem
+			# SUBIA 0,8 m no primeiro dash de costas e ficava lá.
+			#
+			# Assumir "o repouso é a origem" é o mesmo erro que a escala das
+			# raças, onde devolver `Vector3.ONE` deformaria um rig que nasce com
+			# 1,8. Repouso se GUARDA, não se supõe.
+			if not _rolando_de_costas:
+				_rolando_de_costas = true
+				_pose_repouso = _char_model.position
 			var ang := -TAU * g
 			_char_model.rotation.x = ang
-			_char_model.position.y = ALTURA_DO_ROLAMENTO * (1.0 - cos(ang))
-			_char_model.position.z = ALTURA_DO_ROLAMENTO * sin(ang)
-		elif not is_equal_approx(_char_model.rotation.x, 0.0):
-			# Volta ao repouso assim que a esquiva acaba. Sem isto o personagem
-			# ficaria de cabeça para baixo para sempre — e o `rotation.x` não é
-			# escrito por mais ninguém, então ninguém o consertaria.
+			_char_model.position.y = _pose_repouso.y + ALTURA_DO_ROLAMENTO * (1.0 - cos(ang))
+			_char_model.position.z = _pose_repouso.z + ALTURA_DO_ROLAMENTO * sin(ang)
+		elif _rolando_de_costas:
+			# Volta ao REPOUSO GUARDADO assim que a esquiva acaba. Sem isto o
+			# personagem ficaria de cabeça para baixo para sempre — `rotation.x`
+			# não é escrito por mais ninguém, então ninguém o consertaria.
+			_rolando_de_costas = false
 			_char_model.rotation.x = 0.0
-			_char_model.position.y = 0.0
-			_char_model.position.z = 0.0
+			_char_model.position.y = _pose_repouso.y
+			_char_model.position.z = _pose_repouso.z
 
 	# Animação: rig procedural (por-nós) OU esqueletal (skinnado).
 	if _skel_anim:

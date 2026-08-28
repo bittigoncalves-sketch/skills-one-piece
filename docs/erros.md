@@ -1657,6 +1657,74 @@ e preparar o ambiente antes de testar é justamente o que o esconde.
 
 ---
 
+## 2026-08-27 — devolver a pose ao "zero" subiu o personagem 0,8 m
+
+**Sintoma:** a cada dash para trás o personagem subia um pouco e ficava lá.
+
+**Causa raiz:** o rolamento de costas move o modelo em Y/Z para girar em torno da
+cintura, e no fim eu devolvia `position = 0`. Mas o repouso do modelo **não é
+zero**: é **y = −0,80**, porque o rig o abaixa para os pés encostarem no chão.
+Devolver a zero SUBIA o corpo 0,8 m.
+
+**Evidência:**
+
+```
+repouso:        modelo y = −0,8000
+após dash #1:   modelo y =  0,0000   ← subiu, e não voltou
+após dash #2..5: 0,0000
+```
+
+Depois do conserto: −0,8000 antes e depois dos cinco dashes.
+
+**Correção:** guardar a posição no primeiro quadro do giro e devolver a ELA.
+
+**Como detectar de novo:** a asserção do `medir_dash.gd` comparava com ZERO e por
+isso deixou o bug passar; agora compara com a pose de ANTES. **Repouso se guarda,
+não se supõe** — é o mesmo erro da escala das raças, onde devolver `Vector3.ONE`
+deformaria um rig que nasce com 1,8.
+
+---
+
+## 2026-08-27 — o anel do soco tinha rotação FIXA no mundo
+
+**Sintoma (relatado pelo dono):** "o efeito visual que o clique libera aponta
+sempre para a mesma direção".
+
+**Causa raiz:** `Melee._impacto` fazia `m.rotation.x = PI * 0.5` — literalmente
+uma rotação fixa. A POSIÇÃO do anel acompanhava o soco; a ORIENTAÇÃO, nunca.
+Socar para o norte e para o sul desenhava o mesmo anel virado para o mesmo lado.
+A função sequer RECEBIA a direção, embora quem a chamava (`Melee.golpear`) a
+tivesse na mão.
+
+**Evidência:** eixo do anel medido em 8 rumos — idêntico em todos antes, `+1,000`
+contra a direção do golpe depois.
+
+**Correção:** `_impacto` passou a receber `dir`, e o anel virou DUAS camadas: um
+suporte que APONTA (`look_at`) e a malha girada −90° em X (o eixo de um
+`TorusMesh` nasce em +Y e precisa virar −Z).
+
+⚠️ **A primeira tentativa compôs uma `global_basis` e não sobreviveu ao tween:**
+animar `scale` RECOMPÕE a base a partir de rotação + escala guardadas, e a
+decomposição não voltava igual — o anel saía girado, com |dot| oscilando de 0,85
+a 0,00 conforme o rumo. Separar apontar de girar resolve porque o tween passa a
+mexer só na escala do suporte.
+
+**Como detectar de novo:** `tools/dev_tests/medir_vfx_soco.gd`.
+
+⚠️ **E três armadilhas de MEDIÇÃO, todas no mesmo teste:**
+1. media o `−Z` do nó, mas o eixo de um toro é o `+Y` local — e com a rotação
+   fixa antiga o `−Z` também apontava para cima, então a sonda dava o MESMO
+   número no defeito e no conserto;
+2. pegava os anéis dos BONECOS DE TREINO, que socam sozinhos: o resultado variava
+   por rumo e não tinha relação nenhuma com o golpe medido — errado e
+   convincente. Congelar os bonecos não basta; o que atrapalha é o anel que já
+   estava a caminho;
+3. o anel nasce com RETARDO, e com espera curta cada célula media o golpe
+   ANTERIOR (atraso de exatamente um passo) — o mesmo defeito que a sonda das
+   direções das skills já teve.
+
+---
+
 ## 2026-08-27 — `SubViewport` sem `own_world_3d` compartilha o mundo da cena
 
 **Sintoma:** o personagem da prévia do menu de Customização aparecia com a ARENA
