@@ -31,6 +31,22 @@ const ALTURA_DO_ROLAMENTO := 0.55
 ## RECURSO, não um modo de locomoção grátis.
 const CUSTO_PAREDE_POR_SEG := 22.0
 
+## Gira o modelo para uma base ALVO preservando a ESCALA dele.
+##
+## ⚠️ `global_basis = ...orthonormalized()` DESTRÓI A ESCALA. Uma base
+## ortonormalizada tem escala 1, e o modelo do jogador está em **0,4167** — o
+## personagem ficava 2,4× MAIOR ao encostar na parede, que foi exatamente o que
+## o dono relatou. Base carrega rotação E escala juntas; mexer numa sem repor a
+## outra é perder a outra.
+func _girar_modelo(alvo: Basis, delta: float) -> void:
+	if _char_model == null:
+		return
+	var escala: Vector3 = _char_model.scale
+	var atual := _char_model.global_basis.orthonormalized()
+	var nova := atual.slerp(alvo.orthonormalized(), clampf(VELOCIDADE_FACING * delta, 0.0, 1.0))
+	_char_model.global_basis = nova.orthonormalized().scaled(escala)
+
+
 ## true enquanto o corpo ainda está inclinado por ter andado numa superfície e
 ## precisa voltar a ficar em pé. Não vale durante o rolamento de costas, que
 ## inclina de propósito e tem o próprio desfazer.
@@ -1217,17 +1233,14 @@ func _etapa_locomocao(delta: float) -> void:
 				frente_alvo = Vector3.FORWARD - n * Vector3.FORWARD.dot(n)
 			if frente_alvo.length_squared() > 0.001:
 				var alvo := Basis.looking_at(frente_alvo.normalized(), n)
-				_char_model.global_basis = _char_model.global_basis.slerp(
-					alvo, clampf(VELOCIDADE_FACING * delta, 0.0, 1.0)).orthonormalized()
+				_girar_modelo(alvo, delta)
 		elif _endireitando():
 			# ⚠️ DESENTORTAR AO SAIR DA SUPERFÍCIE. Largar a parede não bastava:
 			# o resto do código escreve só `rotation.y`, e escrever yaw numa base
 			# INCLINADA preserva a inclinação — o personagem saía andando de lado
 			# no ar para sempre. Aqui a base volta inteira para "em pé olhando
 			# para a mira", e só então os escritores de yaw voltam a mandar.
-			var em_pe := Basis.from_euler(Vector3(0.0, _char_model.rotation.y, 0.0))
-			_char_model.global_basis = _char_model.global_basis.slerp(
-				em_pe, clampf(VELOCIDADE_FACING * delta, 0.0, 1.0)).orthonormalized()
+			_girar_modelo(Basis.from_euler(Vector3(0.0, _char_model.rotation.y, 0.0)), delta)
 		elif _parkour.escalando() and _parkour.parede_frontal() != Vector3.ZERO:
 			# Convenção do projeto: FRENTE = -Z. Ao escalar, o -Z do modelo aponta
 			# ao longo de -wall_normal (que aponta da parede para o jogador).
