@@ -34,7 +34,11 @@ const CLIMB_WALL_NORMAL_MAX_Y := 0.2
 ## contato de colisão entre quadros — mesma ideia do `CLIMB_STICK_SPEED`, e pelo
 ## mesmo motivo: sem ela um quadro sem toque solta o jogador.
 const PAREDE_ADERENCIA := 2.5
-const PAREDE_ALCANCE := 1.2      # até onde o raio procura chão sob os pés
+## Alcance do raio que procura chão sob os pés. Generoso de propósito: o corpo
+## flutua um pouco em relação à superfície, e um alcance curto perde o contato.
+const PAREDE_ALCANCE := 2.0
+## Quanto tempo sem achar superfície antes de soltar. Ver a nota da folga.
+const PAREDE_FOLGA := 0.35
 const PAREDE_PULO_FORA := 7.0    # empurrão para FORA da superfície ao cancelar
 const PAREDE_PULO_CIMA := 6.0    # e para cima, para o cancelamento ler como pulo
 
@@ -62,6 +66,8 @@ var _normal_parede: Vector3 = Vector3.ZERO
 ## Trava de um quadro: entrar e sair usam a MESMA tecla (espaço). Sem ela, o
 ## mesmo toque que gruda desgruda no quadro seguinte.
 var _carencia_parede: float = 0.0
+## Há quanto tempo o raio não acha superfície sob os pés. Ver a nota da folga.
+var _folga_sem_chao: float = 0.0
 var _long_jump_t: float = 0.0   # janela de impulso horizontal (salto longo/vault)
 var _geppo: int = 0             # geppos gastos desde o último apoio
 var _pico_queda: float = 0.0    # maior velocidade de queda acumulada no ar
@@ -130,20 +136,31 @@ func avaliar(delta: float, q: MoveFrame, no_chao: bool) -> void:
 		elif not _dono.tem_energia_de_parede():
 			_soltar_da_parede(false)      # acabou a energia: cai
 		else:
-			# Enquanto anda, a normal continua vindo do que está sob os pés — é
-			# isso que deixa passar de uma face para outra sem soltar.
+			# ⚠️ A PERMANÊNCIA NÃO PODE DEPENDER DE TECLA. `_parede_frontal` vem de
+			# `_normal_da_parede_escalavel(q.dir)` — sem direção no teclado ela é
+			# ZERO. Usá-la como fallback obrigava o jogador a seguir segurando W,
+			# que é exatamente o que esta mecânica veio eliminar.
+			#
+			# Agora só o que está SOB OS PÉS decide, e ele não olha para o
+			# teclado.
 			var atual := _superficie_sob_os_pes()
 			if atual != Vector3.ZERO:
 				_normal_parede = atual
-			elif _parede_frontal != Vector3.ZERO:
-				_normal_parede = _parede_frontal
+				_folga_sem_chao = 0.0
 			else:
-				_soltar_da_parede(false)  # nada sob os pés: acabou a superfície
+				# ⚠️ E UMA FOLGA antes de soltar. A superfície some por um quadro
+				# em quina, degrau ou quando a colisão empurra o corpo um dedo
+				# para fora — soltar no primeiro quadro sem raio derrubava o
+				# jogador em situações em que ele claramente ainda estava lá.
+				_folga_sem_chao += delta
+				if _folga_sem_chao > PAREDE_FOLGA:
+					_soltar_da_parede(false)
 	elif q.espaco_agora and not no_chao and _parede_frontal != Vector3.ZERO \
 			and _carencia_parede <= 0.0 and _dono.tem_energia_de_parede():
 		_na_parede = true
 		_normal_parede = _parede_frontal
 		_carencia_parede = 0.25
+		_folga_sem_chao = 0.0
 		_geppo = 0
 
 	# A escalada antiga fica desligada, mas o campo continua para o wall run e o
@@ -268,7 +285,9 @@ func _superficie_sob_os_pes() -> Vector3:
 	if _dono == null or _normal_parede == Vector3.ZERO:
 		return Vector3.ZERO
 	var espaco := _dono.get_world_3d().direct_space_state
-	var de: Vector3 = _dono.global_position
+	# Parte de um ponto um pouco AFASTADO da superfície: um raio que nasce dentro
+	# do sólido não reporta acerto, e o corpo às vezes encosta.
+	var de: Vector3 = _dono.global_position + _normal_parede * 0.35
 	var par := PhysicsRayQueryParameters3D.create(de, de - _normal_parede * PAREDE_ALCANCE)
 	par.exclude = [_dono.get_rid()]
 	var h := espaco.intersect_ray(par)

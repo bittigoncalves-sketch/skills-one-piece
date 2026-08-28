@@ -91,6 +91,8 @@ func _testar_parede(p: Node3D, junto: Vector3) -> void:
 	# uma mecânica que funciona.
 	p._yaw = PI
 	p._camera.apontar(PI, -0.1)
+	var escala_antes: Vector3 = p._char_model.scale
+	var tam_antes := _tamanho(p._char_model)
 	for i in 20:
 		await process_frame
 	# ⚠️ O FLUXO REAL SÃO DOIS TOQUES, e isso não é atalho de teste: no chão o
@@ -120,15 +122,31 @@ func _testar_parede(p: Node3D, junto: Vector3) -> void:
 			grudou = true
 			break
 	_ok("um TOQUE de espaço contra a parede gruda", grudou)
+	# ⚠️ A ASSERÇÃO QUE FALTAVA (1/2). Orientar o corpo com
+	# `global_basis = ...orthonormalized()` DESTRÓI A ESCALA — base ortonormal
+	# tem escala 1, e o modelo está em 0,4167: o personagem ficava 2,4× MAIOR ao
+	# encostar na parede. A bateria passava assim, porque só olhava a
+	# ORIENTAÇÃO e nunca o TAMANHO.
+	print("   escala do modelo: antes %s | na parede %s" % [
+		str(escala_antes), str(p._char_model.scale)])
+	print("   tamanho (cabeça→pé): antes %.3f | na parede %.3f" % [
+		tam_antes, _tamanho(p._char_model)])
+	_ok("o personagem NÃO muda de tamanho ao grudar",
+		p._char_model.scale.is_equal_approx(escala_antes)
+		and absf(_tamanho(p._char_model) - tam_antes) < 0.15)
 	if not grudou:
 		_tecla(KEY_W, false)
 		return
 
 	# fica SEM segurar nada
 	_tecla(KEY_W, false)
+	# ⚠️ A ASSERÇÃO QUE FALTAVA (2/2). "Sem segurar tecla" tem de valer por TEMPO,
+	# não por meia dúzia de quadros: a permanência dependia de `_parede_frontal`,
+	# que só existe enquanto há direção no teclado, e o jogador caía pouco depois
+	# de soltar. 180 quadros ≈ 3 s cobrem isso.
 	var e0: float = p.energy
 	var continuou := true
-	for i in 30:
+	for i in 180:
 		await process_frame
 		if not p._parkour.na_parede():
 			continuou = false
@@ -162,6 +180,20 @@ func _testar_parede(p: Node3D, junto: Vector3) -> void:
 
 
 ## Um ponto colado num bloco alto — o candidato natural a "andar na parede".
+## O TAMANHO do personagem: a distância entre a cabeça e o pé, em metros de mundo.
+##
+## ⚠️ NÃO É O ALCANCE EM Y. Foi o que tentei primeiro, e ele CAI quando o corpo
+## deita na parede — por ROTAÇÃO, não por tamanho: a sonda reprovava o conserto.
+## Distância entre dois ossos é invariante à rotação, que é justamente o que se
+## precisa aqui.
+func _tamanho(m: Node3D) -> float:
+	var cabeca := m.find_child("Head", true, false) as Node3D
+	var pe := m.find_child("Foot_R", true, false) as Node3D
+	if cabeca == null or pe == null:
+		return 0.0
+	return cabeca.global_position.distance_to(pe.global_position)
+
+
 func _achar_parede(p: Node3D) -> Vector3:
 	for n in _todos(get_root()):
 		if not (n is StaticBody3D) or n.name == "Plataforma":

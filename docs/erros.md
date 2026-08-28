@@ -1657,6 +1657,63 @@ e preparar o ambiente antes de testar é justamente o que o esconde.
 
 ---
 
+## 2026-08-27 — `global_basis` ortonormalizada DESTRÓI a escala (personagem 2,4× maior)
+
+**Sintoma (relatado pelo dono):** ao colidir com a parede, o personagem
+**aumentou de tamanho**.
+
+**Causa raiz:** para orientar o corpo pela normal da superfície eu escrevi
+`_char_model.global_basis = ...orthonormalized()`. Uma base ortonormalizada tem
+escala **1** — e o modelo do jogador está em **0,4167**. Escrever a base repunha
+a rotação e **jogava a escala fora**, deixando o personagem 2,4× maior.
+
+Base carrega rotação E escala juntas; mexer numa sem repor a outra é perder a
+outra.
+
+**Evidência** (distância cabeça→pé, invariante à rotação):
+
+```
+com o bug:   antes 1,034  →  na parede 2,471   (2,4×)
+corrigido:   antes 1,034  →  na parede 1,029
+```
+
+**Correção:** `_girar_modelo()` guarda `scale`, faz o slerp em bases
+ortonormais e devolve `.scaled(escala)`.
+
+**Como detectar de novo:** `medir_camera_e_parede.gd` mede o tamanho por
+**distância entre ossos**, e a asserção reprova a versão com bug.
+
+⚠️ **A primeira métrica que tentei estava errada:** o alcance em **Y do mundo**.
+Ele CAI quando o corpo deita na parede — por ROTAÇÃO, não por tamanho — e a sonda
+reprovava justamente o conserto. Tamanho se mede com grandeza invariante à
+rotação.
+
+---
+
+## 2026-08-27 — a permanência na parede dependia da TECLA
+
+**Sintoma (relatado pelo dono):** era preciso continuar segurando a tecla, quando
+o pedido era um toque só.
+
+**Causa raiz:** o estado sobrevivia consultando `_parede_frontal`, que vem de
+`_normal_da_parede_escalavel(q.dir)` — **sem direção no teclado ela é ZERO**.
+Soltar o W apagava a parede e o jogador caía. O fallback que eu pus "para
+robustez" era exatamente o que reintroduzia a dependência que a mecânica veio
+eliminar.
+
+**Evidência:** com o W solto, `parede_frontal = (0,0,0)` e o estado caía.
+
+**Correção:** só o que está **sob os pés** decide (um raio, que não olha para o
+teclado). Mais alcance (2,0 m), origem do raio deslocada para fora da superfície
+— raio que nasce dentro do sólido não reporta acerto — e uma **folga de 0,35 s**
+antes de soltar, porque a superfície some por um quadro em quina ou degrau.
+
+**Como detectar de novo:** a asserção "continua sem segurar tecla" agora observa
+**180 quadros (≈3 s)**, não meia dúzia. Com poucos quadros ela passava mesmo com
+o bug — o jogador só caía depois.
+
+---
+
 ## 2026-08-27 — devolver a pose ao "zero" subiu o personagem 0,8 m
 
 **Sintoma:** a cada dash para trás o personagem subia um pouco e ficava lá.
