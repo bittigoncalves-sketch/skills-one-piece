@@ -220,12 +220,11 @@ func _por_chapeu() -> void:
 	# ⚠️ A exclusão mútua por parte do corpo vem de graça: se o jogador já
 	# equipou outro chapéu pelo menu de Customização, o catálogo tira o antigo
 	# antes de pôr este. Sem isso a transformação empilharia dois na cabeça.
+	# ⚠️ NÃO RENOMEAR O NÓ. O nome carrega o prefixo `Acessorio_`, e é POR ELE que
+	# a exclusão mútua encontra e remove o que ocupa a parte do corpo. Rebatizar
+	# para "ChapeuDePalha" tirava o prefixo e tornava este chapéu invisível para
+	# a regra — o menu equiparia um segundo por cima.
 	_chapeu = Acessorios.equipar(modelo, ACESSORIO_CHAPEU)
-	if _chapeu == null:
-		return
-	# Nome próprio: a sonda do Gear 2 procura por ele, e ele diz que este chapéu
-	# é da TRANSFORMAÇÃO — some com ela, ao contrário do que o menu equipa.
-	_chapeu.name = "ChapeuDePalha"
 
 
 func _tirar_chapeu() -> void:

@@ -47,6 +47,7 @@ var _viewport: SubViewport = null
 var _lista_direita: VBoxContainer = null
 var _botoes_categoria: Dictionary = {}
 var _cor_idx := -1
+var _cor_grupo := "time"   # "time" | "pele"
 var _giro := 0.0
 var _camera: Camera3D = null
 var _arrastando := false
@@ -110,7 +111,8 @@ func _montar() -> void:
 	add_child(margem)
 
 	var coluna := VBoxContainer.new()
-	coluna.add_theme_constant_override("separation", 18)
+	coluna.add_theme_constant_override("separation", 14)
+	coluna.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	margem.add_child(coluna)
 
 	var titulo := Label.new()
@@ -121,6 +123,8 @@ func _montar() -> void:
 
 	var linha := HBoxContainer.new()
 	linha.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# Sem isto o HBox adota a altura mínima do filho mais alto e estoura a tela.
+	linha.custom_minimum_size = Vector2(0, 0)
 	linha.add_theme_constant_override("separation", 24)
 	coluna.add_child(linha)
 
@@ -220,6 +224,15 @@ func _montar_modelo() -> void:
 ## Aqui a moldura sai da caixa do próprio modelo: altura e largura decidem a
 ## distância, então trocar de personagem ou mudar a proporção do rig continua
 ## enquadrando.
+## ⚠️ SEMPRE ADIADO. `_enquadrar` lê `global_transform` das malhas, e o Godot só
+## propaga isso depois que a árvore processa. Chamar logo após equipar mede a
+## peça nova ainda em repouso e devolve uma moldura errada — é o mesmo erro que
+## já pôs a câmera dentro do tronco no `_ready` (ver docs/erros.md).
+func _reenquadrar() -> void:
+	await get_tree().process_frame
+	_enquadrar()
+
+
 func _enquadrar() -> void:
 	if _modelo == null or _camera == null:
 		return
@@ -227,24 +240,40 @@ func _enquadrar() -> void:
 	var alvo := cx.position + cx.size * 0.5
 	# O maior lado manda: personagem alto pede recuo por altura, largo por
 	# largura. `tan(fov/2)` converte "quanto cabe" em "a que distância".
-	var maior: float = maxf(cx.size.y, cx.size.x)
+	var maior: float = maxf(cx.size.y, maxf(cx.size.x, cx.size.z))
 	var dist: float = (maior * 0.5) / tan(deg_to_rad(_camera.fov * 0.5))
 	dist *= 1.35   # respiro nas bordas: personagem colado na moldura sufoca
 	# ⚠️ CÂMERA NO −Z, não no +Z. O personagem olha para −Z (convenção do Godot e
 	# deste projeto, ver `RosaDosVentos`), então pôr a câmera no +Z mostra as
 	# COSTAS — e num menu de customização o rosto é o que o jogador quer ver. O
 	# giro lento leva as costas ao quadro sozinho, para quem quer ver as asas.
-	_camera.position = Vector3(alvo.x, alvo.y, alvo.z - dist)
-	_camera.look_at(alvo, Vector3.UP)
-	# O giro é em torno do EIXO do modelo, então o alvo tem de estar no eixo —
-	# senão o personagem descreve um círculo em vez de girar no lugar.
-	_modelo.position.x -= alvo.x
-	_modelo.position.z -= alvo.z
+	# ⚠️ IDEMPOTENTE: NÃO MOVE O MODELO. A primeira versão deslocava o modelo para
+	# centrar o alvo no eixo — e cada nova chamada subtraía de novo, acumulando
+	# DERIVA. Como `_enquadrar` agora roda a cada troca de raça e de acessório,
+	# isso empurrava o personagem para longe da câmera a cada clique.
+	#
+	# Em vez disso, a mira usa o EIXO do modelo em X/Z (para o giro ficar
+	# centrado) e a altura do centro da caixa em Y (para o enquadramento
+	# vertical). Chamar dez vezes dá o mesmo resultado de chamar uma.
+	# `alvo` já está em MUNDO. Em X/Z a mira usa o EIXO do modelo, para o giro
+	# ficar centrado; em Y usa a altura do centro da caixa, para o enquadramento
+	# vertical pegar o corpo inteiro.
+	var base := _modelo.global_position
+	var mira := Vector3(base.x, alvo.y, base.z)
+	_camera.position = Vector3(mira.x, mira.y, mira.z - dist)
+	_camera.look_at(mira, Vector3.UP)
 
 
-## A caixa que o modelo realmente OCUPA, unindo a AABB de cada malha já no
-## espaço do modelo. `VisualInstance3D.get_aabb()` sozinho não serve: ele é da
-## malha, não da hierarquia, e o rig tem membros pendurados em vários nós.
+## A caixa que o modelo realmente OCUPA, em coordenadas de MUNDO.
+##
+## ⚠️ MUNDO, não espaço do modelo. A primeira versão convertia para o espaço do
+## modelo (`raiz.global_transform.affine_inverse()`) e devolvia 3,6 de altura —
+## mas o rig tem escala 1,8, então o corpo mede 6,48 no mundo, que é onde a
+## câmera está. A distância saía calculada pela metade e o enquadramento pegava
+## só a cabeça.
+##
+## `VisualInstance3D.get_aabb()` sozinho não serve: ele é da malha, não da
+## hierarquia, e o rig tem membros pendurados em vários nós.
 func _caixa_visual(raiz: Node3D) -> AABB:
 	var malhas: Array = []
 	FxUtil._collect_meshes(raiz, malhas)
@@ -254,8 +283,7 @@ func _caixa_visual(raiz: Node3D) -> AABB:
 		if not (m is MeshInstance3D) or (m as MeshInstance3D).mesh == null:
 			continue
 		var mi := m as MeshInstance3D
-		var t: Transform3D = raiz.global_transform.affine_inverse() * mi.global_transform
-		var a: AABB = t * mi.mesh.get_aabb()
+		var a: AABB = mi.global_transform * mi.mesh.get_aabb()
 		uniao = a if primeiro else uniao.merge(a)
 		primeiro = false
 	if primeiro:
@@ -278,9 +306,21 @@ func _coluna_direita() -> Control:
 		m.add_theme_constant_override(k, 12)
 	painel.add_child(m)
 
+	# ⚠️ A LISTA ROLA, NÃO CRESCE. Sem o `ScrollContainer`, cada item novo
+	# aumentava a altura MÍNIMA do painel, e o painel empurrava a tela inteira:
+	# com os seis acessórios o menu chegou a 1.022 px numa tela de 720. O
+	# personagem ficava enquadrado dentro de um viewport de 818 px de altura,
+	# do qual só a parte de cima aparecia — parecia defeito de câmera, e era de
+	# layout.
+	var rolagem := ScrollContainer.new()
+	rolagem.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	rolagem.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	m.add_child(rolagem)
+
 	_lista_direita = VBoxContainer.new()
 	_lista_direita.add_theme_constant_override("separation", 8)
-	m.add_child(_lista_direita)
+	_lista_direita.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rolagem.add_child(_lista_direita)
 	return painel
 
 
@@ -328,6 +368,7 @@ func _itens_acessorios() -> void:
 					# A troca automática acontece dentro do `equipar`: ele tira o
 					# que já ocupava a parte antes de pôr o novo.
 					Acessorios.equipar(_modelo, aid)
+					_reenquadrar()
 					_encher_direita())
 			_lista_direita.add_child(b)
 
@@ -362,6 +403,9 @@ func _itens_raca() -> void:
 				# material e só ficam da cor do personagem quando a pintura passa
 				# por elas.
 				_pintar()
+				# Raça muda a silhueta (pernas longas, asas, cauda): sem
+				# re-enquadrar, o personagem sai do quadro.
+				_reenquadrar()
 				_encher_direita())
 		_lista_direita.add_child(b)
 
@@ -445,7 +489,10 @@ func _pintar() -> void:
 		# decidir como vai ficar EM PARTIDA — se ela usa outra iluminação, ela
 		# mente, e a cor escolhida aqui aparece diferente lá. É o mesmo motivo de
 		# a paleta ser a do jogo em vez de uma lista só do menu.
-		var c: Color = Paleta.CORES[_cor_idx]["cor"]
+		var lista: Array = Paleta.PELES if _cor_grupo == "pele" else Paleta.CORES
+		if _cor_idx >= lista.size():
+			continue
+		var c: Color = lista[_cor_idx]["cor"]
 		(m as MeshInstance3D).material_override = Materiais.superficie(c)
 
 
