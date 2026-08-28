@@ -1657,6 +1657,51 @@ e preparar o ambiente antes de testar é justamente o que o esconde.
 
 ---
 
+## 2026-08-27 — a direção na parede invertia com 5° de mouse (o bug intermitente)
+
+**Sintoma (relatado pelo dono):** andando na parede o personagem ia "para o lado,
+para o lado, para cima e assim por diante". **Não acontecia sempre** — só apareceu
+depois de testar várias vezes.
+
+**Causa raiz:** a base da superfície era recalculada TODO QUADRO a partir de
+`q.frente` (a frente da câmera) **projetada** no plano da parede. Essa projeção
+**degenera** quando a câmera olha direto para a superfície — que é exatamente o
+que o jogador faz enquanto anda nela. Medido, numa parede de normal −Z:
+
+```
+yaw 175°   |projeção| = 0,087   frente = (−1, 0, 0)
+yaw 180°   |projeção| = 0,000   frente =  indefinida
+yaw 185°   |projeção| = 0,087   frente = (+1, 0, 0)
+```
+
+**Cinco graus de mouse invertem o eixo do movimento.** O W ia para um lado, para
+o outro, e para cima quando caía no fallback. A intermitência não era mistério: o
+defeito só existe perto desse ângulo.
+
+**Correção:** a base virou **persistente com histerese**. Só se atualiza quando a
+candidata está bem condicionada (`|projeção| > 0,35`, ~20° de folga em torno da
+degeneração); fora disso, mantém a que já vale, reancorada na normal atual. E a
+atualização é por `slerp`, nunca por substituição, para nunca saltar ao cruzar o
+limiar.
+
+Perto da degeneração a frente da câmera **não carrega informação** sobre o plano
+da parede — congelar uma base boa é melhor que seguir uma ruim.
+
+**Evidência:** com a câmera oscilando ±8° em torno do ângulo crítico, a maior
+virada da base entre quadros vai de **180,0° → 0,0°**.
+
+**Descartado:** trocar a fórmula da projeção (qualquer fórmula degenera no mesmo
+ponto) e usar sempre "para cima da parede" (estável, mas tira o controle
+relativo à câmera).
+
+**Como detectar de novo:** a sonda mede a **base**, não o deslocamento. ⚠️ A
+primeira versão segurava o W por 90 quadros e olhava para onde o corpo ia — mas a
+7 m/s isso sobe 10 m, o jogador passa do TOPO do bloco e cai: o teste reprovava
+por motivo legítimo e escondia o que se queria medir. A base existe sem o jogador
+andar, e é o que o defeito atacava.
+
+---
+
 ## 2026-08-27 — subir a parede não animava: o animador só enxerga o plano XZ
 
 **Sintoma (relatado pelo dono):** andando para cima ou para baixo no bloco, a

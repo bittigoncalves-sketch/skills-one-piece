@@ -42,6 +42,13 @@ const PAREDE_FOLGA := 0.35
 ## Duração do rolamento no ar. Curto: é um floreio de saída, não uma acrobacia
 ## que tira o controle do jogador.
 const ROLAMENTO_AR_DURACAO := 0.55
+## Abaixo deste comprimento a projeção da frente da câmera no plano da parede não
+## carrega direção confiável — ver a nota da histerese. 0,35 corresponde a ~20°
+## de folga em torno do ponto em que a câmera encara a superfície de frente.
+const LIMIAR_BASE := 0.35
+## Quão depressa a base persegue a candidata boa. Rápido o bastante para o
+## controle não parecer atrasado; suave o bastante para nunca saltar.
+const GIRO_BASE := 8.0
 const PAREDE_PULO_FORA := 7.0    # empurrão para FORA da superfície ao cancelar
 const PAREDE_PULO_CIMA := 6.0    # e para cima, para o cancelamento ler como pulo
 
@@ -72,6 +79,9 @@ var _carencia_parede: float = 0.0
 ## Há quanto tempo o raio não acha superfície sob os pés. Ver a nota da folga.
 var _folga_sem_chao: float = 0.0
 var _base_sup: Basis = Basis.IDENTITY
+## false até a base ter sido montada uma vez nesta grudada. Ver a nota da
+## histerese em `_atualizar_base_da_superficie`.
+var _base_sup_valida: bool = false
 
 ## Tempo restante do ROLAMENTO NO AR — a cambalhota que sai ao largar a
 ## superfície. Pedido do dono: braços mirando os pés, pernas agachadas, cabeça
@@ -174,6 +184,7 @@ func avaliar(delta: float, q: MoveFrame, no_chao: bool) -> void:
 		_normal_parede = _parede_frontal
 		_carencia_parede = 0.25
 		_folga_sem_chao = 0.0
+		_base_sup_valida = false
 		_geppo = 0
 
 	# A escalada antiga fica desligada, mas o campo continua para o wall run e o
@@ -203,11 +214,10 @@ func velocidade(delta: float, q: MoveFrame, vel: Vector3, vel_efetiva: float) ->
 		# cima", a frente é a da câmera projetada no plano, e a direita sai do
 		# produto vetorial. Aí W anda parede acima e A/D andam de lado, que é o
 		# que "o bloco é o chão" quer dizer.
-		var b := _base_da_superficie(q)
-		_base_sup = b
+		_atualizar_base_da_superficie(q, delta)
 		var n := _normal_parede
-		var frente: Vector3 = -b.z
-		var direita: Vector3 = b.x
+		var frente: Vector3 = -_base_sup.z
+		var direita: Vector3 = _base_sup.x
 
 		var mov := frente * q.f + direita * q.r
 		if mov.length_squared() > 1.0:
@@ -298,19 +308,58 @@ func _efeitos_do_geppo(q: MoveFrame) -> void:
 # Usa as colisões do último movimento. Isso evita RayCast extra e faz a escalada
 # funcionar em qualquer StaticBody3D, inclusive os blocos do mapa.
 ## A base da SUPERFÍCIE: `y` = a normal (o "para cima"), `-z` = a frente, `x` = a
-## direita. Uma fonte só, usada pelo movimento E pela animação — o animador
-## precisa da mesma decomposição para saber quanto é "andar para frente".
-func _base_da_superficie(q: MoveFrame) -> Basis:
+## direita. Uma fonte só, usada pelo movimento E pela animação.
+##
+## ============================================================================
+## ⚠️ A BASE É PERSISTENTE, COM HISTERESE — e isso é o conserto de um bug real.
+##
+## Recalcular a base todo quadro a partir da câmera parece inofensivo e não é. A
+## frente vem de `q.frente` PROJETADA no plano da parede, e essa projeção
+## DEGENERA quando a câmera olha direto para a superfície — que é justamente o
+## que o jogador faz enquanto anda nela. Medido, numa parede de normal −Z:
+##
+##     yaw 175°  |projeção| = 0,087   frente = (−1, 0, 0)
+##     yaw 180°  |projeção| = 0,000   frente =  indefinida
+##     yaw 185°  |projeção| = 0,087   frente = (+1, 0, 0)
+##
+## Cinco graus de mouse INVERTEM o eixo do movimento. O W ia para um lado, para
+## o outro, e para cima quando caía no fallback — e só às vezes, porque depende
+## de a câmera estar perto desse ângulo. Era o bug "difícil de identificar".
+##
+## A saída não é escolher outra fórmula: perto da degeneração, a frente da
+## câmera simplesmente NÃO CARREGA informação sobre o plano da parede. Então a
+## base é GUARDADA, e só se atualiza quando a candidata está bem condicionada
+## (`|projeção| > LIMIAR`). Fora disso ela fica como está — congelar uma base boa
+## é melhor que seguir uma ruim.
+##
+## E a atualização é por `slerp`, nunca por substituição: assim ela nunca salta,
+## mesmo cruzando o limiar.
+## ============================================================================
+func _atualizar_base_da_superficie(q: MoveFrame, delta: float) -> void:
 	var n := _normal_parede
-	var frente := q.frente - n * q.frente.dot(n)
-	if frente.length_squared() <= 0.001:
-		# A câmera olha direto para a parede: a frente projetada degenera.
-		# "Para cima da parede" é a escolha natural — é para onde alguém andando
-		# nela encara.
-		frente = Vector3.UP - n * Vector3.UP.dot(n)
-	if frente.length_squared() <= 0.001:
-		frente = Vector3.FORWARD - n * Vector3.FORWARD.dot(n)
-	return Basis.looking_at(frente.normalized(), n)
+	var proj := q.frente - n * q.frente.dot(n)
+	if proj.length() > LIMIAR_BASE:
+		var alvo := Basis.looking_at(proj.normalized(), n)
+		if _base_sup_valida:
+			_base_sup = _base_sup.slerp(alvo, clampf(GIRO_BASE * delta, 0.0, 1.0)).orthonormalized()
+		else:
+			_base_sup = alvo
+			_base_sup_valida = true
+		return
+	if _base_sup_valida:
+		# Mal condicionada: mantém a que já vale, mas reancora na normal ATUAL —
+		# a superfície pode ter virado de face por baixo dos pés.
+		var f_atual: Vector3 = -_base_sup.z
+		var f: Vector3 = f_atual - n * f_atual.dot(n)
+		if f.length() > 0.05:
+			_base_sup = Basis.looking_at(f.normalized(), n)
+		return
+	# Primeira vez e sem informação da câmera: "para cima da parede".
+	var sobe := Vector3.UP - n * Vector3.UP.dot(n)
+	if sobe.length_squared() <= 0.001:
+		sobe = Vector3.FORWARD - n * Vector3.FORWARD.dot(n)
+	_base_sup = Basis.looking_at(sobe.normalized(), n)
+	_base_sup_valida = true
 
 
 ## A última base calculada. O Player usa para traduzir a velocidade da parede
@@ -339,6 +388,7 @@ func _soltar_da_parede(pulando: bool) -> void:
 		return
 	_na_parede = false
 	_carencia_parede = 0.25
+	_base_sup_valida = false
 	if pulando and _dono:
 		_dono.velocity = _normal_parede * PAREDE_PULO_FORA + Vector3.UP * PAREDE_PULO_CIMA
 		# ⚠️ NÃO CONSOME PULO DUPLO. Sair da superfície é a saída da mecânica,
