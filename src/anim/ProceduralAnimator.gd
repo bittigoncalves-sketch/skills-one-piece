@@ -77,6 +77,7 @@ var _roll_w := 0.0          # parkour: rolamento do pouso de precisão (#4)
 var _roll_tras_w := 0.0     # esquiva PARA TRÁS: rolamento de costas
 var _roll_lado_w := 0.0     # esquiva LATERAL: mergulho de lado
 var _roll_lado_sinal := 1.0 # +1 = direita, -1 = esquerda
+var _roll_ar_w := 0.0       # cambalhota no ar ao largar a superfície
 var _ljump_w := 0.0         # parkour: salto longo / vault no ar (#1, #2)
 var _gun_w := 0.0           # rajada Z (mera/hie): pose de dedo-revólver mirando
 var _hibashira_w := 0.0     # pose de entrada e sustentação do Hibashira (soca o chão, pernas abertas)
@@ -261,6 +262,7 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	# borrão em vez de um rolamento.
 	_roll_tras_w = lerpf(_roll_tras_w, 1.0 if parkour == "roll_tras" else 0.0, 1.0 - exp(-34.0 * delta))
 	_roll_lado_w = lerpf(_roll_lado_w, 1.0 if parkour.begins_with("roll_lado") else 0.0, 1.0 - exp(-34.0 * delta))
+	_roll_ar_w = lerpf(_roll_ar_w, 1.0 if parkour == "roll_ar" else 0.0, 1.0 - exp(-30.0 * delta))
 	if parkour == "roll_lado_e":
 		_roll_lado_sinal = -1.0
 	elif parkour == "roll_lado_d":
@@ -301,7 +303,7 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	var weapon = parent.equipped_weapon if parent and "equipped_weapon" in parent else ""
 	_sword_w = lerpf(_sword_w, 1.0 if weapon == "sword" else 0.0, 1.0 - exp(-10.0 * delta))
 		
-	var parkour_w: float = maxf(maxf(_wallrun_w, _roll_tras_w), maxf(maxf(_roll_w, _roll_lado_w), _ljump_w))
+	var parkour_w: float = maxf(maxf(maxf(_wallrun_w, _roll_tras_w), _roll_ar_w), maxf(maxf(_roll_w, _roll_lado_w), _ljump_w))
 	# as poses especiais assumem o corpo todo
 	# ...mas nem todo golpe da Gura faz isso: o soco do Z fecha uma CORRIDA e as
 	# pernas têm que continuar correndo por baixo dele (ver GuraPoses.CORPO_INTEIRO).
@@ -805,6 +807,31 @@ func _parkour(off: Dictionary, phase: float) -> void:
 		# dentro recolhe junto ao peito.
 		_add(off, "UpperArm_R", Vector3(-0.5, 0, (1.5 if s > 0.0 else -0.3)) * w)
 		_add(off, "UpperArm_L", Vector3(-0.5, 0, (-0.3 if s > 0.0 else -1.5)) * w)
+	# CAMBALHOTA NO AR (saída da superfície). Pedido do dono, literal: "braços
+	# miram nos pés, pernas agachadas, cabeça indo para o joelho, corpo dobrado".
+	#
+	# ⚠️ É MAIS FECHADA que o rolamento de pouso. Aquele é um amortecimento — o
+	# corpo dobra mas continua legível de pé. Este é uma BOLA: só assim a
+	# cambalhota lê no ar, onde não há chão para dar referência ao olho.
+	#
+	# O GIRO não está aqui: quem gira a raiz do modelo é o Player. A pose
+	# sozinha seria um agachamento flutuando.
+	if _roll_ar_w > 0.001:
+		var w := _roll_ar_w
+		# pernas agachadas, joelhos ao peito
+		_add(off, "Thigh_L", Vector3(1.9, 0, 0) * w)
+		_add(off, "Thigh_R", Vector3(1.9, 0, 0) * w)
+		_add(off, "Shin_L", Vector3(-2.2, 0, 0) * w)
+		_add(off, "Shin_R", Vector3(-2.2, 0, 0) * w)
+		# corpo dobrado e cabeça indo ao joelho
+		_add(off, "Torso", Vector3(-1.2, 0, 0) * w)
+		_add(off, "Head", Vector3(0.7, 0, 0) * w)
+		# braços descendo para MIRAR NOS PÉS: o ombro vai à frente e o cotovelo
+		# fecha, levando a mão à altura da canela.
+		_add(off, "UpperArm_L", Vector3(1.5, 0, -0.35) * w)
+		_add(off, "UpperArm_R", Vector3(1.5, 0, 0.35) * w)
+		_add(off, "ForeArm_L", Vector3(0.9, 0, 0) * w)
+		_add(off, "ForeArm_R", Vector3(0.9, 0, 0) * w)
 	# SALTO LONGO / VAULT (#1,#2): corpo estendido no ar — braços à frente, pernas atrás.
 	if _ljump_w > 0.001:
 		var w := _ljump_w

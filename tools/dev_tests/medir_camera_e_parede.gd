@@ -183,19 +183,23 @@ func _testar_parede(p: Node3D, junto: Vector3) -> void:
 			moveu_todas = false
 	_ok("as quatro teclas movem na superfície", moveu_todas)
 
-	# ---------- o rig se mexe ----------
-	var pose0 := _pose(p)
-	_tecla(KEY_W, true)
-	var mexeu := false
-	for i in 40:
-		await process_frame
-		if _dif_pose(pose0, _pose(p)) > 0.05:
-			mexeu = true
-			break
-	_tecla(KEY_W, false)
-	for i in 10:
-		await process_frame
-	_ok("o rig ANIMA enquanto anda na superfície", mexeu)
+	# ---------- o rig se mexe, EM TODA DIREÇÃO ----------
+	# ⚠️ A ASSERÇÃO QUE FALTAVA. Testar só o W deixou passar o oposto: o animador
+	# mede a caminhada com `Vector2(velocity.x, velocity.z)` — só o plano
+	# HORIZONTAL do mundo. Subir a parede é movimento em Y, invisível para ele:
+	# de lado animava, para cima e para baixo não. Uma direção só não cobre.
+	for caso in [[KEY_W, "para cima"], [KEY_S, "para baixo"], [KEY_A, "para o lado"]]:
+		var pose0 := _pose(p)
+		_tecla(caso[0] as Key, true)
+		var dif := 0.0
+		for i in 40:
+			await process_frame
+			dif = maxf(dif, _dif_pose(pose0, _pose(p)))
+		_tecla(caso[0] as Key, false)
+		for i in 10:
+			await process_frame
+		print("      %s: variação da pose %.3f" % [caso[1], dif])
+		_ok("o rig ANIMA andando %s" % caso[1], dif > 0.05)
 
 	# cancela PULANDO
 	_tecla(KEY_SPACE, true)
@@ -208,7 +212,20 @@ func _testar_parede(p: Node3D, junto: Vector3) -> void:
 		if not p._parkour.na_parede():
 			soltou = true
 			break
+	var geppo_antes: int = int(p._parkour.geppos())
 	_ok("pular CANCELA e solta da superfície", soltou)
+	# ---------- a saída é cambalhota, e não gasta pulo duplo ----------
+	print("   geppos gastos após o cancelamento: %d (antes %d)" % [p._parkour.geppos(), geppo_antes])
+	_ok("cancelar NÃO gasta o pulo duplo", p._parkour.geppos() == 0)
+	var rolou: bool = p._parkour.rolando_no_ar()
+	var girou := 0.0
+	for i in 40:
+		await process_frame
+		rolou = rolou or p._parkour.rolando_no_ar()
+		girou = maxf(girou, absf(p._char_model.rotation.x))
+	print("   rolamento no ar: ativo=%s | giro máx %.2f rad" % [str(rolou), girou])
+	_ok("a saída dispara a cambalhota no ar", rolou)
+	_ok("e o corpo GIRA de verdade (não só encolhe)", girou > 1.0)
 	for i in 90:
 		await process_frame
 	var up2: Vector3 = p._char_model.global_transform.basis.y
