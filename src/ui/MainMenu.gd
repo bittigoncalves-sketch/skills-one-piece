@@ -210,6 +210,10 @@ func _build_ui() -> void:
 	left_vbox.add_child(btn_online)
 	_online_input.text_submitted.connect(func(_t): _on_join_pressed())
 
+	var btn_custom = _create_main_button("CUSTOMIZAÇÃO", "ACESSÓRIOS E COR DO PERSONAGEM", "🎩", true)
+	btn_custom.gui_input.connect(_on_btn_input.bind(btn_custom, _on_customizacao_pressed))
+	left_vbox.add_child(btn_custom)
+
 	var btn_config = _create_main_button("CONFIGURAÇÕES", "AJUSTE AS OPÇÕES DO JOGO", "⚙️", true)
 	btn_config.gui_input.connect(_on_btn_input.bind(btn_config, _on_config_pressed))
 	left_vbox.add_child(btn_config)
@@ -536,6 +540,21 @@ func _on_play_pressed() -> void:
 func _on_dummy_toggled(ligado: bool, tipo: String) -> void:
 	GameFlow.set_dummy(tipo, ligado)
 	print("🎯 %s: %s" % [GameFlow.DUMMIES.get(tipo, tipo), "LIGADO" if ligado else "DESLIGADO"])
+
+## A tela de Customização entra POR CIMA do menu, e não no lugar dele: voltar é
+## só escondê-la, sem reconstruir o menu inteiro nem perder o que o jogador
+## tivesse digitado no campo de sala online.
+var _customizacao: CustomizacaoMenu = null
+
+func _on_customizacao_pressed() -> void:
+	if _customizacao == null or not is_instance_valid(_customizacao):
+		_customizacao = CustomizacaoMenu.new()
+		_customizacao.name = "Customizacao"
+		add_child(_customizacao)
+		_customizacao.fechado.connect(func(): pass)
+	_customizacao.show()
+	_customizacao.move_to_front()
+
 
 func _on_config_pressed() -> void:
 	print("Settings not implemented yet.")
