@@ -1657,6 +1657,57 @@ e preparar o ambiente antes de testar é justamente o que o esconde.
 
 ---
 
+## 2026-08-27 — na parede o corpo só olhava para os lados
+
+**Sintoma (relatado pelo dono):** andando pela parede, o personagem ficava sempre
+virado para a direita ou para a esquerda.
+
+**Causa raiz:** o MOVIMENTO usava a base da superfície (`frente·f + direita·r`),
+mas a FRENTE DO CORPO usava `q.dir` — a direção **horizontal do mundo** —
+projetada no plano. Numa parede vertical, `q.dir` do W é exatamente a componente
+que a projeção anula: sobravam A e D, e o corpo nunca olhava para onde subia.
+
+Movimento e olhar são a **mesma decisão**; tirá-los de fontes diferentes é a
+mesma armadilha das cinco cópias da direção da frente que já custaram caro aqui.
+
+**Correção:** a frente do corpo passou a sair da mesma
+`base_da_superficie()` que o movimento, com os mesmos `q.f`/`q.r`.
+
+**Evidência:** produto escalar entre para onde o corpo olha e a direção andada —
+`+1,00` nas quatro teclas (para cima, para baixo, esquerda, direita).
+
+**Como detectar de novo:** a asserção testa a frente **por tecla**. A anterior só
+verificava que o corpo estava alinhado com a superfície, o que continuava
+verdadeiro com o corpo virado para o lado errado.
+
+---
+
+## 2026-08-27 — duas asserções minhas eram INSTÁVEIS (passavam e reprovavam)
+
+**Sintoma:** a mesma sonda dava `24/0` numa execução e `21/3` na seguinte, sem
+nenhuma mudança de código.
+
+**Causa raiz:** duas asserções apostavam em TEMPO em vez de esperar CONDIÇÃO.
+
+1. *"nenhum efeito de tela"* exigia soma **exatamente** abaixo de 0,001. Os
+   parâmetros do `ScreenFX` chegam a zero por interpolação e ainda têm resíduo de
+   milésimos alguns quadros depois: reprovava por `0,0018`.
+2. O teste do cancelamento esperava **"25 quadros"** pela carência de 0,25 s — uma
+   aposta sobre o tempo de quadro. Quando chegava cedo, o espaço caía dentro da
+   carência e **três** asserções caíam juntas.
+
+**Correção:** limiar com folga de uma ordem de grandeza (0,01, bem abaixo do
+visível) e espera de sobra no primeiro; espera por **condição**
+(`_carencia_parede <= 0`) no segundo.
+
+**Evidência:** três execuções seguidas em `24/0`.
+
+**Como detectar de novo:** teste que oscila sem mudança de código é teste que
+mede o relógio, não o programa. **Esperar condição, não contar quadros** — e
+limiar de "efeito invisível" não é zero exato.
+
+---
+
 ## 2026-08-27 — a direção na parede invertia com 5° de mouse (o bug intermitente)
 
 **Sintoma (relatado pelo dono):** andando na parede o personagem ia "para o lado,
