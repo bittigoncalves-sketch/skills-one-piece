@@ -21,6 +21,10 @@ const JUMP_VELOCITY := 16.0
 ## bastante para o giro não ser um corte seco. Era 24 no caso parado e 35 no caso
 ## em movimento — dois números para a mesma coisa, agora um só.
 const VELOCIDADE_FACING := 26.0
+
+## Altura do eixo do rolamento de costas, a partir dos pés. É a cintura: uma
+## cambalhota gira em torno do centro de massa, não do chão nem da cabeça.
+const ALTURA_DO_ROLAMENTO := 0.55
 const GRAVITY := 32.0        # gravidade reforcada (Godot padrao ~9.8)
 const MOUSE_SENS := 0.0035
 
@@ -1154,6 +1158,30 @@ func _etapa_locomocao(delta: float) -> void:
 			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw,
 				VELOCIDADE_FACING * delta)
 
+	# ⚠️ O GIRO DO ROLAMENTO DE COSTAS mora aqui, e não no animador, porque quem
+	# tem a raiz do modelo é o Player. A pose encolhida sozinha pareceria um
+	# agachamento; é o giro que faz virar cambalhota.
+	#
+	# Gira em X (para TRÁS = negativo, pela convenção frente = −Z) uma volta
+	# inteira ao longo da esquiva. E compensa a POSIÇÃO: a origem do modelo está
+	# nos PÉS, então girar ali jogaria o corpo através do chão. Deslocando por
+	# `meia_altura·(1−cos)` em Y e `meia_altura·sin` em Z, o giro acontece em
+	# torno da CINTURA, que é onde uma cambalhota gira de verdade.
+	if _char_model:
+		var g := _dash.giro_do_rolamento() if _dash.ativo() and _dash.rumo_nome() == "tras" else 0.0
+		if g > 0.0:
+			var ang := -TAU * g
+			_char_model.rotation.x = ang
+			_char_model.position.y = ALTURA_DO_ROLAMENTO * (1.0 - cos(ang))
+			_char_model.position.z = ALTURA_DO_ROLAMENTO * sin(ang)
+		elif not is_equal_approx(_char_model.rotation.x, 0.0):
+			# Volta ao repouso assim que a esquiva acaba. Sem isto o personagem
+			# ficaria de cabeça para baixo para sempre — e o `rotation.x` não é
+			# escrito por mais ninguém, então ninguém o consertaria.
+			_char_model.rotation.x = 0.0
+			_char_model.position.y = 0.0
+			_char_model.position.z = 0.0
+
 	# Animação: rig procedural (por-nós) OU esqueletal (skinnado).
 	if _skel_anim:
 		_skel_anim.update(velocity, is_on_floor(), _parkour.escalando(), delta, q.sprint)
@@ -1162,7 +1190,19 @@ func _etapa_locomocao(delta: float) -> void:
 		if _parkour.correndo_na_parede():
 			parkour = "wall_run"
 		elif _roll_t > 0.0:
-			parkour = "roll"
+			# ⚠️ A pose depende do RUMO da esquiva. O dash já saía para os lados e
+			# para trás (a direção vem da tecla), mas todos usavam a MESMA
+			# animação: dar um passo para trás e mergulhar para a frente ficavam
+			# iguais na tela. O rolamento de pouso, que não é dash, continua no
+			# "roll" de frente.
+			if _dash.ativo():
+				match _dash.rumo_nome():
+					"tras":     parkour = "roll_tras"
+					"esquerda": parkour = "roll_lado_e"
+					"direita":  parkour = "roll_lado_d"
+					_:          parkour = "roll"
+			else:
+				parkour = "roll"
 		elif _parkour.janela_impulso() > 0.0 and not on_floor_now:
 			parkour = "long_jump"
 		_proc_anim.update(velocity, is_on_floor(), _parkour.escalando(), delta, _pitch, q.sprint, false, "", parkour, _pose_de_arma(), _gun_recoil)

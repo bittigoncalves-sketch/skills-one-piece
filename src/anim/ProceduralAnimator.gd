@@ -74,6 +74,9 @@ var _climb_w := 0.0
 var _charge_w := 0.0        # peso da pose de "estilingue" (segurando a skill)
 var _wallrun_w := 0.0       # parkour: corrida na parede (#3)
 var _roll_w := 0.0          # parkour: rolamento do pouso de precisão (#4)
+var _roll_tras_w := 0.0     # esquiva PARA TRÁS: rolamento de costas
+var _roll_lado_w := 0.0     # esquiva LATERAL: mergulho de lado
+var _roll_lado_sinal := 1.0 # +1 = direita, -1 = esquerda
 var _ljump_w := 0.0         # parkour: salto longo / vault no ar (#1, #2)
 var _gun_w := 0.0           # rajada Z (mera/hie): pose de dedo-revólver mirando
 var _hibashira_w := 0.0     # pose de entrada e sustentação do Hibashira (soca o chão, pernas abertas)
@@ -253,6 +256,15 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	# ---- pesos PARKOUR (blend rápido; sobrepõem locomoção/ar) ----
 	_wallrun_w = lerpf(_wallrun_w, 1.0 if parkour == "wall_run" else 0.0, 1.0 - exp(-16.0 * delta))
 	_roll_w    = lerpf(_roll_w,    1.0 if parkour == "roll" else 0.0,     1.0 - exp(-22.0 * delta))
+	# ⚠️ Rampa mais RÁPIDA (34) que a do rolamento de pouso (22). A esquiva dura
+	# 0,28 s; com a rampa lenta a pose só chegava perto do fim e o jogador via um
+	# borrão em vez de um rolamento.
+	_roll_tras_w = lerpf(_roll_tras_w, 1.0 if parkour == "roll_tras" else 0.0, 1.0 - exp(-34.0 * delta))
+	_roll_lado_w = lerpf(_roll_lado_w, 1.0 if parkour.begins_with("roll_lado") else 0.0, 1.0 - exp(-34.0 * delta))
+	if parkour == "roll_lado_e":
+		_roll_lado_sinal = -1.0
+	elif parkour == "roll_lado_d":
+		_roll_lado_sinal = 1.0
 	_ljump_w   = lerpf(_ljump_w,   1.0 if parkour == "long_jump" else 0.0, 1.0 - exp(-12.0 * delta))
 	_gun_w     = lerpf(_gun_w,     1.0 if aim_gun else 0.0,               1.0 - exp(-20.0 * delta))
 	var custom_pose: String = get_parent().get_meta("custom_pose", "") if get_parent() else ""
@@ -289,7 +301,7 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	var weapon = parent.equipped_weapon if parent and "equipped_weapon" in parent else ""
 	_sword_w = lerpf(_sword_w, 1.0 if weapon == "sword" else 0.0, 1.0 - exp(-10.0 * delta))
 		
-	var parkour_w: float = maxf(_wallrun_w, maxf(_roll_w, _ljump_w))
+	var parkour_w: float = maxf(maxf(_wallrun_w, _roll_tras_w), maxf(maxf(_roll_w, _roll_lado_w), _ljump_w))
 	# as poses especiais assumem o corpo todo
 	# ...mas nem todo golpe da Gura faz isso: o soco do Z fecha uma CORRIDA e as
 	# pernas têm que continuar correndo por baixo dele (ver GuraPoses.CORPO_INTEIRO).
@@ -754,6 +766,45 @@ func _parkour(off: Dictionary, phase: float) -> void:
 		_add(off, "UpperArm_R", Vector3(-0.8, 0, 0.6) * w)
 		_add(off, "ForeArm_L", Vector3(1.6, 0, 0) * w)
 		_add(off, "ForeArm_R", Vector3(1.6, 0, 0) * w)
+	# ROLAMENTO DE COSTAS (esquiva para TRÁS). Pedido do dono (2026-08-27).
+	#
+	# ⚠️ É a imagem ESPELHADA do rolamento de pouso, não uma variação dele: o
+	# tronco arqueia para TRÁS (+x), o queixo sobe em vez de descer e os braços
+	# vão para cima da cabeça, como quem se joga de costas. Reaproveitar a pose
+	# de frente com sinal trocado em UM osso daria um agachamento estranho, não
+	# um rolamento.
+	#
+	# O GIRO do corpo não mora aqui: quem gira a raiz do modelo é o `Player`, que
+	# é quem tem acesso a ela. Aqui fica só a POSE encolhida — sem ela o giro
+	# pareceria o personagem em pé fazendo cambalhota, de tronco reto.
+	if _roll_tras_w > 0.001:
+		var w := _roll_tras_w
+		_add(off, "Thigh_L", Vector3(1.5, 0, 0) * w)
+		_add(off, "Thigh_R", Vector3(1.5, 0, 0) * w)
+		_add(off, "Shin_L", Vector3(-1.9, 0, 0) * w)
+		_add(off, "Shin_R", Vector3(-1.9, 0, 0) * w)
+		_add(off, "Torso", Vector3(0.55, 0, 0) * w)     # arqueia para TRÁS
+		_add(off, "Head", Vector3(-0.35, 0, 0) * w)     # queixo sobe
+		_add(off, "UpperArm_L", Vector3(-2.2, 0, -0.5) * w)   # braços acima da cabeça
+		_add(off, "UpperArm_R", Vector3(-2.2, 0, 0.5) * w)
+		_add(off, "ForeArm_L", Vector3(0.6, 0, 0) * w)
+		_add(off, "ForeArm_R", Vector3(0.6, 0, 0) * w)
+	# MERGULHO LATERAL (esquiva para os LADOS). Não é rolamento — o dono pediu
+	# rolamento só para trás. É um lance de lado: corpo inclina no eixo Z para o
+	# lado que a esquiva saiu, pernas recolhidas, braço de fora aberto.
+	if _roll_lado_w > 0.001:
+		var w := _roll_lado_w
+		var s := _roll_lado_sinal
+		_add(off, "Torso", Vector3(-0.15, 0, -0.75 * s) * w)   # tomba para o lado
+		_add(off, "Head", Vector3(0.1, 0, 0.3 * s) * w)
+		_add(off, "Thigh_L", Vector3(0.9, 0, -0.25 * s) * w)
+		_add(off, "Thigh_R", Vector3(0.9, 0, -0.25 * s) * w)
+		_add(off, "Shin_L", Vector3(-1.2, 0, 0) * w)
+		_add(off, "Shin_R", Vector3(-1.2, 0, 0) * w)
+		# O braço do lado de FORA abre (é o que dá a leitura do lance); o de
+		# dentro recolhe junto ao peito.
+		_add(off, "UpperArm_R", Vector3(-0.5, 0, (1.5 if s > 0.0 else -0.3)) * w)
+		_add(off, "UpperArm_L", Vector3(-0.5, 0, (-0.3 if s > 0.0 else -1.5)) * w)
 	# SALTO LONGO / VAULT (#1,#2): corpo estendido no ar — braços à frente, pernas atrás.
 	if _ljump_w > 0.001:
 		var w := _ljump_w
