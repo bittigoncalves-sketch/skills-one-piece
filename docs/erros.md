@@ -1657,6 +1657,83 @@ e preparar o ambiente antes de testar é justamente o que o esconde.
 
 ---
 
+## 2026-08-27 — `SubViewport` sem `own_world_3d` compartilha o mundo da cena
+
+**Sintoma:** o personagem da prévia do menu de Customização aparecia com a ARENA
+inteira atrás dele.
+
+**Causa raiz:** `SubViewport` nasce com `own_world_3d = false` e usa o mundo 3D da
+cena que o contém. Tudo o que está na partida entra no quadro, e a luz que eu
+adicionei ao viewport do menu ilumina o jogo.
+
+**Evidência:** ligando `own_world_3d = true` o fundo passa a ser só a cor do
+`Environment` do próprio viewport.
+
+**Correção:** `_viewport.own_world_3d = true`, mais um `WorldEnvironment` e uma
+`DirectionalLight3D` DENTRO do viewport — sem mundo próprio essas duas vazariam.
+
+**Como detectar de novo:** prévia 3D em menu que mostra cenário do jogo, ou luz
+que muda no jogo ao abrir um menu. A sonda confere o campo direto:
+`_ok("o viewport tem mundo próprio", menu._viewport.own_world_3d)`.
+
+---
+
+## 2026-08-27 — enquadrar no `_ready` mede a hierarquia AINDA EM REPOUSO
+
+**Sintoma:** a câmera da prévia nascia DENTRO do tronco do personagem; a tela
+virava uma parede de cor lisa. Trocar os números da câmera não resolvia — só
+mudava para outro lugar errado.
+
+**Causa raiz:** o enquadramento é calculado da caixa do modelo, e a caixa vem de
+`global_transform` de cada malha. O Godot **só propaga as transformações depois
+que a árvore processa**. Calculando dentro do `_ready`, a hierarquia ainda está em
+repouso e a união das AABBs sai errada.
+
+**Evidência:** adiando um quadro, a caixa medida passou a ser
+`pos (-0,9, 0, -0,36) tam (1,8, 3,6, 0,72)` — coerente com o modelo — e o
+personagem apareceu inteiro no quadro.
+
+**Descartado:** ajustar posição/FOV da câmera na mão (só troca um erro por
+outro), e `force_update_transform` (resolve o sintoma sem explicar a ordem).
+
+**Correção:** `await get_tree().process_frame` no `_ready` antes de enquadrar. E o
+enquadramento é CALCULADO da caixa, não fixo — assim trocar de personagem ou
+mudar a proporção do rig continua enquadrando.
+
+**Como detectar de novo:** qualquer conta que use `global_transform` de nós
+recém-adicionados. Se o resultado for absurdo mas o código parecer certo,
+desconfie da ORDEM antes de desconfiar da conta.
+
+---
+
+## 2026-08-27 — ler DADO de uma classe pesada arrasta os autoloads dela
+
+**Sintoma:** `SCRIPT ERROR: Compile Error: Identifier not found: FruitNet` ao rodar
+a sonda do menu de Customização. Nada no menu fala de rede.
+
+**Causa raiz:** o menu lia a paleta em `Player.CORES` — três cores. Referenciar
+`Player` puxa o script inteiro (2.400 linhas) e, com ele, os AUTOLOADS de que
+depende. O autoload `FruitNet` não existe ainda no momento em que uma sonda com
+`-s` compila, e a compilação falha em cadeia.
+
+**Evidência:** o erro não aparece em sondas anteriores nem no `master` sem as
+mudanças — apareceu junto com o primeiro `Player.CORES` fora do `Player`.
+
+**Correção:** a paleta saiu para `src/customizacao/Paleta.gd`, dado puro sem
+dependência nenhuma. `Player.CORES` virou apelido (`const CORES := Paleta.CORES`),
+então as dezenas de usos não mudaram e a fonte continua sendo uma só.
+
+**Como detectar de novo:** erro de compilação citando um autoload em código que
+não tem nada com o assunto dele. A pergunta certa não é "por que falta o
+autoload", é **"por que esta tela depende da classe mais pesada do projeto para
+ler dado?"** — dado deve morar em script que não depende de nada.
+
+⚠️ E `--check-only --script <arquivo>` NÃO serve para diagnosticar isso: ele não
+carrega autoloads, então acusa o mesmo erro em código que funciona. Para saber se
+é real, use `tools/dev_tests/checar_compilacao.gd`, que roda no projeto completo.
+
+---
+
 ## 2026-08-27 — o `:=` do GDScript não infere sobre Variant, e isso pegou 4 vezes
 
 **Sintoma:** `Parse Error: Cannot infer the type of "X" variable because the value
