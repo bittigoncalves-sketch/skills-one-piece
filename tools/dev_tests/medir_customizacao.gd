@@ -29,9 +29,10 @@ func _init() -> void:
 
 	# ---------- estrutura ----------
 	var cats: Dictionary = menu._botoes_categoria
-	_ok("há duas categorias à esquerda", cats.size() == 2)
+	_ok("há três categorias à esquerda", cats.size() == 3)
 	_ok("uma delas é ACESSÓRIOS", cats.has("acessorios"))
-	_ok("a outra é COR", cats.has("cor"))
+	_ok("outra é RAÇA", cats.has("raca"))
+	_ok("outra é COR", cats.has("cor"))
 	_ok("o personagem foi montado no centro", menu._modelo != null and is_instance_valid(menu._modelo))
 	_ok("o viewport tem mundo próprio (não mostra a arena)", menu._viewport.own_world_3d)
 
@@ -86,10 +87,87 @@ func _init() -> void:
 	_ok("a cor pinta o CORPO", _cor_de(modelo, "Torso") == Paleta.CORES[1]["cor"])
 	_ok("a cor NÃO pinta o acessório", not _acessorio_pintado(modelo))
 
+	# ---------- raças ----------
+	print("\n--- raças ---")
+	Acessorios.desequipar(modelo, "cabeca")
+	menu._cor_idx = -1
+	menu._pintar()
+	_ok("as 8 raças estão no catálogo", Racas.ids().size() == 8)
+	_ok("começa sem raça", Racas.atual(modelo) == "")
+
+	# cada raça acrescenta peça OU muda escala — nenhuma pode ser inerte
+	for id in Racas.ids():
+		Racas.aplicar(modelo, id)
+		for i in 3: await process_frame
+		var pecas := _contar_racas(modelo)
+		var escalado := _tem_escala_mudada(modelo)
+		_ok("%s muda o corpo (peças=%d, escala=%s)" % [id, pecas, str(escalado)],
+			pecas > 0 or escalado)
+		_ok("%s é reconhecida como a raça atual" % id, Racas.atual(modelo) == id)
+
+	# exclusão GLOBAL: trocar de raça não acumula
+	print("\n--- exclusão global de raça ---")
+	Racas.aplicar(modelo, "oni")
+	for i in 3: await process_frame
+	var n_oni := _contar_racas(modelo)
+	Racas.aplicar(modelo, "mink_coelho")
+	for i in 3: await process_frame
+	_ok("trocar de raça não acumula peças", _contar_racas(modelo) == 3)
+	_ok("a raça anterior sumiu", Racas.atual(modelo) == "mink_coelho")
+	print("   (oni tinha %d peças; mink_coelho tem %d)" % [n_oni, _contar_racas(modelo)])
+
+	# escala volta ao original
+	print("\n--- a escala desfaz ---")
+	var braco := modelo.find_child("UpperArm_R", true, false) as Node3D
+	var esc0: Vector3 = braco.scale
+	Racas.aplicar(modelo, "bracos_longos")
+	for i in 3: await process_frame
+	var esc1: Vector3 = braco.scale
+	_ok("braços longos ESTICAM o braço", esc1.y > esc0.y * 1.4)
+	Racas.aplicar(modelo, "oni")
+	for i in 3: await process_frame
+	_ok("trocar de raça DEVOLVE a escala original", braco.scale.is_equal_approx(esc0))
+	print("   escala do braço: %.2f → %.2f → %.2f" % [esc0.y, esc1.y, braco.scale.y])
+
+	# ⚠️ A ASSERÇÃO QUE FALTAVA. `ForeArm` é FILHO de `UpperArm`: escalar os dois
+	# MULTIPLICA, e o antebraço ia a 2,4× em vez de 1,55×. A bateria passava
+	# assim mesmo, porque só olhava a escala LOCAL do ombro — que estava certa.
+	# Quem denuncia é a escala GLOBAL da ponta da cadeia.
+	var antebraco := modelo.find_child("ForeArm_R", true, false) as Node3D
+	var g0: float = antebraco.global_transform.basis.get_scale().y
+	Racas.aplicar(modelo, "bracos_longos")
+	for i in 5: await process_frame
+	var g1: float = antebraco.global_transform.basis.get_scale().y
+	var fator: float = g1 / g0
+	print("   escala GLOBAL do antebraço: %.2f → %.2f (fator %.2f×)" % [g0, g1, fator])
+	_ok("o alongamento NÃO compõe pela hierarquia (fator ~1,55×)",
+		absf(fator - 1.55) < 0.06)
+	Racas.remover(modelo)
+
+	# a cor do mink lobo
+	print("\n--- o Mink Lobo segue a cor ---")
+	Racas.aplicar(modelo, "mink_lobo")
+	menu._cor_idx = 2
+	menu._pintar()
+	for i in 3: await process_frame
+	_ok("as peças do Mink Lobo ficam da cor do personagem",
+		_cor_da_peca_raca(modelo) == Paleta.CORES[2]["cor"])
+	Racas.aplicar(modelo, "oni")
+	menu._pintar()
+	for i in 3: await process_frame
+	_ok("as peças do Oni NÃO seguem a cor",
+		_cor_da_peca_raca(modelo) != Paleta.CORES[2]["cor"])
+	Racas.remover(modelo)
+	menu._cor_idx = 1
+	menu._pintar()
+
 	# ---------- captura ----------
 	menu._selecionar_categoria("acessorios")
 	for i in 25: await process_frame
 	get_root().get_texture().get_image().save_png("%s/menu_acessorios.png" % saida)
+	menu._selecionar_categoria("raca")
+	for i in 20: await process_frame
+	get_root().get_texture().get_image().save_png("%s/menu_raca.png" % saida)
 	menu._selecionar_categoria("cor")
 	for i in 20: await process_frame
 	get_root().get_texture().get_image().save_png("%s/menu_cor.png" % saida)
@@ -143,6 +221,27 @@ func _acessorio_pintado(modelo: Node) -> bool:
 		if m is MeshInstance3D and (m as MeshInstance3D).material_override != null:
 			return true
 	return false
+
+func _contar_racas(modelo: Node) -> int:
+	var n := 0
+	for x in _todos(modelo):
+		if String(x.name).begins_with(Racas.MARCA):
+			n += 1
+	return n
+
+func _tem_escala_mudada(modelo: Node) -> bool:
+	for x in _todos(modelo):
+		if x is Node3D and (x as Node3D).has_meta(Racas.META_ESCALA):
+			return true
+	return false
+
+func _cor_da_peca_raca(modelo: Node) -> Color:
+	for x in _todos(modelo):
+		if String(x.name).begins_with(Racas.MARCA) and x is MeshInstance3D:
+			var mo := (x as MeshInstance3D).material_override
+			if mo is StandardMaterial3D:
+				return (mo as StandardMaterial3D).albedo_color
+	return Color(0, 0, 0, 0)
 
 func _todos(n: Node) -> Array:
 	var o: Array = [n]

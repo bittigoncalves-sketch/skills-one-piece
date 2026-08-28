@@ -35,8 +35,8 @@ const COR_BORDA := Color(0.35, 0.58, 0.95, 1.0)
 const COR_TEXTO := Color(0.95, 0.97, 1.0, 1.0)
 const COR_TEXTO_FRACO := Color(0.68, 0.78, 0.92, 1.0)
 
-const CATEGORIAS := ["acessorios", "cor"]
-const ROTULO_CATEGORIA := {"acessorios": "ACESSÓRIOS", "cor": "COR"}
+const CATEGORIAS := ["acessorios", "raca", "cor"]
+const ROTULO_CATEGORIA := {"acessorios": "ACESSÓRIOS", "raca": "RAÇA", "cor": "COR"}
 
 signal fechado
 
@@ -216,7 +216,11 @@ func _enquadrar() -> void:
 	var maior: float = maxf(cx.size.y, cx.size.x)
 	var dist: float = (maior * 0.5) / tan(deg_to_rad(_camera.fov * 0.5))
 	dist *= 1.35   # respiro nas bordas: personagem colado na moldura sufoca
-	_camera.position = Vector3(alvo.x, alvo.y, alvo.z + dist)
+	# ⚠️ CÂMERA NO −Z, não no +Z. O personagem olha para −Z (convenção do Godot e
+	# deste projeto, ver `RosaDosVentos`), então pôr a câmera no +Z mostra as
+	# COSTAS — e num menu de customização o rosto é o que o jogador quer ver. O
+	# giro lento leva as costas ao quadro sozinho, para quem quer ver as asas.
+	_camera.position = Vector3(alvo.x, alvo.y, alvo.z - dist)
 	_camera.look_at(alvo, Vector3.UP)
 	# O giro é em torno do EIXO do modelo, então o alvo tem de estar no eixo —
 	# senão o personagem descreve um círculo em vez de girar no lugar.
@@ -277,10 +281,10 @@ func _selecionar_categoria(cat: String) -> void:
 func _encher_direita() -> void:
 	for f in _lista_direita.get_children():
 		f.queue_free()
-	if _categoria == "acessorios":
-		_itens_acessorios()
-	else:
-		_itens_cor()
+	match _categoria:
+		"acessorios": _itens_acessorios()
+		"raca": _itens_raca()
+		_: _itens_cor()
 
 
 func _itens_acessorios() -> void:
@@ -313,6 +317,40 @@ func _itens_acessorios() -> void:
 			_lista_direita.add_child(b)
 
 
+func _itens_raca() -> void:
+	var t := Label.new()
+	t.text = "RAÇA"
+	t.add_theme_font_size_override("font_size", 13)
+	t.add_theme_color_override("font_color", COR_TEXTO_FRACO)
+	_lista_direita.add_child(t)
+
+	# ⚠️ Raça é escolha ÚNICA — a lista inteira é uma só, sem separar por parte
+	# do corpo como nos acessórios. Ninguém é Oni e Sharkman ao mesmo tempo, e
+	# quem garante isso é o `Racas.aplicar`, que tira a anterior antes.
+	var atual := Racas.atual(_modelo)
+
+	var nenhuma := _botao("Humano", atual == "")
+	nenhuma.gui_input.connect(func(e):
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+			Racas.remover(_modelo)
+			_pintar()
+			_encher_direita())
+	_lista_direita.add_child(nenhuma)
+
+	for id in Racas.ids():
+		var d := Racas.dados(id)
+		var b := _botao(String(d["nome"]), atual == id)
+		b.gui_input.connect(func(e, rid = id):
+			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+				Racas.aplicar(_modelo, rid)
+				# Repintar DEPOIS de aplicar: as peças do Mink Lobo nascem sem
+				# material e só ficam da cor do personagem quando a pintura passa
+				# por elas.
+				_pintar()
+				_encher_direita())
+		_lista_direita.add_child(b)
+
+
 func _itens_cor() -> void:
 	var t := Label.new()
 	t.text = "COR DO PERSONAGEM"
@@ -341,15 +379,21 @@ func _itens_cor() -> void:
 		_lista_direita.add_child(b)
 
 
-## Pinta só o CORPO — acessório equipado não vira cor de time, senão o chapéu de
-## palha ficaria azul e deixaria de ser chapéu de palha.
+## Pinta o CORPO — e as peças de raça marcadas para acompanhar a cor (o Mink
+## Lobo). Acessório não entra: chapéu de palha azul deixaria de ser chapéu de
+## palha. Chifre de Oni também não, pelo mesmo motivo.
 func _pintar() -> void:
 	if _modelo == null or not is_instance_valid(_modelo):
 		return
 	var malhas: Array = []
 	FxUtil._collect_meshes(_modelo, malhas)
 	for m in malhas:
-		if not (m is MeshInstance3D) or _e_acessorio(m):
+		if not (m is MeshInstance3D):
+			continue
+		# Peça de raça marcada com `segue_cor` é pintada COMO se fosse corpo —
+		# é isso que faz as orelhas e o rabo do Mink Lobo ficarem da cor do
+		# personagem, que foi o pedido.
+		if _e_adorno(m) and not Racas.segue_cor(m):
 			continue
 		if _cor_idx < 0:
 			(m as MeshInstance3D).material_override = null
@@ -363,10 +407,12 @@ func _pintar() -> void:
 		(m as MeshInstance3D).material_override = mat
 
 
-func _e_acessorio(n: Node) -> bool:
+## Acessório ou peça de raça — o que NÃO é corpo.
+func _e_adorno(n: Node) -> bool:
 	var p: Node = n
 	while p != null:
-		if String(p.name).begins_with(Acessorios.MARCA):
+		var nome := String(p.name)
+		if nome.begins_with(Acessorios.MARCA) or nome.begins_with(Racas.MARCA):
 			return true
 		p = p.get_parent()
 	return false

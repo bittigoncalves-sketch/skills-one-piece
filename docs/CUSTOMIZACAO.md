@@ -11,9 +11,77 @@ Menu novo no menu inicial, pedido pelo dono em 2026-08-27.
 
 ## A tela
 
-Fundo azul; à esquerda as categorias (**Acessórios**, **Cor**), no centro o
-personagem em 3D, à direita os itens da categoria escolhida. Escolher um item
-equipa na hora.
+Fundo azul; à esquerda as categorias (**Acessórios**, **Raça**, **Cor**), no
+centro o personagem em 3D, à direita os itens da categoria escolhida. Escolher um
+item equipa na hora.
+
+A câmera fica no **−Z**, mostrando o ROSTO: o personagem olha para −Z (convenção
+do projeto, ver [`DIRECOES.md`](DIRECOES.md)), e pôr a câmera no +Z mostrava as
+costas. O giro lento leva as costas ao quadro sozinho, para quem quer ver as asas.
+
+---
+
+## Raças
+
+Oito, em [`src/customizacao/Racas.gd`](../src/customizacao/Racas.gd): Skypiean
+(asas), Oni (chifres), Sharkman (barbatana), Braços Longos, Pernas Longas,
+Palhaço (nariz), Mink Coelho (orelhas + rabinho quadrado) e Mink Lobo (orelhas e
+rabo **na cor do personagem**).
+
+### Por que raça não é acessório
+
+| | acessório | raça |
+|---|---|---|
+| exclusão | por **parte do corpo** | **global** — ninguém é Oni e Sharkman |
+| efeito | acrescenta peça | acrescenta peça **ou muda escala** |
+| desfazer | apagar a malha | apagar a malha **ou devolver a escala** |
+
+A escala precisa de desfazer próprio: a original é guardada na aplicação e
+devolvida na remoção. E é guardada de verdade, não assumida como `Vector3.ONE` —
+este rig nasce com escala 1,8, e devolver ONE deformaria o corpo.
+
+### Medidas relativas, nunca em metros
+
+Toda peça é descrita como **fração da caixa do nó de destino**: `ancora` em 0..1
+dentro da AABB, `tam` como fração do tamanho dela. Mesmo princípio do chapéu, e
+pelo mesmo motivo — o modelo da prévia tem a cabeça 0,50 × 0,50 × **0,40**, e o
+de jogo tem **0,74** de profundidade. Número em metros quebraria num dos dois, em
+silêncio.
+
+Na âncora, **z = 0 é a FRENTE** (o personagem olha para −Z e a AABB começa no
+menor z). Por isso o nariz do palhaço tem `z = 0` e os rabos têm `z = 1`.
+
+### ⚠️ Escala em cadeia MULTIPLICA
+
+`ForeArm` é filho de `UpperArm`; `Shin` é filho de `Thigh`. Escalar os dois níveis
+compõe: medido, a escala global do antebraço ia de 1,80 para **4,32**
+(= 1,80 × 1,55 × 1,55) e o braço virava um borrão maior que o corpo.
+
+Só o topo de cada cadeia entra na tabela — o resto herda o alongamento na medida
+certa, que é para o que a hierarquia serve.
+
+**E a bateria passava com o bug**, porque só olhava a escala LOCAL do ombro, que
+estava correta. Quem denuncia é a escala **global** da ponta da cadeia, e é essa
+a asserção que existe hoje:
+
+```
+escala GLOBAL do antebraço: 1.80 → 2.79 (fator 1.55×)
+✓ o alongamento NÃO compõe pela hierarquia
+```
+
+### A cor do Mink Lobo
+
+As peças dele nascem **sem material**, marcadas com `segue_cor`. Quem pinta o
+corpo pinta elas junto — é o que faz orelhas e rabo acompanharem a cor escolhida.
+As demais têm cor própria: chifre de Oni não fica azul porque o jogador escolheu
+azul.
+
+### O que fica registrado como limitação
+
+**Braços Longos quase não muda a silhueta.** Mecanicamente funciona (1,55×,
+medido), mas num personagem de UMA cor os braços alongados encostam no tronco e
+se fundem com ele. É fato sobre a arte, não sobre o código — e some sozinho
+quando houver roupa ou cor de membro separada.
 
 ---
 
