@@ -15,6 +15,12 @@ signal anim_name_shown(text: String)
 
 const SPEED := 4.2
 const JUMP_VELOCITY := 16.0
+
+## Quão depressa o corpo alcança a mira. Alto o bastante para não haver atraso
+## perceptível entre girar o mouse e o golpe sair na direção nova; baixo o
+## bastante para o giro não ser um corte seco. Era 24 no caso parado e 35 no caso
+## em movimento — dois números para a mesma coisa, agora um só.
+const VELOCIDADE_FACING := 26.0
 const GRAVITY := 32.0        # gravidade reforcada (Godot padrao ~9.8)
 const MOUSE_SENS := 0.0035
 
@@ -1121,25 +1127,32 @@ func _etapa_locomocao(delta: float) -> void:
 			velocity.x = q.dir.x * effective_speed
 			velocity.z = q.dir.z * effective_speed
 
-	# A FRENTE do personagem se move dinamicamente durante a locomoção.
+	# ============================================================ A FRENTE
+	# ⚠️ O CORPO OLHA PARA A MIRA, SEMPRE. Decisão do dono (2026-08-27).
+	#
+	# Antes a frente seguia o MOVIMENTO: andar para o lado virava o corpo para o
+	# lado, e a mira só mandava quando o jogador estava parado. Isso faz sentido
+	# num jogo de aventura, e é o oposto do que um jogo de luta/tiro precisa —
+	# ali o que importa é para onde o golpe sai, e o golpe sai para onde a MIRA
+	# aponta (`melee_controller` e as skills usam `_yaw`, não `q.dir`).
+	#
+	# Com o corpo seguindo o movimento, o adversário lia a direção ERRADA: via as
+	# costas de quem ia acertá-lo de lado. Agora corpo e golpe apontam junto.
+	#
+	# ⚠️ UMA EXCEÇÃO, e ela não é negociável: ESCALANDO. A frente vira para
+	# DENTRO da parede porque é isso que faz a escalada ler — um personagem
+	# grudado numa parede de costas para ela seria pior que o problema original.
+	# Aqui a mira não manda porque o corpo está preso à geometria.
 	if _char_model:
 		if _parkour.escalando() and _parkour.parede_frontal() != Vector3.ZERO:
-			# Convenção do projeto: FRENTE = -Z. Ao escalar, a frente vira PARA DENTRO
-			# da parede, ou seja, o -Z do modelo aponta ao longo de -wall_normal
-			# (wall_normal aponta da parede para o jogador). Daí atan2(wn.x, wn.z).
+			# Convenção do projeto: FRENTE = -Z. Ao escalar, o -Z do modelo aponta
+			# ao longo de -wall_normal (que aponta da parede para o jogador).
 			var target_rot := atan2(_parkour.parede_frontal().x, _parkour.parede_frontal().z)
-			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, target_rot, 24.0 * delta)
-		elif _dash.ativo():
-			var move_rot := atan2(-_dash.direcao().x, -_dash.direcao().z)
-			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, move_rot, 35.0 * delta)
-		elif _gura_rush_active:
-			var move_rot := atan2(-_gura_rush_dir.x, -_gura_rush_dir.z)
-			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, move_rot, 35.0 * delta)
-		elif q.dir.length_squared() > 0.01:
-			var move_rot := atan2(-q.dir.x, -q.dir.z)
-			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, move_rot, 35.0 * delta)
+			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, target_rot,
+				VELOCIDADE_FACING * delta)
 		else:
-			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw, 24.0 * delta)
+			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw,
+				VELOCIDADE_FACING * delta)
 
 	# Animação: rig procedural (por-nós) OU esqueletal (skinnado).
 	if _skel_anim:

@@ -203,6 +203,32 @@ func _init() -> void:
 	menu._cor_idx = 1
 	menu._pintar()
 
+	# ---------- a aba de COR mostra os DOIS grupos ----------
+	# ⚠️ A ASSERÇÃO QUE FALTAVA. Os tons de pele foram escritos no `Paleta.PELES`
+	# e usados pelo `_pintar`, mas o botão nunca chegou à LISTA — e a bateria
+	# passava 70/70 assim, porque conferia a pintura e nunca o que a tela mostra.
+	# Feature invisível é feature inexistente.
+	print("\n--- a aba de cor ---")
+	menu._selecionar_categoria("cor")
+	for i in 5: await process_frame
+	var rotulos := _rotulos(menu._lista_direita)
+	print("   itens na aba: %s" % str(rotulos))
+	_ok("há um grupo TOM DE PELE", rotulos.has("TOM DE PELE"))
+	_ok("as %d cores de time aparecem" % Paleta.CORES.size(),
+		_conta_nomes(rotulos, Paleta.CORES) == Paleta.CORES.size())
+	_ok("os %d tons de pele aparecem" % Paleta.PELES.size(),
+		_conta_nomes(rotulos, Paleta.PELES) == Paleta.PELES.size())
+	# e escolher pele PINTA de pele
+	menu._cor_grupo = "pele"; menu._cor_idx = 3
+	menu._pintar()
+	for i in 3: await process_frame
+	_ok("escolher tom de pele pinta o corpo com ele",
+		_cor_de(modelo, "Torso") == Paleta.PELES[3]["cor"])
+	menu._cor_grupo = "time"; menu._cor_idx = 1
+	menu._pintar()
+	menu._selecionar_categoria("acessorios")
+	for i in 3: await process_frame
+
 	# ---------- corpo: os olhos ----------
 	print("\n--- olhos ---")
 	Racas.remover(modelo)
@@ -346,6 +372,33 @@ func _fora_da_tela(n: Node, tela: Vector2i, dentro_de_rolagem: bool) -> Array:
 	for f in n.get_children():
 		out.append_array(_fora_da_tela(f, tela, rolando))
 	return out
+
+
+## Os rótulos visíveis da lista da direita — é o que o JOGADOR vê, e não o que o
+## catálogo contém.
+func _rotulos(lista: Node) -> Array:
+	var out: Array = []
+	for f in lista.get_children():
+		var t := _texto_de(f)
+		if t != "":
+			out.append(t)
+	return out
+
+func _texto_de(n: Node) -> String:
+	if n is Label:
+		return (n as Label).text
+	for f in n.get_children():
+		var t := _texto_de(f)
+		if t != "":
+			return t
+	return ""
+
+func _conta_nomes(rotulos: Array, paleta: Array) -> int:
+	var n := 0
+	for d: Dictionary in paleta:
+		if rotulos.has(String(d["nome"]).capitalize()):
+			n += 1
+	return n
 
 
 func _contar_marca(modelo: Node, marca: String) -> int:
