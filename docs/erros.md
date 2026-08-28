@@ -7,6 +7,43 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-28 — a cópia do dono regenera 10x mais rápido do que deveria (ABERTO)
+
+**Sintoma:** na tela do próprio jogador a barra de vida sobe mais rápido do que
+o servidor está curando. Medido: logo após um golpe, o servidor tinha 1920,0 e
+a cópia do cliente marcava 1930,2 — 10,2 hp de vida que o servidor não deu, em
+cerca de 1 s.
+
+**Causa raiz:** a penalidade de combate (`PENALIDADE_DANO = 0.10`, que derruba a
+regeneração de 10,24 hp/s para 1,02 hp/s nos 5 s seguintes a um dano) depende de
+`_t_ultimo_dano`, e esse campo só é escrito por `HealthController.sofrer_dano()`
+— que roda **no servidor**. Na cópia do dono a vida chega por
+`net_vida_do_servidor` (Player.gd:1744), que escreve `_vida.vida` direto e não
+toca em `_t_ultimo_dano`. Ou seja: a cópia que o jogador enxerga não sabe que
+acabou de apanhar, sai da penalidade e regenera a taxa cheia. Como o corpo do
+dono tem autoridade no processo dele, o `_physics_process` roda e a regen local
+acontece de verdade.
+
+**Evidência:** `net_dano_client_probe.gd`, item D. O corpo do host visto pelo
+cliente — cópia remota, que não regenera ali — bate exato (1792,0 = 1792,0), e
+só o corpo do próprio cliente deriva. A assimetria entre os dois números na
+mesma leitura é o que aponta a regen local como causa, e não perda de pacote.
+
+**Descartado:** *atraso de rede*. O RPC é `reliable` e a vida do host, medida na
+mesma leitura, chega exata; se fosse transporte, os dois números erravam juntos.
+
+**Alcance:** é divergência de APRESENTAÇÃO, não vantagem de jogo — a vida do
+servidor continua sendo a verdadeira e sobrescreve no dano seguinte. O jogador
+vê uma barra otimista entre um golpe e outro.
+
+**Correção:** ainda não aplicada (o pedido era o teste). O conserto natural é
+`net_vida_do_servidor` marcar o combate na cópia local quando `dano > 0` — o
+mesmo instante em que já chama `_feedback_de_dano`.
+
+**Como detectar de novo:** `net_dano_probe` no `validar.sh`, item D do relatório
+do cliente. Ele imprime a deriva sempre; se um dia aparecer perto de zero, o
+comportamento mudou e o item A pode voltar a ler a vida tardia em vez do degrau.
+
 ## 2026-08-28 — teto absoluto num sinal cuja escala eu mesmo mudei
 
 **Sintoma:** ao desacelerar a marcha (pedido do usuário: animação mais lenta sem
