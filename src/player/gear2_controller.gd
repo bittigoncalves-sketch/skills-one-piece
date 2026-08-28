@@ -45,12 +45,12 @@ const DURACAO := 30.0
 ## pele normal — se fosse, a transformação não leria na tela, que é o ponto dela.
 const COR_PELE := Color(0.93, 0.51, 0.40)
 
-const CAMINHO_CHAPEU := "res://assets/models/acessorios/chapeu_palha.glb"
-
-## Que fração da cabeça a copa do chapéu engole, contada do topo para baixo.
-## Decisão do dono (2026-08-27): 1/3. É o que faz o chapéu ficar VESTIDO em vez
-## de pousado — a versão anterior apoiava no topo e lia como prato na cabeça.
-const FRACAO_ENGOLIDA := 1.0 / 3.0
+## ⚠️ O chapéu vem do CATÁLOGO (`src/customizacao/Acessorios.gd`), não de um
+## caminho escrito aqui. O caminho do `.glb` e a conta de encaixe (que o chapéu
+## engole 1/3 da cabeça) nasceram neste arquivo; quando o menu de Customização
+## precisou do MESMO chapéu, manter aqui viraria a segunda cópia — e segunda
+## cópia é como a direção da frente virou bug neste projeto.
+const ACESSORIO_CHAPEU := "chapeu_palha"
 
 signal mudou(ativo: bool)
 
@@ -213,46 +213,19 @@ func _desligar_fumaca() -> void:
 func _por_chapeu() -> void:
 	if _chapeu != null and is_instance_valid(_chapeu):
 		return
-	var cabeca: Node3D = _rig.cabeca() if _rig != null and _rig.has_method("cabeca") else null
-	if cabeca == null or not is_instance_valid(cabeca):
-		push_warning("[Gear2] sem nó de cabeça — o chapéu não foi invocado")
+	var modelo: Node3D = _rig.modelo() if _rig != null and _rig.has_method("modelo") else null
+	if modelo == null or not is_instance_valid(modelo):
+		push_warning("[Gear2] sem modelo — o chapéu não foi invocado")
 		return
-	if not ResourceLoader.exists(CAMINHO_CHAPEU):
-		push_warning("[Gear2] chapéu ausente: " + CAMINHO_CHAPEU)
+	# ⚠️ A exclusão mútua por parte do corpo vem de graça: se o jogador já
+	# equipou outro chapéu pelo menu de Customização, o catálogo tira o antigo
+	# antes de pôr este. Sem isso a transformação empilharia dois na cabeça.
+	_chapeu = Acessorios.equipar(modelo, ACESSORIO_CHAPEU)
+	if _chapeu == null:
 		return
-	var cena: PackedScene = load(CAMINHO_CHAPEU)
-	_chapeu = cena.instantiate() as Node3D
+	# Nome próprio: a sonda do Gear 2 procura por ele, e ele diz que este chapéu
+	# é da TRANSFORMAÇÃO — some com ela, ao contrário do que o menu equipa.
 	_chapeu.name = "ChapeuDePalha"
-	cabeca.add_child(_chapeu)
-	# ⚠️ ALTURA MEDIDA DA PRÓPRIA CABEÇA, não chutada. A caixa do chapéu foi
-	# modelada nas dimensões desta AABB (ver `tools/blender/chapeu_palha.py`), e
-	# a origem dele é a linha de 2/3. Tirar os dois números da mesma fonte é o
-	# que mantém o encaixe se o modelo mudar de proporção — em vez de repetir
-	# aqui um número que mora no `.scn`.
-	var cx := _caixa_da_cabeca(cabeca)
-	_chapeu.position = Vector3(0, cx.end.y - cx.size.y * FRACAO_ENGOLIDA, 0)
-
-
-## A AABB da cabeça em espaço LOCAL dela — que é o mesmo espaço do chapéu, já que
-## ele entra como filho. Por isso não há conversão de escala aqui.
-func _caixa_da_cabeca(cabeca: Node3D) -> AABB:
-	if cabeca is MeshInstance3D and (cabeca as MeshInstance3D).mesh != null:
-		return (cabeca as MeshInstance3D).mesh.get_aabb()
-	var uniao := AABB()
-	var primeiro := true
-	var malhas: Array = []
-	FxUtil._collect_meshes(cabeca, malhas)
-	for m in malhas:
-		if m is MeshInstance3D and (m as MeshInstance3D).mesh != null:
-			var a: AABB = (m as MeshInstance3D).mesh.get_aabb()
-			uniao = a if primeiro else uniao.merge(a)
-			primeiro = false
-	# Sem malha nenhuma: uma caixa de cabeça plausível, para o chapéu não nascer
-	# no chão. Avisa, porque isso significa que o modelo mudou de forma.
-	if primeiro:
-		push_warning("[Gear2] cabeça sem malha — usando caixa padrão para o chapéu")
-		return AABB(Vector3(-0.25, 0.0, -0.25), Vector3(0.5, 0.5, 0.5))
-	return uniao
 
 
 func _tirar_chapeu() -> void:

@@ -1327,11 +1327,10 @@ func set_character(cid: String) -> void:
 #  Quem manda é o servidor: ele escolhe o índice em `Main._spawn_player_for`, e o
 #  `MultiplayerSpawner` replica o dicionário de spawn inteiro. Todo mundo monta o
 #  mesmo corpo com a mesma cor, sem RPC novo e sem propriedade replicada a mais.
-const CORES := [
-	{"nome": "azul",  "cor": Color(0.16, 0.42, 0.95)},
-	{"nome": "verde", "cor": Color(0.18, 0.72, 0.32)},
-	{"nome": "preto", "cor": Color(0.08, 0.08, 0.10)},
-]
+## A lista mora em `src/customizacao/Paleta.gd` — dado puro, sem dependência de
+## autoload. Aqui fica só o apelido, para os usos existentes não mudarem.
+## Ver o cabeçalho do `Paleta.gd` para o porquê da mudança.
+const CORES := Paleta.CORES
 
 ## Índice em `CORES`. −1 = sem cor atribuída (singleplayer, testes) — aí o
 ## personagem fica com a aparência original.
