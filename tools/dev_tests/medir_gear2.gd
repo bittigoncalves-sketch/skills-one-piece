@@ -143,7 +143,7 @@ func _encaixe(p: Node) -> Dictionary:
 	var cha: Node3D = null
 	for x in _todos(p):
 		if x.name == "Head" and x is Node3D: cab = x
-		if x.name == "ChapeuDePalha" and x is Node3D: cha = x
+		if String(x.name).begins_with(Acessorios.MARCA) and x is Node3D: cha = x
 	if cab == null or cha == null:
 		return {"y0": 0.0, "y1": 0.0, "alt": 0.0, "apoio": 0.0, "dois_tercos": 0.0,
 			"fracao": 0.0, "larg_cabeca": 1.0, "larg_chapeu": 0.0}
@@ -167,13 +167,13 @@ func _encaixe(p: Node) -> Dictionary:
 func _contar_chapeus(p: Node) -> int:
 	var n := 0
 	for x in _todos(p):
-		if x.name == "ChapeuDePalha":
+		if String(x.name).begins_with(Acessorios.MARCA):
 			n += 1
 	return n
 
 func _chapeu_no_head(p: Node) -> bool:
 	for x in _todos(p):
-		if x.name == "ChapeuDePalha":
+		if String(x.name).begins_with(Acessorios.MARCA):
 			# `x` vem de Array não tipado, logo é Variant: `:=` não infere.
 			var pai: Node = (x as Node).get_parent()
 			return pai != null and pai.name == "Head"

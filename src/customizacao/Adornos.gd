@@ -57,6 +57,25 @@ static func criar_peca(modelo: Node3D, marca: String, id: String,
 	if peca.has("rot"):
 		m.rotation = peca["rot"]
 
+	# ⚠️ PIVÔ: QUAL FACE DA PEÇA ENCOSTA NA ÂNCORA.
+	#
+	# Por padrão a peça nasce CENTRADA na âncora — e para peça curta (chifre,
+	# orelha) isso é bom: metade afunda no corpo e ela lê como presa. Mas para
+	# peça COMPRIDA é desastre: a cauda do Mink Lobo tem 3× a profundidade do
+	# tronco, e centrada na âncora das costas ela atravessava o corpo e VAZAVA
+	# PELA FRENTE.
+	#
+	# `pivo` é a face que fica na âncora, em −1..1 por eixo (0 = centro). A cauda
+	# usa `Vector3(0, 0, -1)`: a face dianteira dela encosta nas costas e o resto
+	# cresce para trás.
+	#
+	# O deslocamento é aplicado na BASE da peça (depois da rotação), senão uma
+	# cauda inclinada sairia empurrada na direção errada.
+	if peca.has("pivo"):
+		var pv: Vector3 = peca["pivo"]
+		var meio := caixa.size * 0.5
+		m.position -= m.transform.basis * Vector3(meio.x * pv.x, meio.y * pv.y, meio.z * pv.z)
+
 	if bool(peca.get("segue_cor", false)):
 		# Sem material próprio: quem pinta o corpo pinta esta peça junto.
 		m.set_meta(META_SEGUE_COR, true)

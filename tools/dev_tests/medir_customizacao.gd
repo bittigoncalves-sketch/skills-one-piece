@@ -35,6 +35,17 @@ func _init() -> void:
 	_ok("o personagem foi montado no centro", menu._modelo != null and is_instance_valid(menu._modelo))
 	_ok("o viewport tem mundo próprio (não mostra a arena)", menu._viewport.own_world_3d)
 
+	# ⚠️ A TELA TEM DE CABER. Com os seis acessórios a lista da direita fez o
+	# menu chegar a 1.022 px numa tela de 720: o viewport 3D ficou com 818 px de
+	# altura e só a parte de cima aparecia — parecia defeito de CÂMERA, e era de
+	# LAYOUT. A lista agora rola; esta conferência impede a volta.
+	var tela: Vector2i = get_root().size
+	var fora := _fora_da_tela(menu, tela, false)
+	_ok("nada passa da tela (%dx%d)" % [tela.x, tela.y], fora.is_empty())
+	for f in fora:
+		print("      ❗ %s" % f)
+	_ok("o viewport 3D cabe na tela", menu._viewport.size.y <= tela.y)
+
 	var modelo: Node3D = menu._modelo
 
 	# ---------- equipar ----------
@@ -43,7 +54,7 @@ func _init() -> void:
 	Acessorios.equipar(modelo, "chapeu_palha")
 	for i in 5: await process_frame
 	_ok("o chapéu foi equipado", Acessorios.equipado_na_parte(modelo, "cabeca") == "chapeu_palha")
-	_ok("o chapéu está no nó Head", _pai_do_acessorio(modelo, "chapeu_palha") == "Head")
+	_ok("o chapéu está no nó Head", _pai_do_acessorio(modelo, "cabeca", "chapeu_palha_0") == "Head")
 	_ok("o chapéu engole 1/3 da cabeça", _fracao(modelo) > 0.31 and _fracao(modelo) < 0.35)
 
 	# ---------- exclusão mútua ----------
@@ -56,7 +67,7 @@ func _init() -> void:
 	print("\n--- exclusão mútua (o pedido central) ---")
 	var cabeca := Acessorios.no_da_parte(modelo, "cabeca")
 	var intruso := Node3D.new()
-	intruso.name = Acessorios.MARCA + "_outro_chapeu"
+	intruso.name = Acessorios._prefixo("cabeca") + "outro_chapeu_0"
 	cabeca.add_child(intruso)
 	for i in 3: await process_frame
 	_ok("cenário montado: dois acessórios na cabeça", _contar_acessorios(modelo) == 2)
@@ -66,6 +77,38 @@ func _init() -> void:
 	_ok("o intruso saiu sozinho", not is_instance_valid(intruso) or intruso.get_parent() == null)
 	_ok("o novo ficou equipado", Acessorios.equipado_na_parte(modelo, "cabeca") == "chapeu_palha")
 	Acessorios.desequipar(modelo, "cabeca")
+
+	# ---------- partes que compartilham o MESMO nó ----------
+	# ⚠️ A ASSERÇÃO QUE FALTAVA. "tronco", "costas", "cintura" e "pernas" penduram
+	# todas no nó `Torso`. Com a limpeza varrendo o nó inteiro por prefixo,
+	# equipar as espadas (cintura) APAGAVA o colete (tronco) — e a bateria passava
+	# assim mesmo, porque só testava uma parte de cada vez.
+	print("\n--- partes que dividem o mesmo nó ---")
+	Acessorios.equipar(modelo, "luffy_camisa")
+	Acessorios.equipar(modelo, "espadas_zoro")
+	Acessorios.equipar(modelo, "luffy_calcao")
+	Acessorios.equipar(modelo, "capa_marinha")
+	for i in 4: await process_frame
+	_ok("colete (tronco) sobrevive", Acessorios.equipado_na_parte(modelo, "tronco") == "luffy_camisa")
+	_ok("espadas (cintura) sobrevivem", Acessorios.equipado_na_parte(modelo, "cintura") == "espadas_zoro")
+	_ok("calção (pernas) sobrevive", Acessorios.equipado_na_parte(modelo, "pernas") == "luffy_calcao")
+	_ok("capa (costas) sobrevive", Acessorios.equipado_na_parte(modelo, "costas") == "capa_marinha")
+	print("   as 4 peças no Torso: %d nós de acessório" % _contar_acessorios(modelo))
+	_ok("as quatro convivem no mesmo nó", _contar_acessorios(modelo) == 4)
+	# e trocar UMA delas não derruba as outras
+	Acessorios.desequipar(modelo, "cintura")
+	for i in 3: await process_frame
+	_ok("tirar a cintura NÃO tira o tronco",
+		Acessorios.equipado_na_parte(modelo, "tronco") == "luffy_camisa")
+	for parte in Acessorios.PARTES:
+		Acessorios.desequipar(modelo, String(parte))
+
+	# ---------- os pés são DOIS nós ----------
+	Acessorios.equipar(modelo, "chinelo")
+	for i in 3: await process_frame
+	_ok("o chinelo cria uma peça em CADA pé", _contar_acessorios(modelo) == 2)
+	Acessorios.desequipar(modelo, "pes")
+	_ok("tirar o chinelo tira os dois", _contar_acessorios(modelo) == 0)
 
 	# ---------- tirar ----------
 	print("\n--- tirar ---")
@@ -243,15 +286,15 @@ func _contar_acessorios(modelo: Node) -> int:
 			n += 1
 	return n
 
-func _pai_do_acessorio(modelo: Node, id: String) -> String:
-	var no := modelo.find_child(Acessorios.MARCA + id, true, false)
+func _pai_do_acessorio(modelo: Node, parte: String, id: String) -> String:
+	var no := modelo.find_child(Acessorios._prefixo(parte) + id, true, false)
 	if no == null:
 		return ""
 	var pai: Node = no.get_parent()
 	return String(pai.name) if pai else ""
 
 func _fracao(modelo: Node) -> float:
-	var no := modelo.find_child(Acessorios.MARCA + "chapeu_palha", true, false) as Node3D
+	var no := modelo.find_child(Acessorios._prefixo("cabeca") + "chapeu_palha_0", true, false) as Node3D
 	if no == null:
 		return -1.0
 	var cab := no.get_parent() as Node3D
@@ -278,7 +321,7 @@ func _cor_de(modelo: Node, nome: String) -> Color:
 	return Color(0, 0, 0, 0)
 
 func _acessorio_pintado(modelo: Node) -> bool:
-	var no := modelo.find_child(Acessorios.MARCA + "chapeu_palha", true, false)
+	var no := modelo.find_child(Acessorios._prefixo("cabeca") + "chapeu_palha_0", true, false)
 	if no == null:
 		return false
 	var malhas: Array = []
@@ -287,6 +330,23 @@ func _acessorio_pintado(modelo: Node) -> bool:
 		if m is MeshInstance3D and (m as MeshInstance3D).material_override != null:
 			return true
 	return false
+
+## Controles que passam da tela. ⚠️ Ignora o INTERIOR de `ScrollContainer`: ali o
+## conteúdo passar da área visível é o comportamento correto, não defeito.
+func _fora_da_tela(n: Node, tela: Vector2i, dentro_de_rolagem: bool) -> Array:
+	var out: Array = []
+	var rolando := dentro_de_rolagem or (n is ScrollContainer)
+	if n is Control and not dentro_de_rolagem:
+		var c := n as Control
+		var r := c.get_global_rect()
+		if r.size.x > 0.0 and (r.end.x > tela.x + 1 or r.end.y > tela.y + 1
+				or r.position.x < -1 or r.position.y < -1):
+			out.append("%s tam(%.0f,%.0f) fim(%.0f,%.0f)" % [
+				c.name, r.size.x, r.size.y, r.end.x, r.end.y])
+	for f in n.get_children():
+		out.append_array(_fora_da_tela(f, tela, rolando))
+	return out
+
 
 func _contar_marca(modelo: Node, marca: String) -> int:
 	var n := 0

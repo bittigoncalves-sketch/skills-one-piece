@@ -121,7 +121,7 @@ const CATALOGO := {
 			# "rabinho de coelho QUADRADO" — o dono foi explícito, e cubo é o que
 			# combina com um jogo feito de caixas.
 			{"no": "Torso", "tam": Vector3(0.46, 0.46, 0.46), "ancora": Vector3(0.5, 0.14, 1.0),
-			 "cor": Color(0.98, 0.97, 0.95)},
+			 "pivo": Vector3(0, 0, -0.6), "cor": Color(0.98, 0.97, 0.95)},
 		],
 	},
 	"mink_lobo": {
@@ -132,8 +132,10 @@ const CATALOGO := {
 			 "rot": Vector3(0.0, 0.0, 0.28), "segue_cor": true},
 			{"no": "Head", "tam": Vector3(0.32, 0.80, 0.22), "ancora": Vector3(0.74, 1.0, 0.5),
 			 "rot": Vector3(0.0, 0.0, -0.28), "segue_cor": true},
+			# ⚠️ `pivo` na face DIANTEIRA: a cauda tem 3× a profundidade do tronco
+			# e, centrada na âncora, atravessava o corpo e vazava pela FRENTE.
 			{"no": "Torso", "tam": Vector3(0.40, 0.40, 3.0), "ancora": Vector3(0.5, 0.26, 1.0),
-			 "rot": Vector3(-0.60, 0.0, 0.0), "segue_cor": true},
+			 "rot": Vector3(-0.60, 0.0, 0.0), "pivo": Vector3(0, 0, -1), "segue_cor": true},
 		],
 	},
 }

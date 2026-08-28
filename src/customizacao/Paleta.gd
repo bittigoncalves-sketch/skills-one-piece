@@ -22,3 +22,20 @@ const CORES := [
 	{"nome": "verde", "cor": Color(0.18, 0.72, 0.32)},
 	{"nome": "preto", "cor": Color(0.08, 0.08, 0.10)},
 ]
+
+
+## ⚠️ LISTA SEPARADA, de propósito. `CORES` são as cores de TIME: elas existem
+## para dizer de quem é o corpo numa partida, e `Player.cor_idx` indexa esta
+## lista — misturar tons de pele nela mudaria o significado de um índice que a
+## rede já transmite.
+##
+## Tom de pele é escolha de APARÊNCIA, não de time. Duas listas, dois usos.
+const PELES := [
+	{"nome": "clara",     "cor": Color(0.98, 0.85, 0.74)},
+	{"nome": "bege",      "cor": Color(0.94, 0.78, 0.63)},
+	{"nome": "dourada",   "cor": Color(0.87, 0.68, 0.48)},
+	{"nome": "morena",    "cor": Color(0.73, 0.53, 0.36)},
+	{"nome": "castanha",  "cor": Color(0.55, 0.38, 0.25)},
+	{"nome": "escura",    "cor": Color(0.38, 0.25, 0.17)},
+	{"nome": "profunda",  "cor": Color(0.24, 0.16, 0.11)},
+]

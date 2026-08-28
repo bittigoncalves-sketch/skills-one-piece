@@ -184,6 +184,62 @@ algum passar da tela. Provado que sabe reprovar: com botões de 140 px ele acusa
 
 ---
 
+## Acessórios — seis, modelados no Blender
+
+[`tools/blender/acessorios.py`](../tools/blender/acessorios.py) gera cinco
+(chinelo, capa da Marinha, colete e calção do Luffy, as 3 espadas do Zoro); o
+chapéu tem script próprio. Só caixas, como o resto do jogo.
+
+**As medidas saem da AABB dos nós do rig**, não de metros — `Torso` 0,500 ×
+0,750 × 0,360, `Foot` 0,250 × 0,125 × 0,400. Cada modelo tem a origem no ponto de
+encaixe, então posicionar é multiplicar pela âncora, sem compensar meia altura.
+
+### Três defeitos que só apareceram montando
+
+**1. Partes diferentes, MESMO nó.** "tronco", "costas", "cintura" e "pernas"
+penduram todas no `Torso`. Como a limpeza varria o nó inteiro por prefixo,
+equipar as espadas **apagava o colete** — e a bateria passava, porque só testava
+uma parte de cada vez. O nome da peça passou a carregar a parte
+(`Acessorio_<parte>_<id>_<i>`), e entrou a asserção que faltava: quatro peças no
+mesmo nó têm de conviver.
+
+**2. Material do Blender numa cena de cel shading.** O `.glb` traz um PBR comum,
+que fica liso e escurece na sombra: o colete vermelho saía como duas tiras
+marrons. Ao equipar, o material de cada superfície é trocado por
+`Materiais.superficie(cor_do_modelo)` — preserva a arte e faz a peça pertencer à
+cena.
+
+**3. O menu não cabia na tela.** Com seis acessórios a lista da direita levou o
+menu a **1.022 px numa tela de 720**: o viewport 3D ficou com 818 px de altura e
+só a parte de cima aparecia. Parecia defeito de CÂMERA e era de LAYOUT. A lista
+passou a rolar, e há asserção contra a volta.
+
+---
+
+## Enquadramento: dois erros de conta
+
+**Espaço errado.** `_caixa_visual` convertia para o espaço do MODELO e devolvia
+3,6 de altura — mas o rig tem escala interna e o corpo mede 6,48 no MUNDO, que é
+onde a câmera está. A distância saía pela metade e o enquadramento pegava só a
+cabeça.
+
+**Não era idempotente.** A versão anterior deslocava o modelo para centrar o
+alvo — e cada chamada subtraía de novo, acumulando deriva. Como agora
+`_enquadrar` roda a cada troca de raça e acessório, isso empurrava o personagem
+para longe a cada clique. Hoje a mira usa o eixo do modelo em X/Z e a altura do
+centro da caixa em Y: chamar dez vezes dá o mesmo que chamar uma, e há teste.
+
+---
+
+## Tons de pele
+
+`Paleta.PELES`, sete tons — **lista separada** de `Paleta.CORES`. As cores de
+TIME dizem de quem é o corpo numa partida e `Player.cor_idx` as indexa; misturar
+pele nelas mudaria o significado de um índice que a rede já transmite. Os dois
+grupos são exclusivos entre si: é uma cor de corpo só.
+
+---
+
 ## O que ainda NÃO existe
 
 **A escolha não vai para a partida.** O menu equipa no personagem da PRÉVIA; não
@@ -191,5 +247,5 @@ há persistência nem aplicação no jogador em jogo. O pedido descrevia a tela,
 parar aqui é deliberado — levar para a partida envolve decidir onde a escolha é
 guardada e como ela viaja em rede, que são decisões do dono.
 
-**Um acessório só.** O catálogo tem o chapéu de palha. A estrutura (parte, nó,
-fração de encaixe) já suporta mais; falta conteúdo, não código.
+**As espadas do Zoro leem pequenas.** Estão na cintura e aparecem, mas de longe
+viram um risco escuro. É calibragem de arte, não defeito de encaixe.
