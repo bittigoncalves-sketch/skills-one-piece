@@ -118,15 +118,24 @@ func _checa(anim, nodes: Dictionary, prof: Dictionary, modelo: Node3D,
 	# 1. LOOP: a série tem que se repetir. Compara o começo com um ciclo depois.
 	var per := _periodo(coxa_l)
 	if per > 0:
+		var atraso := _refinar_atraso(coxa_l, per, 40)
 		var erro := 0.0
-		for i in range(0, min(30, coxa_l.size() - per)):
-			erro = maxf(erro, absf(coxa_l[i] - coxa_l[i + per]))
+		for i in range(0, min(30, coxa_l.size() - per - 1)):
+			var t := float(i) + atraso
+			var k := int(floor(t))
+			if k + 1 >= coxa_l.size():
+				break
+			var alvo: float = lerp(coxa_l[k], coxa_l[k + 1], t - float(k))
+			erro = maxf(erro, absf(coxa_l[i] - alvo))
 		# ATENÇÃO ao ler: este `per` é o ATRASO INTEIRO que melhor casa a série, e
 		# costuma cair num MÚLTIPLO do ciclo — o ciclo real é fracionário (27,6
 		# quadros) e nenhum atraso inteiro fecha nele. O ciclo de verdade sai
 		# medido em `_ciclo()`, no bloco do deslize.
-		print("  loop: fecha com atraso de %d frames, erro máx %.4f rad" % [per, erro])
-		if erro > 0.05:
+		# Mesmo motivo do _periodo: limite proporcional à amplitude (0,05/1,518).
+		var teto := 0.033 * _amplitude(coxa_l)
+		print("  loop: fecha com atraso de %.2f frames, erro máx %.4f rad (teto %.4f)"
+			% [atraso, erro, teto])
+		if erro > teto:
 			print("  ✗ o ciclo não fecha (loop visível)")
 			falhas += 1
 	else:
@@ -261,20 +270,73 @@ func _ciclo(s: Array[float]) -> float:
 # múltiplos do período também casam, e o global pode cair num deles (foi assim
 # que o teste reportou 91 frames num ciclo real de 15).
 func _periodo(s: Array[float]) -> int:
+	# ⚠️ TOLERÂNCIA RELATIVA, NÃO ABSOLUTA. Os limites eram fixos em radianos
+	# (0,004 e 0,02), calibrados numa coxa que oscilava 87°. Ao desacelerar a
+	# marcha em 2026-08-27 a amplitude foi a 112°: o resíduo do casamento cresce
+	# junto com o sinal, estourava 0,02 e o teste reprovava uma marcha que estava
+	# ciclando perfeitamente. O que este teste quer saber é se a série se REPETE
+	# — uma propriedade da forma, não da escala. Então os limites viram fração da
+	# amplitude, preservando o rigor antigo: 0,004/1,518 rad e 0,02/1,518 rad.
+	var amp := _amplitude(s)
+	if amp < 1e-6:
+		return 0                      # série morta: não há o que ciclar
+	var fecha := 0.0026 * amp
+	var aceita := 0.0132 * amp
 	var janela := 40
 	var melhor := 0
 	var melhor_err := 1e9
 	for p in range(5, min(160, s.size() - janela)):
-		var e := 0.0
-		for i in range(0, janela):
-			e += absf(s[i] - s[i + p])
-		e /= janela
+		var e := _erro_no_atraso(s, float(p), janela)
 		if e < melhor_err:
 			melhor_err = e
 			melhor = p
-		if e < 0.004:      # já fecha bem: é o período fundamental
+		if e < fecha:      # já fecha bem: é o período fundamental
 			return p
-	return melhor if melhor_err < 0.02 else 0
+	return melhor if melhor_err < aceita else 0
+
+# Erro médio ao sobrepor a série a ela mesma deslocada de `atraso` QUADROS —
+# atraso fracionário, amostrado por interpolação linear.
+#
+# ⚠️ POR QUE SUB-QUADRO. O ciclo real é fracionário (33,4 quadros): nenhum
+# atraso INTEIRO fecha nele, e o resíduo que sobra não mede a qualidade da
+# marcha, mede o quanto o múltiplo por acaso caiu perto de um inteiro. Era isso
+# que deixava base/WALK a 87% do teto enquanto as outras três marchas — idênticas
+# em qualidade — ficavam duas ordens de grandeza abaixo. Amostrando entre
+# quadros, o teto volta a julgar a animação e não a aritmética.
+func _erro_no_atraso(s: Array[float], atraso: float, janela: int) -> float:
+	var e := 0.0
+	for i in range(0, janela):
+		var t := float(i) + atraso
+		var k := int(floor(t))
+		if k + 1 >= s.size():
+			return 1e9
+		var f := t - float(k)
+		e += absf(s[i] - lerp(s[k], s[k + 1], f))
+	return e / float(janela)
+
+# Refina um atraso inteiro para o melhor atraso fracionário à sua volta.
+func _refinar_atraso(s: Array[float], p: int, janela: int) -> float:
+	var melhor := float(p)
+	var melhor_err := _erro_no_atraso(s, float(p), janela)
+	var d := -0.5
+	while d <= 0.5:
+		var e := _erro_no_atraso(s, float(p) + d, janela)
+		if e < melhor_err:
+			melhor_err = e
+			melhor = float(p) + d
+		d += 0.05
+	return melhor
+
+# Pico a pico da série — a escala contra a qual os resíduos são julgados.
+func _amplitude(s: Array[float]) -> float:
+	if s.is_empty():
+		return 0.0
+	var lo: float = s[0]
+	var hi: float = s[0]
+	for v in s:
+		lo = minf(lo, v)
+		hi = maxf(hi, v)
+	return hi - lo
 
 func _corr(a: Array[float], b: Array[float]) -> float:
 	var ma := _media(a)

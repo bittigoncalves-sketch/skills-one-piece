@@ -7,6 +7,76 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-28 — teto absoluto num sinal cuja escala eu mesmo mudei
+
+**Sintoma:** ao desacelerar a marcha (pedido do usuário: animação mais lenta sem
+mexer no deslocamento), `test_walk_run` passou a reprovar `base / WALK` com
+"não achei período — a marcha não está ciclando". A animação estava ciclando
+normalmente na tela.
+
+**Causa raiz:** `_periodo()` julgava a qualidade do casamento da série com
+tolerâncias **absolutas em radianos** (0,004 para "fecha bem" e 0,02 para
+"aceita"), calibradas quando a coxa oscilava 87°. A desaceleração veio de baixar
+o quadril (`H_CORRIDA` 0.80→0.70, `H_SPRINT` 0.76→0.66), o que **aumenta a
+amplitude** da coxa para 112° — a perna precisa abrir mais para cobrir a mesma
+passada com o quadril mais baixo. O resíduo do casamento escala junto com o
+sinal, estourou 0,02, e o teste reprovou uma marcha correta. A propriedade que o
+teste quer verificar ("a série se repete") é de **forma**, não de escala; o teto
+não podia ser fixo.
+
+**Evidência:** amplitude da coxa 87° → 112° (1,29×) exatamente quando a falha
+apareceu; as outras três marchas, com amplitude ~103°, passaram raspando. Com o
+teto proporcional (0,0132 × amplitude, a mesma fração que 0,02/1,518 rad
+representava antes), as quatro passam mantendo o rigor relativo original.
+
+**Descartado:** *falta de amostra*. A primeira hipótese foi que o ciclo mais
+longo (33,4 quadros) não cabia na janela de 90 quadros; alonguei para 180 e a
+falha **continuou idêntica** — o que matou a hipótese antes de eu mexer em
+qualquer constante do jogo.
+
+**Correção:** `tools/dev_tests/test_walk_run.gd:263` — `_periodo()` calcula
+`_amplitude(s)` e deriva `fecha`/`aceita` como fração dela; o teto do erro de
+loop virou `0,033 × amplitude`.
+
+**Como detectar de novo:** sabotagem — `CADENCIA_ESCALA := 0.0` em
+`src/anim/ProceduralAnimator.gd` faz o teste voltar a imprimir "não achei
+período". Se não imprimir, o teto foi afrouxado demais e o teste está cego.
+
+**Padrão a levar adiante:** quando eu mudo uma constante que altera a **escala**
+de um sinal, todo limiar absoluto medido sobre esse sinal vira suspeito. O teste
+não estava errado antes — ele estava amarrado a uma escala que deixou de valer.
+
+---
+
+## 2026-08-28 — detector de período só testava atrasos inteiros num ciclo fracionário
+
+**Sintoma:** mesmo depois de passar, `base / WALK` fechava o loop com erro 0,0561
+contra um teto de 0,0645 (87% do teto), enquanto as outras três marchas — de
+qualidade idêntica — ficavam entre 0,0001 e 0,0062, duas ordens de grandeza
+abaixo. Uma assertion prestes a piscar no próximo ajuste de constante.
+
+**Causa raiz:** `_periodo()` só avaliava atrasos **inteiros** em quadros, mas o
+ciclo real é fracionário (33,4 quadros). Nenhum atraso inteiro fecha nele: o
+resíduo que sobrava não media a qualidade da marcha, media **o quanto um múltiplo
+do ciclo por acaso caiu perto de um inteiro**. O próprio comentário do teste já
+descrevia o fenômeno ("o ciclo real é fracionário e nenhum atraso inteiro fecha
+nele") mas o tratava como limitação aceita em vez de defeito de medição.
+
+**Evidência:** com amostragem sub-quadro o erro de `base / WALK` caiu de 0,0561
+para 0,0155 (24% do teto) **sem nenhuma mudança na animação**. O atraso refinado
+deu 66,80 quadros = 2 × 33,4, batendo com o ciclo medido de forma independente
+por `_ciclo()` (cruzamentos de média) — duas medições por métodos diferentes
+concordando.
+
+**Correção:** `tools/dev_tests/test_walk_run.gd` — `_erro_no_atraso()` amostra a
+série em atraso fracionário por interpolação linear, e `_refinar_atraso()` varre
+±0,5 quadro em passos de 0,05 em torno do melhor atraso inteiro.
+
+**Como detectar de novo:** se o erro de loop de uma marcha ficar acima de ~50% do
+teto enquanto as demais ficam abaixo de 10%, é desalinhamento de amostragem, não
+animação ruim — compare o atraso impresso com o `ciclo N frames` da mesma linha:
+ele tem que ser um múltiplo inteiro dele.
+
 ## 2026-08-25 — o transformador que consertava 28 sítios quebrou 6 e esvaziou 3 blocos
 
 **Sintoma:** depois de rodar um script que converteu "emissão → albedo HDR" em
