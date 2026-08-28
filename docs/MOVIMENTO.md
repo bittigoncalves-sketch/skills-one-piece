@@ -258,3 +258,59 @@ baixo o bastante para o giro não ser corte seco.
 
 **Sonda:** `tools/dev_tests/medir_facing.gd`. Ela sabe reprovar: com o
 comportamento antigo, 0 passam e 8 falham.
+
+---
+
+## Dash: os quatro rumos e o rolamento de costas (2026-08-27)
+
+Pedido do dono: dash lateral e dash para trás, com **rolamento** no de trás.
+
+### ⚠️ O dash já ia para os quatro lados
+
+A direção sempre veio da tecla (`q.dir`), não da frente do corpo. O que **não**
+existia era a leitura: os quatro usavam a MESMA pose, e na tela dar um passo para
+trás e mergulhar para a frente ficavam iguais.
+
+Por isso a mudança é de **animação e classificação**, não de física — distância
+(12 m), tempo (0,28 s) e recarga (1,5 s) seguem iguais.
+
+### Como o rumo é decidido
+
+`DashController._classificar` compara a direção com a FRENTE e a DIREITA do
+corpo, ambas vindas da base canônica (`RosaDosVentos.base_do_corpo`) — a mesma da
+mira e da hitbox.
+
+⚠️ **Frente e trás decidem primeiro**, com cone de 60° (`|para_frente| > 0,5`).
+Uma diagonal como W+D é dash para a frente inclinado, não lateral: tratá-la como
+lateral faria a esquiva mais comum do jogo escolher a pose errada.
+
+### As poses
+
+| rumo | pose |
+|---|---|
+| frente | o rolamento de mergulho que já existia |
+| **trás** | **rolamento de costas: tronco arqueia para trás, queixo sobe, braços acima da cabeça — e o corpo GIRA uma volta inteira** |
+| lados | mergulho lateral: tronco tomba no eixo Z, braço de fora aberto |
+
+O rolamento de costas é a imagem **espelhada** do de frente, não uma variação:
+reaproveitar a pose de frente trocando o sinal de um osso daria um agachamento
+estranho, não um rolamento.
+
+### O giro mora no Player, não no animador
+
+Quem tem a raiz do modelo é o `Player`. A pose encolhida **sozinha** pareceria um
+agachamento; é o giro que faz virar cambalhota.
+
+E ele compensa a POSIÇÃO: a origem do modelo está nos **pés**, então girar ali
+jogaria o corpo através do chão. Deslocando por `meia_altura·(1−cos)` em Y e
+`meia_altura·sin` em Z, o giro acontece em torno da **cintura** — que é onde uma
+cambalhota gira de verdade.
+
+⚠️ E ele **volta ao repouso** quando a esquiva acaba. `rotation.x` não é escrito
+por mais ninguém: sem essa linha o personagem ficaria de cabeça para baixo para
+sempre, e ninguém o consertaria.
+
+**Sonda:** `tools/dev_tests/medir_dash.gd` — 16 conferências. Mede as duas coisas
+separadas: para onde o corpo SE MOVE (já funcionava) e qual POSE toca (o que
+mudou). E confere a volta completa do giro: rolamento é giro, não encolhimento —
+sem isso uma pose agachada passaria por rolamento.
