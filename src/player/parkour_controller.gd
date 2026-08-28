@@ -30,6 +30,14 @@ const CLIMB_SPEED := 4.5
 const CLIMB_STICK_SPEED := 1.0
 const CLIMB_WALL_NORMAL_MAX_Y := 0.2
 
+## ANDAR NA SUPERFÍCIE. `ADERENCIA` é a pressão contra a superfície que mantém o
+## contato de colisão entre quadros — mesma ideia do `CLIMB_STICK_SPEED`, e pelo
+## mesmo motivo: sem ela um quadro sem toque solta o jogador.
+const PAREDE_ADERENCIA := 2.5
+const PAREDE_ALCANCE := 1.2      # até onde o raio procura chão sob os pés
+const PAREDE_PULO_FORA := 7.0    # empurrão para FORA da superfície ao cancelar
+const PAREDE_PULO_CIMA := 6.0    # e para cima, para o cancelamento ler como pulo
+
 var max_geppo: int = 1      # número de pulos duplos aéreos (Geppo / Técnica do CP9)
 
 var _dono: CharacterBody3D = null
@@ -38,6 +46,22 @@ var _forca_pulo: float = 16.0
 
 # ---- estado que atravessa quadros ----
 var _escalando: bool = false
+
+## ANDAR NA SUPERFÍCIE (2026-08-27) — substitui a escalada.
+##
+## ⚠️ A DIFERENÇA NÃO É COSMÉTICA. A escalada era um estado SEGURADO: soltar o
+## espaço largava a parede. Este é um estado LIGADO: uma vez que entra, fica —
+## o jogador anda pela superfície com WASD como andaria no chão, e cancela
+## PULANDO. É o que o dono pediu ("não precisa ficar segurando as teclas").
+##
+## O preço é ENERGIA, drenada por segundo (o Player cobra; aqui só se declara o
+## estado). Sem preço, andar na parede seria estritamente melhor que andar no
+## chão e o chão deixaria de existir como decisão.
+var _na_parede: bool = false
+var _normal_parede: Vector3 = Vector3.ZERO
+## Trava de um quadro: entrar e sair usam a MESMA tecla (espaço). Sem ela, o
+## mesmo toque que gruda desgruda no quadro seguinte.
+var _carencia_parede: float = 0.0
 var _long_jump_t: float = 0.0   # janela de impulso horizontal (salto longo/vault)
 var _geppo: int = 0             # geppos gastos desde o último apoio
 var _pico_queda: float = 0.0    # maior velocidade de queda acumulada no ar
@@ -56,8 +80,10 @@ func montar_em(dono: CharacterBody3D, gravidade: float, forca_pulo: float) -> vo
 
 # ------------------------------------------------------------------ leitura
 func escalando() -> bool:          return _escalando
+func na_parede() -> bool:          return _na_parede
+func normal_da_parede() -> Vector3: return _normal_parede
 func correndo_na_parede() -> bool: return _correndo_parede
-func assumiu() -> bool:            return _escalando or _correndo_parede
+func assumiu() -> bool:            return _escalando or _correndo_parede or _na_parede
 func geppos() -> int:              return _geppo
 func janela_impulso() -> float:    return _long_jump_t
 func parede_frontal() -> Vector3:  return _parede_frontal   # o facing usa p/ virar contra a parede
@@ -88,13 +114,41 @@ func avaliar(delta: float, q: MoveFrame, no_chao: bool) -> void:
 		_pouso_armado = false
 	_chao_antes = no_chao
 
-	# ESCALADA: no ar, segure ESPAÇO enquanto avança contra uma parede vertical.
-	var quer_escalar := q.espaco_segurado and q.f > 0.0
+	# ANDAR NA SUPERFÍCIE — no lugar da escalada.
+	#
+	# ENTRA com UM toque de espaço encostando numa parede escalável, no ar.
+	# FICA sem segurar nada. SAI pulando (o mesmo espaço), ou se a energia
+	# acabar, ou se a superfície sumir debaixo dos pés.
+	_carencia_parede = maxf(_carencia_parede - delta, 0.0)
 	_parede_frontal = _normal_da_parede_escalavel(q.dir)
-	if _escalando and (not quer_escalar or _parede_frontal == Vector3.ZERO):
-		_escalando = false
-	if not _escalando and quer_escalar and not no_chao and _parede_frontal != Vector3.ZERO:
-		_escalando = true
+
+	if _na_parede:
+		# ⚠️ O PULO CANCELA. É a única saída voluntária, e é intencional: com a
+		# gravidade da superfície mandando, "soltar a tecla" não significa nada.
+		if q.espaco_agora and _carencia_parede <= 0.0:
+			_soltar_da_parede(true)
+		elif not _dono.tem_energia_de_parede():
+			_soltar_da_parede(false)      # acabou a energia: cai
+		else:
+			# Enquanto anda, a normal continua vindo do que está sob os pés — é
+			# isso que deixa passar de uma face para outra sem soltar.
+			var atual := _superficie_sob_os_pes()
+			if atual != Vector3.ZERO:
+				_normal_parede = atual
+			elif _parede_frontal != Vector3.ZERO:
+				_normal_parede = _parede_frontal
+			else:
+				_soltar_da_parede(false)  # nada sob os pés: acabou a superfície
+	elif q.espaco_agora and not no_chao and _parede_frontal != Vector3.ZERO \
+			and _carencia_parede <= 0.0 and _dono.tem_energia_de_parede():
+		_na_parede = true
+		_normal_parede = _parede_frontal
+		_carencia_parede = 0.25
+		_geppo = 0
+
+	# A escalada antiga fica desligada, mas o campo continua para o wall run e o
+	# mantle, que ainda consultam `_escalando`.
+	_escalando = false
 
 	# WALL RUN: no ar, CORRENDO rente a uma parede LATERAL -> corre por ela.
 	_parede_lateral = _normal_da_parede_lateral(q.dir) if not _escalando else Vector3.ZERO
@@ -107,6 +161,20 @@ func avaliar(delta: float, q: MoveFrame, no_chao: bool) -> void:
 
 # ------------------------------------------------- velocidade quando ASSUMIU
 func velocidade(delta: float, q: MoveFrame, vel: Vector3, vel_efetiva: float) -> Vector3:
+	if _na_parede:
+		# ⚠️ A SUPERFÍCIE VIRA O CHÃO. O movimento acontece no PLANO dela: a
+		# direção pedida pelo teclado é projetada nesse plano, e o que sobraria
+		# "para dentro" da parede vira pressão de contato — sem ela, um quadro
+		# sem colisão soltaria o jogador.
+		#
+		# A gravidade não entra aqui: quem a suspende é o Player, pelo mesmo
+		# caminho do dash.
+		var n := _normal_parede
+		var mov := q.dir - n * q.dir.dot(n)     # projeta no plano da superfície
+		if mov.length_squared() > 0.001:
+			mov = mov.normalized()
+		var v := mov * vel_efetiva + (-n * PAREDE_ADERENCIA)
+		return v
 	if _escalando:
 		# Uma leve pressão contra a parede preserva o contato de colisão entre
 		# quadros; sem isso, ao mover apenas no eixo Y a escalada terminaria logo.
@@ -181,6 +249,32 @@ func _efeitos_do_geppo(q: MoveFrame) -> void:
 
 # Usa as colisões do último movimento. Isso evita RayCast extra e faz a escalada
 # funcionar em qualquer StaticBody3D, inclusive os blocos do mapa.
+## Solta a superfície. `pulando` = saída voluntária: ganha um empurrão para fora
+## e para cima, que é o que faz o cancelamento PARECER um pulo em vez de um
+## escorregão.
+func _soltar_da_parede(pulando: bool) -> void:
+	if not _na_parede:
+		return
+	_na_parede = false
+	_carencia_parede = 0.25
+	if pulando and _dono:
+		_dono.velocity = _normal_parede * PAREDE_PULO_FORA + Vector3.UP * PAREDE_PULO_CIMA
+	_normal_parede = Vector3.ZERO
+
+
+## O que está sob os PÉS enquanto se anda na superfície — permite virar de uma
+## face para outra (parede → teto) sem soltar.
+func _superficie_sob_os_pes() -> Vector3:
+	if _dono == null or _normal_parede == Vector3.ZERO:
+		return Vector3.ZERO
+	var espaco := _dono.get_world_3d().direct_space_state
+	var de: Vector3 = _dono.global_position
+	var par := PhysicsRayQueryParameters3D.create(de, de - _normal_parede * PAREDE_ALCANCE)
+	par.exclude = [_dono.get_rid()]
+	var h := espaco.intersect_ray(par)
+	return h["normal"] if not h.is_empty() else Vector3.ZERO
+
+
 func _normal_da_parede_escalavel(direcao: Vector3) -> Vector3:
 	for i in _dono.get_slide_collision_count():
 		var colisao := _dono.get_slide_collision(i)
