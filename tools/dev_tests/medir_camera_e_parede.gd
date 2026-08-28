@@ -42,7 +42,9 @@ func _init() -> void:
 	p._yaw = 0.0
 	p._camera.apontar(0.0, -0.2)
 	_tecla(KEY_W, true); _tecla(KEY_SHIFT, true)
-	for i in 60:
+	# 90 quadros: tempo de sobra para qualquer interpolação assentar antes de
+	# medir. Medir cedo é medir a rampa, não o resultado.
+	for i in 90:
 		await process_frame
 	var sfx := _screenfx()
 	var vals := {}
@@ -52,7 +54,12 @@ func _init() -> void:
 	var soma := 0.0
 	for k in vals:
 		soma += absf(float(vals[k]))
-	_ok("nenhum efeito de velocidade na tela (soma %.4f)" % soma, soma < 0.001)
+	# ⚠️ LIMIAR, NÃO ZERO EXATO. Os parâmetros do ScreenFX chegam a zero por
+	# interpolação, e alguns quadros depois ainda há um resíduo de milésimos —
+	# exigir 0,000000 tornava a asserção INSTÁVEL (passava numa rodada e
+	# reprovava na outra por 0,0018). O que importa é não haver efeito VISÍVEL:
+	# 0,01 está uma ordem de grandeza abaixo do que o olho pega, e não oscila.
+	_ok("nenhum efeito de velocidade na tela (soma %.4f)" % soma, soma < 0.01)
 	_tecla(KEY_W, false); _tecla(KEY_SHIFT, false)
 	for i in 60:
 		await process_frame
@@ -225,6 +232,29 @@ func _testar_parede(p: Node3D, junto: Vector3) -> void:
 	# mede a caminhada com `Vector2(velocity.x, velocity.z)` — só o plano
 	# HORIZONTAL do mundo. Subir a parede é movimento em Y, invisível para ele:
 	# de lado animava, para cima e para baixo não. Uma direção só não cobre.
+	# ---------- o corpo OLHA para onde anda ----------
+	# ⚠️ A ASSERÇÃO QUE FALTAVA. A frente do corpo vinha de `q.dir` (horizontal do
+	# mundo) projetada no plano — e numa parede vertical o W é a componente que a
+	# projeção anula. Sobravam A e D: o corpo ficava SEMPRE virado para a direita
+	# ou esquerda, mesmo subindo. Testar a frente por TECLA é o que pega.
+	if not await _regrudar(p, junto):
+		_ok("regrudou para o teste de olhar", false)
+	print("\n   para onde o corpo OLHA, por tecla:")
+	var b_sup: Basis = p._parkour.base_da_superficie()
+	for caso in [[KEY_W, "para cima", -b_sup.z], [KEY_S, "para baixo", b_sup.z],
+			[KEY_A, "para a esquerda", -b_sup.x], [KEY_D, "para a direita", b_sup.x]]:
+		_tecla(caso[0] as Key, true)
+		for i in 16:
+			await process_frame
+		var olhar: Vector3 = -p._char_model.global_transform.basis.z
+		var esperado: Vector3 = caso[2]
+		var dot: float = olhar.normalized().dot(esperado.normalized())
+		_tecla(caso[0] as Key, false)
+		for i in 6:
+			await process_frame
+		print("      %s -> dot %+.2f" % [caso[1], dot])
+		_ok("o corpo olha %s ao andar %s" % [caso[1], caso[1]], dot > 0.8)
+
 	if not await _regrudar(p, junto):
 		_ok("regrudou para o teste de animação", false)
 	for caso in [[KEY_W, "para cima"], [KEY_S, "para baixo"], [KEY_A, "para o lado"]]:
@@ -323,12 +353,16 @@ func _regrudar(p: Node3D, junto: Vector3) -> bool:
 		if p._parkour.na_parede():
 			break
 	_tecla(KEY_W, false)
-	# ⚠️ ESPERA A CARÊNCIA PASSAR. Entrar arma 0,25 s em que o espaço não
-	# cancela (senão o MESMO toque que gruda desgruda). Seis quadros são 0,1 s —
-	# o teste do cancelamento chegava dentro da carência e reprovava.
-	for i in 25:
+	# ⚠️ ESPERA A CARÊNCIA DE FATO EXPIRAR, por CONDIÇÃO e não por contagem.
+	# Entrar arma 0,25 s em que o espaço não cancela (senão o mesmo toque que
+	# gruda desgruda). Esperar "25 quadros" era uma aposta sobre o tempo de
+	# quadro: passava numa rodada e reprovava na outra, com três asserções caindo
+	# junto. Esperar a condição não oscila.
+	for i in 120:
 		await process_frame
-	return p._parkour.na_parede()
+		if p._parkour._carencia_parede <= 0.0:
+			break
+	return p._parkour.na_parede() and p._parkour._carencia_parede <= 0.0
 
 
 ## A pose do rig: as rotações dos membros. Se elas não mudam enquanto o jogador

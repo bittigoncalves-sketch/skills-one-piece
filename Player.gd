@@ -1214,9 +1214,19 @@ func _etapa_locomocao(delta: float) -> void:
 			# A frente sai da direção do movimento projetada no plano; parado,
 			# mantém a que já tinha, para o corpo não girar sozinho.
 			var n := _parkour.normal_da_parede()
+			# ⚠️ A FRENTE VEM DA MESMA BASE QUE O MOVIMENTO. Antes ela era `q.dir`
+			# — a direção HORIZONTAL do mundo — projetada no plano da parede. Numa
+			# parede vertical o W é justamente a componente que a projeção anula,
+			# então só A e D sobravam: o corpo ficava sempre virado para a
+			# direita ou para a esquerda, nunca para onde ele estava subindo.
+			#
+			# Movimento e olhar são a MESMA decisão; tirá-los de fontes
+			# diferentes é como as cinco cópias da direção da frente que já
+			# custaram caro aqui.
+			var b_sup := _parkour.base_da_superficie()
 			var frente_alvo := _char_model.global_transform.basis.z * -1.0
-			if q.dir.length_squared() > 0.01:
-				frente_alvo = q.dir
+			if absf(q.f) > 0.01 or absf(q.r) > 0.01:
+				frente_alvo = (-b_sup.z) * q.f + b_sup.x * q.r
 			frente_alvo = frente_alvo - n * frente_alvo.dot(n)
 			# ⚠️ QUANDO A PROJEÇÃO DEGENERA. Ao grudar, o corpo está ENCARANDO a
 			# parede — a frente dele é anti-paralela à normal, e projetá-la no
