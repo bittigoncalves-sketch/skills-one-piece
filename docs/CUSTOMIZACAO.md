@@ -11,9 +11,14 @@ Menu novo no menu inicial, pedido pelo dono em 2026-08-27.
 
 ## A tela
 
-Fundo azul; à esquerda as categorias (**Acessórios**, **Raça**, **Cor**), no
-centro o personagem em 3D, à direita os itens da categoria escolhida. Escolher um
-item equipa na hora.
+Fundo azul; à esquerda as categorias (**Acessórios**, **Raça**, **Corpo**,
+**Cor**), no centro o personagem em 3D, à direita os itens da categoria escolhida.
+Escolher um item equipa na hora.
+
+O personagem **não gira sozinho** — gira quando o jogador **arrasta com o botão
+esquerdo**. Giro automático atrapalha justamente o que o menu existe para fazer:
+comparar duas opções. Quando ele nunca para, cada escolha aparece num ângulo
+diferente e a comparação vira memória.
 
 A câmera fica no **−Z**, mostrando o ROSTO: o personagem olha para −Z (convenção
 do projeto, ver [`DIRECOES.md`](DIRECOES.md)), e pôr a câmera no +Z mostrava as
@@ -129,6 +134,53 @@ O erro não era sobre cor nenhuma — era sobre uma tela de menu ter virado
 dependente da classe mais pesada do projeto para ler **dado**. A paleta saiu para
 `Paleta.gd` e `Player.CORES` virou apelido dela: os usos existentes não mudaram e
 a fonte continua sendo uma só.
+
+---
+
+## Corpo — os olhos
+
+Três tamanhos em [`src/customizacao/Corpo.gd`](../src/customizacao/Corpo.gd).
+
+⚠️ **Interpretação declarada:** o pedido dizia *"olho grande, médio e grande"* —
+"grande" duas vezes. Como são três opções de TAMANHO, tratei como **pequeno,
+médio e grande**. Se a intenção era outra (três formatos, por exemplo), é trocar
+a tabela: a mecânica não muda.
+
+Os três eixos são **independentes**: escolher o olho não tira a raça nem o
+chapéu. Cada catálogo decide o que a sua própria escolha exclui.
+
+---
+
+## `Adornos` — o núcleo comum
+
+Três sistemas pediam a mesma mecânica (pendurar peça por fração da caixa, trocar
+por exclusão, mudar e desfazer escala, peça que segue a cor). Com **três** users
+a duplicação virou fato medido, e o núcleo subiu para
+[`src/customizacao/Adornos.gd`](../src/customizacao/Adornos.gd).
+
+**O que NÃO subiu: a regra de exclusão.** Ela é diferente em cada um — acessório
+exclui por parte do corpo, raça exclui globalmente, olho exclui outro olho — e
+forçar as três num molde só criaria um parâmetro que ninguém entende. Ali só mora
+o *como* apagar; o *o quê* fica em cada catálogo.
+
+As peças usam `Materiais.superficie` (o cel shading do jogo), não
+`StandardMaterial3D` avulso: peça com material padrão fica lisa e brilhante ao
+lado de um corpo chapado, e denuncia que foi colada depois. O corpo da prévia usa
+o mesmo — a prévia existe para decidir como vai ficar EM PARTIDA, e com outra
+iluminação ela mentiria.
+
+---
+
+## O menu principal cabia por 6 px
+
+Acrescentar o botão de CUSTOMIZAÇÃO fez o conteúdo somar **831 px numa tela de
+720**: o botão de CONFIGURAÇÕES ficava INTEIRAMENTE fora, e nada avisava. Menu
+não tem teste, não trava a bateria e não gera erro — quebra em silêncio.
+
+Botões, margens, separações e logo foram reduzidos até caber com folga. E entrou
+`tools/dev_tests/medir_menu_principal.gd`, que varre todo `Control` e reprova se
+algum passar da tela. Provado que sabe reprovar: com botões de 140 px ele acusa
+14 controles fora.
 
 ---
 
