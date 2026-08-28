@@ -39,6 +39,9 @@ const PAREDE_ADERENCIA := 2.5
 const PAREDE_ALCANCE := 2.0
 ## Quanto tempo sem achar superfície antes de soltar. Ver a nota da folga.
 const PAREDE_FOLGA := 0.35
+## Duração do rolamento no ar. Curto: é um floreio de saída, não uma acrobacia
+## que tira o controle do jogador.
+const ROLAMENTO_AR_DURACAO := 0.55
 const PAREDE_PULO_FORA := 7.0    # empurrão para FORA da superfície ao cancelar
 const PAREDE_PULO_CIMA := 6.0    # e para cima, para o cancelamento ler como pulo
 
@@ -68,6 +71,15 @@ var _normal_parede: Vector3 = Vector3.ZERO
 var _carencia_parede: float = 0.0
 ## Há quanto tempo o raio não acha superfície sob os pés. Ver a nota da folga.
 var _folga_sem_chao: float = 0.0
+var _base_sup: Basis = Basis.IDENTITY
+
+## Tempo restante do ROLAMENTO NO AR — a cambalhota que sai ao largar a
+## superfície. Pedido do dono: braços mirando os pés, pernas agachadas, cabeça
+## indo ao joelho, corpo dobrado e GIRANDO.
+var _rolando_no_ar: float = 0.0
+## true no quadro em que o espaço foi usado para largar a superfície. Ver a nota
+## em `aplicar_pulos`.
+var _consumiu_espaco: bool = false
 var _long_jump_t: float = 0.0   # janela de impulso horizontal (salto longo/vault)
 var _geppo: int = 0             # geppos gastos desde o último apoio
 var _pico_queda: float = 0.0    # maior velocidade de queda acumulada no ar
@@ -126,6 +138,7 @@ func avaliar(delta: float, q: MoveFrame, no_chao: bool) -> void:
 	# FICA sem segurar nada. SAI pulando (o mesmo espaço), ou se a energia
 	# acabar, ou se a superfície sumir debaixo dos pés.
 	_carencia_parede = maxf(_carencia_parede - delta, 0.0)
+	_rolando_no_ar = maxf(_rolando_no_ar - delta, 0.0)
 	_parede_frontal = _normal_da_parede_escalavel(q.dir)
 
 	if _na_parede:
@@ -190,17 +203,11 @@ func velocidade(delta: float, q: MoveFrame, vel: Vector3, vel_efetiva: float) ->
 		# cima", a frente é a da câmera projetada no plano, e a direita sai do
 		# produto vetorial. Aí W anda parede acima e A/D andam de lado, que é o
 		# que "o bloco é o chão" quer dizer.
+		var b := _base_da_superficie(q)
+		_base_sup = b
 		var n := _normal_parede
-		var frente := q.frente - n * q.frente.dot(n)
-		if frente.length_squared() <= 0.001:
-			# A câmera olha direto para a parede: a frente projetada degenera.
-			# "Para cima da parede" é a escolha natural — é para onde alguém
-			# andando nela encara.
-			frente = Vector3.UP - n * Vector3.UP.dot(n)
-		if frente.length_squared() <= 0.001:
-			frente = Vector3.FORWARD - n * Vector3.FORWARD.dot(n)
-		frente = frente.normalized()
-		var direita := frente.cross(n).normalized()
+		var frente: Vector3 = -b.z
+		var direita: Vector3 = b.x
 
 		var mov := frente * q.f + direita * q.r
 		if mov.length_squared() > 1.0:
@@ -241,6 +248,14 @@ func velocidade(delta: float, q: MoveFrame, vel: Vector3, vel_efetiva: float) ->
 # assumiu — por isso recebe e devolve a velocidade em vez de escrevê-la.
 func aplicar_pulos(q: MoveFrame, vel: Vector3, vel_efetiva: float,
 		no_chao: bool, mult_pulo: float) -> Vector3:
+	# ⚠️ O ESPAÇO QUE LARGOU A SUPERFÍCIE JÁ FOI GASTO. Sem esta saída, o mesmo
+	# toque cancelava a parede E consumia um pulo duplo no mesmo quadro — o
+	# jogador era punido por usar o cancelamento que a mecânica exige. Zerar o
+	# `_geppo` na saída não bastava: `aplicar_pulos` roda DEPOIS e gastava de
+	# novo.
+	if _consumiu_espaco:
+		_consumiu_espaco = false
+		return vel
 	if no_chao and q.sprint and q.f > 0.0 and _long_jump_t <= 0.0 and _obstaculo_baixo_a_frente(q.dir):
 		# VAULT automático: correndo contra um obstáculo BAIXO -> pula por cima.
 		vel.y = _forca_pulo * 0.7
@@ -282,6 +297,40 @@ func _efeitos_do_geppo(q: MoveFrame) -> void:
 
 # Usa as colisões do último movimento. Isso evita RayCast extra e faz a escalada
 # funcionar em qualquer StaticBody3D, inclusive os blocos do mapa.
+## A base da SUPERFÍCIE: `y` = a normal (o "para cima"), `-z` = a frente, `x` = a
+## direita. Uma fonte só, usada pelo movimento E pela animação — o animador
+## precisa da mesma decomposição para saber quanto é "andar para frente".
+func _base_da_superficie(q: MoveFrame) -> Basis:
+	var n := _normal_parede
+	var frente := q.frente - n * q.frente.dot(n)
+	if frente.length_squared() <= 0.001:
+		# A câmera olha direto para a parede: a frente projetada degenera.
+		# "Para cima da parede" é a escolha natural — é para onde alguém andando
+		# nela encara.
+		frente = Vector3.UP - n * Vector3.UP.dot(n)
+	if frente.length_squared() <= 0.001:
+		frente = Vector3.FORWARD - n * Vector3.FORWARD.dot(n)
+	return Basis.looking_at(frente.normalized(), n)
+
+
+## A última base calculada. O Player usa para traduzir a velocidade da parede
+## para o plano que o animador entende.
+func base_da_superficie() -> Basis:
+	return _base_sup
+
+
+func rolando_no_ar() -> bool:
+	return _rolando_no_ar > 0.0
+
+
+## 0 no começo do rolamento no ar, 1 no fim. É o que o Player usa para girar o
+## corpo — a pose encolhida sozinha pareceria um agachamento no ar.
+func giro_do_rolamento_no_ar() -> float:
+	if _rolando_no_ar <= 0.0:
+		return 0.0
+	return clampf(1.0 - (_rolando_no_ar / ROLAMENTO_AR_DURACAO), 0.0, 1.0)
+
+
 ## Solta a superfície. `pulando` = saída voluntária: ganha um empurrão para fora
 ## e para cima, que é o que faz o cancelamento PARECER um pulo em vez de um
 ## escorregão.
@@ -292,6 +341,13 @@ func _soltar_da_parede(pulando: bool) -> void:
 	_carencia_parede = 0.25
 	if pulando and _dono:
 		_dono.velocity = _normal_parede * PAREDE_PULO_FORA + Vector3.UP * PAREDE_PULO_CIMA
+		# ⚠️ NÃO CONSOME PULO DUPLO. Sair da superfície é a saída da mecânica,
+		# não um salto aéreo: gastar o geppo aqui puniria o jogador por usar o
+		# cancelamento que a própria mecânica exige. Zerar (em vez de só não
+		# incrementar) devolve o recurso, como qualquer apoio devolve.
+		_geppo = 0
+		_rolando_no_ar = ROLAMENTO_AR_DURACAO
+		_consumiu_espaco = true
 	_normal_parede = Vector3.ZERO
 
 

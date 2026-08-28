@@ -1261,7 +1261,12 @@ func _etapa_locomocao(delta: float) -> void:
 	# `meia_altura·(1−cos)` em Y e `meia_altura·sin` em Z, o giro acontece em
 	# torno da CINTURA, que é onde uma cambalhota gira de verdade.
 	if _char_model:
+		# A cambalhota de saída da superfície gira pelo MESMO mecanismo do
+		# rolamento de costas — inclusive a compensação de posição, que é o que
+		# faz girar em torno da cintura e não dos pés.
 		var g := _dash.giro_do_rolamento() if _dash.ativo() and _dash.rumo_nome() == "tras" else 0.0
+		if g <= 0.0 and _parkour.rolando_no_ar():
+			g = _parkour.giro_do_rolamento_no_ar()
 		if g > 0.0:
 			# ⚠️ GUARDA O REPOUSO NO PRIMEIRO QUADRO DO GIRO, e soma o arco A
 			# PARTIR dele. A primeira versão devolvia a posição para ZERO no fim —
@@ -1293,7 +1298,11 @@ func _etapa_locomocao(delta: float) -> void:
 		_skel_anim.update(velocity, is_on_floor(), _parkour.escalando(), delta, q.sprint)
 	elif _proc_anim:
 		var parkour := ""
-		if _parkour.correndo_na_parede():
+		if _parkour.rolando_no_ar():
+			# ⚠️ ANTES do wall_run e do roll: a cambalhota de saída é o estado
+			# mais recente e tem de vencer o que estava tocando.
+			parkour = "roll_ar"
+		elif _parkour.correndo_na_parede():
 			parkour = "wall_run"
 		elif _roll_t > 0.0:
 			# ⚠️ A pose depende do RUMO da esquiva. O dash já saía para os lados e
@@ -1323,8 +1332,23 @@ func _etapa_locomocao(delta: float) -> void:
 		var no_chao_anim: bool = is_on_floor() or _parkour.na_parede()
 		var vel_anim: Vector3 = velocity
 		if _parkour.na_parede():
+			# ⚠️ TRADUZIR A VELOCIDADE PARA O PLANO QUE O ANIMADOR ENTENDE.
+			# Ele mede a caminhada com `Vector2(velocity.x, velocity.z)` — só o
+			# plano horizontal do MUNDO. Subir a parede é movimento em Y, que
+			# ele não enxerga: andar para cima e para baixo não animava nada,
+			# enquanto andar de lado animava.
+			#
+			# A saída é decompor a velocidade na base da SUPERFÍCIE (quanto é
+			# "para frente", quanto é "para o lado") e reemitir isso na base
+			# horizontal do corpo. O animador recebe uma caminhada com a
+			# magnitude e a repartição certas, sem saber que há uma parede.
 			var n_sup := _parkour.normal_da_parede()
-			vel_anim = velocity - n_sup * velocity.dot(n_sup)
+			var no_plano := velocity - n_sup * velocity.dot(n_sup)
+			var b_sup := _parkour.base_da_superficie()
+			var v_frente: float = no_plano.dot(-b_sup.z)
+			var v_lado: float = no_plano.dot(b_sup.x)
+			vel_anim = RosaDosVentos.frente(_yaw) * v_frente \
+				+ RosaDosVentos.direita(_yaw) * v_lado
 		_proc_anim.update(vel_anim, no_chao_anim, _parkour.escalando(), delta, _pitch, q.sprint, false, "", parkour, _pose_de_arma(), _gun_recoil)
 
 # Fôlego, rajada Z e a janela do combo de corpo a corpo.

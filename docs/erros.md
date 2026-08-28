@@ -1657,6 +1657,58 @@ e preparar o ambiente antes de testar é justamente o que o esconde.
 
 ---
 
+## 2026-08-27 — subir a parede não animava: o animador só enxerga o plano XZ
+
+**Sintoma (relatado pelo dono):** andando para cima ou para baixo no bloco, a
+animação não aparecia — andando de lado, aparecia.
+
+**Causa raiz:** `ProceduralAnimator.update` mede a caminhada com
+`Vector2(velocity.x, velocity.z).length()` — só o plano **horizontal do mundo**.
+Subir a parede é movimento em **Y**, invisível para essa conta: o ciclo lia
+velocidade zero e o corpo ficava parado. De lado funcionava porque aí o
+movimento é mesmo horizontal.
+
+**Evidência** (variação da pose do rig, por direção):
+
+```
+antes:   para cima ~0     para baixo ~0     para o lado ok
+depois:  para cima 3,73   para baixo 4,05   para o lado 3,46
+```
+
+**Correção:** o Player decompõe a velocidade na base da **superfície** (quanto é
+"para frente", quanto é "para o lado") e a reemite na base horizontal do corpo. O
+animador recebe uma caminhada com a magnitude e a repartição certas, sem saber
+que existe uma parede.
+
+⚠️ E a base da superfície virou **fonte única** (`base_da_superficie()`), usada
+pelo movimento E pela animação — as duas precisam da MESMA decomposição, e duas
+cópias divergiriam.
+
+**Como detectar de novo:** a asserção testava só o W. **Uma direção não cobre** —
+foi exatamente por isso que o defeito passou.
+
+---
+
+## 2026-08-27 — cancelar a parede gastava um pulo duplo
+
+**Sintoma:** largar a superfície com espaço consumia um geppo, punindo o jogador
+por usar o cancelamento que a própria mecânica exige.
+
+**Causa raiz:** zerar `_geppo` dentro de `_soltar_da_parede` não bastava —
+`aplicar_pulos` roda **depois**, no mesmo quadro, vê o mesmo `espaco_agora` e
+gasta de novo.
+
+**Evidência:** `geppos` = 1 logo após o cancelamento; 0 depois do conserto.
+
+**Correção:** uma marca de um quadro (`_consumiu_espaco`) diz que aquele toque já
+foi usado, e `aplicar_pulos` sai sem fazer nada.
+
+**Como detectar de novo:** conferir o CONTADOR depois do cancelamento, não só o
+estado. Efeito colateral de ordem entre sistemas não aparece no estado final de
+um só deles.
+
+---
+
 ## 2026-08-27 — na parede só A e D andavam (a projeção anulava o W)
 
 **Sintoma (relatado pelo dono):** fixado na parede, o jogador só conseguia se
