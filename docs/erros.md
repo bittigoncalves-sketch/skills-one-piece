@@ -1657,6 +1657,57 @@ e preparar o ambiente antes de testar é justamente o que o esconde.
 
 ---
 
+## 2026-08-27 — na parede só A e D andavam (a projeção anulava o W)
+
+**Sintoma (relatado pelo dono):** fixado na parede, o jogador só conseguia se
+mover para a direita ou esquerda.
+
+**Causa raiz:** o movimento era `q.dir` **projetado** no plano da superfície. Mas
+`q.dir` é **HORIZONTAL** — vem do yaw da câmera —, então numa parede vertical o W
+produz exatamente a componente que aponta PARA DENTRO da parede, e a projeção a
+anula. Sobravam só A e D, que já eram paralelos ao plano.
+
+**Evidência** (deslocamento no plano da superfície, por tecla):
+
+```
+com o bug:   W 0,000   S 0,000   A 0,725   D 0,805
+corrigido:   W 0,724   S 0,724   A 0,725   D 0,725
+```
+
+**Correção:** o movimento passou a ser montado numa **base da superfície** — a
+normal é o "para cima", a frente é a da câmera projetada no plano, a direita sai
+do produto vetorial. Aí `mov = frente·f + direita·r`, e W anda parede acima.
+
+Projetar a direção final e montar a direção NA BASE CERTA parecem a mesma coisa e
+não são: a projeção descarta informação que a base preserva.
+
+**Como detectar de novo:** `medir_camera_e_parede.gd` mede **tecla por tecla**. A
+versão anterior olhava só "está na parede" e passava com metade dos controles
+mortos.
+
+---
+
+## 2026-08-27 — sem animação na parede: o animador achava que estava caindo
+
+**Sintoma (relatado pelo dono):** nenhuma animação enquanto andava na parede.
+
+**Causa raiz:** `ProceduralAnimator.update` decide entre ciclo de caminhada e
+pose de ar pelo parâmetro `on_floor` — e o Player passava `is_on_floor()`, que na
+parede é **false**. O animador tocava a pose de queda o tempo todo, e o corpo
+ficava parado.
+
+**Correção:** para o animador, a superfície **é** o chão:
+`is_on_floor() or _parkour.na_parede()`.
+
+E a velocidade vai **sem a componente de aderência** — aquele empurrão constante
+contra a parede é contato, não deslocamento, e faria o ciclo de caminhada rodar
+com o jogador parado.
+
+**Como detectar de novo:** a sonda compara as rotações dos membros antes e
+durante a caminhada; se não mudam, não há animação.
+
+---
+
 ## 2026-08-27 — `global_basis` ortonormalizada DESTRÓI a escala (personagem 2,4× maior)
 
 **Sintoma (relatado pelo dono):** ao colidir com a parede, o personagem

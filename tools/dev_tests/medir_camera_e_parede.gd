@@ -160,6 +160,43 @@ func _testar_parede(p: Node3D, junto: Vector3) -> void:
 		str(up_corpo.normalized()), str(n.normalized()), up_corpo.normalized().dot(n.normalized())])
 	_ok("o 'chão' do corpo virou a superfície", up_corpo.normalized().dot(n.normalized()) > 0.8)
 
+	# ---------- as QUATRO teclas andam na superfície ----------
+	# ⚠️ A ASSERÇÃO QUE FALTAVA (3/3). A primeira versão projetava `q.dir` no
+	# plano da parede — e `q.dir` é HORIZONTAL, então numa parede vertical o W
+	# era justamente a componente anulada pela projeção: só A e D moviam. A
+	# bateria passava porque nunca testou tecla por tecla.
+	print("\n   deslocamento por tecla, no plano da superfície:")
+	var n_sup: Vector3 = p._parkour.normal_da_parede()
+	var moveu_todas := true
+	for caso in [[KEY_W, "W"], [KEY_S, "S"], [KEY_A, "A"], [KEY_D, "D"]]:
+		var antes_pos: Vector3 = p.global_position
+		_tecla(caso[0] as Key, true)
+		for i in 22:
+			await process_frame
+		_tecla(caso[0] as Key, false)
+		for i in 8:
+			await process_frame
+		var d: Vector3 = p.global_position - antes_pos
+		var no_plano: Vector3 = d - n_sup * d.dot(n_sup)
+		print("      %s -> %.3f m no plano" % [caso[1], no_plano.length()])
+		if no_plano.length() < 0.25:
+			moveu_todas = false
+	_ok("as quatro teclas movem na superfície", moveu_todas)
+
+	# ---------- o rig se mexe ----------
+	var pose0 := _pose(p)
+	_tecla(KEY_W, true)
+	var mexeu := false
+	for i in 40:
+		await process_frame
+		if _dif_pose(pose0, _pose(p)) > 0.05:
+			mexeu = true
+			break
+	_tecla(KEY_W, false)
+	for i in 10:
+		await process_frame
+	_ok("o rig ANIMA enquanto anda na superfície", mexeu)
+
 	# cancela PULANDO
 	_tecla(KEY_SPACE, true)
 	for i in 4:
@@ -192,6 +229,22 @@ func _tamanho(m: Node3D) -> float:
 	if cabeca == null or pe == null:
 		return 0.0
 	return cabeca.global_position.distance_to(pe.global_position)
+
+
+## A pose do rig: as rotações dos membros. Se elas não mudam enquanto o jogador
+## anda, não há animação — que foi o segundo relato do dono.
+func _pose(p: Node3D) -> Array:
+	var out: Array = []
+	for nome in ["Thigh_R", "Thigh_L", "Shin_R", "UpperArm_R", "UpperArm_L", "Torso"]:
+		var n := p._char_model.find_child(nome, true, false) as Node3D
+		out.append(n.rotation if n else Vector3.ZERO)
+	return out
+
+func _dif_pose(a: Array, b: Array) -> float:
+	var soma := 0.0
+	for i in mini(a.size(), b.size()):
+		soma += ((a[i] as Vector3) - (b[i] as Vector3)).length()
+	return soma
 
 
 func _achar_parede(p: Node3D) -> Vector3:

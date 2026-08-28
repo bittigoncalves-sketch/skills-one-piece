@@ -179,19 +179,35 @@ func avaliar(delta: float, q: MoveFrame, no_chao: bool) -> void:
 # ------------------------------------------------- velocidade quando ASSUMIU
 func velocidade(delta: float, q: MoveFrame, vel: Vector3, vel_efetiva: float) -> Vector3:
 	if _na_parede:
-		# ⚠️ A SUPERFÍCIE VIRA O CHÃO. O movimento acontece no PLANO dela: a
-		# direção pedida pelo teclado é projetada nesse plano, e o que sobraria
-		# "para dentro" da parede vira pressão de contato — sem ela, um quadro
-		# sem colisão soltaria o jogador.
+		# ⚠️ A SUPERFÍCIE VIRA O CHÃO — E ISSO EXIGE UMA BASE PRÓPRIA.
 		#
-		# A gravidade não entra aqui: quem a suspende é o Player, pelo mesmo
-		# caminho do dash.
+		# A primeira versão projetava `q.dir` no plano da parede. `q.dir` é
+		# HORIZONTAL (vem do yaw da câmera), então numa parede vertical o W é
+		# exatamente a componente que aponta PARA DENTRO — e a projeção a
+		# anulava. Resultado medido: só A e D funcionavam, que foi o relato.
+		#
+		# Agora o movimento é montado na base DA SUPERFÍCIE: a normal é o "para
+		# cima", a frente é a da câmera projetada no plano, e a direita sai do
+		# produto vetorial. Aí W anda parede acima e A/D andam de lado, que é o
+		# que "o bloco é o chão" quer dizer.
 		var n := _normal_parede
-		var mov := q.dir - n * q.dir.dot(n)     # projeta no plano da superfície
-		if mov.length_squared() > 0.001:
+		var frente := q.frente - n * q.frente.dot(n)
+		if frente.length_squared() <= 0.001:
+			# A câmera olha direto para a parede: a frente projetada degenera.
+			# "Para cima da parede" é a escolha natural — é para onde alguém
+			# andando nela encara.
+			frente = Vector3.UP - n * Vector3.UP.dot(n)
+		if frente.length_squared() <= 0.001:
+			frente = Vector3.FORWARD - n * Vector3.FORWARD.dot(n)
+		frente = frente.normalized()
+		var direita := frente.cross(n).normalized()
+
+		var mov := frente * q.f + direita * q.r
+		if mov.length_squared() > 1.0:
 			mov = mov.normalized()
-		var v := mov * vel_efetiva + (-n * PAREDE_ADERENCIA)
-		return v
+		# O que sobraria "para dentro" vira pressão de contato: sem ela, um
+		# quadro sem colisão soltaria o jogador.
+		return mov * vel_efetiva + (-n * PAREDE_ADERENCIA)
 	if _escalando:
 		# Uma leve pressão contra a parede preserva o contato de colisão entre
 		# quadros; sem isso, ao mover apenas no eixo Y a escalada terminaria logo.
