@@ -59,8 +59,28 @@ const CADENCIA_MAX := 30.0
 # Altura do quadril como fração da perna esticada. Nunca 1.0: o joelho precisa
 # sobrar dobrado, senão a IK satura e o pé sobe em vez de esticar.
 const H_PARADO := 0.94
-const H_CORRIDA := 0.80
-const H_SPRINT := 0.76   # corrida agacha mais -> o pé alcança mais longe
+# ⚠️ ABAIXADOS EM 2026-08-27 (0,80/0,76 -> 0,70/0,66) para DESACELERAR a
+# animação sem tocar no deslocamento — pedido do dono.
+#
+# A alavanca não é óbvia e vale registrar: a cadência sai de ω = π·v/passada, e a
+# passada está travada por um TETO GEOMÉTRICO que depende da altura do quadril
+# (com o quadril a H do chão, o pé só alcança sqrt(alcance² − H²)). Agachar um
+# pouco levanta esse teto: a passada cresce, e como v é a mesma, a cadência CAI.
+#
+# Mexer em `PASSADA_GANHO` não fazia nada — a passada já estava saturada no teto.
+# E mexer em `CADENCIA_ESCALA` desacelera, mas o deslize é `1 − ESCALA` (ver a
+# identidade acima): para −18% de cadência ele iria de 45% para 55%, estourando
+# o teto de 50% do `test_walk_run`. Por aqui o deslize NÃO muda.
+#
+# Medido (walk / run):
+#   0,80 / 0,76   cadência 4,35 / 6,64   deslize 45-47%   coxa  87° /  84°
+#   0,70 / 0,66   cadência 3,54 / 5,60   deslize 45-46%   coxa 112° / 107°
+#   0,66 / 0,62   cadência 3,40 / 5,41   deslize 45-46%   coxa 122° / 116°
+#
+# O preço é a SILHUETA: passo maior, corpo um pouco mais agachado. É o preço que
+# a geometria cobra por uma marcha mais calma nesta velocidade de jogo.
+const H_CORRIDA := 0.70
+const H_SPRINT := 0.66   # corrida agacha mais -> o pé alcança mais longe
 
 var _n: Dictionary = {}     # papel -> Node3D
 var _rest: Dictionary = {}  # papel -> Vector3 (rotação de descanso)

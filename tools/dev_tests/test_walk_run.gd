@@ -62,7 +62,12 @@ func _run() -> void:
 			var anim := ProceduralAnimator.new()
 			modelo.add_child(anim)
 			anim.setup(prof)
-			for i in 90:
+			# ⚠️ JANELA LONGA O BASTANTE PARA O CICLO. Eram 90 quadros, calibrados
+			# para a cadência antiga (ciclo ~27). Com a marcha desacelerada em
+			# 2026-08-27 o ciclo do walk foi a ~33 quadros e o detector de
+			# período deixava de fechar — reprovava por falta de amostra, não por
+			# defeito. 180 dão folga para mais de 5 ciclos.
+			for i in 180:
 				anim.update(vel, true, false, DT, 0.0, sprint)
 
 			falhas += _checa(anim, nodes, prof, modelo, vel, sprint, float(caso[1]), String(caso[0]))
