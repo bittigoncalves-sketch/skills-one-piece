@@ -165,6 +165,8 @@ func _testar_parede(p: Node3D, junto: Vector3) -> void:
 	# plano da parede — e `q.dir` é HORIZONTAL, então numa parede vertical o W
 	# era justamente a componente anulada pela projeção: só A e D moviam. A
 	# bateria passava porque nunca testou tecla por tecla.
+	if not await _regrudar(p, junto):
+		_ok("regrudou para o teste das teclas", false)
 	print("\n   deslocamento por tecla, no plano da superfície:")
 	var n_sup: Vector3 = p._parkour.normal_da_parede()
 	var moveu_todas := true
@@ -183,11 +185,48 @@ func _testar_parede(p: Node3D, junto: Vector3) -> void:
 			moveu_todas = false
 	_ok("as quatro teclas movem na superfície", moveu_todas)
 
+	# ---------- a direção é ESTÁVEL (o bug intermitente) ----------
+	# ⚠️ MEDE A BASE, NÃO O DESLOCAMENTO. A primeira versão segurava o W por 90
+	# quadros e olhava para onde o corpo ia — mas a 7 m/s isso sobe 10 m e o
+	# jogador passa do TOPO do bloco e cai. O teste reprovava por um motivo
+	# legítimo (acabou a parede) e escondia o que se queria medir.
+	#
+	# A grandeza que invertia é a FRENTE DA BASE da superfície. Ela existe sem o
+	# jogador andar, e é exatamente o que o defeito atacava: a projeção da
+	# câmera no plano degenera quando ela encara a parede, e 5° de mouse
+	# INVERTIAM o eixo (yaw 175° → (−1,0,0); yaw 185° → (+1,0,0)).
+	if not await _regrudar(p, junto):
+		_ok("regrudou para o teste de estabilidade", false)
+	print("\n   estabilidade da base com a câmera oscilando em torno da parede:")
+	var frentes: Array = []
+	for i in 70:
+		# ±8° em torno de encarar a parede: a vizinhança da degeneração.
+		p._yaw = PI + sin(float(i) * 0.35) * deg_to_rad(8.0)
+		p._camera.apontar(p._yaw, -0.1)
+		await process_frame
+		if p._parkour.na_parede():
+			frentes.append(-(p._parkour.base_da_superficie().z))
+	var pior_giro := 0.0
+	for i in range(1, frentes.size()):
+		var ang: float = rad_to_deg(acos(clampf(
+			(frentes[i] as Vector3).normalized().dot((frentes[i - 1] as Vector3).normalized()), -1.0, 1.0)))
+		pior_giro = maxf(pior_giro, ang)
+	print("      amostras %d | maior virada da base entre quadros: %.1f°" % [
+		frentes.size(), pior_giro])
+	_ok("continua na parede durante a oscilação", frentes.size() > 50)
+	_ok("a base NÃO vira de repente (< 20° entre quadros)", pior_giro < 20.0)
+	p._yaw = PI
+	p._camera.apontar(PI, -0.1)
+	for i in 10:
+		await process_frame
+
 	# ---------- o rig se mexe, EM TODA DIREÇÃO ----------
 	# ⚠️ A ASSERÇÃO QUE FALTAVA. Testar só o W deixou passar o oposto: o animador
 	# mede a caminhada com `Vector2(velocity.x, velocity.z)` — só o plano
 	# HORIZONTAL do mundo. Subir a parede é movimento em Y, invisível para ele:
 	# de lado animava, para cima e para baixo não. Uma direção só não cobre.
+	if not await _regrudar(p, junto):
+		_ok("regrudou para o teste de animação", false)
 	for caso in [[KEY_W, "para cima"], [KEY_S, "para baixo"], [KEY_A, "para o lado"]]:
 		var pose0 := _pose(p)
 		_tecla(caso[0] as Key, true)
@@ -201,7 +240,10 @@ func _testar_parede(p: Node3D, junto: Vector3) -> void:
 		print("      %s: variação da pose %.3f" % [caso[1], dif])
 		_ok("o rig ANIMA andando %s" % caso[1], dif > 0.05)
 
-	# cancela PULANDO
+	# cancela PULANDO — depois de regrudar, para o estado ser sempre o mesmo
+	if not await _regrudar(p, junto):
+		_ok("regrudou para o cancelamento", false)
+	var geppo0: int = int(p._parkour.geppos())
 	_tecla(KEY_SPACE, true)
 	for i in 4:
 		await process_frame
@@ -212,7 +254,7 @@ func _testar_parede(p: Node3D, junto: Vector3) -> void:
 		if not p._parkour.na_parede():
 			soltou = true
 			break
-	var geppo_antes: int = int(p._parkour.geppos())
+	var geppo_antes: int = geppo0
 	_ok("pular CANCELA e solta da superfície", soltou)
 	# ---------- a saída é cambalhota, e não gasta pulo duplo ----------
 	print("   geppos gastos após o cancelamento: %d (antes %d)" % [p._parkour.geppos(), geppo_antes])
@@ -246,6 +288,47 @@ func _tamanho(m: Node3D) -> float:
 	if cabeca == null or pe == null:
 		return 0.0
 	return cabeca.global_position.distance_to(pe.global_position)
+
+
+## Repõe o jogador colado na superfície, do zero.
+##
+## ⚠️ EXISTE PORQUE CADA BLOCO MOVE O JOGADOR. Andar para cima sobe metros; o
+## bloco tem ~6 m e o jogador sai pelo topo. Sem regrudar, os blocos seguintes
+## mediam um jogador que já tinha caído — e reprovavam por sequência, não por
+## defeito. Cada medição começa do mesmo estado.
+func _regrudar(p: Node3D, junto: Vector3) -> bool:
+	p._parkour._soltar_da_parede(false)
+	p.global_position = junto
+	p.velocity = Vector3.ZERO
+	p.energy = p.max_energy
+	p._yaw = PI
+	p._camera.apontar(PI, -0.1)
+	for i in 25:
+		await process_frame
+	_tecla(KEY_W, true)
+	for i in 10:
+		await process_frame
+	_tecla(KEY_SPACE, true)
+	for i in 4:
+		await process_frame
+	_tecla(KEY_SPACE, false)
+	for i in 12:
+		await process_frame
+	_tecla(KEY_SPACE, true)
+	for i in 4:
+		await process_frame
+	_tecla(KEY_SPACE, false)
+	for i in 40:
+		await process_frame
+		if p._parkour.na_parede():
+			break
+	_tecla(KEY_W, false)
+	# ⚠️ ESPERA A CARÊNCIA PASSAR. Entrar arma 0,25 s em que o espaço não
+	# cancela (senão o MESMO toque que gruda desgruda). Seis quadros são 0,1 s —
+	# o teste do cancelamento chegava dentro da carência e reprovava.
+	for i in 25:
+		await process_frame
+	return p._parkour.na_parede()
 
 
 ## A pose do rig: as rotações dos membros. Se elas não mudam enquanto o jogador
