@@ -452,13 +452,29 @@ func _itens_cor() -> void:
 			_encher_direita())
 	_lista_direita.add_child(orig)
 
-	# A paleta é a MESMA do jogo (`Paleta.CORES`) — uma cor que existisse só aqui
-	# seria uma promessa que a partida não cumpre.
-	for i in Paleta.CORES.size():
-		var d: Dictionary = Paleta.CORES[i]
-		var b := _botao(String(d["nome"]).capitalize(), _cor_idx == i, d["cor"])
-		b.gui_input.connect(func(e, idx = i):
+	# A paleta de TIME é a MESMA do jogo — uma cor que existisse só aqui seria
+	# uma promessa que a partida não cumpre.
+	_grupo_de_cores("time", Paleta.CORES)
+
+	var t2 := Label.new()
+	t2.text = "TOM DE PELE"
+	t2.add_theme_font_size_override("font_size", 13)
+	t2.add_theme_color_override("font_color", COR_TEXTO_FRACO)
+	_lista_direita.add_child(t2)
+	_grupo_de_cores("pele", Paleta.PELES)
+
+
+## Um grupo de cores. Os dois grupos são EXCLUSIVOS entre si: escolher um tom de
+## pele desmarca a cor de time e vice-versa — o corpo tem UMA cor, e deixar dois
+## botões acesos mentiria sobre isso.
+func _grupo_de_cores(grupo: String, lista: Array) -> void:
+	for i in lista.size():
+		var d: Dictionary = lista[i]
+		var sel: bool = _cor_grupo == grupo and _cor_idx == i
+		var b := _botao(String(d["nome"]).capitalize(), sel, d["cor"])
+		b.gui_input.connect(func(e, idx = i, g = grupo):
 			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+				_cor_grupo = g
 				_cor_idx = idx
 				_pintar()
 				_encher_direita())

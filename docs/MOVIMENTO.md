@@ -219,3 +219,42 @@ Confira o estado real antes de confiar nesta linha.*
   lateral lêem todos como "no ar".
 - **Nada do parkour atravessa a rede.** Não há RPC de escalada, wall run ou
   geppo; o adversário vê o resultado pela posição replicada, não pelo estado.
+
+---
+
+## A FRENTE do personagem segue a MIRA (2026-08-27)
+
+Decisão do dono. Antes a frente seguia o **movimento**: andar para o lado virava
+o corpo para o lado, e a mira só mandava com o jogador parado.
+
+**Por que mudou.** O golpe SEMPRE saiu pelo `_yaw` — `melee_controller` posiciona
+a hitbox por ele, e as skills também. Era o corpo que discordava do golpe. Na
+prática, o adversário lia a direção errada: via as costas de quem ia acertá-lo
+de lado.
+
+Medido com a sabotagem (o comportamento antigo reposto de propósito), o produto
+escalar entre a frente do corpo e a direção da mira:
+
+```
+andando de ré      −1,000   ← o corpo apontava EXATAMENTE ao contrário
+andando de lado     0,000   ← 90° fora
+diagonal            0,707
+```
+
+Hoje, em 8 rumos × 6 direções de caminhada: **+1,000 nas 48**.
+
+### A exceção, e por que não é negociável
+
+**Escalando**, a frente vira para DENTRO da parede. É isso que faz a escalada
+ler — um personagem grudado numa parede de costas para ela seria pior que o
+problema original. Ali o corpo está preso à geometria, e a mira não manda.
+
+### E dois números viraram um
+
+Havia `35.0` para o caso em movimento e `24.0` para o parado — dois valores para
+a mesma coisa. Agora é `Player.VELOCIDADE_FACING = 26.0`, alto o bastante para
+não haver atraso perceptível entre girar o mouse e o golpe sair na direção nova,
+baixo o bastante para o giro não ser corte seco.
+
+**Sonda:** `tools/dev_tests/medir_facing.gd`. Ela sabe reprovar: com o
+comportamento antigo, 0 passam e 8 falham.
