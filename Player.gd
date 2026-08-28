@@ -1311,7 +1311,21 @@ func _etapa_locomocao(delta: float) -> void:
 				parkour = "roll"
 		elif _parkour.janela_impulso() > 0.0 and not on_floor_now:
 			parkour = "long_jump"
-		_proc_anim.update(velocity, is_on_floor(), _parkour.escalando(), delta, _pitch, q.sprint, false, "", parkour, _pose_de_arma(), _gun_recoil)
+		# ⚠️ NA SUPERFÍCIE, O ANIMADOR PRECISA ACHAR QUE ESTÁ NO CHÃO. Ele decide
+		# entre ciclo de caminhada e pose de ar por `on_floor` — e andando na
+		# parede o jogador NÃO está no chão do mundo, então tocava a pose de
+		# queda e parecia que não havia animação nenhuma. Para o animador, a
+		# superfície É o chão.
+		#
+		# E a velocidade vai SEM a componente de aderência: aquele empurrão
+		# contra a parede é contato, não deslocamento, e faria o ciclo de
+		# caminhada rodar com o jogador parado.
+		var no_chao_anim: bool = is_on_floor() or _parkour.na_parede()
+		var vel_anim: Vector3 = velocity
+		if _parkour.na_parede():
+			var n_sup := _parkour.normal_da_parede()
+			vel_anim = velocity - n_sup * velocity.dot(n_sup)
+		_proc_anim.update(vel_anim, no_chao_anim, _parkour.escalando(), delta, _pitch, q.sprint, false, "", parkour, _pose_de_arma(), _gun_recoil)
 
 # Fôlego, rajada Z e a janela do combo de corpo a corpo.
 func _etapa_ticks_de_combate(delta: float) -> void:
