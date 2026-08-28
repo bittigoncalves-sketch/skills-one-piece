@@ -314,3 +314,81 @@ sempre, e ninguém o consertaria.
 separadas: para onde o corpo SE MOVE (já funcionava) e qual POSE toca (o que
 mudou). E confere a volta completa do giro: rolamento é giro, não encolhimento —
 sem isso uma pose agachada passaria por rolamento.
+
+---
+
+## Andar na superfície — no lugar da escalada (2026-08-27)
+
+Pedido do dono, inspirado em Naruto: onde o jogador escalaria, ele passa a
+**andar** sobre o objeto, gastando energia; cancela **pulando**; e não precisa
+segurar tecla.
+
+### A diferença não é cosmética
+
+| | escalada (antiga) | andar na superfície |
+|---|---|---|
+| estado | **segurado** — soltar o espaço larga a parede | **ligado** — entra uma vez e fica |
+| movimento | sobe/desce colado | anda no PLANO da superfície, com WASD |
+| orientação | corpo vira **para dentro** da parede | o "para cima" do corpo vira a **normal** da superfície |
+| saída | soltar a tecla | **pular** |
+| custo | nenhum | energia por segundo |
+
+O preço existe para a mecânica ser um **recurso**, não um modo de locomoção
+grátis: sem ele, andar na parede seria estritamente melhor que andar no chão e o
+chão deixaria de ser uma decisão.
+
+### Como se usa
+
+**Dois toques de espaço**, e isso não é limitação: no chão o espaço é **pulo**. O
+primeiro toque tira o jogador do chão; o segundo, já no ar e contra a superfície,
+é o que gruda. Grudar direto do chão exigiria roubar a tecla mais usada do jogo.
+
+Depois, **nada precisa ser segurado**. WASD anda pela superfície, e a normal do
+que está sob os pés é reavaliada a cada quadro — é isso que deixa passar de uma
+face para outra sem soltar.
+
+### Quatro coisas que quebraram no caminho
+
+**1. A energia não saía.** O custo estava num `elif` no bloco do dash — mas andar
+na superfície entra por `_parkour.assumiu()`, a mesma porta da escalada, então
+aquele ramo **nunca rodava** e a mecânica ficava de graça. Agora é cobrado num
+ponto só, que roda todo quadro.
+
+**2. O corpo grudava em pé.** A frente do modelo é projetada no plano da
+superfície — mas ao grudar o corpo está ENCARANDO a parede, e essa projeção dá
+**zero**. Sem uma saída para o caso degenerado a orientação nunca mudava. A saída
+é "para cima da parede": a vertical do mundo projetada no plano.
+
+**3. Outros escritores de facing desfaziam tudo.** `aplicar_mira` e mais dois
+pontos escrevem `_char_model.rotation.y` todo quadro; escrever yaw numa base
+inclinada mata a inclinação. Os três agora respeitam o estado.
+
+**4. Sair não desentortava.** Largar a parede não bastava: como o resto escreve
+só `rotation.y`, o personagem saía andando de lado no ar **para sempre**. Agora a
+base volta inteira para "em pé olhando para a mira", e só então os escritores de
+yaw voltam a mandar.
+
+---
+
+## Câmera: afastamento em degraus, no lugar dos efeitos de tela
+
+Os quatro efeitos de velocidade **saíram**: borrão radial, linhas de velocidade,
+aberração cromática e vinheta. As linhas misturavam a imagem com **branco puro**
+(`mix(col, vec3(1.0), ...)`) — era o "esbranquiçamento" relatado; as outras três
+distorciam.
+
+Num jogo de luta, sujar a tela justamente quando o jogador se move é **cobrar
+visão pelo movimento**. O retorno passou a ser a distância da câmera:
+
+```
+parado 6,01 | andando 6,89 | correndo 8,28 | parou de novo 6,10
+```
+
+**Degrau, não rampa.** A rampa proporcional que existia dava ~0,4 m andando e a
+informação se perdia. E a **volta é mais rápida que a ida**: parar é uma decisão
+do jogador e a câmera tem de obedecer na hora; sair andando é gradual.
+
+As funções do `ScreenFX` continuam existindo — o flash de impacto e a visão do E
+usam a mesma camada. O que saiu foi **alimentá-las pela velocidade**.
+
+**Sonda:** `tools/dev_tests/medir_camera_e_parede.gd` — 10 conferências.

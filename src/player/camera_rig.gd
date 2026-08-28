@@ -61,6 +61,18 @@ var _fov_punch: float = 0.0   # zoom-in momentâneo ao atacar (decai)
 var _bob_t: float = 0.0       # fase do balanço ao andar/correr
 var _no_chao_antes := true    # p/ detectar o instante do pouso
 
+## Afastamento da câmera por estado. Os números são o que torna a mudança
+## PERCEPTÍVEL: 1,1 m já se nota sem desorientar, e 2,6 m no sprint dá a sensação
+## de abrir campo de visão para correr.
+const AFASTA_ANDANDO := 1.1
+const AFASTA_CORRENDO := 2.6
+## Abaixo disto o jogador conta como parado (ruído de física não deve afastar).
+const LIMIAR_PARADO := 0.06
+## Ida mais lenta que a volta: ver a nota no `atualizar`.
+const IDA_DA_CAMERA := 3.2
+const VOLTA_DA_CAMERA := 6.0
+
+
 # ------------------------------------------------------------------ montagem
 # `dono` é o corpo: entra na exclusão do SpringArm para a câmera nunca colidir
 # com o próprio jogador. `ativa` liga a Camera3D — só a do player local.
@@ -131,6 +143,14 @@ func aplicar_perspectiva() -> void:
 		_ombro.position.x = SHOULDER_RIGHT
 		_spring.spring_length = distancia
 
+## Quanto a câmera recua além da distância base, por estado de movimento.
+## Parado 0; andando um passo visível; correndo bem mais.
+func _afastamento(spd: float, sprint: bool) -> float:
+	if spd <= LIMIAR_PARADO:
+		return 0.0
+	return AFASTA_CORRENDO if sprint else AFASTA_ANDANDO
+
+
 func ajustar_distancia(passo: float) -> void:
 	distancia = clampf(distancia + passo, 2.0, 15.0)
 
@@ -175,7 +195,19 @@ func atualizar(delta: float, velocidade: Vector3, vel_ref: float, no_chao: bool,
 
 	# Recuo da câmera ao correr (só 3ª pessoa)
 	if not _primeira_pessoa and _spring:
-		_spring.spring_length = lerpf(_spring.spring_length, distancia + spd * 0.9, 4.0 * delta)
+		# ⚠️ AFASTAMENTO EM DEGRAUS, e não uma rampa contínua pela velocidade.
+		# Pedido do dono: começou a andar, a câmera afasta um pouco DE FORMA
+		# VISÍVEL; começou a correr, afasta mais; parou, volta ao normal.
+		#
+		# Degrau em vez de rampa porque o objetivo é o jogador PERCEBER a
+		# mudança. Uma rampa proporcional dá quase nada na caminhada (era
+		# `spd * 0.9`, ou seja ~0,4 andando) e a informação se perde.
+		#
+		# A volta é mais rápida que a ida (`VOLTA` > `IDA`): parar é uma decisão
+		# do jogador e a câmera tem de obedecer na hora; sair andando é gradual.
+		var alvo_dist: float = distancia + _afastamento(spd, sprint)
+		var vel_dist: float = VOLTA_DA_CAMERA if alvo_dist < _spring.spring_length else IDA_DA_CAMERA
+		_spring.spring_length = lerpf(_spring.spring_length, alvo_dist, vel_dist * delta)
 
 	# Tranco ao aterrissar
 	if no_chao and not _no_chao_antes:
@@ -184,15 +216,25 @@ func atualizar(delta: float, velocidade: Vector3, vel_ref: float, no_chao: bool,
 
 	_efeitos_de_tela(spd, sprint)
 
-# EFEITOS DE VELOCIDADE na tela. Quatro camadas que entram em faixas DIFERENTES.
-# Antes só a vinheta era visível — ela entrava em 0,4 e as linhas só em 0,85, que
-# quase nunca se alcança, então o resultado prático era "a tela escurece".
-func _efeitos_de_tela(spd: float, sprint: bool) -> void:
-	var v: float = spd * (1.15 if sprint else 1.0)
-	ScreenFX.set_borrao(clampf((v - 0.35) * 0.7, 0.0, 0.5))          # o mundo escorre nas bordas
-	ScreenFX.set_speed_lines(clampf((v - 0.50) * 0.8, 0.0, 0.4))
-	ScreenFX.set_aberracao_base(clampf((v - 0.62) * 0.8, 0.0, 0.3))
-	ScreenFX.set_vignette(clampf((v - 0.70) * 0.6, 0.0, 0.2))
+# ⚠️ OS EFEITOS DE VELOCIDADE NA TELA SAÍRAM (decisão do dono, 2026-08-27).
+#
+# Eram quatro camadas: borrão radial, linhas de velocidade, aberração cromática e
+# vinheta. As linhas misturavam a imagem com BRANCO PURO
+# (`mix(col, vec3(1.0), ...)` no shader do `ScreenFX`) — é o "esbranquiçamento"
+# relatado; as outras três distorciam.
+#
+# O retorno de velocidade passou a ser a DISTÂNCIA DA CÂMERA. É melhor pelo mesmo
+# motivo que a rosa dos ventos é melhor que cinco cópias: diz a mesma coisa sem
+# atrapalhar o que o jogador precisa enxergar. Num jogo de luta, sujar a tela
+# justamente quando o jogador se move é cobrar visão pelo movimento.
+#
+# As funções do `ScreenFX` continuam existindo — o flash de impacto e a visão do
+# E usam a mesma camada. O que saiu foi ALIMENTÁ-LAS pela velocidade.
+func _efeitos_de_tela(_spd: float, _sprint: bool) -> void:
+	ScreenFX.set_borrao(0.0)
+	ScreenFX.set_speed_lines(0.0)
+	ScreenFX.set_aberracao_base(0.0)
+	ScreenFX.set_vignette(0.0)
 
 func _exit_tree() -> void:
 	_ombro = null

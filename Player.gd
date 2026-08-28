@@ -26,6 +26,20 @@ const VELOCIDADE_FACING := 26.0
 ## cambalhota gira em torno do centro de massa, não do chão nem da cabeça.
 const ALTURA_DO_ROLAMENTO := 0.55
 
+## ANDAR NA SUPERFÍCIE (a mecânica que substituiu a escalada). O custo por
+## segundo é o que impede a mecânica de tornar o chão irrelevante: ela é um
+## RECURSO, não um modo de locomoção grátis.
+const CUSTO_PAREDE_POR_SEG := 22.0
+
+## true enquanto o corpo ainda está inclinado por ter andado numa superfície e
+## precisa voltar a ficar em pé. Não vale durante o rolamento de costas, que
+## inclina de propósito e tem o próprio desfazer.
+func _endireitando() -> bool:
+	if _char_model == null or _rolando_de_costas:
+		return false
+	return _char_model.global_transform.basis.y.normalized().dot(Vector3.UP) < 0.999
+
+
 ## Estado do rolamento de costas. `_pose_repouso` é a posição do modelo ANTES do
 ## giro — guardada, nunca suposta.
 var _rolando_de_costas := false
@@ -816,7 +830,11 @@ func aplicar_mira(novo_yaw: float, novo_pitch: float, delta: float, forca_corpo:
 	_pitch = novo_pitch
 	_update_pivot()
 	if _char_model:
-		_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw, forca_corpo * delta)
+		# ⚠️ Enquanto anda na superfície, o corpo é orientado pela NORMAL dela
+		# (ver o bloco da frente). Escrever `rotation.y` aqui zeraria a
+		# inclinação e o personagem voltaria a ficar em pé no ar.
+		if not _parkour.na_parede():
+			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw, forca_corpo * delta)
 
 # ---------------------------------------------------------- PEDIDOS DA BUKI
 # O `BukiController` (Fase 5) é dono do arsenal, mas NÃO escreve estado alheio.
@@ -844,7 +862,11 @@ func mirar_suave_para(ponto: Vector3, delta: float, forca: float) -> void:
 	_pitch = lerpf(_pitch, clampf(atan2(para.y, h), -1.2, 0.5), forca * delta)
 	_update_pivot()
 	if _char_model:
-		_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw, 14.0 * delta)
+		# ⚠️ Enquanto anda na superfície, o corpo é orientado pela NORMAL dela
+		# (ver o bloco da frente). Escrever `rotation.y` aqui zeraria a
+		# inclinação e o personagem voltaria a ficar em pé no ar.
+		if not _parkour.na_parede():
+			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw, 14.0 * delta)
 
 # ⚠️ A BALA TEM QUE NASCER NO SERVIDOR, senão a `DamageZone` do cliente não fere
 # ninguém e o sintoma vira "a arma não funciona" (docs/erros.md, 2026-08-10 —
@@ -872,6 +894,12 @@ func avisar_servidor_do_guardar() -> void:
 
 # Pede a janela de ROLAMENTO. O maior pedido vence — dois gatilhos no mesmo
 # quadro (pousar em cima de um dash) não devem encurtar a animação.
+## O parkour pergunta antes de grudar e a cada quadro: sem energia, não anda na
+## superfície. Fica aqui porque `energy` é do Player.
+func tem_energia_de_parede() -> bool:
+	return energy > 0.0
+
+
 func pedir_rolamento(duracao: float) -> void:
 	_roll_t = maxf(_roll_t, duracao)
 
@@ -1003,7 +1031,8 @@ func _etapa_travamento(delta: float) -> bool:
 				_breath.set_running(false)
 			# Rajada Z: vira o corpo p/ a direção da mira (pose de pistoleiro) + coice decai.
 			if _rapid_fire and _char_model:
-				_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw, 18.0 * delta)
+				if not _parkour.na_parede():
+					_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw, 18.0 * delta)
 			if _gun_recoil > 0.0:
 				_gun_recoil = maxf(_gun_recoil - delta * 7.0, 0.0)
 			if _proc_anim:
@@ -1113,6 +1142,13 @@ func _etapa_locomocao(delta: float) -> void:
 	# velocidade dos outros.
 	var effective_speed := SPEED * speed_multiplier * (1.5 if q.sprint else 1.0) * _parkour.bonus_velocidade()
 
+	# ⚠️ O CUSTO DA SUPERFÍCIE É COBRADO AQUI, e não junto da velocidade. Andar
+	# na parede entra por `_parkour.assumiu()` (a mesma porta da escalada e do
+	# wall run), então um `elif` no bloco do dash NUNCA rodava — a energia não
+	# saía e a mecânica ficava de graça. Um ponto só, que roda todo quadro.
+	if _parkour.na_parede():
+		energy = maxf(energy - CUSTO_PAREDE_POR_SEG * delta, 0.0)
+
 	# QUEM MANDA NA VELOCIDADE DESTE QUADRO.
 	# Escalada e wall run são exclusivos: enquanto valem, o parkour manda sozinho.
 	if _parkour.assumiu():
@@ -1128,6 +1164,7 @@ func _etapa_locomocao(delta: float) -> void:
 
 		if _dash.passo() > 0.0:
 			velocity = _dash.velocidade(delta)
+
 		elif _gura_rush_active:
 			velocity.x = _gura_rush_dir.x * effective_speed * 4.0
 			velocity.z = _gura_rush_dir.z * effective_speed * 4.0
@@ -1153,7 +1190,45 @@ func _etapa_locomocao(delta: float) -> void:
 	# grudado numa parede de costas para ela seria pior que o problema original.
 	# Aqui a mira não manda porque o corpo está preso à geometria.
 	if _char_model:
-		if _parkour.escalando() and _parkour.parede_frontal() != Vector3.ZERO:
+		if _parkour.na_parede() and _parkour.normal_da_parede() != Vector3.ZERO:
+			# ⚠️ O "PARA CIMA" DO CORPO VIRA A NORMAL DA SUPERFÍCIE. É isso que
+			# faz o jogador ANDAR na parede em vez de escalá-la — a orientação do
+			# que é o chão muda, que foi o pedido.
+			#
+			# A frente sai da direção do movimento projetada no plano; parado,
+			# mantém a que já tinha, para o corpo não girar sozinho.
+			var n := _parkour.normal_da_parede()
+			var frente_alvo := _char_model.global_transform.basis.z * -1.0
+			if q.dir.length_squared() > 0.01:
+				frente_alvo = q.dir
+			frente_alvo = frente_alvo - n * frente_alvo.dot(n)
+			# ⚠️ QUANDO A PROJEÇÃO DEGENERA. Ao grudar, o corpo está ENCARANDO a
+			# parede — a frente dele é anti-paralela à normal, e projetá-la no
+			# plano da superfície dá ZERO. Sem esta saída o `if` abaixo falhava e
+			# a orientação nunca mudava: o personagem grudava na parede em pé,
+			# como se nada tivesse acontecido.
+			#
+			# A saída é "para cima da parede": a vertical do MUNDO projetada no
+			# plano. Numa parede vertical isso aponta para o topo dela, que é a
+			# direção que alguém andando nela naturalmente encara.
+			if frente_alvo.length_squared() <= 0.001:
+				frente_alvo = Vector3.UP - n * Vector3.UP.dot(n)
+			if frente_alvo.length_squared() <= 0.001:
+				frente_alvo = Vector3.FORWARD - n * Vector3.FORWARD.dot(n)
+			if frente_alvo.length_squared() > 0.001:
+				var alvo := Basis.looking_at(frente_alvo.normalized(), n)
+				_char_model.global_basis = _char_model.global_basis.slerp(
+					alvo, clampf(VELOCIDADE_FACING * delta, 0.0, 1.0)).orthonormalized()
+		elif _endireitando():
+			# ⚠️ DESENTORTAR AO SAIR DA SUPERFÍCIE. Largar a parede não bastava:
+			# o resto do código escreve só `rotation.y`, e escrever yaw numa base
+			# INCLINADA preserva a inclinação — o personagem saía andando de lado
+			# no ar para sempre. Aqui a base volta inteira para "em pé olhando
+			# para a mira", e só então os escritores de yaw voltam a mandar.
+			var em_pe := Basis.from_euler(Vector3(0.0, _char_model.rotation.y, 0.0))
+			_char_model.global_basis = _char_model.global_basis.slerp(
+				em_pe, clampf(VELOCIDADE_FACING * delta, 0.0, 1.0)).orthonormalized()
+		elif _parkour.escalando() and _parkour.parede_frontal() != Vector3.ZERO:
 			# Convenção do projeto: FRENTE = -Z. Ao escalar, o -Z do modelo aponta
 			# ao longo de -wall_normal (que aponta da parede para o jogador).
 			var target_rot := atan2(_parkour.parede_frontal().x, _parkour.parede_frontal().z)
