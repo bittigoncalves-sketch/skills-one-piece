@@ -67,6 +67,7 @@ func _um(p: Node3D, tecla: Key, esperado: String) -> void:
 	for i in 25:
 		await process_frame
 	var antes: Vector3 = p.global_position
+	var pose_antes: Vector3 = p._char_model.position
 
 	var esperada := RosaDosVentos.frente(0.0)
 	match esperado:
@@ -105,8 +106,14 @@ func _um(p: Node3D, tecla: Key, esperado: String) -> void:
 	_ok("%s: o dash reporta o rumo certo" % esperado, rumo_dado == esperado)
 	if esperado == "tras":
 		_ok("o rolamento de costas GIRA o corpo (volta completa)", rotx_max > TAU * 0.9)
-		_ok("e o corpo volta ao repouso no fim",
-			absf(p._char_model.rotation.x) < 0.01 and absf(p._char_model.position.y) < 0.01)
+		# ⚠️ CONTRA O REPOUSO, não contra ZERO. O modelo repousa em y = −0,80 (o
+		# rig o abaixa para os pés tocarem o chão); comparar com zero deixou
+		# passar um bug em que o personagem SUBIA 0,8 m a cada dash de costas.
+		_ok("e o corpo volta ao repouso no fim (não sobe)",
+			absf(p._char_model.rotation.x) < 0.01
+			and p._char_model.position.is_equal_approx(pose_antes))
+		print("      pose do modelo: antes y=%.3f | depois y=%.3f" % [
+			pose_antes.y, p._char_model.position.y])
 	else:
 		_ok("%s: NÃO gira o corpo (só o de trás rola)" % esperado, rotx_max < 0.01)
 

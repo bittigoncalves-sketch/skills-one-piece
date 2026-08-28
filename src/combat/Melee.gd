@@ -569,7 +569,7 @@ static func golpear(world: Node, caster: Node3D, i: int, origem: Vector3, dir: V
 		# Agora é 0,75-0,80 s, declarado por golpe.
 		zone.setup(float(g["dano"]) * s, float(g["kb"]) * s, Vector3.ZERO,
 			ativo(i, weapon) * s, caster, float(g["raio"]) * s, forma, hitstun(i, weapon))
-		_impacto(world, zone.global_position, i, cor_do_impacto(caster), s)
+		_impacto(world, zone.global_position, i, cor_do_impacto(caster), s, fwd)
 		
 		# Dispara projétil se o passo definir
 		if g.get("projetil", false):
@@ -636,7 +636,14 @@ static func cor_do_impacto(caster: Node) -> Color:
 
 # Fiapo visual do golpe: um anel achatado que abre e some no lugar do impacto.
 # Curto de propósito — o corpo a corpo tem que ler pela ANIMAÇÃO, não por VFX.
-static func _impacto(world: Node, pos: Vector3, i: int, cor: Color = Color(1.0, 0.95, 0.8), s_factor: float = 1.0) -> void:
+## ⚠️ `dir` NÃO É OPCIONAL POR CAPRICHO. Antes o anel usava `m.rotation.x = PI/2`
+## — uma rotação FIXA NO MUNDO. A posição acompanhava o soco, mas a orientação
+## nunca mudava: socar para o norte e para o sul desenhava o mesmo anel virado
+## para o mesmo lado, e de certos ângulos ele aparecia de perfil, como um risco.
+##
+## É o mesmo erro de classe do auto-mira invertido: uma direção assumida onde
+## havia uma direção disponível.
+static func _impacto(world: Node, pos: Vector3, i: int, cor: Color = Color(1.0, 0.95, 0.8), s_factor: float = 1.0, dir: Vector3 = Vector3.ZERO) -> void:
 	AudioFX.whoosh(world, pos, 1.15 if i < 2 else 0.85)
 	var m := MeshInstance3D.new()
 	var anel := TorusMesh.new()
@@ -651,12 +658,33 @@ static func _impacto(world: Node, pos: Vector3, i: int, cor: Color = Color(1.0, 
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.material_override = mat
-	world.add_child(m)
-	m.global_position = pos
-	m.rotation.x = PI * 0.5
+
+	# ⚠️ DUAS CAMADAS, e não uma base composta. O anel fica PERPENDICULAR ao
+	# golpe — uma onda de choque que o soco atravessa — e isso pede duas coisas
+	# diferentes: APONTAR (que muda a cada golpe) e VIRAR O TORO (que é fixo,
+	# porque o eixo de um `TorusMesh` nasce em +Y e precisa virar −Z).
+	#
+	# A primeira tentativa fez as duas numa `global_basis` composta. Não
+	# sobreviveu: o tween anima `scale`, e escrever escala RECOMPÕE a base a
+	# partir de rotação + escala guardadas — a decomposição não voltava igual e o
+	# anel saía girado. Medido: |dot| ia de 0,85 a 0,00 conforme o rumo.
+	#
+	# Com o suporte APONTANDO e a malha girada em LOCAL, o tween mexe só na
+	# escala do suporte e a orientação não é recalculada.
+	var suporte := Node3D.new()
+	world.add_child(suporte)
+	suporte.global_position = pos
+	if dir.length_squared() > 0.001:
+		var plano := Vector3.UP if absf(dir.normalized().y) < 0.95 else Vector3.FORWARD
+		suporte.look_at(pos + dir.normalized(), plano)
+	suporte.add_child(m)
+	# −90° em X leva o eixo do toro (+Y) para o −Z do suporte, que é para onde o
+	# `look_at` aponta.
+	m.rotation.x = -PI * 0.5
+
 	var escala: float = (1.0 if i < 2 else 1.7) * s_factor
-	var tw := m.create_tween()
+	var tw := suporte.create_tween()
 	tw.set_parallel(true)
-	tw.tween_property(m, "scale", Vector3.ONE * escala * 2.2, 0.20).from(Vector3.ONE * 0.3 * s_factor)
+	tw.tween_property(suporte, "scale", Vector3.ONE * escala * 2.2, 0.20).from(Vector3.ONE * 0.3 * s_factor)
 	tw.tween_property(mat, "albedo_color:a", 0.0, 0.20)
-	tw.chain().tween_callback(m.queue_free)
+	tw.chain().tween_callback(suporte.queue_free)
