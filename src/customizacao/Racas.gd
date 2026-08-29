@@ -48,7 +48,11 @@ const CINZA := Color(0.55, 0.58, 0.62)
 ## As cores que uma RAÇA impõe. Ver a nota de `pele` logo abaixo do catálogo.
 const VERMELHO_ONI := Color(0.70, 0.16, 0.14)
 const AZUL_TUBARAO := Color(0.46, 0.67, 0.79)
-const PRETO_LUNAR := Color(0.16, 0.15, 0.18)
+## ⚠️ MORENO, NÃO PRETO (2026-08-29). A primeira leitura da folha das doze raças
+## deu "pele escura" e virou quase preto; a folha detalhada do Lunariano mostra
+## um tom de pele MORENO, e o dono confirmou por escrito. Preto tirava dele a
+## leitura de pessoa e o aproximava de uma silhueta.
+const MORENO_LUNAR := Color(0.55, 0.34, 0.21)
 const BRANCO_LUNAR := Color(0.95, 0.95, 0.93)
 const CHIFRE := Color(0.85, 0.70, 0.22)
 
@@ -236,19 +240,31 @@ const CATALOGO := {
 	"lunariano": {
 		"nome": "Anjo Lunariano",
 		"descricao": "asas negras, pele escura, cabelo branco e a chama nas costas",
-		"pele": PRETO_LUNAR,
+		"pele": MORENO_LUNAR,
 		# "cabelos sempre brancos como REGRA" — palavra do dono. A raça manda na
 		# cor do cabelo, e a escolha do jogador na paleta é ignorada enquanto ela
 		# estiver posta.
 		"cabelo": BRANCO_LUNAR,
-		# A chama das costas é VFX, não caixa: o dono pediu "literalmente uma
-		# chama com animação". Ver `fx` na nota abaixo.
+		# ⚠️ A CHAMA E AS ASAS SÃO NÓS, NÃO PEÇAS DE CATÁLOGO. As duas precisam
+		# de coisas que uma caixa não tem: a chama tem shader e as asas têm
+		# `_process` para bater. Ver `AsaLunar` e `ChamaLunar`.
 		"fx": "chama_lunar",
+		"asas": "lunar",
 		"pecas": [
-			{"no": "Torso", "tam": Vector3(1.05, 1.30, 0.12), "ancora": Vector3(0.02, 0.82, 1.0),
-			 "rot": Vector3(0.0, 0.0, 0.42), "cor": Color(0.08, 0.08, 0.10)},
-			{"no": "Torso", "tam": Vector3(1.05, 1.30, 0.12), "ancora": Vector3(0.98, 0.82, 1.0),
-			 "rot": Vector3(0.0, 0.0, -0.42), "cor": Color(0.08, 0.08, 0.10)},
+			# As MARCAS VERMELHAS dos ombros e braços, que a folha detalhada
+			# mostra. São o que sobra de peça de catálogo aqui — chapadas e
+			# estáticas, é exatamente o que elas são.
+			{"no": "UpperArm_R", "tam": Vector3(1.06, 0.34, 1.06), "ancora": Vector3(0.5, 0.86, 0.5),
+			 "cor": Color(0.62, 0.10, 0.10)},
+			{"no": "UpperArm_L", "tam": Vector3(1.06, 0.34, 1.06), "ancora": Vector3(0.5, 0.86, 0.5),
+			 "cor": Color(0.62, 0.10, 0.10)},
+			{"no": "ForeArm_R", "tam": Vector3(1.06, 0.22, 1.06), "ancora": Vector3(0.5, 0.30, 0.5),
+			 "cor": Color(0.62, 0.10, 0.10)},
+			{"no": "ForeArm_L", "tam": Vector3(1.06, 0.22, 1.06), "ancora": Vector3(0.5, 0.30, 0.5),
+			 "cor": Color(0.62, 0.10, 0.10)},
+			# a tira da cintura, escura, que aparece nas três vistas
+			{"no": "Torso", "tam": Vector3(1.04, 0.14, 1.04), "ancora": Vector3(0.5, 0.10, 0.5),
+			 "cor": Color(0.20, 0.16, 0.14)},
 		],
 	},
 }
@@ -322,12 +338,31 @@ static func aplicar(modelo: Node3D, id: String) -> bool:
 		var costas := modelo.find_child("Torso", true, false) as Node3D
 		if costas != null:
 			var cx := Acessorios.caixa_do_no(costas)
-			var chama := ChamaLunar.criar()
+			var chama := ChamaLunar.criar()   # plano 2D com shader (era partícula)
 			chama.name = "%s%s_chama" % [MARCA, id]
 			costas.add_child(chama)
 			# nas costas, na altura das omoplatas
+			# no MEIO das costas: a chama tem a origem na base e sobe daqui.
 			chama.position = cx.position + Vector3(
-				cx.size.x * 0.5, cx.size.y * 0.72, cx.size.z * 1.06)
+				cx.size.x * 0.5, cx.size.y * 0.30, cx.size.z * 1.55)
+
+	# AS ASAS (só o Lunariano). Como a chama, nascem com a MARCA no nome para
+	# saírem na próxima troca de raça pelo mesmo caminho das caixas.
+	if String(d.get("asas", "")) == "lunar":
+		var tronco := modelo.find_child("Torso", true, false) as Node3D
+		if tronco != null:
+			var cx2 := Acessorios.caixa_do_no(tronco)
+			for lado in [1, -1]:
+				var asa := AsaLunar.criar(lado)
+				asa.name = "%s%s_asa%d" % [MARCA, id, lado]
+				tronco.add_child(asa)
+				# ⚠️ NAS OMOPLATAS (y = 1.0), não no meio do tronco. Ancoradas em
+				# 0,86 e com a queda que as penas já têm, as asas terminavam na
+				# altura do quadril e liam como uma SAIA preta.
+				asa.position = cx2.position + Vector3(
+					cx2.size.x * (0.5 + lado * 0.36),
+					cx2.size.y * 1.0,
+					cx2.size.z * 0.86)
 
 	var escalas: Dictionary = d.get("escalas", {})
 	if not escalas.is_empty():

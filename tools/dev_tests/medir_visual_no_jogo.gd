@@ -265,14 +265,42 @@ func _racas(p: Node3D) -> void:
 	Visual.raca = "lunariano"
 	Visual.aplicar(p._char_model, true)
 	await _quadros(8)
-	_ok("o lunariano fica de pele escura",
-		_perto(_cor_do_corpo(p._char_model), Racas.PRETO_LUNAR))
+	_ok("o lunariano fica de pele MORENA (não preta)",
+		_perto(_cor_do_corpo(p._char_model), Racas.MORENO_LUNAR))
 	print("   lunariano: cabelo %s (regra %s)"
 		% [str(_cor_da_peca(p._char_model, "cabelo", "cabelo_longo")), str(Racas.BRANCO_LUNAR)])
 	_ok("o cabelo do lunariano é branco mesmo com ruivo escolhido",
 		_perto(_cor_da_peca(p._char_model, "cabelo", "cabelo_longo"), Racas.BRANCO_LUNAR))
-	_ok("o lunariano tem a chama ANIMADA nas costas (não uma caixa)",
-		_acha_particulas(p._char_model))
+	_ok("o lunariano tem a chama nas costas", _acha_chama(p._char_model) != null)
+	# ⚠️ 2D, e não partícula. O dono pediu "um fogo em 2D" depois de ver a
+	# primeira versão em GPUParticles — esta asserção é o que impede a volta.
+	var ch := _acha_chama(p._char_model)
+	_ok("a chama é um PLANO 2D (não GPUParticles)",
+		ch != null and ch.mesh is QuadMesh)
+	_ok("a chama usa o shader de fogo (anima sozinha)",
+		ch != null and ch.material_override is ShaderMaterial)
+
+	# AS ASAS: existem, são as duas, e BATEM.
+	var asas := _acha_asas(p._char_model)
+	_ok("o lunariano tem as DUAS asas", asas.size() == 2)
+	_ok("as asas têm penas em camadas (não uma placa)",
+		asas.size() > 0 and asas[0].get_child_count() >= 20)
+	if asas.size() > 0:
+		# ⚠️ MEDE O MOVIMENTO, não a existência do `_process`. Uma asa com
+		# animação quebrada tem `_process` e fica parada — o que importa é a
+		# pose MUDAR entre dois instantes.
+		var antes: Basis = (asas[0] as Node3D).basis
+		await _quadros(30)
+		var depois: Basis = (asas[0] as Node3D).basis
+		# ⚠️ AS TRÊS COLUNAS, não uma. A primeira versão comparava só `basis.z` e
+		# deu variação ZERO numa asa que estava batendo normalmente: o
+		# batimento é uma rotação EM TORNO de Z, e o eixo de uma rotação é
+		# justamente a coluna que ela não mexe. Medir o eixo errado reprova o
+		# que funciona.
+		var girou: float = (antes.x - depois.x).length() \
+			+ (antes.y - depois.y).length() + (antes.z - depois.z).length()
+		print("   asa: variação da pose em 30 quadros = %.4f" % girou)
+		_ok("a asa BATE de verdade (a pose muda)", girou > 0.002)
 
 	# GIGANTE: os três juntos — modelo, cápsula e câmera.
 	var col0: Vector3 = (p._colisor.shape as BoxShape3D).size
@@ -290,7 +318,8 @@ func _racas(p: Node3D) -> void:
 	_ok("o gigante cresce o MODELO", mod1.y > mod0.y * 1.2)
 	_ok("o gigante cresce a CÁPSULA", col1.y > col0.y * 1.2)
 	_ok("o gigante levanta a CÂMERA", absf(p._camera.escala_do_corpo - e) < 0.01)
-	_ok("a chama do lunariano saiu ao trocar de raça", not _acha_particulas(p._char_model))
+	_ok("a chama do lunariano saiu ao trocar de raça", _acha_chama(p._char_model) == null)
+	_ok("as asas saíram ao trocar de raça", _acha_asas(p._char_model).is_empty())
 
 	# ⚠️ REMONTAR NÃO PODE ACUMULAR: a escala do gigante multiplica a do rig, e
 	# ler a escala já multiplicada faria cada troca de personagem crescer de novo.
@@ -318,11 +347,19 @@ func _tem_peca_em(modelo: Node, no: String) -> bool:
 	return false
 
 
-func _acha_particulas(modelo: Node) -> bool:
+func _acha_chama(modelo: Node) -> MeshInstance3D:
 	for x in _todos(modelo):
-		if x is GPUParticles3D and String(x.name).begins_with(Racas.MARCA):
-			return true
-	return false
+		if x is MeshInstance3D and String(x.name).ends_with("_chama"):
+			return x
+	return null
+
+
+func _acha_asas(modelo: Node) -> Array:
+	var out: Array = []
+	for x in _todos(modelo):
+		if x is AsaLunar:
+			out.append(x)
+	return out
 
 
 # ---------------------------------------------------------------- auxiliares

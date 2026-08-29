@@ -7,6 +7,56 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-29 — a chama parecia mal posicionada, e o UV é que estava invertido
+
+**Sintoma:** a chama 2D das costas do Lunariano aparecia só ACIMA da cabeça,
+como uma tocha boiando no ar, em vez de subir pelas costas. Ajustei a âncora
+duas vezes achando que era posição.
+
+**Causa raiz:** o `QuadMesh` do Godot tem o UV com **Y invertido** — `UV.y = 0`
+é o TOPO do plano, não a base. A máscara de altura do shader
+(`1.0 - smoothstep(0.15, 1.0, uv.y)`) foi escrita supondo o contrário, então
+desenhava o fogo forte em cima e fraco embaixo: o oposto do pretendido. A chama
+sempre esteve no lugar certo; o que estava errado era o DESENHO dentro dela.
+
+**Evidência:** medida a posição em vez de olhada — a chama ia de y=1,73 a 2,98
+no espaço do modelo, com a cabeça em 2,70. Ou seja, cobria as costas inteiras
+desde antes de eu mexer em qualquer âncora. Depois de inverter o UV, o fogo
+apareceu na base, no lugar em que já estava.
+
+**Descartado:** *posição da âncora* e *oclusão pelo corpo* — as duas suspeitas
+naturais, e as duas mortas pela mesma medição.
+
+**Correção:** `src/fx/shaders/chama_lunar.gdshader` — `vec2 uv = vec2(UV.x, 1.0
+- UV.y)` logo no começo do `fragment`.
+
+**Como detectar de novo:** quando um efeito parecer estar no lugar errado,
+imprimir a posição GLOBAL dele e a do corpo antes de mover qualquer coisa. Dois
+ajustes de âncora foram gastos por não fazer isso primeiro.
+
+---
+
+## 2026-08-29 — medi o eixo da rotação e disse que a asa não se mexia
+
+**Sintoma:** a asserção "a asa BATE de verdade" reprovou com variação exata de
+`0.0000`, num batimento que estava funcionando.
+
+**Causa raiz:** o teste comparava `basis.z` antes e depois, e o batimento é uma
+rotação EM TORNO de Z — o eixo de uma rotação é justamente a coluna que ela não
+mexe. Medi o único dos três eixos que não podia mudar.
+
+**Evidência:** `_process` rodando (`_t = 0.3228` depois de 40 quadros) com
+`basis.z` imóvel. Comparando as três colunas: variação 0,0842.
+
+**Correção:** `tools/dev_tests/medir_visual_no_jogo.gd` soma a diferença das
+três colunas da base, o que é robusto a qual eixo gira.
+
+**Como detectar de novo:** ao medir rotação, nunca olhar uma coluna só — ou
+saber qual é o eixo e olhar outra. É o terceiro caso desta sessão em que a sonda
+reprovou algo que funcionava por estar olhando o lugar errado (os outros: a
+coluna central da tela que cruzava o personagem, e o `surface_override_material`
+enquanto o bug morava no `material_override`).
+
 ## 2026-08-29 — o menu apagava a cor da raça um quadro depois de pintá-la
 
 **Sintoma:** achado ao conferir as raças novas: escolher Oni no menu pintava o

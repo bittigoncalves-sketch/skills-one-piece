@@ -1,83 +1,54 @@
 class_name ChamaLunar
 extends RefCounted
 # ============================================================================
-#  A CHAMA DAS COSTAS DO LUNARIANO.
+#  A CHAMA DAS COSTAS DO LUNARIANO — 2D.
 #
-#  Pedido do dono (2026-08-29): "chama realista nas costas, literalmente uma
-#  chama com animação". Caixa não serve — é a única característica de raça do
-#  jogo que precisa se MEXER, e uma peça estática lia como uma placa laranja
-#  colada nas costas.
+#  ⚠️ ERA PARTÍCULA, E O DONO PEDIU 2D (2026-08-29). A primeira versão era
+#  `GPUParticles3D`: fogo volumétrico, com partículas soltando em profundidade.
+#  Ele viu e pediu "faz como se fosse um fogo em 2D nas costas" — e a folha de
+#  referência confirma: a chama é uma silhueta chapada subindo pelas costas, do
+#  mesmo jeito que o resto do jogo é chapado.
 #
-#  ------------------------------------------------------- POR QUE NÃO O FireFX
-#  O `FireFX` do jogo é para GOLPE: a entrada dele é `cast(world, origem,
-#  direção, variante, dano, caster…)`, cria hitbox e morre sozinho. Esta chama é
-#  passiva, permanente e não fere ninguém. O que se aproveita dele é a PALETA —
-#  se a chama do Lunariano tivesse outras cores, ela leria como fogo de outro
-#  jogo ao lado de um Hiken.
+#  Agora é UM plano com shader procedural (`chama_lunar.gdshader`). O plano faz
+#  o "2D"; o shader faz o fogo se mexer, sem textura nem atlas de quadros para
+#  alguém manter.
 #
-#  ⚠️ `local_coords = true`: as partículas acompanham o corpo. Em coordenadas de
-#  mundo a chama ficaria para trás a cada passo e o rastro apareceria pendurado
-#  no ar — bonito num lança-chamas, errado numa chama que É do personagem.
+#  O billboard mora no VERTEX do shader, e não em `BaseMaterial3D.billboard_mode`
+#  — este material É um `ShaderMaterial`, e aquele campo não vale para ele. É
+#  billboard em torno do eixo Y de propósito: a chama roda para encarar a
+#  câmera mas continua EM PÉ. Billboard cheio a deitaria junto com a câmera
+#  quando o jogador olhasse de cima.
 # ============================================================================
 
-## A paleta do fogo do jogo (`FireFX.FLAME`), do núcleo quente à fumaça.
-const NUCLEO := Color(1.00, 0.95, 0.50, 0.95)
-const LARANJA := Color(1.00, 0.55, 0.10, 0.80)
-const VERMELHO := Color(0.90, 0.15, 0.05, 0.40)
-const SOME := Color(0.20, 0.05, 0.00, 0.00)
+const CAMINHO_SHADER := "res://src/fx/shaders/chama_lunar.gdshader"
+
+## Em metros, nas unidades do modelo. Alta o bastante para passar da cabeça,
+## como na folha.
+# ⚠️ MEDIDA CONTRA O CORPO, não escolhida no olho. Medido: o Torso vai até
+# y=2,25 no espaço do modelo e a cabeça até 2,95. Na folha a chama sai do meio
+# das costas e sobe BEM acima da cabeça, passando entre as asas — com 1,85 ela
+# terminava na altura dos ombros e as asas a engoliam.
+const LARGURA := 1.10
+const ALTURA := 2.45
 
 
-static func criar() -> GPUParticles3D:
-	var p := GPUParticles3D.new()
-	p.amount = 120
-	p.lifetime = 0.9
-	p.preprocess = 0.9          # já nasce acesa, em vez de "acender" ao aparecer
-	p.local_coords = true
-	p.draw_order = GPUParticles3D.DRAW_ORDER_VIEW_DEPTH
-
-	var pm := ParticleProcessMaterial.new()
-	pm.direction = Vector3(0, 1, 0)
-	pm.spread = 14.0
-	pm.initial_velocity_min = 1.1
-	pm.initial_velocity_max = 2.2
-	pm.gravity = Vector3(0, 1.4, 0)          # fogo SOBE: gravidade invertida
-	pm.scale_min = 0.10
-	pm.scale_max = 0.26
-	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	pm.emission_box_extents = Vector3(0.34, 0.10, 0.06)
-	pm.turbulence_enabled = true
-	pm.turbulence_noise_strength = 0.55
-	pm.turbulence_noise_scale = 2.2
-
-	# A cor ao longo da vida: amarelo -> laranja -> vermelho -> some. É a rampa
-	# que faz a chama parecer quente na base e esfriar na ponta.
-	var grad := Gradient.new()
-	grad.offsets = PackedFloat32Array([0.0, 0.35, 0.72, 1.0])
-	grad.colors = PackedColorArray([NUCLEO, LARANJA, VERMELHO, SOME])
-	var gt := GradientTexture1D.new()
-	gt.gradient = grad
-	pm.color_ramp = gt
-
-	# E encolher no fim, senão a chama termina em quadrados grandes e chapados.
-	var curva := Curve.new()
-	curva.add_point(Vector2(0.0, 0.35))
-	curva.add_point(Vector2(0.30, 1.0))
-	curva.add_point(Vector2(1.0, 0.0))
-	var ct := CurveTexture.new()
-	ct.curve = curva
-	pm.scale_curve = ct
-
-	p.process_material = pm
-
+static func criar(escala: float = 1.0) -> MeshInstance3D:
+	var m := MeshInstance3D.new()
 	var quad := QuadMesh.new()
-	quad.size = Vector2(0.42, 0.42)
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	mat.vertex_color_use_as_albedo = true
-	mat.albedo_color = Color(1, 1, 1, 1)
-	quad.material = mat
-	p.draw_pass_1 = quad
-	return p
+	quad.size = Vector2(LARGURA * escala, ALTURA * escala)
+	# A origem vai para a BASE da chama: ancorada pelo pé nas costas, cresce
+	# para cima. Centrada, metade dela ficaria enterrada no tronco.
+	quad.center_offset = Vector3(0.0, ALTURA * escala * 0.5, 0.0)
+	m.mesh = quad
+
+	var sh: Shader = load(CAMINHO_SHADER)
+	if sh == null:
+		push_warning("[ChamaLunar] shader ausente: " + CAMINHO_SHADER)
+		return m
+	var mat := ShaderMaterial.new()
+	mat.shader = sh
+	m.material_override = mat
+	# Fogo não projeta nem recebe sombra — e o `unshaded` do shader já diz isso
+	# para a luz; isto tira o custo de a malha entrar no passe de sombra.
+	m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return m
