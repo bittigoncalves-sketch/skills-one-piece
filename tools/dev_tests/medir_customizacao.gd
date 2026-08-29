@@ -51,6 +51,22 @@ func _init() -> void:
 	_ok("o personagem foi montado no centro", menu._modelo != null and is_instance_valid(menu._modelo))
 	_ok("o viewport tem mundo próprio (não mostra a arena)", menu._viewport.own_world_3d)
 
+	# ---------- a arte de fundo (2026-08-29) ----------
+	_ok("o arquivo da arte de fundo existe", ResourceLoader.exists(CustomizacaoMenu.FUNDO))
+	var tr: TextureRect = null
+	for f in menu.get_children():
+		if f is TextureRect:
+			tr = f
+			break
+	_ok("a tela usa a arte como fundo", tr != null and tr.texture != null)
+	if tr != null:
+		# Esticar deformaria o navio e a ilha: a arte é 3:2 e a janela não.
+		_ok("a arte COBRE sem deformar",
+			tr.stretch_mode == TextureRect.STRETCH_KEEP_ASPECT_COVERED)
+	# ⚠️ SEM ISTO O PERSONAGEM FICA NUMA CAIXA AZUL recortada sobre a arte — o
+	# viewport pinta o próprio fundo antes da cena.
+	_ok("o viewport deixa a arte passar (transparent_bg)", menu._viewport.transparent_bg)
+
 	# ⚠️ A TELA TEM DE CABER. Com os seis acessórios a lista da direita fez o
 	# menu chegar a 1.022 px numa tela de 720: o viewport 3D ficou com 818 px de
 	# altura e só a parte de cima aparecia — parecia defeito de CÂMERA, e era de

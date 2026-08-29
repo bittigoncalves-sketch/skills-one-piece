@@ -7,6 +7,34 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-29 — test_segurar_ataque é INTERMITENTE (aberto, não é regressão)
+
+**Sintoma:** `./validar.sh rapido` reprovou `test_segurar_ataque` com "o controle
+não andou: a tecla não chegou. Medição inválida." numa execução em que só a arte
+de fundo do menu de Customização tinha mudado — código que esse teste nem toca.
+
+**Causa raiz:** não é o jogo: é o próprio teste se recusando a medir. Ele precisa
+de TELA e injeta teclas por `Input.parse_input_event` numa janela real; quando a
+tecla não é registrada a tempo, ele aborta de propósito em vez de reportar um
+número falso — o que é a decisão certa dele. A fragilidade está na injeção, não
+na mecânica testada.
+
+**Evidência:** duas execuções seguidas do MESMO commit, sem nenhuma alteração
+entre elas: a primeira saiu com código 1 e a segunda com 0. A suíte completa,
+rodada de novo, deu 35 de pé e 0 falhas.
+
+**Descartado:** *regressão da arte de fundo*. A mudança foi um `TextureRect` e a
+transparência do SubViewport dentro do `CustomizacaoMenu`; `test_segurar_ataque`
+não abre esse menu.
+
+**Correção:** nenhuma ainda — fica registrado como flakiness conhecida. O
+conserto de verdade é o teste esperar a tecla ser vista (condição) em vez de
+contar quadros, que é o mesmo padrão de duas asserções instáveis já corrigidas
+em 2026-08-27.
+
+**Como detectar de novo:** ao ver essa mensagem, rodar o teste isolado duas
+vezes. Se uma passa e outra não, é isto — e não a mudança que estava em curso.
+
 ## 2026-08-29 — ao entrar no jogo tudo virava azul (corpo E acessórios)
 
 **Sintoma:** relato do dono — "bug encontrado na cor: ao logar a cor se torna

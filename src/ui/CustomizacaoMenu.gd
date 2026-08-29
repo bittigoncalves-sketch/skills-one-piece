@@ -28,7 +28,11 @@ extends Control
 #  luz daqui vazaria para o jogo.
 # ============================================================================
 
-const COR_FUNDO := Color(0.09, 0.20, 0.42, 1.0)      # o azul pedido
+## A arte de fundo da tela, desenhada pelo dono. `COR_FUNDO` sobrevive como a
+## cor de reserva: se o arquivo sumir, a tela volta a ser o azul chapado em vez
+## de ficar transparente sobre a arena.
+const FUNDO := "res://assets/ui/fundo_customizacao.png"
+const COR_FUNDO := Color(0.09, 0.20, 0.42, 1.0)      # o azul original da tela
 const COR_PAINEL := Color(0.13, 0.28, 0.55, 0.92)
 const COR_PAINEL_SEL := Color(0.20, 0.45, 0.85, 1.0)
 const COR_BORDA := Color(0.35, 0.58, 0.95, 1.0)
@@ -105,10 +109,29 @@ func fechar() -> void:
 
 # ---------------------------------------------------------------- montagem
 func _montar() -> void:
-	var fundo := ColorRect.new()
-	fundo.color = COR_FUNDO
+	# ⚠️ A ARTE DE FUNDO (2026-08-29). Antes era o azul chapado que o dono pediu
+	# quando a tela nasceu; agora é a arte que ele desenhou para ela.
+	#
+	# `KEEP_ASPECT_COVERED` e não `STRETCH`: a imagem é 1536x1024 (3:2) e a
+	# janela raramente terá essa proporção — esticar deformaria o navio e a
+	# ilha. Cobrindo, sobra imagem fora da tela em vez de faltar.
+	var fundo := TextureRect.new()
+	fundo.texture = load(FUNDO)
+	fundo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	fundo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	fundo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	fundo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(fundo)
+
+	# ⚠️ VÉU. A arte é clara e cheia de detalhe (nuvens, reflexo do sol, folhas),
+	# e texto branco sobre ela some em metade da tela. O véu escurece o
+	# suficiente para a leitura sem apagar o desenho — é o que deixa a arte ser
+	# fundo, e não concorrente do menu.
+	var veu := ColorRect.new()
+	veu.color = Color(0.04, 0.08, 0.18, 0.45)
+	veu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	veu.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(veu)
 
 	var margem := MarginContainer.new()
 	margem.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -163,8 +186,13 @@ func _centro() -> Control:
 	var caixa := PanelContainer.new()
 	caixa.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	caixa.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# ⚠️ SEMI-TRANSPARENTE desde que há arte de fundo. Opaco, este painel virava
+	# um retângulo azul recortado no meio da imagem — tapava justo o pedaço que
+	# o desenho tem de melhor. O pouco de azul que fica separa o personagem do
+	# mar sem esconder a arte, e a borda continua marcando onde se arrasta para
+	# girar.
 	var st := StyleBoxFlat.new()
-	st.bg_color = Color(0.06, 0.14, 0.30, 1.0)
+	st.bg_color = Color(0.05, 0.12, 0.28, 0.32)
 	st.border_color = COR_BORDA
 	st.set_border_width_all(2)
 	st.set_corner_radius_all(10)
@@ -183,15 +211,20 @@ func _centro() -> Control:
 	# ⚠️ mundo PRÓPRIO: sem isto o viewport herda o mundo da cena e a arena
 	# inteira apareceria atrás do personagem.
 	_viewport.own_world_3d = true
-	_viewport.transparent_bg = false
+	# ⚠️ TRANSPARENTE, senão o personagem aparece dentro de um RETÂNGULO AZUL
+	# recortado sobre a arte. O viewport pinta o próprio fundo antes da cena, e
+	# com a imagem atrás isso vira uma janela opaca no meio da tela.
+	_viewport.transparent_bg = true
 	_viewport.size = Vector2i(520, 620)
 	_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	cont.add_child(_viewport)
 
 	var amb := WorldEnvironment.new()
 	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = COR_FUNDO
+	# BG_CLEAR_COLOR (e não BG_COLOR) é o que respeita o `transparent_bg` acima:
+	# com BG_COLOR o ambiente pinta a cor de qualquer jeito e a transparência do
+	# viewport não vale nada.
+	env.background_mode = Environment.BG_CLEAR_COLOR
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.55, 0.68, 0.90)
 	env.ambient_light_energy = 0.9
