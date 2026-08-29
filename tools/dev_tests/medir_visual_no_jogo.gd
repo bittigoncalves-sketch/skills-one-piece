@@ -87,7 +87,11 @@ func _init() -> void:
 	Visual.equipar("boca", "boca_sorriso_com_dentes")
 	Visual.equipar("cabeca", "cartola")
 	Visual.equipar("rosto", "mascara_peste")
-	Visual.raca = Racas.ids()[0]
+	# ⚠️ UMA RAÇA QUE PENDURA ALGO, escolhida pelo NOME e não por `ids()[0]`.
+	# A primeira do catálogo passou a ser "humano" em 2026-08-29, e humano é o
+	# personagem base — não pendura peça nenhuma, então a asserção abaixo
+	# reprovava por estar medindo a raça errada, não por defeito.
+	Visual.raca = "skypiean"
 	Visual.olho = "olho_grande"
 	Visual.cor_grupo = "pele"
 	Visual.cor_idx = 2
@@ -138,7 +142,7 @@ func _init() -> void:
 	Visual.carregar()
 	_ok("os acessórios voltaram do disco", Visual.acessorios == guardado)
 	_ok("a cor do cabelo voltou do disco", Visual.cabelo_idx == guardado_cabelo)
-	_ok("a raça voltou do disco", Visual.raca == Racas.ids()[0])
+	_ok("a raça voltou do disco", Visual.raca == "skypiean")
 	_ok("o olho voltou do disco", Visual.olho == "olho_grande")
 
 	# ---------- 7. a cor de time não pode atropelar a customização ----------
@@ -199,8 +203,126 @@ func _init() -> void:
 	_ok("sem escolha, o corpo recebe a cor de time", _perto(c2_corpo, azul))
 	_ok("e mesmo assim o acessório NÃO é tingido", not _perto(c2_cartola, azul))
 
+	await _racas(p)
+
 	print("\n%d conferem | %d divergem" % [_ok_n, _falhas])
 	quit(1 if _falhas > 0 else 0)
+
+
+## AS 12 RAÇAS da folha de 2026-08-29. O que se mede aqui é o que a folha
+## PROMETE de cada uma, não a existência da entrada no catálogo.
+func _racas(p: Node3D) -> void:
+	print("\n=== 8. as 12 raças ===")
+	_ok("são 12 raças", Racas.ids().size() == 12)
+	for id in ["humano", "skypiean", "oni", "sharkman", "bracos_longos",
+			"pernas_longas", "palhaco", "mink_coelho", "mink_lobo",
+			"mink_lobo_neve", "gigante", "lunariano"]:
+		_ok("'%s' está no catálogo" % id, not Racas.dados(id).is_empty())
+
+	Visual.acessorios = {}
+	Visual.olho = ""
+	Visual.cor_grupo = "time"
+	Visual.cor_idx = 1                      # verde: o que a raça tem de vencer
+
+	# HUMANO: é o base, e base não pendura nada.
+	Visual.raca = "humano"
+	Visual.aplicar(p._char_model, true)
+	await _quadros(6)
+	_ok("o humano não pendura peça nenhuma",
+		_conta_marca(p._char_model, Racas.MARCA) == 0)
+
+	# ONI: pele vermelha VENCE a cor escolhida na paleta.
+	Visual.raca = "oni"
+	Visual.aplicar(p._char_model, true)
+	await _quadros(6)
+	var verm: Color = Racas.VERMELHO_ONI
+	print("   oni: corpo %s (esperado %s)" % [str(_cor_do_corpo(p._char_model)), str(verm)])
+	_ok("o oni fica vermelho mesmo com verde escolhido",
+		_perto(_cor_do_corpo(p._char_model), verm))
+	_ok("o oni tem os chifres", _conta_marca(p._char_model, Racas.MARCA) >= 2)
+
+	# ⚠️ CONTROLE: sem ele, "a raça vence" poderia ter virado "a paleta nunca
+	# vale". Quem não impõe cor tem de continuar obedecendo à escolha.
+	Visual.raca = "skypiean"
+	Visual.aplicar(p._char_model, true)
+	await _quadros(6)
+	var verde: Color = Paleta.CORES[1]["cor"]
+	_ok("o skypiean continua obedecendo à paleta",
+		_perto(_cor_do_corpo(p._char_model), verde))
+
+	# SHARKMAN: cabeça, dorsal e as duas dos braços.
+	Visual.raca = "sharkman"
+	Visual.aplicar(p._char_model, true)
+	await _quadros(6)
+	_ok("o sharkman tem barbatana nos DOIS braços",
+		_tem_peca_em(p._char_model, "ForeArm_R") and _tem_peca_em(p._char_model, "ForeArm_L"))
+	_ok("o sharkman tem cabeça de tubarão", _tem_peca_em(p._char_model, "Head"))
+	_ok("o sharkman fica azul", _perto(_cor_do_corpo(p._char_model), Racas.AZUL_TUBARAO))
+
+	# LUNARIANO: pele escura, cabelo branco por REGRA, e a chama animada.
+	Visual.equipar("cabelo", "cabelo_longo")
+	Visual.cabelo_idx = 3                   # ruivo: a regra tem de ignorar
+	Visual.raca = "lunariano"
+	Visual.aplicar(p._char_model, true)
+	await _quadros(8)
+	_ok("o lunariano fica de pele escura",
+		_perto(_cor_do_corpo(p._char_model), Racas.PRETO_LUNAR))
+	print("   lunariano: cabelo %s (regra %s)"
+		% [str(_cor_da_peca(p._char_model, "cabelo", "cabelo_longo")), str(Racas.BRANCO_LUNAR)])
+	_ok("o cabelo do lunariano é branco mesmo com ruivo escolhido",
+		_perto(_cor_da_peca(p._char_model, "cabelo", "cabelo_longo"), Racas.BRANCO_LUNAR))
+	_ok("o lunariano tem a chama ANIMADA nas costas (não uma caixa)",
+		_acha_particulas(p._char_model))
+
+	# GIGANTE: os três juntos — modelo, cápsula e câmera.
+	var col0: Vector3 = (p._colisor.shape as BoxShape3D).size
+	var mod0: Vector3 = p._char_model.scale
+	Visual.equipar("cabelo", "")
+	Visual.raca = "gigante"
+	Visual.aplicar(p._char_model, true)
+	p._aplicar_escala_de_raca()
+	await _quadros(8)
+	var col1: Vector3 = (p._colisor.shape as BoxShape3D).size
+	var mod1: Vector3 = p._char_model.scale
+	var e := Racas.escala_de("gigante")
+	print("   gigante x%.2f: modelo %s -> %s | cápsula %s -> %s | câmera x%.2f"
+		% [e, str(mod0), str(mod1), str(col0), str(col1), p._camera.escala_do_corpo])
+	_ok("o gigante cresce o MODELO", mod1.y > mod0.y * 1.2)
+	_ok("o gigante cresce a CÁPSULA", col1.y > col0.y * 1.2)
+	_ok("o gigante levanta a CÂMERA", absf(p._camera.escala_do_corpo - e) < 0.01)
+	_ok("a chama do lunariano saiu ao trocar de raça", not _acha_particulas(p._char_model))
+
+	# ⚠️ REMONTAR NÃO PODE ACUMULAR: a escala do gigante multiplica a do rig, e
+	# ler a escala já multiplicada faria cada troca de personagem crescer de novo.
+	p._setup_character_model(p.character_id)
+	await _quadros(20)
+	var mod2: Vector3 = p._char_model.scale
+	print("   depois de remontar: modelo %s" % str(mod2))
+	_ok("remontar não acumula escala", absf(mod2.y - mod1.y) < 0.01)
+
+	Visual.raca = "humano"
+	Visual.aplicar(p._char_model, true)
+	p._aplicar_escala_de_raca()
+	await _quadros(6)
+	_ok("voltar a humano devolve a cápsula ao normal",
+		absf((p._colisor.shape as BoxShape3D).size.y - col0.y) < 0.01)
+
+
+func _tem_peca_em(modelo: Node, no: String) -> bool:
+	var alvo := modelo.find_child(no, true, false)
+	if alvo == null:
+		return false
+	for f in alvo.get_children():
+		if String(f.name).begins_with(Racas.MARCA):
+			return true
+	return false
+
+
+func _acha_particulas(modelo: Node) -> bool:
+	for x in _todos(modelo):
+		if x is GPUParticles3D and String(x.name).begins_with(Racas.MARCA):
+			return true
+	return false
 
 
 # ---------------------------------------------------------------- auxiliares

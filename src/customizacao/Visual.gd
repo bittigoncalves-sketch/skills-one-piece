@@ -29,6 +29,9 @@ extends RefCounted
 
 const ARQUIVO := "user://visual.cfg"
 
+## Onde a escala original do modelo fica guardada — ver `escalar`.
+const META_ESCALA_BASE := "visual_escala_base"
+
 ## parte do corpo -> id do acessório. Parte ausente = nada equipado ali.
 static var acessorios: Dictionary = {}
 static var raca: String = ""
@@ -57,6 +60,12 @@ static func equipado(parte: String) -> String:
 
 
 static func cor_do_corpo() -> Color:
+	# ⚠️ A RAÇA VEM PRIMEIRO. O Oni é vermelho e o Lunariano é escuro por
+	# definição — se a paleta ganhasse, escolher "verde" na aba Cor apagaria a
+	# raça que o jogador acabou de escolher na aba ao lado.
+	var da_raca := Racas.pele_de(raca)
+	if da_raca.a > 0.0:
+		return da_raca
 	if cor_idx < 0:
 		return Color(0, 0, 0, 0)         # alpha 0 = não pintar
 	var lista: Array = Paleta.PELES if cor_grupo == "pele" else Paleta.CORES
@@ -66,6 +75,10 @@ static func cor_do_corpo() -> Color:
 
 
 static func cor_do_cabelo() -> Color:
+	# "cabelos sempre brancos como REGRA" para o Lunariano — mesma precedência.
+	var da_raca := Racas.cabelo_de(raca)
+	if da_raca.a > 0.0:
+		return da_raca
 	if cabelo_idx < 0 or cabelo_idx >= Paleta.CABELOS.size():
 		return Paleta.CABELOS[0]["cor"]
 	return Paleta.CABELOS[cabelo_idx]["cor"]
@@ -98,7 +111,28 @@ static func aplicar(modelo: Node3D, preservar_cor_do_jogo: bool = false) -> void
 		Racas.aplicar(modelo, raca)
 	if olho != "":
 		Corpo.aplicar(modelo, olho)
+	escalar(modelo)
 	pintar(modelo, preservar_cor_do_jogo)
+
+
+## O TAMANHO DA RAÇA no modelo (hoje, só o Gigante).
+##
+## ⚠️ TAMBÉM NA PRÉVIA, e não só em partida. A primeira versão deixava a escala
+## inteira a cargo do Player: o Gigante crescia no jogo e a prévia mostrava um
+## boneco de tamanho normal — o jogador escolheria a raça sem ver a única coisa
+## que ela faz. Colisão e câmera continuam sendo do Player, porque o boneco da
+## prévia não tem nem uma nem outra.
+##
+## A escala BASE é guardada em meta na primeira passagem: multiplicar sobre a
+## escala corrente faria cada reaplicação crescer de novo — e `aplicar` é
+## chamado a cada clique do menu.
+static func escalar(modelo: Node3D) -> void:
+	if modelo == null or not is_instance_valid(modelo):
+		return
+	if not modelo.has_meta(META_ESCALA_BASE):
+		modelo.set_meta(META_ESCALA_BASE, modelo.scale)
+	var base: Vector3 = modelo.get_meta(META_ESCALA_BASE)
+	modelo.scale = base * Racas.escala_de(raca)
 
 
 ## Pinta o CORPO (e só ele) com a cor escolhida. Peça de raça marcada

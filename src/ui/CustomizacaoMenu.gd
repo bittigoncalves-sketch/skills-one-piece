@@ -54,8 +54,6 @@ var _modelo: Node3D = null
 var _viewport: SubViewport = null
 var _lista_direita: VBoxContainer = null
 var _botoes_categoria: Dictionary = {}
-var _cor_idx := -1
-var _cor_grupo := "time"   # "time" | "pele"
 var _giro := 0.0
 var _camera: Camera3D = null
 var _arrastando := false
@@ -466,13 +464,11 @@ func _itens_raca() -> void:
 	# quem garante isso é o `Racas.aplicar`, que tira a anterior antes.
 	var atual: String = Visual.raca
 
-	var nenhuma := _botao("Humano", atual == "")
-	nenhuma.gui_input.connect(func(e):
-		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
-			Racas.remover(_modelo)
-			_pintar()
-			_encher_direita())
-	_lista_direita.add_child(nenhuma)
+	# ⚠️ SEM BOTÃO "NENHUMA". Havia um, rotulado "Humano", de quando o catálogo
+	# não tinha o humano dentro. Desde a folha de 2026-08-29 ele é uma das doze
+	# raças, e é exatamente para isso que o dono o listou: é ele quem devolve o
+	# personagem ao padrão. Manter os dois daria duas entradas com o mesmo
+	# efeito, uma delas sem selecionar nada na lista.
 
 	for id in Racas.ids():
 		var d := Racas.dados(id)
@@ -481,10 +477,12 @@ func _itens_raca() -> void:
 			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 				Visual.raca = rid
 				Visual.aplicar(_modelo)
-				# Repintar DEPOIS de aplicar: as peças do Mink Lobo nascem sem
-				# material e só ficam da cor do personagem quando a pintura passa
-				# por elas.
-				_pintar()
+				# ⚠️ NÃO REPINTAR AQUI. Havia um `_pintar()` nesta linha, de
+				# quando a tela era dona da cor; ele lia `_cor_idx`, que deixou
+				# de ser escrito quando o estado passou para o `Visual` e ficou
+				# preso em −1. O efeito era `material_override = null` em tudo:
+				# escolher Oni pintava de vermelho e a linha seguinte APAGAVA a
+				# pintura. Quem pinta agora é o `Visual.aplicar` acima.
 				# Raça muda a silhueta (pernas longas, asas, cauda): sem
 				# re-enquadrar, o personagem sai do quadro.
 				_reenquadrar()
@@ -611,32 +609,10 @@ func _grupo_de_cores(grupo: String, lista: Array) -> void:
 ## Pinta o CORPO — e as peças de raça marcadas para acompanhar a cor (o Mink
 ## Lobo). Acessório não entra: chapéu de palha azul deixaria de ser chapéu de
 ## palha. Chifre de Oni também não, pelo mesmo motivo.
-func _pintar() -> void:
-	if _modelo == null or not is_instance_valid(_modelo):
-		return
-	var malhas: Array = []
-	FxUtil._collect_meshes(_modelo, malhas)
-	for m in malhas:
-		if not (m is MeshInstance3D):
-			continue
-		# Peça de raça marcada com `segue_cor` é pintada COMO se fosse corpo —
-		# é isso que faz as orelhas e o rabo do Mink Lobo ficarem da cor do
-		# personagem, que foi o pedido.
-		if _e_adorno(m) and not Racas.segue_cor(m):
-			continue
-		if _cor_idx < 0:
-			(m as MeshInstance3D).material_override = null
-			continue
-		# ⚠️ O MESMO MATERIAL DO JOGO (`Materiais.superficie` = cel shading), e
-		# não um `StandardMaterial3D` avulso. A prévia existe para o jogador
-		# decidir como vai ficar EM PARTIDA — se ela usa outra iluminação, ela
-		# mente, e a cor escolhida aqui aparece diferente lá. É o mesmo motivo de
-		# a paleta ser a do jogo em vez de uma lista só do menu.
-		var lista: Array = Paleta.PELES if _cor_grupo == "pele" else Paleta.CORES
-		if _cor_idx >= lista.size():
-			continue
-		var c: Color = lista[_cor_idx]["cor"]
-		(m as MeshInstance3D).material_override = Materiais.superficie(c)
+## A pintura vive em `Visual.pintar` desde 2026-08-29 — prévia e partida usam a
+## MESMA função, senão as duas podem divergir e a prévia deixa de prometer o que
+## a partida cumpre. A cópia que existia aqui foi removida por ter virado uma
+## segunda fonte de verdade que discordava da primeira.
 
 
 ## Acessório ou peça de raça — o que NÃO é corpo.

@@ -155,8 +155,8 @@ func _init() -> void:
 	print("\n--- cor ---")
 	Acessorios.equipar(modelo, "chapeu_palha")
 	for i in 5: await process_frame
-	menu._cor_idx = 1
-	menu._pintar()
+	Visual.cor_idx = 1
+	Visual.pintar(modelo)
 	for i in 5: await process_frame
 	_ok("a cor pinta o CORPO", _cor_de(modelo, "Torso") == Paleta.CORES[1]["cor"])
 	_ok("a cor NÃO pinta o acessório", not _acessorio_pintado(modelo))
@@ -164,20 +164,40 @@ func _init() -> void:
 	# ---------- raças ----------
 	print("\n--- raças ---")
 	Acessorios.desequipar(modelo, "cabeca")
-	menu._cor_idx = -1
-	menu._pintar()
-	_ok("as 8 raças estão no catálogo", Racas.ids().size() == 8)
+	Visual.cor_idx = -1
+	Visual.pintar(modelo)
+	_ok("as 12 raças estão no catálogo", Racas.ids().size() == 12)
 	_ok("começa sem raça", Racas.atual(modelo) == "")
 
-	# cada raça acrescenta peça OU muda escala — nenhuma pode ser inerte
+	# ⚠️ DUAS RAÇAS NÃO PENDURAM NADA, e é de propósito (folha de 2026-08-29):
+	#
+	#   humano  — é o personagem BASE. Ser inerte é a característica dele, e ele
+	#             existe justamente para VOLTAR ao padrão depois de experimentar.
+	#   gigante — cresce o CORPO (modelo, cápsula e câmera), e isso vive no
+	#             Player, não no modelo. Esta sonda mede o boneco da prévia
+	#             isolado, então aqui não há o que ver.
+	#
+	# A regra "nenhuma raça é inerte" continua valendo — o que muda é o critério
+	# com que cada uma é julgada. Baixá-la para "quase todas fazem algo" deixaria
+	# passar uma raça vazia de verdade.
+	const SEM_PECAS := ["humano", "gigante"]
 	for id in Racas.ids():
 		Racas.aplicar(modelo, id)
 		for i in 3: await process_frame
 		var pecas := _contar_racas(modelo)
 		var escalado := _tem_escala_mudada(modelo)
-		_ok("%s muda o corpo (peças=%d, escala=%s)" % [id, pecas, str(escalado)],
-			pecas > 0 or escalado)
-		_ok("%s é reconhecida como a raça atual" % id, Racas.atual(modelo) == id)
+		if id == "humano":
+			_ok("humano é o base: não pendura nada", pecas == 0 and not escalado)
+		elif id == "gigante":
+			_ok("gigante muda o corpo pela ESCALA", Racas.escala_de(id) > 1.0)
+		else:
+			_ok("%s muda o corpo (peças=%d, escala=%s)" % [id, pecas, str(escalado)],
+				pecas > 0 or escalado)
+		# `Racas.atual` deduz a raça olhando as peças marcadas no modelo, então
+		# não enxerga as duas que não penduram nada. Quem sabe a raça de verdade
+		# é o `Visual.raca`, que é a fonte usada pelo menu e pela partida.
+		if not (id in SEM_PECAS):
+			_ok("%s é reconhecida como a raça atual" % id, Racas.atual(modelo) == id)
 
 	# exclusão GLOBAL: trocar de raça não acumula
 	print("\n--- exclusão global de raça ---")
@@ -221,19 +241,19 @@ func _init() -> void:
 	# a cor do mink lobo
 	print("\n--- o Mink Lobo segue a cor ---")
 	Racas.aplicar(modelo, "mink_lobo")
-	menu._cor_idx = 2
-	menu._pintar()
+	Visual.cor_idx = 2
+	Visual.pintar(modelo)
 	for i in 3: await process_frame
 	_ok("as peças do Mink Lobo ficam da cor do personagem",
 		_cor_da_peca_raca(modelo) == Paleta.CORES[2]["cor"])
 	Racas.aplicar(modelo, "oni")
-	menu._pintar()
+	Visual.pintar(modelo)
 	for i in 3: await process_frame
 	_ok("as peças do Oni NÃO seguem a cor",
 		_cor_da_peca_raca(modelo) != Paleta.CORES[2]["cor"])
 	Racas.remover(modelo)
-	menu._cor_idx = 1
-	menu._pintar()
+	Visual.cor_idx = 1
+	Visual.pintar(modelo)
 
 	# ---------- a aba de COR mostra os DOIS grupos ----------
 	# ⚠️ A ASSERÇÃO QUE FALTAVA. Os tons de pele foram escritos no `Paleta.PELES`
@@ -251,13 +271,13 @@ func _init() -> void:
 	_ok("os %d tons de pele aparecem" % Paleta.PELES.size(),
 		_conta_nomes(rotulos, Paleta.PELES) == Paleta.PELES.size())
 	# e escolher pele PINTA de pele
-	menu._cor_grupo = "pele"; menu._cor_idx = 3
-	menu._pintar()
+	Visual.cor_grupo = "pele"; Visual.cor_idx = 3
+	Visual.pintar(modelo)
 	for i in 3: await process_frame
 	_ok("escolher tom de pele pinta o corpo com ele",
 		_cor_de(modelo, "Torso") == Paleta.PELES[3]["cor"])
-	menu._cor_grupo = "time"; menu._cor_idx = 1
-	menu._pintar()
+	Visual.cor_grupo = "time"; Visual.cor_idx = 1
+	Visual.pintar(modelo)
 	menu._selecionar_categoria("acessorios")
 	for i in 3: await process_frame
 
@@ -329,6 +349,29 @@ func _init() -> void:
 	get_root().get_texture().get_image().save_png("%s/menu_cor.png" % saida)
 
 	await _acessorios_de_cabeca(menu)
+
+	# ---------- o CAMINHO DO BOTÃO, não só a função ----------
+	# ⚠️ POR QUE CLICAR DE VERDADE. O menu tinha um `_pintar()` logo depois do
+	# `Visual.aplicar` na ação do botão de raça — sobra de quando a tela era dona
+	# da cor. Ele lia `_cor_idx`, que parou de ser escrito e ficou preso em −1, e
+	# o efeito era `material_override = null` em tudo: escolher Oni pintava de
+	# vermelho e a linha seguinte APAGAVA. Dois testes passaram por cima disso
+	# porque os dois chamavam `Racas.aplicar`/`Visual.aplicar` direto — o defeito
+	# morava no que a TELA fazia depois.
+	print("\n--- pelo caminho do botão (como o jogador faz) ---")
+	Visual.raca = ""
+	Visual.cor_idx = -1
+	Visual.aplicar(modelo)
+	menu._selecionar_categoria("raca")
+	for i in 12: await process_frame
+	var clicou := _clicar(menu._lista_direita, "Oni")
+	for i in 12: await process_frame
+	_ok("o botão 'Oni' existe e foi clicado", clicou)
+	var cor_oni := _cor_do_corpo(modelo)
+	print("   corpo depois do clique: %s (esperado %s)" % [str(cor_oni), str(Racas.VERMELHO_ONI)])
+	_ok("clicar em Oni deixa o corpo vermelho e ELE FICA",
+		absf(cor_oni.r - Racas.VERMELHO_ONI.r) < 0.02
+		and absf(cor_oni.g - Racas.VERMELHO_ONI.g) < 0.02)
 
 	print("\n%d conferem | %d divergem" % [_ok_n, _falhas])
 	quit(1 if _falhas > 0 else 0)
@@ -472,6 +515,30 @@ func _tem_material_brilhante(modelo: Node) -> bool:
 			if mo is StandardMaterial3D and (mo as StandardMaterial3D).emission_enabled:
 				return true
 	return false
+
+
+## Acha um botão pelo texto e clica NELE, como o jogador faria.
+func _clicar(lista: Node, texto: String) -> bool:
+	for b in lista.get_children():
+		if _texto_de(b) != texto:
+			continue
+		var ev := InputEventMouseButton.new()
+		ev.button_index = MOUSE_BUTTON_LEFT
+		ev.pressed = true
+		b.gui_input.emit(ev)
+		return true
+	return false
+
+
+## A cor do CORPO — o que não é adorno.
+func _cor_do_corpo(modelo: Node) -> Color:
+	for x in _todos(modelo):
+		if not (x is MeshInstance3D) or Visual.e_adorno(x):
+			continue
+		var mo := (x as MeshInstance3D).material_override
+		if mo != null:
+			return _cor_do_material(mo)
+	return Color(0, 0, 0, 0)
 
 
 func _ok(rotulo: String, cond: bool) -> void:

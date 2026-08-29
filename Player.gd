@@ -513,9 +513,10 @@ func _ready() -> void:
 	# Colisor do jogador.
 	var col := CollisionShape3D.new()
 	var shape := BoxShape3D.new()
-	shape.size = Vector3(1.0, 1.6, 1.0)
+	shape.size = COLISOR_BASE
 	col.shape = shape
 	add_child(col)
+	_colisor = col
 
 	# CÂMERA — componente próprio desde a Fase 2. Ele monta a cadeia
 	# (pivô → ombro → SpringArm → Camera3D) e é dono de tremor, FOV e balanço.
@@ -1543,6 +1544,12 @@ const CORES := Paleta.CORES
 ## personagem fica com a aparência original.
 var cor_idx: int = -1
 
+## O colisor e o tamanho de referência dele. Guardados porque o Gigante os
+## redimensiona — ver `_aplicar_escala_de_raca`.
+const COLISOR_BASE := Vector3(1.0, 1.6, 1.0)
+var _colisor: CollisionShape3D = null
+var _escala_base_do_modelo: Vector3 = Vector3.ONE
+
 func nome_da_cor() -> String:
 	return str(CORES[cor_idx]["nome"]) if cor_idx >= 0 and cor_idx < CORES.size() else "original"
 
@@ -1559,6 +1566,29 @@ func aplicar_cor_do_jogador(idx: int) -> void:
 ## TODAS as malhas do modelo, uma arma da Buki que já esteja na mão no momento da
 ## pintura também é tingida; ela volta ao normal no próximo saque, que reconstrói
 ## o visual. Não vale complicar por isso enquanto for só cosmético.
+## O TAMANHO DA RAÇA (Gigante). Decisão do dono, 2026-08-29: o gigante não é só
+## um boneco maior — cresce a CÁPSULA e a CÂMERA junto.
+##
+## ⚠️ OS TRÊS OU NENHUM. Só o modelo cresceria e o gigante passaria por vãos em
+## que visualmente não cabe, e levaria dano no ar em volta do corpo; só a
+## cápsula e ele empacaria em porta nenhuma sem motivo visível. A câmera entra
+## porque a altura do pivô é fixa em metros: sem ajustar, o gigante enxerga a
+## partir do próprio peito.
+func _aplicar_escala_de_raca() -> void:
+	var e := Racas.escala_de(Visual.raca)
+	if _char_model != null and is_instance_valid(_char_model):
+		_char_model.scale = _escala_base_do_modelo * e
+	if _colisor != null and is_instance_valid(_colisor):
+		var forma := _colisor.shape as BoxShape3D
+		if forma != null:
+			forma.size = COLISOR_BASE * e
+		# A cápsula cresce a partir do centro, então o corpo afundaria meio
+		# tamanho no chão sem subir o colisor junto.
+		_colisor.position.y = (COLISOR_BASE.y * (e - 1.0)) * 0.5
+	if _camera != null and is_instance_valid(_camera):
+		_camera.definir_escala(e)
+
+
 func _tingir_modelo() -> void:
 	if cor_idx < 0 or cor_idx >= CORES.size():
 		return
@@ -1646,7 +1676,12 @@ func _setup_character_model(cid: String) -> void:
 	# Roda a cada remontagem do rig (troca de personagem, Gear 2) porque o
 	# modelo novo nasce limpo — a peça equipada morreu com o modelo anterior.
 	Visual.carregar_uma_vez()
+	# A escala do rig recém-montado, ANTES de a raça mexer nela: é sobre esta
+	# que o Gigante multiplica. Ler depois pegaria a escala já multiplicada e
+	# cada remontagem deixaria o personagem maior que a anterior.
+	_escala_base_do_modelo = _char_model.scale
 	Visual.aplicar(_char_model, true)
+	_aplicar_escala_de_raca()
 
 # PRESENTATION da arma empunhada — roda em TODOS os peers (chamada de dentro de
 # `_fire_skill` e do `_net_buki_guardar`), então o adversário vê a arma na mão

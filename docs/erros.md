@@ -7,6 +7,41 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-29 — o menu apagava a cor da raça um quadro depois de pintá-la
+
+**Sintoma:** achado ao conferir as raças novas: escolher Oni no menu pintava o
+corpo de vermelho e a cor sumia em seguida. A raça continuava aplicada — as
+peças estavam lá —, mas o corpo voltava ao cinza.
+
+**Causa raiz:** a ação do botão de raça terminava com um `_pintar()`, sobra de
+quando a TELA era dona da cor. Essa função lia `_cor_idx`, campo do menu que
+deixou de ser escrito quando o estado migrou para o `Visual` e ficou preso em
+−1 — e `-1` significa "original", cujo efeito é `material_override = null` em
+todas as malhas. A sequência era: `Visual.aplicar` pinta de vermelho, a linha
+seguinte apaga.
+
+**Evidência:** clicando o botão "Oni" pelo caminho real, o corpo lia
+`(0, 0, 0, 0)` (sem material) em vez de `(0.70, 0.16, 0.14)`. Depois de remover
+a chamada: `(0.70, 0.16, 0.14)`.
+
+**Por que dois testes deixaram passar:** ambos chamavam `Racas.aplicar` e
+`Visual.aplicar` DIRETO. O defeito não estava em nenhuma das duas — estava no
+que a tela fazia depois delas. Um teste que exercita só as funções nunca vê uma
+regressão que mora no chamador.
+
+**Correção:** `src/ui/CustomizacaoMenu.gd` — a chamada saiu, e a função
+`_pintar` e os campos `_cor_idx`/`_cor_grupo` foram removidos por inteiro: eram
+uma segunda fonte de verdade sobre a cor, que discordava da primeira. Quem pinta
+é `Visual.pintar`, a mesma função que a partida usa.
+
+**Como detectar de novo:** `medir_customizacao.gd` agora CLICA no botão "Oni"
+(`_clicar`, que emite o `gui_input` como o jogador faria) e confere a cor
+depois. É o único jeito de cobrir o que a tela faz além de chamar a função.
+
+**Padrão a levar adiante:** ao mover um estado de um lugar para outro, o perigo
+não é o código novo — é o código velho que continua lendo o campo antigo. Ele
+compila, roda, e opera sobre um valor que ninguém mais atualiza.
+
 ## 2026-08-29 — test_segurar_ataque é INTERMITENTE (aberto, não é regressão)
 
 **Sintoma:** `./validar.sh rapido` reprovou `test_segurar_ataque` com "o controle
