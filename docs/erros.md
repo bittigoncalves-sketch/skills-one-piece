@@ -7,6 +7,38 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-29 — a asa não aponta para um lado: ela sobe E cai ao mesmo tempo
+
+**Sintoma:** depois de pôr as asas "na vertical" a pedido do dono, ele mandou
+outro print: a PONTA estava para cima e devia estar para baixo. Uma folha nova
+(`lunarian 2`) mostrou por quê.
+
+**Causa raiz:** a asa era tratada como uma peça RÍGIDA que aponta para alguma
+direção, e toda a conversa girou em torno de "para cima ou para baixo?" — a
+pergunta errada. Na folha ela faz as duas coisas ao mesmo tempo: o arco do dorso
+SOBE do ombro até acima da cabeça, e as penas longas CAEM desse arco até a
+altura do quadril. Perseguir um ângulo só nunca ia chegar lá, e cada ajuste
+trocava um erro pelo outro — "vertical" me deu a ponta para cima, que era
+exatamente o que ele não queria.
+
+**Evidência:** a métrica antiga era um número — o ângulo da ponta — e por isso
+não conseguia sequer EXPRIMIR a forma certa. Com duas medidas, o repouso passou
+a ler topo do arco +0,69 (acima do ombro) e ponta das penas −0,90 (abaixo), que
+é a silhueta da folha.
+
+**Correção:** `src/customizacao/AsaLunar.gd` — a geometria virou um ARCO com
+penas penduradas nele (`sin(t·π·0,72)` põe o pico a dois terços da envergadura,
+onde fica a "mão" da asa), em duas camadas. As poses viraram desvios a partir de
+uma forma que já está certa parada, em vez de tentativas de apontar a asa.
+
+**Como detectar de novo:** `medir_visual_no_jogo` afere TOPO e PONTA
+separadamente. Se a asserção voltar a ser um número só, ela volta a aprovar uma
+asa que aponta toda para o mesmo lado.
+
+**Padrão a levar adiante:** quando ajustes sucessivos trocam um defeito por
+outro sem convergir, o problema costuma ser a métrica, não o valor. Uma forma
+que precisa de duas medidas não cabe numa asserção de uma.
+
 ## 2026-08-29 — nenhum valor de inclinação punha a asa na vertical
 
 **Sintoma:** o dono mandou um print e pediu as asas na vertical. Aumentar a

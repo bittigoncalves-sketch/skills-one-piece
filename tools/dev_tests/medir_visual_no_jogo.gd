@@ -283,8 +283,11 @@ func _racas(p: Node3D) -> void:
 	# AS ASAS: existem, são as duas, e BATEM.
 	var asas := _acha_asas(p._char_model)
 	_ok("o lunariano tem as DUAS asas", asas.size() == 2)
+	# 9 penas x 2 camadas = 18. O que esta asserção existe para impedir é a volta
+	# da PLACA (a asa antiga tinha 1 caixa), então o número só precisa estar bem
+	# acima disso — não colado no valor corrente, que engessaria a arte.
 	_ok("as asas têm penas em camadas (não uma placa)",
-		asas.size() > 0 and asas[0].get_child_count() >= 20)
+		asas.size() > 0 and asas[0].get_child_count() >= 12)
 	if asas.size() > 0:
 		# ⚠️ MEDE O MOVIMENTO, não a existência do `_process`. Uma asa com
 		# animação quebrada tem `_process` e fica parada — o que importa é a
@@ -429,44 +432,59 @@ func _asas_por_estado(p: Node3D, asas: Array) -> void:
 	await _quadros(20)
 
 
-## O ângulo VERTICAL da ponta da asa em cada pose, medido no espaço, e o quanto
-## ela recua. É a tradução direta do pedido do dono:
-##   "ao andar a asa deve ir para trás, ao pular para baixo e ao cair para cima"
+## A FORMA da asa em cada pose, medida no espaço do ombro.
+##
+## ⚠️ DUAS MEDIDAS, NÃO UMA. Antes isto media só o ângulo da ponta, e a pergunta
+## que ele respondia era "a asa aponta para cima ou para baixo?" — pergunta
+## errada. Na folha `lunarian 2` a asa faz as DUAS coisas: o arco do dorso sobe
+## acima do ombro e as penas CAEM abaixo dele. Uma métrica de um número só não
+## consegue exprimir isso, e foi por isso que a asa passou por "vertical" com a
+## ponta para cima, que não era o que o dono queria.
+##
+##   TOPO ......... o ponto mais alto do arco. Tem de ficar ACIMA do ombro.
+##   PONTA ........ o ponto mais baixo das penas. Tem de ficar ABAIXO do ombro.
+##   ENVERGADURA .. o quanto a asa afasta do corpo — é o que recolhe ao correr.
 func _angulos_da_asa(a: AsaLunar) -> void:
 	a.set_process(false)
-	var ponta: Node3D = a.get_child(a.get_child_count() - 1)
-	var ang := {}
-	var recuo := {}
+	var topo := {}
+	var ponta := {}
+	var env := {}
 	for pose in ["repouso", "andando", "correndo", "pulando", "caindo"]:
-		# ⚠️ OS TRÊS EIXOS. Faltava o `pitch` aqui quando ele foi acrescentado, e
-		# a asa era medida com o pitch do estado ANTERIOR: os ângulos saíam
-		# diferentes dos da calibração (pulando deu −13,7° em vez de −64,7°) e
-		# reprovavam uma pose correta. Pose incompleta mede outra pose.
 		a._abertura = float(AsaLunar.POSE[pose]["abertura"])
 		a._inclinacao = float(AsaLunar.POSE[pose]["inclinacao"])
 		a._pitch = float(AsaLunar.POSE[pose]["pitch"])
 		a._aplicar_pose()
 		await _quadros(3)
-		# ⚠️ NO ESPAÇO DO OMBRO, não do mundo. Medindo global, a rotação e a
-		# escala do modelo do jogador entram na conta: a mesma pose deu +38,7°
-		# no boneco do menu e −40,3° no do jogo. "Para cima" e "para trás" são
-		# do PERSONAGEM, então o referencial tem de ser o pai da asa.
-		var v: Vector3 = a.transform * ponta.position - a.position
-		ang[pose] = rad_to_deg(atan2(v.y, Vector2(v.x, v.z).length()))
-		recuo[pose] = v.z
-		print("   %-9s ponta a %+6.1f graus | recuo %.2f" % [pose, ang[pose], v.z])
+		var t := -99.0
+		var b := 99.0
+		var l := 0.0
+		for f in a.get_children():
+			var mi := f as MeshInstance3D
+			if mi == null or mi.mesh == null:
+				continue
+			var meio: float = (mi.mesh as BoxMesh).size.y * 0.5
+			var c: Vector3 = a.transform * mi.position - a.position
+			t = maxf(t, c.y + meio)
+			b = minf(b, c.y - meio)
+			l = maxf(l, absf(c.x))
+		topo[pose] = t
+		ponta[pose] = b
+		env[pose] = l
+		print("   %-9s topo %+.2f | ponta %+.2f | envergadura %.2f" % [pose, t, b, l])
 	a.set_process(true)
 
-	# ⚠️ VERTICAL, e não só "não horizontal". O dono pediu as asas em pé depois de
-	# ver o print — +39° ainda lia como diagonal. O teto é 90°: acima de +70° a
-	# ponta está claramente acima do ombro.
-	_ok("repouso: a asa fica VERTICAL (> +70 graus)", float(ang["repouso"]) > 70.0)
-	_ok("andando: vai para TRÁS (recua mais que em repouso)",
-		float(recuo["andando"]) > float(recuo["repouso"]))
-	_ok("correndo: recua ainda mais que andando",
-		float(recuo["correndo"]) >= float(recuo["andando"]))
-	_ok("pulando: a asa vai para BAIXO (< −30 graus)", float(ang["pulando"]) < -30.0)
-	_ok("caindo: a asa vai para CIMA (> +40 graus)", float(ang["caindo"]) > 40.0)
+	# A FORMA DA FOLHA: sobe do ombro e as penas caem.
+	_ok("repouso: o arco SOBE acima do ombro", float(topo["repouso"]) > 0.25)
+	_ok("repouso: a PONTA das penas fica ABAIXO do ombro", float(ponta["repouso"]) < -0.35)
+	# E os quatro gestos que o dono descreveu.
+	_ok("andando: recolhe (envergadura menor que em repouso)",
+		float(env["andando"]) < float(env["repouso"]))
+	_ok("correndo: recolhe ainda mais que andando",
+		float(env["correndo"]) < float(env["andando"]))
+	_ok("pulando: a asa vai para BAIXO (ponta mais baixa que em repouso)",
+		float(ponta["pulando"]) < float(ponta["repouso"]))
+	_ok("caindo: a asa vai para CIMA (arco mais alto que em repouso)",
+		float(topo["caindo"]) > float(topo["repouso"]))
 
 
 func _tecla(c: Key, d: bool) -> void:

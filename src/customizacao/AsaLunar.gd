@@ -19,20 +19,43 @@ extends Node3D
 #  acompanham — que é para o que a hierarquia serve.
 # ============================================================================
 
-## As quatro fileiras: (comprimento, altura da pena, recuo, queda).
-## Comprimentos crescentes da frente para trás — é o que faz o contorno da asa
-## abrir em vez de virar um bloco.
+## ============================================================================
+##  A FORMA DA ASA (refeita em 2026-08-29, folha `lunarian 2`)
 ##
-## ⚠️ A QUEDA É PEQUENA DE PROPÓSITO. Na primeira versão ela ia até 0,27 e,
-## somada ao rebaixamento ao longo da envergadura, punha a ponta da asa na
-## altura do quadril: o conjunto lia como uma saia preta, não como asa.
-const FILEIRAS := [
-	{"comp": 0.34, "alt": 0.115, "recuo": 0.02, "queda": 0.00, "tom": 0.34},
-	{"comp": 0.54, "alt": 0.130, "recuo": 0.09, "queda": 0.02, "tom": 0.26},
-	{"comp": 0.76, "alt": 0.145, "recuo": 0.17, "queda": 0.04, "tom": 0.18},
-	{"comp": 0.98, "alt": 0.160, "recuo": 0.25, "queda": 0.07, "tom": 0.11},
+##  ⚠️ A ASA SOBE E AS PENAS CAEM. A versão anterior tratava a asa como uma peça
+##  rígida que apontava para algum lado, e a pergunta virava "para cima ou para
+##  baixo?" — nenhuma das duas estava certa. Na folha a asa faz as DUAS coisas
+##  ao mesmo tempo: o dorso sobe do ombro num arco até acima da cabeça, e as
+##  penas longas DESCEM desse arco até a altura do quadril.
+##
+##  Por isso a geometria agora é um ARCO com penas penduradas nele, e não
+##  fileiras crescendo para trás. É o que faz a ponta ficar embaixo (o pedido do
+##  dono) sem que a asa deixe de ser alta.
+##
+##      ARCO ..... por onde o dorso da asa passa: sobe saindo do ombro, abre
+##                 para o lado e recua um pouco.
+##      PENAS .... penduradas no arco, descendo. As do meio são as mais longas,
+##                 como numa asa de verdade.
+##      CAMADAS .. duas fileiras, uma atrás da outra, para dar volume — é o que
+##                 separa "asa" de "recorte de papel".
+## ============================================================================
+
+## Quantas penas ao longo do arco.
+const PENAS := 9
+## Duas camadas: a de trás é mais longa e mais escura, a da frente cobre a raiz.
+const CAMADAS := [
+	{"recuo": 0.00, "comp": 1.00, "tom": 0.20, "larg": 0.085},
+	{"recuo": 0.13, "comp": 1.26, "tom": 0.11, "larg": 0.075},
 ]
-const PENAS_POR_FILEIRA := 7
+
+## O ARCO, em unidades do modelo. `ALTURA_ARCO` é o quanto o dorso sobe no pico;
+## `ABERTURA_ARCO`, o quanto ele afasta do corpo.
+const ALTURA_ARCO := 0.62
+const ABERTURA_ARCO := 0.86
+const RECUO_ARCO := 0.20
+## Comprimento das penas: a base mais o que as do meio ganham a mais.
+const PENA_BASE := 0.30
+const PENA_MEIO := 0.92
 
 ## O batimento de repouso, que corre POR CIMA da pose como uma respiração.
 ## Lento de propósito: é uma asa parada, não voando.
@@ -69,17 +92,18 @@ const PERIODO := 3.4
 ##   pulando  ≈ −45°   "ao pular deve ir para BAIXO"
 ##   caindo   ≈ +55°   "ao cair para CIMA"
 const POSE := {
-	# VERTICAL, com a ponta acima do ombro. Foi preciso o PITCH: nenhuma
-	# inclinação sozinha chega lá (satura em +53°) — ver a nota de `_aplicar_pose`.
-	"repouso":  {"abertura": -0.18, "inclinacao":  1.70, "pitch": -0.60},
-	# andando: deitam para TRÁS — é o recuo que cresce, não a altura que cai
-	"andando":  {"abertura": -0.62, "inclinacao":  0.60, "pitch":  0.20},
+	# ⚠️ NEUTRA. Com a forma nova — arco que sobe, penas que caem — o repouso não
+	# precisa girar nada: a asa já tem a silhueta da folha parada. As outras
+	# poses são desvios A PARTIR daqui.
+	"repouso":  {"abertura": -0.15, "inclinacao":  0.06, "pitch":  0.00},
+	# andando: deitam para TRÁS — cresce o recuo, e a asa fecha um pouco
+	"andando":  {"abertura": -0.60, "inclinacao": -0.10, "pitch":  0.18},
 	# correndo: recuo máximo, quase juntas nas costas
-	"correndo": {"abertura": -1.15, "inclinacao":  0.30, "pitch":  0.35},
-	# pulando: mergulham para BAIXO
-	"pulando":  {"abertura": -0.85, "inclinacao": -0.95, "pitch":  0.55},
-	# caindo: sobem e ABREM — vertical como o repouso, porém escancaradas
-	"caindo":   {"abertura":  0.12, "inclinacao":  1.70, "pitch": -0.75},
+	"correndo": {"abertura": -1.10, "inclinacao": -0.22, "pitch":  0.30},
+	# pulando: a asa inteira mergulha, as pontas apontam mais para baixo ainda
+	"pulando":  {"abertura": -0.70, "inclinacao": -0.85, "pitch":  0.48},
+	# caindo: sobem e ABREM, como quem freia a queda
+	"caindo":   {"abertura":  0.16, "inclinacao":  0.62, "pitch": -0.42},
 }
 
 ## Quão depressa a asa persegue a pose do estado. Rápido o bastante para o
@@ -120,32 +144,33 @@ func _montar(escala: float) -> void:
 	_pitch = float(POSE["repouso"]["pitch"])
 	_aplicar_pose()
 
-	for f in FILEIRAS:
-		var fila: Dictionary = f
-		var comp: float = float(fila["comp"]) * escala
-		var alt: float = float(fila["alt"]) * escala
-		var tom: float = float(fila["tom"])
-		for i in PENAS_POR_FILEIRA:
-			# Ao longo da envergadura as penas encurtam na ponta — asa afina.
-			var t := float(i) / float(PENAS_POR_FILEIRA - 1)
-			var encurta: float = 1.0 - 0.42 * t * t
+	for c in CAMADAS:
+		var camada: Dictionary = c
+		for i in PENAS:
+			var t := float(i) / float(PENAS - 1)
+			# ⚠️ O ARCO SOBE E DESCE. `sin(t·π·0.72)` põe o pico a cerca de dois
+			# terços da envergadura, não na ponta: é onde fica a "mão" da asa na
+			# folha, e é isso que dá o contorno de asa em vez de rampa reta.
+			var altura := sin(t * PI * 0.72) * ALTURA_ARCO
+			var x: float = _lado * (0.12 + t * ABERTURA_ARCO) * escala
+			var y: float = altura * escala
+			var z: float = (float(camada["recuo"]) + t * RECUO_ARCO) * escala
+
+			# A pena DESCE do arco. As do meio são as mais longas.
+			var comp: float = (PENA_BASE + sin(t * PI * 0.88) * PENA_MEIO) \
+				* float(camada["comp"]) * escala
+
 			var m := MeshInstance3D.new()
 			var caixa := BoxMesh.new()
-			caixa.size = Vector3(0.075 * escala, alt, comp * encurta)
+			caixa.size = Vector3(float(camada["larg"]) * escala, comp, 0.075 * escala)
 			m.mesh = caixa
-			m.position = Vector3(
-				_lado * (0.10 + t * 0.62) * escala,
-				-float(fila["queda"]) * escala - t * 0.02 * escala,
-				(float(fila["recuo"]) + comp * encurta * 0.5) * escala)
-			# ⚠️ O LEQUE NÃO PODE CAIR. A inclinação era `-t * 0.30`, ou seja,
-			# quanto mais para a ponta, mais a pena APONTAVA PARA BAIXO — e isso
-			# trava a asa: medido, o ângulo da ponta saturava em +53° por mais
-			# que a pose subisse (1,60 rad dava +53,3°; 2,20 rad dava +45,4°,
-			# ou seja PIORAVA). Com o leque quase reto a ponta acompanha a pose e
-			# a asa consegue ficar na vertical, que foi o que o dono pediu.
-			m.rotation = Vector3(0.0, _lado * t * 0.18, _lado * -t * 0.04)
+			# a caixa nasce centrada, então desce meio comprimento para pendurar
+			m.position = Vector3(x, y - comp * 0.5, z)
+			# leve inclinação para fora, acompanhando o arco
+			m.rotation = Vector3(0.0, _lado * t * 0.20, _lado * -t * 0.26)
 			# ⚠️ CEL SHADING, como todo o resto. Um `StandardMaterial3D` avulso
 			# deixaria a asa lisa e brilhante ao lado de um corpo chapado.
+			var tom: float = float(camada["tom"])
 			m.material_override = Materiais.superficie(Color(tom * 0.9, tom * 0.9, tom))
 			add_child(m)
 
