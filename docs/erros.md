@@ -7,6 +7,41 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-29 — testei o parâmetro que escrevi, não o ângulo que saía
+
+**Sintoma:** o dono olhou o print e disse "a asa está na horizontal", com a
+asserção "a asa de repouso não é horizontal" passando verde.
+
+**Causa raiz:** a asserção era `POSE["repouso"]["inclinacao"] > 0.35` — o
+PARÂMETRO DE ENTRADA, não o resultado. E os dois não coincidem: as penas descem
+ao longo da envergadura (`queda` mais o rebaixamento por `t`), e essa geometria
+come cerca de 17° da elevação. Com 0,52 rad escritos (30°) a ponta da asa subia
++12,3°, que é horizontal a olho — exatamente o que ele viu. O teste confirmava
+que eu tinha digitado 0,52; nunca perguntou onde a asa foi parar.
+
+**Evidência:** ângulo vertical da ponta, medido: repouso +12,3°, andando +2,0°,
+correndo −9,1°. Depois de calibrar CONTRA a medição: +38,7°, +13,1°, +4,9°, com
+pulando em −45,5° e caindo em +48,4°.
+
+**Segundo erro, no meio da correção:** a primeira medição do ângulo foi feita em
+espaço GLOBAL, e a mesma pose deu +38,7° no boneco do menu e −40,3° no do jogo —
+a rotação e a escala do modelo do jogador entravam na conta. "Para cima" e "para
+trás" são do PERSONAGEM: o referencial certo é o pai da asa, e a medição passou
+a ser `a.transform * ponta.position - a.position`.
+
+**Correção:** `src/customizacao/AsaLunar.gd` — as cinco poses recalibradas
+contra o ângulo medido, e a queda interna das penas reduzida (era ela que roubava
+a elevação). `tools/dev_tests/medir_visual_no_jogo.gd` — `_angulos_da_asa` mede a
+PONTA no espaço do ombro e afere os cinco casos do pedido.
+
+**Como detectar de novo:** asserção sobre aparência tem de medir o que aparece.
+Se o teste lê uma constante do próprio catálogo, ele só confirma que o número
+foi digitado — e passa verde com a tela errada.
+
+**Padrão a levar adiante:** quando o usuário e o teste discordam sobre o que está
+na tela, o teste está medindo a coisa errada. É a terceira vez nesta sessão
+(antes: a camada de material errada, e o eixo da própria rotação).
+
 ## 2026-08-29 — não dá para simular "andando" escrevendo em `velocity`
 
 **Sintoma:** a asserção "andando no chão -> andando" reprovou. A sonda escrevia

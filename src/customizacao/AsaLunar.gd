@@ -28,9 +28,9 @@ extends Node3D
 ## altura do quadril: o conjunto lia como uma saia preta, não como asa.
 const FILEIRAS := [
 	{"comp": 0.34, "alt": 0.115, "recuo": 0.02, "queda": 0.00, "tom": 0.34},
-	{"comp": 0.54, "alt": 0.130, "recuo": 0.09, "queda": 0.03, "tom": 0.26},
-	{"comp": 0.76, "alt": 0.145, "recuo": 0.17, "queda": 0.07, "tom": 0.18},
-	{"comp": 0.98, "alt": 0.160, "recuo": 0.25, "queda": 0.12, "tom": 0.11},
+	{"comp": 0.54, "alt": 0.130, "recuo": 0.09, "queda": 0.02, "tom": 0.26},
+	{"comp": 0.76, "alt": 0.145, "recuo": 0.17, "queda": 0.04, "tom": 0.18},
+	{"comp": 0.98, "alt": 0.160, "recuo": 0.25, "queda": 0.07, "tom": 0.11},
 ]
 const PENAS_POR_FILEIRA := 7
 
@@ -55,16 +55,29 @@ const PERIODO := 3.4
 ##  "na horizontal"; na folha elas sobem num V amplo. O que as deitava era a
 ##  INCLINAÇÃO baixa, não a abertura — mexer na abertura não teria resolvido.
 ## ============================================================================
+## ⚠️ A INCLINAÇÃO ESCRITA NÃO É O ÂNGULO QUE SAI. As penas descem ao longo da
+## envergadura (`queda` + o rebaixamento por `t`), e essa geometria come cerca de
+## 17° da elevação: com 0,52 rad escritos (30°) a ponta subia só +12,3° — o dono
+## olhou e disse, com razão, que a asa continuava "na horizontal". Os valores
+## abaixo foram CALIBRADOS contra o ângulo medido da ponta, não escolhidos pelo
+## número que parecia certo.
+##
+## Alvos, em ângulo REAL da ponta (medido por `_tmp` e travado no teste):
+##   repouso  ≈ +40°   aberta em V
+##   andando  ≈  +5°   recuada, "para trás"
+##   correndo ≈  −5°   juntas nas costas
+##   pulando  ≈ −45°   "ao pular deve ir para BAIXO"
+##   caindo   ≈ +55°   "ao cair para CIMA"
 const POSE := {
-	"repouso":  {"abertura": -0.18, "inclinacao":  0.52},
+	"repouso":  {"abertura": -0.18, "inclinacao":  1.02},
 	# andando: recuadas, "organizadas para trás", mas ainda abertas
-	"andando":  {"abertura": -0.62, "inclinacao":  0.30},
+	"andando":  {"abertura": -0.62, "inclinacao":  0.42},
 	# correndo: quase juntas nas costas — é o "encostando uma na outra"
-	"correndo": {"abertura": -1.15, "inclinacao":  0.06},
-	# pulando: recolhidas para o centro, como ave que salta
-	"pulando":  {"abertura": -1.30, "inclinacao": -0.18},
-	# caindo: escancaradas, planando
-	"caindo":   {"abertura": -0.02, "inclinacao":  0.86},
+	"correndo": {"abertura": -1.15, "inclinacao":  0.24},
+	# pulando: mergulham para BAIXO (pedido do dono)
+	"pulando":  {"abertura": -0.95, "inclinacao": -0.95},
+	# caindo: sobem, escancaradas, planando
+	"caindo":   {"abertura": -0.02, "inclinacao":  1.32},
 }
 
 ## Quão depressa a asa persegue a pose do estado. Rápido o bastante para o
@@ -118,7 +131,7 @@ func _montar(escala: float) -> void:
 			m.mesh = caixa
 			m.position = Vector3(
 				_lado * (0.10 + t * 0.62) * escala,
-				-float(fila["queda"]) * escala - t * 0.09 * escala,
+				-float(fila["queda"]) * escala - t * 0.05 * escala,
 				(float(fila["recuo"]) + comp * encurta * 0.5) * escala)
 			# leve abertura em leque
 			m.rotation = Vector3(0.0, _lado * t * 0.26, _lado * -t * 0.30)

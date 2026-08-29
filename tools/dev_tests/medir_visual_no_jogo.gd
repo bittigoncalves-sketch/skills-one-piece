@@ -363,10 +363,19 @@ func _asas_por_estado(p: Node3D, asas: Array) -> void:
 	# mais negativo = mais recuada/fechada
 	_ok("andando organiza para TRÁS (mais que parado)", and_ < rep)
 	_ok("correndo FECHA mais que andando", cor < and_)
-	_ok("pulando fecha para o centro (a mais fechada)", pul <= cor)
+	# ⚠️ O PEDIDO MUDOU. Antes era "fecham para o centro ao pular", e a asserção
+	# exigia que pulando fosse a mais RECUADA. O dono depois especificou "ao
+	# pular deve ir para BAIXO", que é sobre altura, não sobre recuo — e as duas
+	# coisas brigam: mergulhar exige abrir um pouco para ter para onde descer.
+	# Quem julga o pulo agora é o ângulo, em `_angulos_da_asa`.
+	_ok("pulando recolhe mais que andando", pul < and_)
 	_ok("caindo ABRE mais que qualquer outra", cai > rep and cai > and_)
-	_ok("a asa de repouso não é horizontal (sobe num V)",
-		float(AsaLunar.POSE["repouso"]["inclinacao"]) > 0.35)
+	# ⚠️ O ÂNGULO QUE SAI, NÃO O QUE FOI ESCRITO. Aqui havia uma asserção sobre
+	# `POSE["repouso"]["inclinacao"] > 0.35` — o PARÂMETRO — e ela passava com a
+	# asa deitada: as penas descem ao longo da envergadura e a geometria come
+	# ~17° da elevação. Com 0,52 rad escritos (30°) a ponta subia +12,3°, e o
+	# dono viu na tela o que o teste não via. Agora mede-se a PONTA.
+	await _angulos_da_asa(a)
 
 	# --- e o estado é lido certo do corpo? ---
 	var chao0: Vector3 = p.global_position
@@ -418,6 +427,38 @@ func _asas_por_estado(p: Node3D, asas: Array) -> void:
 	p.global_position = chao0
 	p.velocity = Vector3.ZERO
 	await _quadros(20)
+
+
+## O ângulo VERTICAL da ponta da asa em cada pose, medido no espaço, e o quanto
+## ela recua. É a tradução direta do pedido do dono:
+##   "ao andar a asa deve ir para trás, ao pular para baixo e ao cair para cima"
+func _angulos_da_asa(a: AsaLunar) -> void:
+	a.set_process(false)
+	var ponta: Node3D = a.get_child(a.get_child_count() - 1)
+	var ang := {}
+	var recuo := {}
+	for pose in ["repouso", "andando", "correndo", "pulando", "caindo"]:
+		a._abertura = float(AsaLunar.POSE[pose]["abertura"])
+		a._inclinacao = float(AsaLunar.POSE[pose]["inclinacao"])
+		a._aplicar_pose()
+		await _quadros(3)
+		# ⚠️ NO ESPAÇO DO OMBRO, não do mundo. Medindo global, a rotação e a
+		# escala do modelo do jogador entram na conta: a mesma pose deu +38,7°
+		# no boneco do menu e −40,3° no do jogo. "Para cima" e "para trás" são
+		# do PERSONAGEM, então o referencial tem de ser o pai da asa.
+		var v: Vector3 = a.transform * ponta.position - a.position
+		ang[pose] = rad_to_deg(atan2(v.y, Vector2(v.x, v.z).length()))
+		recuo[pose] = v.z
+		print("   %-9s ponta a %+6.1f graus | recuo %.2f" % [pose, ang[pose], v.z])
+	a.set_process(true)
+
+	_ok("repouso: a asa SOBE num V (> +30 graus)", float(ang["repouso"]) > 30.0)
+	_ok("andando: vai para TRÁS (recua mais que em repouso)",
+		float(recuo["andando"]) > float(recuo["repouso"]))
+	_ok("correndo: recua ainda mais que andando",
+		float(recuo["correndo"]) >= float(recuo["andando"]))
+	_ok("pulando: a asa vai para BAIXO (< −30 graus)", float(ang["pulando"]) < -30.0)
+	_ok("caindo: a asa vai para CIMA (> +40 graus)", float(ang["caindo"]) > 40.0)
 
 
 func _tecla(c: Key, d: bool) -> void:
