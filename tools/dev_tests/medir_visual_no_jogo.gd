@@ -302,6 +302,8 @@ func _racas(p: Node3D) -> void:
 		print("   asa: variação da pose em 30 quadros = %.4f" % girou)
 		_ok("a asa BATE de verdade (a pose muda)", girou > 0.002)
 
+	await _asas_por_estado(p, asas)
+
 	# GIGANTE: os três juntos — modelo, cápsula e câmera.
 	var col0: Vector3 = (p._colisor.shape as BoxShape3D).size
 	var mod0: Vector3 = p._char_model.scale
@@ -335,6 +337,95 @@ func _racas(p: Node3D) -> void:
 	await _quadros(6)
 	_ok("voltar a humano devolve a cápsula ao normal",
 		absf((p._colisor.shape as BoxShape3D).size.y - col0.y) < 0.01)
+
+
+## AS ASAS REAGEM AO MOVIMENTO (pedido do dono, 2026-08-29):
+## "fecham para o centro quando pula e abrem quando cai; se organizam para trás
+## quando começa a se mover e se fecham encostando uma na outra quando corre".
+##
+## Duas metades: a TABELA precisa descrever essas relações, e o ESTADO precisa
+## ser lido certo do corpo. Testar só uma delas deixaria passar a outra.
+func _asas_por_estado(p: Node3D, asas: Array) -> void:
+	print("\n=== 9. as asas reagem ao movimento ===")
+	if asas.is_empty():
+		_ok("há asa para medir", false)
+		return
+	var a := asas[0] as AsaLunar
+
+	# --- a tabela diz o que o pedido pediu? ---
+	var rep: float = float(AsaLunar.POSE["repouso"]["abertura"])
+	var and_: float = float(AsaLunar.POSE["andando"]["abertura"])
+	var cor: float = float(AsaLunar.POSE["correndo"]["abertura"])
+	var pul: float = float(AsaLunar.POSE["pulando"]["abertura"])
+	var cai: float = float(AsaLunar.POSE["caindo"]["abertura"])
+	print("   abertura: repouso %.2f | andando %.2f | correndo %.2f | pulando %.2f | caindo %.2f"
+		% [rep, and_, cor, pul, cai])
+	# mais negativo = mais recuada/fechada
+	_ok("andando organiza para TRÁS (mais que parado)", and_ < rep)
+	_ok("correndo FECHA mais que andando", cor < and_)
+	_ok("pulando fecha para o centro (a mais fechada)", pul <= cor)
+	_ok("caindo ABRE mais que qualquer outra", cai > rep and cai > and_)
+	_ok("a asa de repouso não é horizontal (sobe num V)",
+		float(AsaLunar.POSE["repouso"]["inclinacao"]) > 0.35)
+
+	# --- e o estado é lido certo do corpo? ---
+	var chao0: Vector3 = p.global_position
+	p.velocity = Vector3.ZERO
+	await _quadros(20)
+	_ok("parado no chão -> repouso", a.estado() == "repouso")
+
+	# --- A REGRA, nos cinco casos, sem depender do mundo ---
+	# Andar e correr não dão para provocar aqui: o Player recalcula a velocidade
+	# todo quadro a partir do input, e a tecla injetada não chega nesta sonda
+	# (medido: velocidade plana 0,00 segurando W). A regra é pura justamente
+	# para não ficar refém disso.
+	var casos := [
+		{"chao": true,  "vel": Vector3(0, 0, 0),     "cor": false, "esp": "repouso"},
+		{"chao": true,  "vel": Vector3(4, 0, 0),     "cor": false, "esp": "andando"},
+		{"chao": true,  "vel": Vector3(7, 0, 0),     "cor": true,  "esp": "correndo"},
+		{"chao": false, "vel": Vector3(0, 8, 0),     "cor": false, "esp": "pulando"},
+		{"chao": false, "vel": Vector3(0, -8, 0),    "cor": false, "esp": "caindo"},
+		# quem saltou CORRENDO está pulando, não correndo — a ordem da regra
+		{"chao": false, "vel": Vector3(7, 8, 0),     "cor": true,  "esp": "pulando"},
+	]
+	for c in casos:
+		var caso: Dictionary = c
+		var got := AsaLunar.estado_de(bool(caso["chao"]), caso["vel"], bool(caso["cor"]))
+		_ok("regra: chão=%s vel=%s correndo=%s -> %s"
+			% [str(caso["chao"]), str(caso["vel"]), str(caso["cor"]), caso["esp"]],
+			got == String(caso["esp"]))
+
+	# --- E A LEITURA DO CORPO, no que dá para provocar de verdade: o ar ---
+	p.global_position = chao0 + Vector3(0, 6.0, 0)
+	p.velocity = Vector3(0.0, 8.0, 0.0)
+	await _quadros(6)
+	print("   subindo (y=%.1f, no chão=%s): '%s'"
+		% [p.velocity.y, str(p.is_on_floor()), a.estado()])
+	_ok("no corpo de verdade: subindo -> pulando", a.estado() == "pulando")
+
+	p.velocity = Vector3(0.0, -8.0, 0.0)
+	await _quadros(4)
+	_ok("no corpo de verdade: caindo -> caindo", a.estado() == "caindo")
+
+	# ⚠️ E A POSE PERSEGUE MESMO? A tabela e o estado podem estar certos e o
+	# `_process` não interpolar — aí a asa fica presa numa pose só.
+	var ab0: float = a._abertura
+	await _quadros(30)
+	var ab1: float = a._abertura
+	print("   abertura foi de %.3f para %.3f (alvo caindo %.2f)" % [ab0, ab1, cai])
+	_ok("a pose PERSEGUE o alvo do estado", absf(ab1 - cai) < absf(ab0 - cai))
+
+	p.global_position = chao0
+	p.velocity = Vector3.ZERO
+	await _quadros(20)
+
+
+func _tecla(c: Key, d: bool) -> void:
+	var e := InputEventKey.new()
+	e.physical_keycode = c
+	e.keycode = c
+	e.pressed = d
+	Input.parse_input_event(e)
 
 
 func _tem_peca_em(modelo: Node, no: String) -> bool:

@@ -7,6 +7,37 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-29 — não dá para simular "andando" escrevendo em `velocity`
+
+**Sintoma:** a asserção "andando no chão -> andando" reprovou. A sonda escrevia
+`p.velocity = Vector3(6, 0, 0)` e lia o estado da asa quatro quadros depois:
+vinha `repouso`, com velocidade plana 0,00.
+
+**Causa raiz:** o `Player` RECALCULA a velocidade todo quadro de física a partir
+do input (`MoveFrame.ler` → `_etapa_locomocao`). Escrever nela de fora dura
+menos de um quadro — sem tecla pressionada, o próximo passo zera. A leitura do
+estado estava certa; a SIMULAÇÃO é que não se sustentava.
+
+**Descartado:** *injetar a tecla*. Foi a tentativa seguinte, e também não serviu:
+medido, `velocidade plana 0,00` mesmo segurando W nesta sonda — `MoveFrame.ler`
+depende de mouse capturado e menu fechado, e neste contexto o input não chega.
+
+**Correção:** a regra virou função PURA — `AsaLunar.estado_de(no_chao, vel,
+correndo)` — e `estado()` ficou só com a leitura dos três valores do corpo.
+Assim os cinco estados são verificáveis sem mundo nenhum (incluindo "saltou
+correndo → pulando, não correndo"), e o que ainda depende do corpo é testado no
+que dá para provocar de verdade: o ar, onde a velocidade vertical persiste.
+
+**Como detectar de novo:** se uma asserção sobre movimento só passa quando o
+personagem se move, e o personagem não se move na sonda, o problema é o
+acoplamento do teste ao mundo. Separar a regra da leitura resolve, e de quebra
+permite testar os casos que o mundo não produz sob demanda.
+
+**Padrão a levar adiante:** estado derivado de física é caro de provocar e
+barato de calcular. Quando a decisão couber numa função de argumentos simples,
+ela deve morar lá — não porque fica "mais limpo", mas porque passa a ser
+testável nos casos que importam em vez de nos que o ambiente permite.
+
 ## 2026-08-29 — a chama parecia mal posicionada, e o UV é que estava invertido
 
 **Sintoma:** a chama 2D das costas do Lunariano aparecia só ACIMA da cabeça,
