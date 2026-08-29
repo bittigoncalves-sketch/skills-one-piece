@@ -7,6 +7,37 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-29 — estado persistido contamina teste que não o zera
+
+**Sintoma:** depois de ligar a customização ao mundo, o `medir_customizacao`
+passou a reprovar quatro asserções que nada tinham a ver com a mudança —
+"cenário montado: dois acessórios na cabeça", "equipar na MESMA parte não
+empilha", "as quatro convivem no mesmo nó" e "começa sem olhos". O código
+testado estava correto.
+
+**Causa raiz:** o menu passou a chamar `Visual.carregar_uma_vez()` ao abrir, e
+uma execução anterior — do `medir_visual_no_jogo`, que salva de propósito, ou do
+jogo de verdade — tinha deixado um personagem montado em `user://visual.cfg`. O
+boneco da prévia nascia com cabelo, boca, cartola e máscara, e toda contagem do
+teste mudava. As asserções contavam acessórios sem controlar quantos já havia.
+
+**Evidência:** 101 conferem / 5 divergem com o arquivo salvo; 107 / 0 depois de
+zerar `Visual` no começo da sonda. Nenhuma linha do código de produção mudou
+entre as duas execuções.
+
+**Correção:** `tools/dev_tests/medir_customizacao.gd` zera o estado e marca
+`Visual._carregado = true` antes de montar o menu, impedindo a releitura do
+disco. A quinta falha era diferente e legítima: "há quatro categorias" virou
+cinco, porque `cabelo` ganhou categoria própria.
+
+**Como detectar de novo:** rodar a sonda duas vezes seguidas. Se a segunda
+execução divergir da primeira, ela está lendo o que a primeira deixou no disco.
+
+**Padrão a levar adiante:** no instante em que um sistema ganha persistência,
+todo teste que o toca herda uma dependência invisível de execuções passadas — e
+falha contando coisas que ninguém equipou naquela execução. O teste precisa
+zerar o estado, não presumir que ele começa vazio.
+
 ## 2026-08-29 — o menu e a partida não usam a mesma cabeça, e o acessório não sabia disso
 
 **Sintoma:** o chapéu de palha aparece esticado para trás na prévia do menu de

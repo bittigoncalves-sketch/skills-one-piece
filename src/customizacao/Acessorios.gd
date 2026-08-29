@@ -29,6 +29,8 @@ extends RefCounted
 # ============================================================================
 
 const BASE := "res://assets/models/acessorios/"
+const CABELO := "res://assets/models/cabelos/"
+const BOCA := "res://assets/models/bocas/"
 
 ## ⚠️ CADA ACESSÓRIO É UMA LISTA DE PEÇAS, não uma cena só. O chinelo são DOIS
 ## (um por pé) — e assim que apareceu um acessório de duas pontas, "uma cena num
@@ -121,6 +123,138 @@ const CATALOGO := {
 		"pecas": [{"cena": BASE + "espadas_zoro.glb", "no": "Torso",
 			"ancora": Vector3(0.06, 0.34, 0.62)}],
 	},
+	# ---- CABELOS (folha de 2026-08-29, metade de baixo)
+	# ⚠️ SEM OLHOS. Os olhos que aparecem na folha ao lado dos cabelos são
+	# referência de altura e nada mais — instrução explícita do dono. Quem
+	# desenha olho é o `Corpo.gd`, e um cabelo que trouxesse o seu daria dois
+	# pares na cara de quem escolhesse os dois.
+	#
+	# `tingivel` é o que faz a cor ser do JOGADOR e não do estilo: os modelos
+	# saem do Blender numa cor neutra só, e a paleta pinta. Fixar preto no
+	# espetado e loiro no curto, como na folha, impediria "moicano loiro".
+	"cabelo_espetado": {
+		"nome": "Espetado", "parte": "cabelo", "tingivel": true,
+		"pecas": [{"cena": CABELO + "espetado.glb", "no": "Head",
+			"ancora": Vector3(0.5, 1.0, 0.5), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"cabelo_baguncado": {
+		"nome": "Bagunçado", "parte": "cabelo", "tingivel": true,
+		"pecas": [{"cena": CABELO + "baguncado.glb", "no": "Head",
+			"ancora": Vector3(0.5, 1.0, 0.5), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"cabelo_topete": {
+		"nome": "Topete", "parte": "cabelo", "tingivel": true,
+		"pecas": [{"cena": CABELO + "topete.glb", "no": "Head",
+			"ancora": Vector3(0.5, 1.0, 0.5), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"cabelo_curto": {
+		"nome": "Curto", "parte": "cabelo", "tingivel": true,
+		"pecas": [{"cena": CABELO + "curto.glb", "no": "Head",
+			"ancora": Vector3(0.5, 1.0, 0.5), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"cabelo_cacheado": {
+		"nome": "Cacheado", "parte": "cabelo", "tingivel": true,
+		"pecas": [{"cena": CABELO + "cacheado.glb", "no": "Head",
+			"ancora": Vector3(0.5, 1.0, 0.5), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"cabelo_longo": {
+		"nome": "Longo", "parte": "cabelo", "tingivel": true,
+		"pecas": [{"cena": CABELO + "longo.glb", "no": "Head",
+			"ancora": Vector3(0.5, 1.0, 0.5), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"cabelo_franja": {
+		"nome": "Franja", "parte": "cabelo", "tingivel": true,
+		"pecas": [{"cena": CABELO + "franja.glb", "no": "Head",
+			"ancora": Vector3(0.5, 1.0, 0.5), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"cabelo_lateral": {
+		"nome": "Lateral", "parte": "cabelo", "tingivel": true,
+		"pecas": [{"cena": CABELO + "lateral.glb", "no": "Head",
+			"ancora": Vector3(0.5, 1.0, 0.5), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"cabelo_moicano": {
+		"nome": "Moicano", "parte": "cabelo", "tingivel": true,
+		"pecas": [{"cena": CABELO + "moicano.glb", "no": "Head",
+			"ancora": Vector3(0.5, 1.0, 0.5), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"cabelo_dread": {
+		"nome": "Dread", "parte": "cabelo", "tingivel": true,
+		"pecas": [{"cena": CABELO + "dread.glb", "no": "Head",
+			"ancora": Vector3(0.5, 1.0, 0.5), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"cabelo_super_espetado": {
+		"nome": "Super Espetado", "parte": "cabelo", "tingivel": true,
+		"pecas": [{"cena": CABELO + "super_espetado.glb", "no": "Head",
+			"ancora": Vector3(0.5, 1.0, 0.5), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"cabelo_rabo_de_cavalo": {
+		"nome": "Rabo de Cavalo", "parte": "cabelo", "tingivel": true,
+		"pecas": [{"cena": CABELO + "rabo_de_cavalo.glb", "no": "Head",
+			"ancora": Vector3(0.5, 1.0, 0.5), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	# ---- BOCAS (folha de 2026-08-29, metade de cima)
+	# A cabeça do rig é lisa: a boca é placa fina na FACE FRONTAL, como o olho.
+	# Âncora y=0,32 — bem abaixo dos olhos, que ficam em 0,60.
+	"boca_neutra": {
+		"nome": "Neutra", "parte": "boca",
+		"pecas": [{"cena": BOCA + "neutra.glb", "no": "Head",
+			"ancora": Vector3(0.5, 0.32, 0.0), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"boca_sorriso": {
+		"nome": "Sorriso", "parte": "boca",
+		"pecas": [{"cena": BOCA + "sorriso.glb", "no": "Head",
+			"ancora": Vector3(0.5, 0.32, 0.0), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"boca_feliz": {
+		"nome": "Feliz", "parte": "boca",
+		"pecas": [{"cena": BOCA + "feliz.glb", "no": "Head",
+			"ancora": Vector3(0.5, 0.32, 0.0), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"boca_sorriso_com_dentes": {
+		"nome": "Sorriso com Dentes", "parte": "boca",
+		"pecas": [{"cena": BOCA + "sorriso_com_dentes.glb", "no": "Head",
+			"ancora": Vector3(0.5, 0.32, 0.0), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"boca_smirk": {
+		"nome": "Smirk", "parte": "boca",
+		"pecas": [{"cena": BOCA + "smirk.glb", "no": "Head",
+			"ancora": Vector3(0.5, 0.32, 0.0), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"boca_triste": {
+		"nome": "Triste", "parte": "boca",
+		"pecas": [{"cena": BOCA + "triste.glb", "no": "Head",
+			"ancora": Vector3(0.5, 0.32, 0.0), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"boca_surpreso": {
+		"nome": "Surpreso", "parte": "boca",
+		"pecas": [{"cena": BOCA + "surpreso.glb", "no": "Head",
+			"ancora": Vector3(0.5, 0.32, 0.0), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"boca_bravo": {
+		"nome": "Bravo", "parte": "boca",
+		"pecas": [{"cena": BOCA + "bravo.glb", "no": "Head",
+			"ancora": Vector3(0.5, 0.32, 0.0), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"boca_dentes_cerrados": {
+		"nome": "Dentes Cerrados", "parte": "boca",
+		"pecas": [{"cena": BOCA + "dentes_cerrados.glb", "no": "Head",
+			"ancora": Vector3(0.5, 0.32, 0.0), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"boca_assustado": {
+		"nome": "Assustado", "parte": "boca",
+		"pecas": [{"cena": BOCA + "assustado.glb", "no": "Head",
+			"ancora": Vector3(0.5, 0.32, 0.0), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"boca_tirando_lingua": {
+		"nome": "Tirando Língua", "parte": "boca",
+		"pecas": [{"cena": BOCA + "tirando_lingua.glb", "no": "Head",
+			"ancora": Vector3(0.5, 0.32, 0.0), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
+	"boca_desconfortavel": {
+		"nome": "Desconfortável", "parte": "boca",
+		"pecas": [{"cena": BOCA + "desconfortavel.glb", "no": "Head",
+			"ancora": Vector3(0.5, 0.32, 0.0), "ref": Vector3(0.500, 0.500, 0.740)}],
+	},
 }
 
 ## Cada parte do corpo: o rótulo que a interface mostra e o NÓ do modelo onde as
@@ -137,6 +271,8 @@ const PARTES := {
 	# lugares diferentes. Igual a tronco/costas/cintura/pernas, que dividem o
 	# `Torso`. Quem separa uma limpeza da outra é a parte no NOME da peça.
 	"rosto":   {"rotulo": "Rosto",   "nos": ["Head"]},
+	"cabelo":  {"rotulo": "Cabelo",  "nos": ["Head"]},
+	"boca":    {"rotulo": "Boca",    "nos": ["Head"]},
 	"tronco":  {"rotulo": "Tronco",  "nos": ["Torso"]},
 	"costas":  {"rotulo": "Costas",  "nos": ["Torso"]},
 	"cintura": {"rotulo": "Cintura", "nos": ["Torso"]},
@@ -181,7 +317,10 @@ static func parte_de(id: String) -> String:
 
 ## Veste `id` no `modelo`, tirando antes o que já ocupava a mesma parte.
 ## Devolve o primeiro nó criado, ou `null` se não deu.
-static func equipar(modelo: Node3D, id: String) -> Node3D:
+## `tinta` só vale para peça marcada `tingivel` no catálogo (hoje, os cabelos):
+## alpha 0 = "usa a cor do modelo". Passar a cor como ARGUMENTO, e não ler de um
+## estado global, é o que mantém `Acessorios` sem saber que existe um menu.
+static func equipar(modelo: Node3D, id: String, tinta: Color = Color(0, 0, 0, 0)) -> Node3D:
 	var d := dados(id)
 	if d.is_empty():
 		push_warning("[Acessorios] id desconhecido: " + id)
@@ -230,7 +369,9 @@ static func equipar(modelo: Node3D, id: String) -> Node3D:
 		if peca.has("ref"):
 			var r: Vector3 = peca["ref"]
 			no.scale = Vector3(cx.size.x / r.x, cx.size.y / r.y, cx.size.z / r.z)
-		_converter_materiais(no, bool(d.get("brilha", false)))
+		var pintar := tinta if (bool(d.get("tingivel", false)) and tinta.a > 0.0) \
+			else Color(0, 0, 0, 0)
+		_converter_materiais(no, bool(d.get("brilha", false)), pintar)
 		if primeiro == null:
 			primeiro = no
 		i += 1
@@ -248,7 +389,8 @@ static func equipar(modelo: Node3D, id: String) -> Node3D:
 ## `brilha` troca a superfície do jogo por luz própria — ver a nota da auréola no
 ## catálogo. É opcional e falso por padrão: uma peça que brilha sem motivo rouba
 ## a leitura do personagem inteiro.
-static func _converter_materiais(raiz: Node3D, brilha: bool = false) -> void:
+static func _converter_materiais(raiz: Node3D, brilha: bool = false,
+		tinta: Color = Color(0, 0, 0, 0)) -> void:
 	var malhas: Array = []
 	FxUtil._collect_meshes(raiz, malhas)
 	for m in malhas:
@@ -262,6 +404,8 @@ static func _converter_materiais(raiz: Node3D, brilha: bool = false) -> void:
 				cor = (orig as StandardMaterial3D).albedo_color
 			elif orig is BaseMaterial3D:
 				cor = (orig as BaseMaterial3D).albedo_color
+			if tinta.a > 0.0:
+				cor = tinta            # peça tingível: a cor é do jogador
 			mi.set_surface_override_material(si,
 				Materiais.brilho(cor) if brilha else Materiais.superficie(cor))
 

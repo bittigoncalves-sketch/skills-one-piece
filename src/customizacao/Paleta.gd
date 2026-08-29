@@ -30,6 +30,23 @@ const CORES := [
 ## rede já transmite.
 ##
 ## Tom de pele é escolha de APARÊNCIA, não de time. Duas listas, dois usos.
+## TONS DE CABELO. Lista própria, separada de `CORES` (time) e `PELES` pelo mesmo
+## motivo que aquelas se separaram: são escolhas independentes, e misturá-las
+## numa lista só faria "vermelho de time" aparecer como cor de cabelo.
+##
+## O dono escolheu que a cor do cabelo é do JOGADOR, não do estilo (2026-08-29):
+## os 12 modelos saem neutros do Blender e são pintados com um destes.
+const CABELOS := [
+	{"nome": "Preto",    "cor": Color(0.09, 0.09, 0.11)},
+	{"nome": "Castanho", "cor": Color(0.35, 0.21, 0.11)},
+	{"nome": "Loiro",    "cor": Color(0.90, 0.75, 0.32)},
+	{"nome": "Ruivo",    "cor": Color(0.72, 0.29, 0.10)},
+	{"nome": "Branco",   "cor": Color(0.92, 0.92, 0.90)},
+	{"nome": "Azul",     "cor": Color(0.20, 0.42, 0.78)},
+	{"nome": "Verde",    "cor": Color(0.20, 0.55, 0.30)},
+	{"nome": "Rosa",     "cor": Color(0.88, 0.45, 0.66)},
+]
+
 const PELES := [
 	{"nome": "clara",     "cor": Color(0.98, 0.85, 0.74)},
 	{"nome": "bege",      "cor": Color(0.94, 0.78, 0.63)},

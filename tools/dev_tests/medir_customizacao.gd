@@ -23,14 +23,30 @@ func _init() -> void:
 	DirAccess.make_dir_recursive_absolute(saida)
 	await process_frame
 
+	# ⚠️ ZERA O ESTADO ANTES DE MEDIR. Desde 2026-08-29 o menu carrega a última
+	# escolha do disco (`Visual.carregar_uma_vez`), então uma execução anterior
+	# — deste teste, do `medir_visual_no_jogo` ou do jogo de verdade — deixa o
+	# personagem montado e as contagens deste arquivo mudam sozinhas. Aconteceu:
+	# quatro asserções reprovaram por acessórios que ninguém tinha equipado
+	# nesta execução. Teste que lê estado persistido tem de zerá-lo primeiro.
+	Visual.acessorios = {}
+	Visual.raca = ""
+	Visual.olho = ""
+	Visual.cor_grupo = "time"
+	Visual.cor_idx = -1
+	Visual.cabelo_idx = 0
+	Visual._carregado = true          # impede o menu de recarregar do disco
+
 	var menu := CustomizacaoMenu.new()
 	get_root().add_child(menu)
 	for i in 30: await process_frame
 
 	# ---------- estrutura ----------
 	var cats: Dictionary = menu._botoes_categoria
-	_ok("há quatro categorias à esquerda", cats.size() == 4)
-	for c in ["acessorios", "raca", "corpo", "cor"]:
+	# Cinco desde 2026-08-29: "cabelo" ganhou categoria própria (12 estilos não
+	# cabem na lista que já tem sete partes do corpo).
+	_ok("há cinco categorias à esquerda", cats.size() == 5)
+	for c in ["acessorios", "raca", "cabelo", "corpo", "cor"]:
 		_ok("categoria '%s' existe" % c, cats.has(c))
 	_ok("o personagem foi montado no centro", menu._modelo != null and is_instance_valid(menu._modelo))
 	_ok("o viewport tem mundo próprio (não mostra a arena)", menu._viewport.own_world_3d)

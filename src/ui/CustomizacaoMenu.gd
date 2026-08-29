@@ -35,8 +35,12 @@ const COR_BORDA := Color(0.35, 0.58, 0.95, 1.0)
 const COR_TEXTO := Color(0.95, 0.97, 1.0, 1.0)
 const COR_TEXTO_FRACO := Color(0.68, 0.78, 0.92, 1.0)
 
-const CATEGORIAS := ["acessorios", "raca", "corpo", "cor"]
+# ⚠️ "cabelo" é categoria PRÓPRIA, e não mais uma parte dentro de ACESSÓRIOS:
+# são 12 estilos, e enfiá-los na lista que já tem sete partes do corpo faria o
+# jogador rolar muito para achar qualquer coisa. Decisão do dono (2026-08-29).
+const CATEGORIAS := ["acessorios", "raca", "cabelo", "corpo", "cor"]
 const ROTULO_CATEGORIA := {"acessorios": "ACESSÓRIOS", "raca": "RAÇA",
+	"cabelo": "CABELO",
 	"corpo": "CORPO", "cor": "COR"}
 
 signal fechado
@@ -57,6 +61,8 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_montar()
+	Visual.carregar_uma_vez()
+	Visual.aplicar(_modelo)
 	_selecionar_categoria("acessorios")
 	# ⚠️ ENQUADRAR SÓ NO QUADRO SEGUINTE. `_caixa_visual` lê `global_transform`
 	# de cada malha, e o Godot só propaga as transformações depois que a árvore
@@ -336,14 +342,22 @@ func _encher_direita() -> void:
 	for f in _lista_direita.get_children():
 		f.queue_free()
 	match _categoria:
+		"cabelo": _itens_cabelo()
 		"acessorios": _itens_acessorios()
 		"raca": _itens_raca()
 		"corpo": _itens_corpo()
 		_: _itens_cor()
 
 
+## As partes que aparecem em OUTRO lugar do menu: cabelo tem categoria própria e
+## boca mora em CORPO, junto dos olhos. Continuam sendo partes do catálogo (é o
+## que lhes dá exclusão mútua e limpeza); só não se listam aqui duas vezes.
+const PARTES_EM_OUTRA_CATEGORIA := ["cabelo", "boca"]
+
 func _itens_acessorios() -> void:
 	for parte in Acessorios.PARTES:
+		if parte in PARTES_EM_OUTRA_CATEGORIA:
+			continue
 		var t := Label.new()
 		t.text = String(Acessorios.PARTES[parte]["rotulo"]).to_upper()
 		t.add_theme_font_size_override("font_size", 13)
@@ -352,25 +366,59 @@ func _itens_acessorios() -> void:
 
 		# "Nenhum" é item de primeira classe: sem ele não há como TIRAR um
 		# acessório, só trocar por outro.
-		var nenhum := _botao("Nenhum", Acessorios.equipado_na_parte(_modelo, parte) == "")
+		var nenhum := _botao("Nenhum", Visual.equipado(String(parte)) == "")
 		nenhum.gui_input.connect(func(e, pt = parte):
 			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
-				Acessorios.desequipar(_modelo, pt)
+				Visual.equipar(String(pt), "")
+				Visual.aplicar(_modelo)
 				_encher_direita())
 		_lista_direita.add_child(nenhum)
 
 		for id in Acessorios.por_parte(parte):
 			var d := Acessorios.dados(id)
-			var sel: bool = Acessorios.equipado_na_parte(_modelo, parte) == id
+			var sel: bool = Visual.equipado(String(parte)) == id
 			var b := _botao(String(d["nome"]), sel)
 			b.gui_input.connect(func(e, aid = id):
 				if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 					# A troca automática acontece dentro do `equipar`: ele tira o
 					# que já ocupava a parte antes de pôr o novo.
-					Acessorios.equipar(_modelo, aid)
+					Visual.equipar(Acessorios.parte_de(aid), aid)
+					Visual.aplicar(_modelo)
 					_reenquadrar()
 					_encher_direita())
 			_lista_direita.add_child(b)
+
+
+## CABELO. Os 12 estilos da folha 2D; a COR mora na categoria Cor, junto das
+## outras, porque é escolha independente do estilo — foi o que o dono pediu.
+func _itens_cabelo() -> void:
+	var t := Label.new()
+	t.text = "ESTILO"
+	t.add_theme_font_size_override("font_size", 13)
+	t.add_theme_color_override("font_color", COR_TEXTO_FRACO)
+	_lista_direita.add_child(t)
+
+	var nenhum := _botao("Careca", Visual.equipado("cabelo") == "")
+	nenhum.gui_input.connect(func(e):
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+			Visual.equipar("cabelo", "")
+			Visual.aplicar(_modelo)
+			_encher_direita())
+	_lista_direita.add_child(nenhum)
+
+	for id in Acessorios.por_parte("cabelo"):
+		var d := Acessorios.dados(id)
+		# A bolinha do botão mostra a COR ESCOLHIDA: sem ela o jogador escolhe o
+		# estilo sem ver o tom em que ele vai sair.
+		var b := _botao(String(d["nome"]), Visual.equipado("cabelo") == id,
+			Visual.cor_do_cabelo())
+		b.gui_input.connect(func(e, cid = id):
+			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+				Visual.equipar("cabelo", cid)
+				Visual.aplicar(_modelo)
+				_reenquadrar()
+				_encher_direita())
+		_lista_direita.add_child(b)
 
 
 func _itens_raca() -> void:
@@ -383,7 +431,7 @@ func _itens_raca() -> void:
 	# ⚠️ Raça é escolha ÚNICA — a lista inteira é uma só, sem separar por parte
 	# do corpo como nos acessórios. Ninguém é Oni e Sharkman ao mesmo tempo, e
 	# quem garante isso é o `Racas.aplicar`, que tira a anterior antes.
-	var atual := Racas.atual(_modelo)
+	var atual: String = Visual.raca
 
 	var nenhuma := _botao("Humano", atual == "")
 	nenhuma.gui_input.connect(func(e):
@@ -398,7 +446,8 @@ func _itens_raca() -> void:
 		var b := _botao(String(d["nome"]), atual == id)
 		b.gui_input.connect(func(e, rid = id):
 			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
-				Racas.aplicar(_modelo, rid)
+				Visual.raca = rid
+				Visual.aplicar(_modelo)
 				# Repintar DEPOIS de aplicar: as peças do Mink Lobo nascem sem
 				# material e só ficam da cor do personagem quando a pintura passa
 				# por elas.
@@ -417,11 +466,12 @@ func _itens_corpo() -> void:
 	t.add_theme_color_override("font_color", COR_TEXTO_FRACO)
 	_lista_direita.add_child(t)
 
-	var atual := Corpo.atual(_modelo)
+	var atual: String = Visual.olho
 	var nenhum := _botao("Sem olhos", atual == "")
 	nenhum.gui_input.connect(func(e):
 		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
-			Corpo.remover(_modelo)
+			Visual.olho = ""
+			Visual.aplicar(_modelo)
 			_encher_direita())
 	_lista_direita.add_child(nenhum)
 
@@ -432,7 +482,34 @@ func _itens_corpo() -> void:
 			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 				# Exclusão entre OLHOS: escolher um tira o outro, mas não mexe em
 				# raça nem em acessório — são eixos independentes.
-				Corpo.aplicar(_modelo, cid)
+				Visual.olho = cid
+				Visual.aplicar(_modelo)
+				_encher_direita())
+		_lista_direita.add_child(b)
+
+	# BOCA. Fica aqui, e não em ACESSÓRIOS, porque é feição do personagem como o
+	# olho — não é algo que se veste. Decisão do dono (2026-08-29).
+	var tb := Label.new()
+	tb.text = "BOCA"
+	tb.add_theme_font_size_override("font_size", 13)
+	tb.add_theme_color_override("font_color", COR_TEXTO_FRACO)
+	_lista_direita.add_child(tb)
+
+	var sem_boca := _botao("Sem boca", Visual.equipado("boca") == "")
+	sem_boca.gui_input.connect(func(e):
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+			Visual.equipar("boca", "")
+			Visual.aplicar(_modelo)
+			_encher_direita())
+	_lista_direita.add_child(sem_boca)
+
+	for id in Acessorios.por_parte("boca"):
+		var d := Acessorios.dados(id)
+		var b := _botao(String(d["nome"]), Visual.equipado("boca") == id)
+		b.gui_input.connect(func(e, bid = id):
+			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+				Visual.equipar("boca", bid)
+				Visual.aplicar(_modelo)
 				_encher_direita())
 		_lista_direita.add_child(b)
 
@@ -444,11 +521,11 @@ func _itens_cor() -> void:
 	t.add_theme_color_override("font_color", COR_TEXTO_FRACO)
 	_lista_direita.add_child(t)
 
-	var orig := _botao("Original", _cor_idx < 0)
+	var orig := _botao("Original", Visual.cor_idx < 0)
 	orig.gui_input.connect(func(e):
 		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
-			_cor_idx = -1
-			_pintar()
+			Visual.cor_idx = -1
+			Visual.aplicar(_modelo)
 			_encher_direita())
 	_lista_direita.add_child(orig)
 
@@ -463,6 +540,23 @@ func _itens_cor() -> void:
 	_lista_direita.add_child(t2)
 	_grupo_de_cores("pele", Paleta.PELES)
 
+	# COR DO CABELO. Lista separada porque é outro eixo: mudar o tom do cabelo
+	# não pode desmarcar a cor do corpo, e vice-versa.
+	var t3 := Label.new()
+	t3.text = "COR DO CABELO"
+	t3.add_theme_font_size_override("font_size", 13)
+	t3.add_theme_color_override("font_color", COR_TEXTO_FRACO)
+	_lista_direita.add_child(t3)
+	for i in Paleta.CABELOS.size():
+		var d: Dictionary = Paleta.CABELOS[i]
+		var b := _botao(String(d["nome"]), Visual.cabelo_idx == i, d["cor"])
+		b.gui_input.connect(func(e, idx = i):
+			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+				Visual.cabelo_idx = idx
+				Visual.aplicar(_modelo)
+				_encher_direita())
+		_lista_direita.add_child(b)
+
 
 ## Um grupo de cores. Os dois grupos são EXCLUSIVOS entre si: escolher um tom de
 ## pele desmarca a cor de time e vice-versa — o corpo tem UMA cor, e deixar dois
@@ -470,13 +564,13 @@ func _itens_cor() -> void:
 func _grupo_de_cores(grupo: String, lista: Array) -> void:
 	for i in lista.size():
 		var d: Dictionary = lista[i]
-		var sel: bool = _cor_grupo == grupo and _cor_idx == i
+		var sel: bool = Visual.cor_grupo == grupo and Visual.cor_idx == i
 		var b := _botao(String(d["nome"]).capitalize(), sel, d["cor"])
 		b.gui_input.connect(func(e, idx = i, g = grupo):
 			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
-				_cor_grupo = g
-				_cor_idx = idx
-				_pintar()
+				Visual.cor_grupo = g
+				Visual.cor_idx = idx
+				Visual.aplicar(_modelo)
 				_encher_direita())
 		_lista_direita.add_child(b)
 
@@ -562,3 +656,9 @@ func _estilo_botao(p: PanelContainer, selecionado: bool) -> void:
 	st.set_border_width_all(2 if selecionado else 1)
 	st.set_corner_radius_all(8)
 	p.add_theme_stylebox_override("panel", st)
+
+
+## Salva ao fechar, e não a cada clique: o jogador mexe muito e sai uma vez, e
+## escrever no disco a cada botão só multiplicaria IO pelo mesmo resultado.
+func _exit_tree() -> void:
+	Visual.salvar()

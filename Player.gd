@@ -1603,6 +1603,24 @@ func _setup_character_model(cid: String) -> void:
 	# ele. Repintar aqui é o que faz a cor sobreviver à troca de personagem.
 	_tingir_modelo()
 
+	# ⚠️ A CUSTOMIZAÇÃO ENTRA NO MUNDO AQUI (2026-08-29).
+	#
+	# Até agora o menu de Customização era um efeito colateral da tela: o
+	# jogador montava o personagem, entrava na partida e jogava com o boneco
+	# padrão. `Visual.aplicar` é a MESMA função que monta a prévia — é isso que
+	# faz o que ele viu no menu ser o que ele recebe no jogo, em vez de dois
+	# caminhos que podem divergir.
+	#
+	# DEPOIS do `_tingir_modelo`, e com `preservar_cor_do_jogo`: a cor de time
+	# pinta TODAS as malhas, então rodar antes deixaria chapéu e cabelo da cor
+	# do time; e sem o preservar, um jogador sem cor escolhida teria a tinta do
+	# time apagada.
+	#
+	# Roda a cada remontagem do rig (troca de personagem, Gear 2) porque o
+	# modelo novo nasce limpo — a peça equipada morreu com o modelo anterior.
+	Visual.carregar_uma_vez()
+	Visual.aplicar(_char_model, true)
+
 # PRESENTATION da arma empunhada — roda em TODOS os peers (chamada de dentro de
 # `_fire_skill` e do `_net_buki_guardar`), então o adversário vê a arma na mão
 # e vê o corpo virar canhão. "" = guardar tudo.
