@@ -438,8 +438,13 @@ func _angulos_da_asa(a: AsaLunar) -> void:
 	var ang := {}
 	var recuo := {}
 	for pose in ["repouso", "andando", "correndo", "pulando", "caindo"]:
+		# ⚠️ OS TRÊS EIXOS. Faltava o `pitch` aqui quando ele foi acrescentado, e
+		# a asa era medida com o pitch do estado ANTERIOR: os ângulos saíam
+		# diferentes dos da calibração (pulando deu −13,7° em vez de −64,7°) e
+		# reprovavam uma pose correta. Pose incompleta mede outra pose.
 		a._abertura = float(AsaLunar.POSE[pose]["abertura"])
 		a._inclinacao = float(AsaLunar.POSE[pose]["inclinacao"])
+		a._pitch = float(AsaLunar.POSE[pose]["pitch"])
 		a._aplicar_pose()
 		await _quadros(3)
 		# ⚠️ NO ESPAÇO DO OMBRO, não do mundo. Medindo global, a rotação e a
@@ -452,7 +457,10 @@ func _angulos_da_asa(a: AsaLunar) -> void:
 		print("   %-9s ponta a %+6.1f graus | recuo %.2f" % [pose, ang[pose], v.z])
 	a.set_process(true)
 
-	_ok("repouso: a asa SOBE num V (> +30 graus)", float(ang["repouso"]) > 30.0)
+	# ⚠️ VERTICAL, e não só "não horizontal". O dono pediu as asas em pé depois de
+	# ver o print — +39° ainda lia como diagonal. O teto é 90°: acima de +70° a
+	# ponta está claramente acima do ombro.
+	_ok("repouso: a asa fica VERTICAL (> +70 graus)", float(ang["repouso"]) > 70.0)
 	_ok("andando: vai para TRÁS (recua mais que em repouso)",
 		float(recuo["andando"]) > float(recuo["repouso"]))
 	_ok("correndo: recua ainda mais que andando",

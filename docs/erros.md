@@ -7,6 +7,40 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-29 — nenhum valor de inclinação punha a asa na vertical
+
+**Sintoma:** o dono mandou um print e pediu as asas na vertical. Aumentar a
+inclinação não resolvia: passava de um ponto e a asa PIORAVA.
+
+**Causa raiz:** as penas crescem para TRÁS (+Z local, que é o comprimento
+delas), e a inclinação gira em Z — o eixo que levanta a ENVERGADURA, não o
+comprimento. Com a ponta a ~0,74 de recuo, o ângulo vertical tem um teto
+geométrico: nenhum valor de inclinação a leva acima dele, porque o problema não
+estava nela.
+
+**Evidência:** varredura do ângulo real da ponta contra a inclinação escrita —
+1,02 rad → +38,5°; 1,32 → +48,3°; **1,60 → +53,3° (o pico)**; 1,90 → +52,4°;
+2,20 → +45,4°; 2,50 → +32,8°. A curva sobe, satura e desce.
+
+**Descartado:** *o leque das penas*. Era a suspeita, e a inclinação em leque
+(`-t * 0.30`, que apontava a ponta para baixo) foi reduzida — o pico subiu de
++53,1° para apenas +53,5°. A medição matou a hipótese em uma execução.
+
+**Correção:** `src/customizacao/AsaLunar.gd` — um terceiro eixo, `pitch`, que
+gira em X e é justamente o que leva +Z para +Y, levantando o COMPRIMENTO da
+asa. Varredura 2-D de pitch × inclinação achou o par: `pitch −0,60` com
+`inclinacao 1,70` dá +87,5°, com a ponta acima do ombro e quase sem
+espalhamento lateral.
+
+**Erro no meio da correção:** `_angulos_da_asa` continuou setando só dois eixos
+depois que o terceiro entrou, e media a asa com o `pitch` do estado ANTERIOR —
+"pulando" deu −13,7° em vez de −64,2° e reprovou uma pose correta. Pose
+incompleta mede outra pose.
+
+**Como detectar de novo:** quando aumentar um parâmetro parar de melhorar e
+começar a piorar, o eixo está errado — varrer o parâmetro e olhar a curva custa
+uma execução e mostra o teto na hora.
+
 ## 2026-08-29 — testei o parâmetro que escrevi, não o ângulo que saía
 
 **Sintoma:** o dono olhou o print e disse "a asa está na horizontal", com a

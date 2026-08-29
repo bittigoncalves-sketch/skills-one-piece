@@ -69,15 +69,17 @@ const PERIODO := 3.4
 ##   pulando  ≈ −45°   "ao pular deve ir para BAIXO"
 ##   caindo   ≈ +55°   "ao cair para CIMA"
 const POSE := {
-	"repouso":  {"abertura": -0.18, "inclinacao":  1.02},
-	# andando: recuadas, "organizadas para trás", mas ainda abertas
-	"andando":  {"abertura": -0.62, "inclinacao":  0.42},
-	# correndo: quase juntas nas costas — é o "encostando uma na outra"
-	"correndo": {"abertura": -1.15, "inclinacao":  0.24},
-	# pulando: mergulham para BAIXO (pedido do dono)
-	"pulando":  {"abertura": -0.95, "inclinacao": -0.95},
-	# caindo: sobem, escancaradas, planando
-	"caindo":   {"abertura": -0.02, "inclinacao":  1.32},
+	# VERTICAL, com a ponta acima do ombro. Foi preciso o PITCH: nenhuma
+	# inclinação sozinha chega lá (satura em +53°) — ver a nota de `_aplicar_pose`.
+	"repouso":  {"abertura": -0.18, "inclinacao":  1.70, "pitch": -0.60},
+	# andando: deitam para TRÁS — é o recuo que cresce, não a altura que cai
+	"andando":  {"abertura": -0.62, "inclinacao":  0.60, "pitch":  0.20},
+	# correndo: recuo máximo, quase juntas nas costas
+	"correndo": {"abertura": -1.15, "inclinacao":  0.30, "pitch":  0.35},
+	# pulando: mergulham para BAIXO
+	"pulando":  {"abertura": -0.85, "inclinacao": -0.95, "pitch":  0.55},
+	# caindo: sobem e ABREM — vertical como o repouso, porém escancaradas
+	"caindo":   {"abertura":  0.12, "inclinacao":  1.70, "pitch": -0.75},
 }
 
 ## Quão depressa a asa persegue a pose do estado. Rápido o bastante para o
@@ -102,6 +104,7 @@ var _procurou_dono := false
 ## para a transição ser contínua quando o estado muda no meio do caminho.
 var _abertura := 0.0
 var _inclinacao := 0.0
+var _pitch := 0.0
 
 
 static func criar(lado: int, escala: float = 1.0) -> AsaLunar:
@@ -114,6 +117,7 @@ static func criar(lado: int, escala: float = 1.0) -> AsaLunar:
 func _montar(escala: float) -> void:
 	_abertura = float(POSE["repouso"]["abertura"])
 	_inclinacao = float(POSE["repouso"]["inclinacao"])
+	_pitch = float(POSE["repouso"]["pitch"])
 	_aplicar_pose()
 
 	for f in FILEIRAS:
@@ -131,10 +135,15 @@ func _montar(escala: float) -> void:
 			m.mesh = caixa
 			m.position = Vector3(
 				_lado * (0.10 + t * 0.62) * escala,
-				-float(fila["queda"]) * escala - t * 0.05 * escala,
+				-float(fila["queda"]) * escala - t * 0.02 * escala,
 				(float(fila["recuo"]) + comp * encurta * 0.5) * escala)
-			# leve abertura em leque
-			m.rotation = Vector3(0.0, _lado * t * 0.26, _lado * -t * 0.30)
+			# ⚠️ O LEQUE NÃO PODE CAIR. A inclinação era `-t * 0.30`, ou seja,
+			# quanto mais para a ponta, mais a pena APONTAVA PARA BAIXO — e isso
+			# trava a asa: medido, o ângulo da ponta saturava em +53° por mais
+			# que a pose subisse (1,60 rad dava +53,3°; 2,20 rad dava +45,4°,
+			# ou seja PIORAVA). Com o leque quase reto a ponta acompanha a pose e
+			# a asa consegue ficar na vertical, que foi o que o dono pediu.
+			m.rotation = Vector3(0.0, _lado * t * 0.18, _lado * -t * 0.04)
 			# ⚠️ CEL SHADING, como todo o resto. Um `StandardMaterial3D` avulso
 			# deixaria a asa lisa e brilhante ao lado de um corpo chapado.
 			m.material_override = Materiais.superficie(Color(tom * 0.9, tom * 0.9, tom))
@@ -147,6 +156,7 @@ func _process(delta: float) -> void:
 	var k := clampf(VELOCIDADE_DA_POSE * delta, 0.0, 1.0)
 	_abertura = lerpf(_abertura, float(alvo["abertura"]), k)
 	_inclinacao = lerpf(_inclinacao, float(alvo["inclinacao"]), k)
+	_pitch = lerpf(_pitch, float(alvo["pitch"]), k)
 	_aplicar_pose()
 
 
@@ -199,11 +209,24 @@ func corpo() -> CharacterBody3D:
 	return _dono
 
 
+## ⚠️ O PITCH É O QUE PÕE A ASA DE PÉ, e a inclinação sozinha não conseguia.
+##
+## As penas crescem para TRÁS (+Z local) — é o comprimento delas. Girar em Z
+## (inclinação) levanta a ENVERGADURA, mas não toca no eixo em que a asa é
+## comprida: medido, o ângulo da ponta saturava em +53° por mais que a
+## inclinação subisse, e acima de 1,6 rad PIORAVA. Nenhum valor de inclinação
+## põe a asa na vertical, porque o problema não estava nela.
+##
+## O pitch gira em X, que é justamente o eixo que leva +Z para +Y: é ele que
+## levanta o comprimento da asa e a deixa em pé, como o dono pediu.
+##
+## A ordem é PITCH → ABERTURA → INCLINAÇÃO, aplicada por multiplicação explícita
+## em vez de `from_euler`: assim cada uma opera sobre o resultado da anterior e
+## a leitura do código bate com o que se vê.
 func _aplicar_pose() -> void:
 	# O respiro entra somado à INCLINAÇÃO: é o que mantém a asa viva mesmo
 	# parada, sem brigar com o gesto do estado.
 	var respiro := sin(_t * TAU / PERIODO) * AMPLITUDE
-	basis = Basis.from_euler(Vector3(
-		0.0,
-		_lado * _abertura,
-		_lado * (_inclinacao + respiro)))
+	basis = Basis(Vector3.UP, _lado * _abertura) \
+		* Basis(Vector3.RIGHT, _pitch) \
+		* Basis(Vector3.BACK, _lado * (_inclinacao + respiro))
