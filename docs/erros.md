@@ -7,6 +7,55 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-29 — ao entrar no jogo tudo virava azul (corpo E acessórios)
+
+**Sintoma:** relato do dono — "bug encontrado na cor: ao logar a cor se torna
+automaticamente azul, tanto do acessório quanto do jogador". A customização
+aparecia certa por um instante e era substituída.
+
+**Causa raiz:** são DUAS coisas no mesmo ponto, e as duas em `_tingir_modelo`.
+
+1. *Por que azul:* no spawn o `Main` dá a cada peer uma cor da paleta
+   (`Main.gd:237`) e o peer 1 — o único que existe no singleplayer — recebe a
+   PRIMEIRA, que é azul. A chamada é `call_deferred` (`Main.gd:278`), ou seja
+   roda DEPOIS de o rig estar montado e a customização aplicada, e pinta por
+   cima. Sozinho no mundo não há quem distinguir: a cor de time não resolvia
+   nada ali e só apagava a escolha do jogador.
+
+2. *Por que o acessório junto:* `_tingir_modelo` varre TODAS as malhas do
+   modelo, sem distinguir corpo de guarda-roupa. Pior, ele pinta por
+   `material_override`, que no Godot VENCE o `surface_override_material` com que
+   os acessórios são pintados — a cor original continuava intacta na camada de
+   baixo, invisível.
+
+**Evidência:** com a customização montada (pele, cabelo loiro, cartola), depois
+de `aplicar_cor_do_jogador(0)` os três liam `(0.16, 0.42, 0.95)` — o azul da
+paleta. Depois da correção: corpo `(0.94, 0.78, 0.63)`, cabelo `(0.9, 0.75,
+0.32)`, cartola `(0.29, 0.29, 0.33)`.
+
+**O código já sabia, e tinha deixado passar:** a nota de `_tingir_modelo`
+registrava que uma arma da Buki na mão saía tingida junto e concluía que "não
+vale complicar por isso enquanto for só cosmético". Era verdade enquanto a arma
+voltava ao normal no saque seguinte; deixou de ser quando a Customização passou
+a pendurar peças permanentes no mesmo modelo.
+
+**Correção:** `Player._tingir_modelo` pula o que for adorno (`Visual.e_adorno`),
+e desiste da pintura quando o jogador escolheu uma cor E não há outros peers —
+em partida com gente a cor de time continua mandando, porque ali ela diz quem é
+quem, e isso vale mais que a preferência estética.
+
+**Erro meu, e o que ele ensina:** minha primeira medição disse que o acessório
+NÃO tinha virado azul — duas asserções passaram enquanto o bug relatado estava
+na tela. A sonda lia `surface_override_material` e o bug morava em
+`material_override`, a camada que vence. Foi ler a camada errada, exatamente
+como já tinha acontecido ao medir a coluna central da tela que cruzava o
+personagem. Quando o relato do dono e a minha medição discordam, a suspeita
+começa pela medição.
+
+**Como detectar de novo:** `medir_visual_no_jogo.gd`, seções 6 e 7. A 7 é o
+CONTROLE: sem ela, "consertar" o bug matando a cor de time passaria no teste e
+quebraria a identificação de jogadores no PvP.
+
 ## 2026-08-29 — estado persistido contamina teste que não o zera
 
 **Sintoma:** depois de ligar a customização ao mundo, o `medir_customizacao`

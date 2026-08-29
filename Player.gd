@@ -1565,11 +1565,38 @@ func _tingir_modelo() -> void:
 	var modelo := _char_model
 	if modelo == null or not is_instance_valid(modelo):
 		return
+
+	# ⚠️ A ESCOLHA DO JOGADOR VENCE A COR DE TIME QUANDO NÃO HÁ TIME (2026-08-29).
+	#
+	# Relato do dono: "ao logar a cor se torna automaticamente azul". No spawn o
+	# `Main` dá a cada peer uma cor da paleta, e o peer 1 — o único que existe no
+	# singleplayer — recebe a PRIMEIRA, que é azul. Sozinho no mundo não há quem
+	# distinguir, então a cor de time não está resolvendo nada e só apaga o que
+	# o jogador escolheu na Customização.
+	#
+	# Em partida com gente, a cor de time continua mandando: é ela que diz quem
+	# é quem, e isso vale mais do que a preferência estética de cada um.
+	if Visual.cor_do_corpo().a > 0.0 \
+			and not (multiplayer.has_multiplayer_peer() and multiplayer.get_peers().size() > 0):
+		return
+
 	var c: Color = CORES[cor_idx]["cor"]
 	var malhas: Array = []
 	FxUtil._collect_meshes(modelo, malhas)
 	for m in malhas:
 		if not (m is MeshInstance3D):
+			continue
+		# ⚠️ A COR DE TIME É DO CORPO, NÃO DO GUARDA-ROUPA. Sem esta linha o
+		# `material_override` cobria TAMBÉM chapéu, cabelo e máscara — e como
+		# ele vence o override de superfície com que os acessórios são pintados,
+		# a cor original deles continuava lá embaixo, intacta e invisível. Era a
+		# outra metade do relato: "a cor do acessório também fica azul".
+		#
+		# O código já sabia disso e tinha deixado passar: a nota acima dizia que
+		# uma arma da Buki na mão saía tingida junto, e que "não vale complicar
+		# enquanto for só cosmético". Com a Customização ligada ao mundo, passou
+		# a valer — o jogador escolhe o cabelo e recebe outro.
+		if Visual.e_adorno(m):
 			continue
 		var mat := StandardMaterial3D.new()
 		mat.albedo_color = c

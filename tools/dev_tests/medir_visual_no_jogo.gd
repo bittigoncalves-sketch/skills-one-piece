@@ -141,6 +141,64 @@ func _init() -> void:
 	_ok("a raça voltou do disco", Visual.raca == Racas.ids()[0])
 	_ok("o olho voltou do disco", Visual.olho == "olho_grande")
 
+	# ---------- 7. a cor de time não pode atropelar a customização ----------
+	# ⚠️ O CAMINHO REAL DO SPAWN. `Main.gd:278` chama `aplicar_cor_do_jogador`
+	# com `call_deferred`, ou seja DEPOIS de o rig estar montado — e portanto
+	# depois de a customização ter sido aplicada. No singleplayer o peer 1 recebe
+	# a primeira cor da paleta, que é AZUL. Relato do dono (2026-08-29): "ao
+	# logar a cor se torna automaticamente azul, tanto do acessório quanto do
+	# jogador".
+	print("\n=== 6. a cor de time não atropela a customização ===")
+	Visual.acessorios = {}
+	Visual.equipar("cabelo", "cabelo_moicano")
+	Visual.equipar("cabeca", "cartola")
+	Visual.raca = ""
+	Visual.olho = ""
+	Visual.cor_grupo = "pele"
+	Visual.cor_idx = 1
+	Visual.cabelo_idx = 2                        # loiro
+	Visual.aplicar(p._char_model, true)
+	await _quadros(6)
+
+	var pele: Color = Paleta.PELES[1]["cor"]
+	var loiro: Color = Paleta.CABELOS[2]["cor"]
+	var m3: Node3D = p._char_model
+	print("   ANTES do spawn pintar:")
+	print("      corpo   %s (escolhido %s)" % [str(_cor_do_corpo(m3)), str(pele)])
+	print("      cabelo  %s (escolhido %s)" % [str(_cor_da_peca(m3, "cabelo", "cabelo_moicano")), str(loiro)])
+
+	# é exatamente o que o Main faz no spawn
+	p.aplicar_cor_do_jogador(0)                  # 0 = azul
+	await _quadros(6)
+	var azul: Color = Paleta.CORES[0]["cor"]
+	var c_corpo := _cor_do_corpo(m3)
+	var c_cabelo := _cor_da_peca(m3, "cabelo", "cabelo_moicano")
+	var c_cartola := _cor_da_peca(m3, "cabeca", "cartola")
+	print("   DEPOIS de aplicar_cor_do_jogador(azul):")
+	print("      corpo   %s" % str(c_corpo))
+	print("      cabelo  %s" % str(c_cabelo))
+	print("      cartola %s" % str(c_cartola))
+
+	_ok("o ACESSÓRIO não vira azul", not _perto(c_cartola, azul))
+	_ok("o CABELO continua na cor escolhida", _perto(c_cabelo, loiro))
+	_ok("o CORPO continua no tom de pele escolhido", _perto(c_corpo, pele))
+
+	# ⚠️ CONTROLE — sem ele eu teria "consertado" o bug matando a cor de time.
+	# Quem NÃO escolheu cor tem de continuar recebendo a do time: é ela que diz
+	# quem é quem em partida, e o conserto acima não pode ter custado isso.
+	print("\n=== 7. controle: sem escolha, a cor de time AINDA pinta ===")
+	Visual.cor_idx = -1                          # "Original"
+	Visual.aplicar(p._char_model, true)
+	await _quadros(4)
+	p.aplicar_cor_do_jogador(0)
+	await _quadros(6)
+	var c2_corpo := _cor_do_corpo(m3)
+	var c2_cartola := _cor_da_peca(m3, "cabeca", "cartola")
+	print("   corpo   %s (esperado azul %s)" % [str(c2_corpo), str(azul)])
+	print("   cartola %s" % str(c2_cartola))
+	_ok("sem escolha, o corpo recebe a cor de time", _perto(c2_corpo, azul))
+	_ok("e mesmo assim o acessório NÃO é tingido", not _perto(c2_cartola, azul))
+
 	print("\n%d conferem | %d divergem" % [_ok_n, _falhas])
 	quit(1 if _falhas > 0 else 0)
 
@@ -184,6 +242,14 @@ func _cor_da_peca(modelo: Node, parte: String, id: String) -> Color:
 		if not (x is MeshInstance3D):
 			continue
 		var mi := x as MeshInstance3D
+		# ⚠️ `material_override` PRIMEIRO — ele vence o override de superfície no
+		# Godot. Ler só o de superfície foi o que fez esta sonda dizer que o
+		# acessório não tinha virado azul enquanto na tela ele estava azul: o
+		# `_tingir_modelo` pinta por `material_override`, e a cor original
+		# continua intacta na camada de baixo, invisível.
+		var c0 := _cor_do_material(mi.material_override)
+		if c0.a > 0.0:
+			return c0
 		for si in mi.get_surface_override_material_count():
 			var c := _cor_do_material(mi.get_surface_override_material(si))
 			if c.a > 0.0:
@@ -211,6 +277,17 @@ func _tem_branco_e_preto(modelo: Node, parte: String, id: String) -> bool:
 			if c.r < 0.15 and c.g < 0.15 and c.b < 0.20:
 				escuro = true
 	return claro and escuro
+
+
+## A cor do CORPO (uma malha do rig que não é adorno).
+func _cor_do_corpo(modelo: Node) -> Color:
+	for x in _todos(modelo):
+		if not (x is MeshInstance3D) or Visual.e_adorno(x):
+			continue
+		var c := _cor_do_material((x as MeshInstance3D).material_override)
+		if c.a > 0.0:
+			return c
+	return Color(0, 0, 0, 0)
 
 
 func _cor_do_material(mo: Material) -> Color:
