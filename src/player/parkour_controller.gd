@@ -49,6 +49,11 @@ const LIMIAR_BASE := 0.35
 ## Quão depressa a base persegue a candidata boa. Rápido o bastante para o
 ## controle não parecer atrasado; suave o bastante para nunca saltar.
 const GIRO_BASE := 8.0
+## Quão vertical a superfície precisa ser para o controle virar "de parede"
+## (W sobe) em vez de "de chão" (W segue a câmera). É o seno do ângulo entre a
+## normal e a vertical, então 0,7 = 45°: acima disso a superfície é uma parede
+## para quem anda nela, abaixo é uma rampa que ainda se comporta como piso.
+const LIMIAR_VERTICAL := 0.7
 const PAREDE_PULO_FORA := 7.0    # empurrão para FORA da superfície ao cancelar
 const PAREDE_PULO_CIMA := 6.0    # e para cima, para o cancelamento ler como pulo
 
@@ -335,31 +340,80 @@ func _efeitos_do_geppo(q: MoveFrame) -> void:
 ## E a atualização é por `slerp`, nunca por substituição: assim ela nunca salta,
 ## mesmo cruzando o limiar.
 ## ============================================================================
+## ⚠️ NUMA PAREDE, A FRENTE NÃO PODE VIR DA CÂMERA (2026-08-28).
+##
+## Relato do dono: na parede o W e o S iam para os LADOS e o A e o D para cima e
+## para baixo — "as teclas invertidas" — depois de pular perto da lateral do
+## bloco. Medido em `medir_teclas_parede.gd`, o quadro era pior que o relato: a
+## troca acontecia em TODO ângulo de câmera menos um.
+##
+##     câmera de frente para a parede .. W subida +1,53 | lado +0,00   ✅
+##     câmera a 45 graus ............... W subida +0,07 | lado −1,45   ❌
+##     câmera ao longo da parede ....... W subida +0,08 | lado −1,53   ❌
+##
+## A causa está em `MoveFrame.ler`: `q.frente` sai de
+## `RosaDosVentos.base_do_corpo(yaw)`, que é a base do pivô SÓ COM YAW, sem
+## pitch — de propósito, para o dash ser sempre horizontal. Ou seja, `q.frente`
+## é HORIZONTAL por construção. Projetar um vetor horizontal no plano de uma
+## parede a prumo devolve sempre a tangente horizontal, nunca "subir": o eixo
+## do W virava o lado e o do A/D virava a vertical.
+##
+## O único ângulo que funcionava era a câmera encarando a parede de frente — e
+## funcionava justamente porque ali a projeção DEGENERA e a antiga função caía
+## no fallback "para cima da parede". O caminho principal produzia o bug e o
+## caminho de exceção produzia o acerto.
+##
+## Agora a regra é explícita: em superfície vertical a frente é SUBIR, ponto —
+## que é o que o comentário de `velocidade()` sempre disse ser a intenção. A
+## câmera não entra nessa decisão, então nenhum ângulo de mouse pode torcer os
+## eixos. A direita não é escolhida: com a frente e a normal fixas, ela sai da
+## geometria — e sai concordando com a tela, porque quem gruda está de frente
+## para a parede (conferido: q.direita e a direita da base dão o mesmo −X).
+##
+## Em superfície HORIZONTAL (topo do bloco, teto) "subir a superfície" não quer
+## dizer nada, e aí sim a frente da câmera é bem condicionada: é o controle de
+## chão de sempre, com a histerese que já existia.
+##
+## A atualização segue por `slerp`, nunca por substituição: assim a base nunca
+## salta quando a superfície troca de face por baixo dos pés.
 func _atualizar_base_da_superficie(q: MoveFrame, delta: float) -> void:
 	var n := _normal_parede
+	var alvo := _base_alvo(q, n)
+	if alvo == Basis.IDENTITY and _base_sup_valida:
+		return                      # sem candidata utilizável: guarda a que vale
+	if _base_sup_valida:
+		_base_sup = _base_sup.slerp(alvo, clampf(GIRO_BASE * delta, 0.0, 1.0)).orthonormalized()
+	else:
+		_base_sup = alvo
+		_base_sup_valida = true
+
+
+## A base que a superfície PEDE neste quadro. Devolve `Basis.IDENTITY` quando não
+## há candidata utilizável — o chamador guarda a que já vale.
+func _base_alvo(q: MoveFrame, n: Vector3) -> Basis:
+	# |sobe| é o seno do ângulo entre a normal e a vertical: 1 numa parede a
+	# prumo, 0 num piso ou teto.
+	var sobe := Vector3.UP - n * Vector3.UP.dot(n)
+	if sobe.length() > LIMIAR_VERTICAL:
+		return Basis.looking_at(sobe.normalized(), n)
+
+	# Daqui para baixo a superfície é praticamente horizontal: controle de chão.
 	var proj := q.frente - n * q.frente.dot(n)
 	if proj.length() > LIMIAR_BASE:
-		var alvo := Basis.looking_at(proj.normalized(), n)
-		if _base_sup_valida:
-			_base_sup = _base_sup.slerp(alvo, clampf(GIRO_BASE * delta, 0.0, 1.0)).orthonormalized()
-		else:
-			_base_sup = alvo
-			_base_sup_valida = true
-		return
+		return Basis.looking_at(proj.normalized(), n)
 	if _base_sup_valida:
-		# Mal condicionada: mantém a que já vale, mas reancora na normal ATUAL —
-		# a superfície pode ter virado de face por baixo dos pés.
+		# Mal condicionada: reancora a frente que já vale na normal ATUAL — a
+		# superfície pode ter virado de face por baixo dos pés.
 		var f_atual: Vector3 = -_base_sup.z
 		var f: Vector3 = f_atual - n * f_atual.dot(n)
 		if f.length() > 0.05:
-			_base_sup = Basis.looking_at(f.normalized(), n)
-		return
-	# Primeira vez e sem informação da câmera: "para cima da parede".
-	var sobe := Vector3.UP - n * Vector3.UP.dot(n)
-	if sobe.length_squared() <= 0.001:
-		sobe = Vector3.FORWARD - n * Vector3.FORWARD.dot(n)
-	_base_sup = Basis.looking_at(sobe.normalized(), n)
-	_base_sup_valida = true
+			return Basis.looking_at(f.normalized(), n)
+		return Basis.IDENTITY
+	# Primeira vez, superfície horizontal e sem informação da câmera.
+	var alt := Vector3.FORWARD - n * Vector3.FORWARD.dot(n)
+	if alt.length_squared() <= 0.001:
+		alt = Vector3.RIGHT - n * Vector3.RIGHT.dot(n)
+	return Basis.looking_at(alt.normalized(), n)
 
 
 ## A última base calculada. O Player usa para traduzir a velocidade da parede

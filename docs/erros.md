@@ -7,6 +7,62 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-28 — na parede o WASD girava 90°, porque a frente da câmera é horizontal
+
+**Sintoma:** relato do dono — "as teclas A W S D na parede ficam invertidas: o W
+e o S passam a ir para os lados e o A e o D para cima e para baixo. Ocorre
+quando o jogador pula tendo como origem alguma parte próxima à lateral do
+bloco."
+
+**Causa raiz:** `_atualizar_base_da_superficie` montava a base do movimento com
+`Basis.looking_at(proj, n)`, onde `proj` era a frente da CÂMERA projetada no
+plano da parede. Só que `q.frente` vem de `RosaDosVentos.base_do_corpo(yaw)` —
+a base do pivô **só com yaw, sem pitch**, de propósito, para o dash ser sempre
+horizontal (`MoveFrame.ler`). Ou seja, `q.frente` é horizontal por construção, e
+projetar um vetor horizontal no plano de uma parede a prumo devolve sempre a
+tangente horizontal, nunca "subir". O eixo do W virava o lado e o do A/D virava
+a vertical — 90° de rotação, exatamente o relato.
+
+**Evidência:** `tools/dev_tests/medir_teclas_parede.gd`, deslocamento decomposto
+nos dois eixos do plano da parede:
+
+    câmera de frente ....... W subida +1,53 | lado +0,00   ✅
+    câmera a 45 graus ...... W subida +0,07 | lado −1,45   ❌
+    câmera ao longo ........ W subida +0,08 | lado −1,53   ❌
+    câmera a 45 (outro lado) W subida +0,08 | lado +1,53   ❌
+
+12 erros em 16 medições. Depois da correção: 16/16, com `lado +0,00` — sem
+contaminação em nenhum ângulo.
+
+**O que o caso "perto da lateral" tem de especial:** nada, no fim. Ele é só a
+postura em que o jogador chega olhando ao LONGO da face em vez de encará-la. A
+medição mostrou que o bug valia para todo ângulo menos um, e não para uma
+geometria específica — o relato descrevia a situação em que ele é fácil de
+provocar, não a condição que o causa.
+
+**A inversão que explica tudo:** o único ângulo que funcionava era a câmera de
+frente para a parede, e funcionava porque ali a projeção DEGENERA e o código
+caía no fallback "para cima da parede". O caminho principal produzia o bug e o
+caminho de exceção produzia o acerto — por isso a mecânica parecia funcionar
+quando testada de frente, que é como se testa naturalmente.
+
+**Descartado:** *degeneração numérica / histerese*. Era a suspeita natural, por
+causa do bug intermitente de 2026-08-27 no mesmo arquivo (base por projeção
+invertendo com 5° de mouse). Mas o erro aqui é de 90° exatos, estável e
+reprodutível em todo ângulo — não é ruído perto do limiar, é o eixo errado.
+
+**Correção:** `src/player/parkour_controller.gd` — a base agora se decide pela
+GEOMETRIA da superfície, não pela câmera: em superfície vertical
+(`LIMIAR_VERTICAL = 0.7`, ou seja mais de 45° de inclinação) a frente é o UP do
+mundo projetado, "subir", e a câmera não entra na conta; em superfície
+horizontal (topo, teto) segue a frente da câmera, que é o controle de chão de
+sempre, com a histerese que já existia. A direita não é escolhida: com frente e
+normal fixas ela sai da geometria, e sai concordando com a tela.
+
+**Como detectar de novo:** `medir_teclas_parede.gd` mede o eixo dominante de
+cada tecla em quatro ângulos de câmera. Se o dominante do W mudar conforme o
+yaw, a base voltou a depender da câmera.
+
 ## 2026-08-28 — a cópia do dono regenera 10x mais rápido do que deveria (ABERTO)
 
 **Sintoma:** na tela do próprio jogador a barra de vida sobe mais rápido do que
