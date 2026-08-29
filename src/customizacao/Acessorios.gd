@@ -45,7 +45,53 @@ const CATALOGO := {
 		"nome": "Chapéu de Palha", "parte": "cabeca",
 		# y = 2/3: a copa engole o terço de cima da cabeça (decisão do dono).
 		"pecas": [{"cena": BASE + "chapeu_palha.glb", "no": "Head",
+			"ref": Vector3(0.500, 0.500, 0.740),
 			"ancora": Vector3(0.5, 2.0 / 3.0, 0.5)}],
+	},
+	# ---- a folha de design de 2026-08-29 (imagens para designs/acessórioscabeça.png)
+	# Três assentam no TOPO e três cobrem o ROSTO — e é por isso que viraram duas
+	# partes do corpo, não uma: o dono escolheu poder usar coroa e máscara juntas.
+	# Os modelos têm a origem no ponto de encaixe, então `y = 1.0` é o topo do
+	# crânio e `z = 0.0` é a face do rosto.
+	"aureola": {
+		"nome": "Auréola", "parte": "cabeca",
+		# ⚠️ A ÚNICA PEÇA QUE BRILHA. Na folha ela é a fonte de luz da cena, e
+		# sob o cel shading do jogo um anel amarelo chapado lê como aro de
+		# plástico. Ver `brilha` no `_converter_materiais`.
+		"brilha": true,
+		"pecas": [{"cena": BASE + "aureola.glb", "no": "Head",
+			"ref": Vector3(0.500, 0.500, 0.740),
+			"ancora": Vector3(0.5, 1.0, 0.5)}],
+	},
+	"coroa": {
+		"nome": "Coroa", "parte": "cabeca",
+		"pecas": [{"cena": BASE + "coroa.glb", "no": "Head",
+			"ref": Vector3(0.500, 0.500, 0.740),
+			"ancora": Vector3(0.5, 1.0, 0.5)}],
+	},
+	"cartola": {
+		"nome": "Cartola", "parte": "cabeca",
+		"pecas": [{"cena": BASE + "cartola.glb", "no": "Head",
+			"ref": Vector3(0.500, 0.500, 0.740),
+			"ancora": Vector3(0.5, 1.0, 0.5)}],
+	},
+	"mascara_caveira": {
+		"nome": "Máscara de Caveira", "parte": "rosto",
+		"pecas": [{"cena": BASE + "mascara_caveira.glb", "no": "Head",
+			"ref": Vector3(0.500, 0.500, 0.740),
+			"ancora": Vector3(0.5, 0.5, 0.0)}],
+	},
+	"mascara_peste": {
+		"nome": "Máscara da Peste", "parte": "rosto",
+		"pecas": [{"cena": BASE + "mascara_peste.glb", "no": "Head",
+			"ref": Vector3(0.500, 0.500, 0.740),
+			"ancora": Vector3(0.5, 0.5, 0.0)}],
+	},
+	"mascara_covid": {
+		"nome": "Máscara da Covid", "parte": "rosto",
+		"pecas": [{"cena": BASE + "mascara_covid.glb", "no": "Head",
+			"ref": Vector3(0.500, 0.500, 0.740),
+			"ancora": Vector3(0.5, 0.5, 0.0)}],
 	},
 	"chinelo": {
 		"nome": "Chinelo", "parte": "pes",
@@ -86,6 +132,11 @@ const CATALOGO := {
 ## ⚠️ `pes` tem DOIS nós, e por isso a limpeza varre uma lista, não um nó só.
 const PARTES := {
 	"cabeca":  {"rotulo": "Cabeça",  "nos": ["Head"]},
+	# ⚠️ `rosto` pendura no MESMO nó que `cabeca`, e isso é de propósito: são
+	# duas partes porque se excluem em grupos diferentes, não porque penduram em
+	# lugares diferentes. Igual a tronco/costas/cintura/pernas, que dividem o
+	# `Torso`. Quem separa uma limpeza da outra é a parte no NOME da peça.
+	"rosto":   {"rotulo": "Rosto",   "nos": ["Head"]},
 	"tronco":  {"rotulo": "Tronco",  "nos": ["Torso"]},
 	"costas":  {"rotulo": "Costas",  "nos": ["Torso"]},
 	"cintura": {"rotulo": "Cintura", "nos": ["Torso"]},
@@ -160,7 +211,26 @@ static func equipar(modelo: Node3D, id: String) -> Node3D:
 		var cx := caixa_do_no(destino)
 		var a: Vector3 = peca.get("ancora", Vector3(0.5, 0.5, 0.5))
 		no.position = cx.position + Vector3(cx.size.x * a.x, cx.size.y * a.y, cx.size.z * a.z)
-		_converter_materiais(no)
+		# ⚠️ A PEÇA SE AJUSTA À CABEÇA EM QUE VESTE (2026-08-29).
+		#
+		# A âncora sempre foi fração da caixa, mas o TAMANHO do .glb era
+		# absoluto — e os dois modelos do jogo não têm a mesma cabeça: o menu
+		# monta por `CharacterBuilder.build_character("base")`, cujo `Head` tem
+		# 0,400 de profundidade, e a partida monta pelo rig, cujo `Head` tem
+		# 0,740. Medido, não suposto: as duas tabelas de medidas dos scripts do
+		# Blender divergem exatamente nisso, cada uma tirada de um modelo.
+		#
+		# O sintoma era o chapéu de palha aparecer esticado para trás na
+		# prévia, atravessando a nuca — e valia para toda peça nova.
+		#
+		# `ref` é a caixa para a qual o modelo FOI FEITO; a razão entre a caixa
+		# real e ela devolve a proporção. Não-uniforme de propósito: o que muda
+		# entre as duas cabeças é só a profundidade, e é só nela que a peça
+		# deve encolher.
+		if peca.has("ref"):
+			var r: Vector3 = peca["ref"]
+			no.scale = Vector3(cx.size.x / r.x, cx.size.y / r.y, cx.size.z / r.z)
+		_converter_materiais(no, bool(d.get("brilha", false)))
 		if primeiro == null:
 			primeiro = no
 		i += 1
@@ -175,7 +245,10 @@ static func equipar(modelo: Node3D, id: String) -> Node3D:
 ## preserva a arte (a cor veio do modelo) e faz a peça pertencer à cena.
 ##
 ## É a mesma decisão já tomada para as peças de raça, pelo mesmo motivo.
-static func _converter_materiais(raiz: Node3D) -> void:
+## `brilha` troca a superfície do jogo por luz própria — ver a nota da auréola no
+## catálogo. É opcional e falso por padrão: uma peça que brilha sem motivo rouba
+## a leitura do personagem inteiro.
+static func _converter_materiais(raiz: Node3D, brilha: bool = false) -> void:
 	var malhas: Array = []
 	FxUtil._collect_meshes(raiz, malhas)
 	for m in malhas:
@@ -189,7 +262,8 @@ static func _converter_materiais(raiz: Node3D) -> void:
 				cor = (orig as StandardMaterial3D).albedo_color
 			elif orig is BaseMaterial3D:
 				cor = (orig as BaseMaterial3D).albedo_color
-			mi.set_surface_override_material(si, Materiais.superficie(cor))
+			mi.set_surface_override_material(si,
+				Materiais.brilho(cor) if brilha else Materiais.superficie(cor))
 
 
 ## Tira o que estiver equipado naquela parte. Silencioso se não houver nada.

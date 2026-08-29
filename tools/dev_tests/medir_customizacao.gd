@@ -296,8 +296,150 @@ func _init() -> void:
 	for i in 20: await process_frame
 	get_root().get_texture().get_image().save_png("%s/menu_cor.png" % saida)
 
+	await _acessorios_de_cabeca(menu)
+
 	print("\n%d conferem | %d divergem" % [_ok_n, _falhas])
 	quit(1 if _falhas > 0 else 0)
+
+
+## Os seis da folha 2D de 2026-08-29 (imagens para designs/acessórioscabeça.png).
+##
+## O que mais importa aqui é a REGRA DE CONVIVÊNCIA: o dono escolheu duas partes
+## (cabeça e rosto) justamente para poder usar coroa e máscara ao mesmo tempo.
+## Se um dia alguém juntar as duas partes de volta, é este bloco que acusa.
+func _acessorios_de_cabeca(menu: Node) -> void:
+	print("\n--- acessórios de cabeça e rosto (a folha 2D) ---")
+	var modelo: Node3D = menu._modelo
+	# ⚠️ A CAIXA É A UNIDADE DE TUDO AQUI. As âncoras são frações dela, e os
+	# modelos do Blender foram dimensionados a partir dela — se o modelo do MENU
+	# tiver uma cabeça diferente da do jogo, o mesmo acessório encaixa diferente
+	# nos dois, e é este print que denuncia.
+	var _cabeca := modelo.find_child("Head", true, false) as Node3D
+	if _cabeca != null:
+		var _cx: AABB = Acessorios.caixa_do_no(_cabeca)
+		print("   caixa do Head no MENU: pos(%.3f, %.3f, %.3f) tam(%.3f, %.3f, %.3f)"
+			% [_cx.position.x, _cx.position.y, _cx.position.z,
+			   _cx.size.x, _cx.size.y, _cx.size.z])
+	var topo := ["aureola", "coroa", "cartola"]
+	var rosto := ["mascara_caveira", "mascara_peste", "mascara_covid"]
+
+	for id in topo + rosto:
+		var d: Dictionary = Acessorios.dados(id)
+		_ok("'%s' está no catálogo" % id, not d.is_empty())
+		if d.is_empty():
+			continue
+		var esperado := "cabeca" if id in topo else "rosto"
+		_ok("'%s' é da parte '%s'" % [id, esperado], String(d["parte"]) == esperado)
+		# ⚠️ Sem isto o teste passaria com o .glb ausente: `equipar` só avisa e
+		# segue, então a peça simplesmente não apareceria no jogo.
+		for peca in d["pecas"]:
+			_ok("o modelo de '%s' existe" % id, ResourceLoader.exists(String(peca["cena"])))
+
+	# limpa as duas partes antes de contar
+	Acessorios.desequipar(modelo, "cabeca")
+	Acessorios.desequipar(modelo, "rosto")
+	for i in 5: await process_frame
+
+	for id in topo + rosto:
+		var parte := Acessorios.parte_de(id)
+		Acessorios.equipar(modelo, id)
+		for i in 5: await process_frame
+		_ok("'%s' equipa e cria nó" % id, _tem_acessorio(modelo, parte, id))
+		Acessorios.desequipar(modelo, parte)
+		for i in 5: await process_frame
+
+	# EXCLUSÃO DENTRO DO GRUPO
+	Acessorios.equipar(modelo, "coroa")
+	for i in 5: await process_frame
+	Acessorios.equipar(modelo, "cartola")
+	for i in 5: await process_frame
+	_ok("cartola tira a coroa (mesma parte)",
+		_tem_acessorio(modelo, "cabeca", "cartola") and not _tem_acessorio(modelo, "cabeca", "coroa"))
+
+	Acessorios.equipar(modelo, "mascara_caveira")
+	for i in 5: await process_frame
+	Acessorios.equipar(modelo, "mascara_peste")
+	for i in 5: await process_frame
+	_ok("máscara da peste tira a de caveira (mesma parte)",
+		_tem_acessorio(modelo, "rosto", "mascara_peste")
+		and not _tem_acessorio(modelo, "rosto", "mascara_caveira"))
+
+	# CONVIVÊNCIA ENTRE GRUPOS — a razão de existirem duas partes
+	_ok("a cartola SOBREVIVEU a equipar uma máscara",
+		_tem_acessorio(modelo, "cabeca", "cartola"))
+	Acessorios.equipar(modelo, "chapeu_palha")
+	for i in 5: await process_frame
+	_ok("o chapéu de palha convive com a máscara",
+		_tem_acessorio(modelo, "cabeca", "chapeu_palha")
+		and _tem_acessorio(modelo, "rosto", "mascara_peste"))
+
+	# ONDE CADA UMA FICA. Mede em espaço LOCAL da cabeça, que é onde a âncora
+	# opera — medir em mundo misturaria a pose do modelo na medição.
+	Acessorios.desequipar(modelo, "cabeca")
+	Acessorios.desequipar(modelo, "rosto")
+	Acessorios.equipar(modelo, "coroa")
+	Acessorios.equipar(modelo, "mascara_covid")
+	for i in 8: await process_frame
+	# ⚠️ EM FRAÇÃO DA CAIXA, NÃO EM METROS. A âncora é 0..1 dentro da AABB do nó,
+	# e a AABB do `Head` NÃO é a mesma nos dois lugares: o menu monta o
+	# personagem por `CharacterBuilder.build_character("base")`, cuja cabeça tem
+	# 0,400 de profundidade, e o jogo monta pelo rig, cuja cabeça tem 0,740
+	# (medido em 2026-08-29, ver docs/erros.md). Uma asserção em metros passaria
+	# num e reprovaria no outro sem que nada estivesse errado com a peça.
+	var cxh: AABB = Acessorios.caixa_do_no(_cabeca)
+	var y_coroa := _pos_local(modelo, "cabeca", "coroa").y
+	var z_masc := _pos_local(modelo, "rosto", "mascara_covid").z
+	var fy := (y_coroa - cxh.position.y) / cxh.size.y
+	var fz := (z_masc - cxh.position.z) / cxh.size.z
+	print("   coroa:   y %+.3f = fração %.3f da altura (topo = 1,000)" % [y_coroa, fy])
+	print("   máscara: z %+.3f = fração %.3f da profundidade (rosto = 0,000)" % [z_masc, fz])
+	_ok("a coroa assenta no TOPO da cabeça", absf(fy - 1.0) < 0.02)
+	_ok("a máscara fica na FRENTE do rosto", absf(fz) < 0.02)
+
+	# A AURÉOLA BRILHA. É a única peça com luz própria; ver a nota no catálogo.
+	Acessorios.desequipar(modelo, "cabeca")
+	Acessorios.equipar(modelo, "aureola")
+	for i in 8: await process_frame
+	_ok("a auréola usa material de luz própria (não o cel shading)",
+		_tem_material_brilhante(modelo))
+	Acessorios.desequipar(modelo, "cabeca")
+	Acessorios.equipar(modelo, "coroa")
+	for i in 8: await process_frame
+	# ⚠️ CONTROLE: sem ele o teste acima passaria mesmo se TODA peça brilhasse.
+	_ok("a coroa NÃO brilha (o brilho é exceção, não padrão)",
+		not _tem_material_brilhante(modelo))
+
+	Acessorios.desequipar(modelo, "cabeca")
+	Acessorios.desequipar(modelo, "rosto")
+	for i in 5: await process_frame
+
+
+func _tem_acessorio(modelo: Node, parte: String, id: String) -> bool:
+	var alvo := "%s%s_%s_" % [Acessorios.MARCA, parte, id]
+	for x in _todos(modelo):
+		if String(x.name).begins_with(alvo):
+			return true
+	return false
+
+
+func _pos_local(modelo: Node, parte: String, id: String) -> Vector3:
+	var alvo := "%s%s_%s_" % [Acessorios.MARCA, parte, id]
+	for x in _todos(modelo):
+		if String(x.name).begins_with(alvo) and x is Node3D:
+			return (x as Node3D).position
+	return Vector3.ZERO
+
+
+func _tem_material_brilhante(modelo: Node) -> bool:
+	for x in _todos(modelo):
+		if not (x is MeshInstance3D):
+			continue
+		var mi := x as MeshInstance3D
+		for si in mi.get_surface_override_material_count():
+			var mo := mi.get_surface_override_material(si)
+			if mo is StandardMaterial3D and (mo as StandardMaterial3D).emission_enabled:
+				return true
+	return false
 
 
 func _ok(rotulo: String, cond: bool) -> void:

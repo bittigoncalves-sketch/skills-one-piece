@@ -7,6 +7,50 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-29 — o menu e a partida não usam a mesma cabeça, e o acessório não sabia disso
+
+**Sintoma:** o chapéu de palha aparece esticado para trás na prévia do menu de
+Customização, atravessando a nuca — e coroa, cartola e máscara da peste, recém
+modeladas, saíam com o mesmo alongamento. No jogo, as mesmas peças assentam
+certo.
+
+**Causa raiz:** são DOIS modelos de personagem com cabeças diferentes. O menu
+monta por `CharacterBuilder.build_character("base")`, cujo `Head` tem AABB
+`tam(0,500, 0,500, 0,400)`; a partida monta pelo rig, cujo `Head` tem
+`tam(0,500, 0,500, 0,740)` — quase o dobro da profundidade. O acessório é um
+`.glb` de tamanho ABSOLUTO: a âncora sempre foi fração da caixa e se adaptava,
+mas o tamanho não. Modelado para uma cabeça, sobra na outra.
+
+**Evidência:** a divergência estava escrita no próprio repositório, em duas
+tabelas que ninguém tinha comparado — `tools/blender/acessorios.py` documenta
+`Head tam(0.500, 0.500, 0.400)` e `tools/blender/chapeu_palha.py` documenta
+`tamanho (0,500, 0,500, 0,740)`. Cada uma foi medida num modelo diferente, e as
+duas estavam certas sobre o modelo que mediram. Confirmado em runtime: o `Head`
+do player é um `MeshInstance3D` com malha própria de 0,740 de profundidade, sem
+filhos que pudessem inflar a união de AABBs.
+
+**Descartado:** *escala do rig*. Era a suspeita imediata, e o próprio
+`CustomizacaoMenu` tem uma nota dizendo que o modelo do `CharacterBuilder` vem
+no tamanho nativo, "sem a escala que o rig aplica em partida". Mas escala
+uniforme não muda proporção, e aqui largura e altura batem (0,500 nas duas) e só
+a profundidade diverge — é geometria diferente, não escala.
+
+**Correção:** `src/customizacao/Acessorios.gd` — a peça declara no catálogo a
+caixa `ref` para a qual foi modelada, e `equipar()` aplica
+`scale = caixa_real / ref`. Não-uniforme de propósito: o que muda entre as duas
+cabeças é só a profundidade, e é só nela que a peça deve encolher. Declarado nas
+seis peças novas e no chapéu de palha, que tinha o defeito desde que nasceu.
+
+**Alcance não corrigido:** as outras cinco peças de `acessorios.py` (chinelo,
+capa da marinha, colete, calção, espadas) foram modeladas pela tabela do MENU e
+têm o mesmo descompasso ao contrário — a tabela do Torso também diverge (0,360
+documentado contra 0,666 medido no rig). Ficaram sem `ref` porque estão fora do
+que o dono pediu; a correção é uma linha por peça quando ele quiser.
+
+**Como detectar de novo:** `medir_customizacao.gd` imprime a caixa do `Head` do
+menu e afere posição em FRAÇÃO da caixa, não em metros — uma asserção em metros
+passa num modelo e reprova no outro sem que a peça tenha nada de errado.
+
 ## 2026-08-28 — na parede o WASD girava 90°, porque a frente da câmera é horizontal
 
 **Sintoma:** relato do dono — "as teclas A W S D na parede ficam invertidas: o W
