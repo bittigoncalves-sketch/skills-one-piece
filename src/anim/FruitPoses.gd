@@ -46,6 +46,85 @@ static func hibashira_pose(add: Callable, off: Dictionary, w: float, t: float) -
 	add.call(off, "UpperArm_L", Vector3(-1.1, -0.3, -0.35) * w)
 	add.call(off, "ForeArm_L", Vector3(0.15, 0.0, 0.0) * w)
 
+static func mera_z_charge_pose(add: Callable, off: Dictionary, w: float, progress: float) -> void:
+	if w <= 0.001:
+		return
+	# Linha do tempo normalizada, sincronizada com MeraZChargeNode. A tabela
+	# decide a duração (hoje 0,5 s), mas as quatro etapas usam 0..1 e sempre
+	# terminam antes do disparo — não há corte de animação ao encurtar a carga.
+	# 0.00–0.24 firma a base; 0.24–0.62 puxa os dois revólveres da cintura;
+	# 0.62–1.00 abre os braços e termina em uma mira dupla estável.
+	var p := clampf(progress, 0.0, 1.0)
+	var reach_waist := smoothstep(0.04, 0.28, p)
+	var draw := smoothstep(0.24, 0.68, p)
+	var aim := smoothstep(0.64, 1.0, p)
+	var right_waist := Vector3(-0.48, -0.14, 0.70)
+	var left_waist := Vector3(-0.48, 0.14, -0.70)
+	var right_aim := Vector3(1.48, 0.0, 0.16)
+	var left_aim := Vector3(1.48, 0.0, -0.16)
+	var elbow_draw := Vector3(1.10, 0.0, 0.0)
+	var elbow_aim := Vector3(0.06, 0.0, 0.0)
+	var draw_pose_r := right_waist * reach_waist
+	var draw_pose_l := left_waist * reach_waist
+	add.call(off, "UpperArm_R", draw_pose_r.lerp(right_aim, draw) * w)
+	add.call(off, "UpperArm_L", draw_pose_l.lerp(left_aim, draw) * w)
+	add.call(off, "ForeArm_R", elbow_draw.lerp(elbow_aim, aim) * w)
+	add.call(off, "ForeArm_L", elbow_draw.lerp(elbow_aim, aim) * w)
+	# Leve inclinação para trás enquanto saca; volta ao centro ao travar a mira.
+	add.call(off, "Torso", Vector3(-0.12 * (1.0 - aim), 0.0, 0.0) * w)
+	add.call(off, "Head", Vector3(0.07 * aim, 0.0, 0.0) * w)
+
+# Mera X — concentração do Hiken: uma leitura de "Pedra" (punho direito
+# comprimido no quadril), guarda com a mão oposta e explosão à frente na soltura.
+static func mera_x_charge_pose(add: Callable, off: Dictionary, w: float, progress: float) -> void:
+	if w <= 0.001:
+		return
+	# A postura precisa ser legível no primeiro quadro da carga. O restante é a
+	# contração gradual até o soco; começar em zero fazia a preparação parecer sem
+	# animação quando outro clipe ainda estava terminando.
+	var p := lerpf(0.38, 1.0, smoothstep(0.0, 1.0, clampf(progress, 0.0, 1.0)))
+	# Punho direito recolhe ao quadril: ombro atrás/para o lado e cotovelo fechado.
+	add.call(off, "UpperArm_R", Vector3(-0.70, -0.08, 0.34) * p * w)
+	add.call(off, "ForeArm_R", Vector3(1.32, 0.0, 0.0) * p * w)
+	# Mão esquerda protege o peito e enquadra a intenção do soco direito.
+	add.call(off, "UpperArm_L", Vector3(0.42, 0.0, -0.18) * p * w)
+	add.call(off, "ForeArm_L", Vector3(0.82, 0.0, 0.0) * p * w)
+	# Base baixa e firme: antecipa força sem parecer uma pose parada genérica.
+	add.call(off, "Torso", Vector3(-0.16, 0.10, 0.05) * p * w)
+	add.call(off, "Thigh_L", Vector3(0.12, 0.0, -0.10) * p * w)
+	add.call(off, "Thigh_R", Vector3(0.12, 0.0, 0.10) * p * w)
+	add.call(off, "Head", Vector3(0.08, -0.06, 0.0) * p * w)
+
+# Bomu Z — ombro atrás, punho comprimido e base baixa: a explosão parece sair
+# DO soco. Bomu X abre o corpo para conter a explosão antes do avanço.
+static func bomu_charge_pose(add: Callable, off: Dictionary, w: float, t: float, slot: String) -> void:
+	if w <= 0.001: return
+	var pulso := 1.0 + sin(t * 18.0) * 0.06
+	if slot == "Z":
+		add.call(off, "UpperArm_R", Vector3(-0.76, -0.10, 0.28) * pulso * w)
+		add.call(off, "ForeArm_R", Vector3(1.26, 0.0, 0.0) * pulso * w)
+		add.call(off, "UpperArm_L", Vector3(0.28, 0.0, -0.18) * w)
+		add.call(off, "ForeArm_L", Vector3(0.58, 0.0, 0.0) * w)
+	else:
+		add.call(off, "UpperArm_R", Vector3(0.12, 0.0, 1.18) * pulso * w)
+		add.call(off, "UpperArm_L", Vector3(0.12, 0.0, -1.18) * pulso * w)
+		add.call(off, "ForeArm_R", Vector3(0.34, 0.0, 0.0) * w)
+		add.call(off, "ForeArm_L", Vector3(0.34, 0.0, 0.0) * w)
+	add.call(off, "Torso", Vector3(-0.18, 0.0, 0.0) * w)
+	add.call(off, "Thigh_L", Vector3(0.20, 0.0, -0.15) * w)
+	add.call(off, "Thigh_R", Vector3(0.20, 0.0, 0.15) * w)
+
+static func bomu_strike_pose(add: Callable, off: Dictionary, w: float, t: float, burst: bool) -> void:
+	if w <= 0.001: return
+	var impacto := smoothstep(0.04, 0.20, fmod(t, 0.5))
+	if burst:
+		add.call(off, "UpperArm_R", Vector3(-0.18, 0.0, 1.25) * (1.0 - impacto) * w)
+		add.call(off, "UpperArm_L", Vector3(-0.18, 0.0, -1.25) * (1.0 - impacto) * w)
+		add.call(off, "Torso", Vector3(-0.38, 0.0, 0.0) * w)
+	else:
+		add.call(off, "UpperArm_R", Vector3(1.48, 0.0, 0.12) * impacto * w)
+		add.call(off, "ForeArm_R", Vector3(0.10, 0.0, 0.0) * w)
+
 static func kurouzu_pose(add: Callable, off: Dictionary, w: float, t: float) -> void:
 	if w <= 0.001:
 		return

@@ -57,6 +57,7 @@ Medido em código (2026-08-14). A coluna "hitbox" é o critério 5 do
 | **Gura Gura** | sim | 4/4 | **🔧 sim, hoje** | [`gura_gura.md`](gura_gura.md) |
 | Gomu Gomu | sim | 4/4 | — | [`gomu_gomu.md`](gomu_gomu.md) |
 | Mera Mera | sim | 4/4 | — | [`mera_mera.md`](mera_mera.md) |
+| Bomu Bomu | sim | 2/2 (C/V desativados) | — | [`bomu_bomu.md`](bomu_bomu.md) |
 | Hie Hie | sim | 4/4 | — | [`hie_hie.md`](hie_hie.md) |
 | Goro Goro | sim | 4/4 | — | [`goro_goro.md`](goro_goro.md) |
 | Yami Yami | sim | 4/4 | — | [`yami_yami.md`](yami_yami.md) |

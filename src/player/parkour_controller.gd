@@ -263,6 +263,7 @@ func velocidade(delta: float, q: MoveFrame, vel: Vector3, vel_efetiva: float) ->
 # assumiu — por isso recebe e devolve a velocidade em vez de escrevê-la.
 func aplicar_pulos(q: MoveFrame, vel: Vector3, vel_efetiva: float,
 		no_chao: bool, mult_pulo: float) -> Vector3:
+	var salto_explosivo := false
 	# ⚠️ O ESPAÇO QUE LARGOU A SUPERFÍCIE JÁ FOI GASTO. Sem esta saída, o mesmo
 	# toque cancelava a parede E consumia um pulo duplo no mesmo quadro — o
 	# jogador era punido por usar o cancelamento que a mecânica exige. Zerar o
@@ -282,6 +283,7 @@ func aplicar_pulos(q: MoveFrame, vel: Vector3, vel_efetiva: float,
 			_long_jump_t = 0.55
 		else:
 			vel.y = _forca_pulo * mult_pulo   # pulo normal
+			salto_explosivo = true
 	elif q.espaco_segurado and no_chao:
 		vel.y = _forca_pulo * mult_pulo       # segurar Espaço = pulo normal
 	elif q.espaco_agora and not no_chao and not _escalando and not _correndo_parede and _geppo < max_geppo:
@@ -296,6 +298,10 @@ func aplicar_pulos(q: MoveFrame, vel: Vector3, vel_efetiva: float,
 		else:
 			vel.y = _forca_pulo * mult_pulo * 1.15
 		_efeitos_do_geppo(q)
+		if _dono.current_fruit_id == "bomu_bomu":
+			salto_explosivo = true
+	if salto_explosivo and _dono.current_fruit_id == "bomu_bomu":
+		BomuFX.salto_explosivo(_dono.get_tree().current_scene, _dono.global_position, q.dir)
 	return vel
 
 func _efeitos_do_geppo(q: MoveFrame) -> void:

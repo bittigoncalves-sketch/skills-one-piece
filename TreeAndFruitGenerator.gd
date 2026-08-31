@@ -55,6 +55,24 @@ static func _todas_as_definicoes() -> Array[Dictionary]:
 			"leaf_shape": "canopy"
 		},
 		{
+			"id": "bomu_bomu",
+			"nome": "Árvore da Explosão (Bomu Bomu)",
+			"foliage_color": Color(0.14, 0.10, 0.22),
+			"trunk_color": Color(0.30, 0.18, 0.10),
+			"fruit_color": Color(0.10, 0.08, 0.26),
+			"fruit_glow": Color(1.0, 0.52, 0.12),
+			"leaf_shape": "split"
+		},
+		{
+			"id": "suke_suke",
+			"nome": "Árvore da Camuflagem (Suke Suke)",
+			"foliage_color": Color(0.38, 0.76, 0.82),
+			"trunk_color": Color(0.18, 0.38, 0.42),
+			"fruit_color": Color(0.52, 0.84, 0.86),
+			"fruit_glow": Color(0.72, 1.0, 1.0),
+			"leaf_shape": "crystal"
+		},
+		{
 			"id": "hie_hie",
 			"nome": "Árvore de Gelo (Hie Hie)",
 			"foliage_color": Color(0.45, 0.82, 1.0),      # Azul Gelo
@@ -364,9 +382,15 @@ static func create_fruit_3d(def: Dictionary) -> Node3D:
 
 	# --- 1. Corpo Central Cúbico Voxel ---
 	var body_inst := MeshInstance3D.new()
-	var body_box := BoxMesh.new()
-	body_box.size = Vector3(0.52, 0.52, 0.52)
-	body_inst.mesh = body_box
+	if def["id"] == "bomu_bomu":
+		var body_sphere := SphereMesh.new()
+		body_sphere.radius = 0.42
+		body_sphere.height = 0.78
+		body_inst.mesh = body_sphere
+	else:
+		var body_box := BoxMesh.new()
+		body_box.size = Vector3(0.52, 0.52, 0.52)
+		body_inst.mesh = body_box
 
 	var fruit_mat := StandardMaterial3D.new()
 	fruit_mat.albedo_color = def["fruit_color"]
@@ -390,6 +414,8 @@ static func create_fruit_3d(def: Dictionary) -> Node3D:
 		Vector3(0.24, -0.24, -0.24), Vector3(-0.24, -0.24, -0.24)
 	]
 	for off in corner_offsets:
+		if def["id"] == "bomu_bomu":
+			continue
 		var corner := MeshInstance3D.new()
 		var c_box := BoxMesh.new()
 		c_box.size = Vector3(0.16, 0.16, 0.16)
@@ -413,6 +439,8 @@ static func create_fruit_3d(def: Dictionary) -> Node3D:
 		Vector3(0.22, 0.0, 0.28), Vector3(-0.22, 0.0, -0.28)
 	]
 	for off in spiral_offsets:
+		if def["id"] == "bomu_bomu":
+			continue
 		var bump := MeshInstance3D.new()
 		var bump_box := BoxMesh.new()
 		bump_box.size = Vector3(0.12, 0.12, 0.12)
@@ -455,6 +483,38 @@ static func create_fruit_3d(def: Dictionary) -> Node3D:
 			flame.position = fo
 			flame.material_override = flame_mat
 			fruit_root.add_child(flame)
+	elif def["id"] == "bomu_bomu":
+		# Casca azul-marinho com espirais coral e pavio amarelo, inspirado na
+		# referência. Todo detalhe é voxel/procedural, sem depender de textura.
+		var fuse_mat := StandardMaterial3D.new()
+		fuse_mat.albedo_color = Color(1.0, 0.72, 0.12)
+		fuse_mat.emission_enabled = true; fuse_mat.emission = Color(1.0, 0.48, 0.06)
+		fuse_mat.emission_energy_multiplier = 1.7
+		for i in range(4):
+			var fuse := MeshInstance3D.new()
+			var fuse_box := BoxMesh.new(); fuse_box.size = Vector3(0.10, 0.18, 0.10)
+			fuse.mesh = fuse_box
+			fuse.position = Vector3(sin(i * 0.65) * 0.12, 0.46 + i * 0.13, 0.0)
+			fuse.rotation.z = -0.42 + i * 0.22
+			fuse.material_override = fuse_mat
+			fruit_root.add_child(fuse)
+		var spark := MeshInstance3D.new()
+		var spark_mesh := SphereMesh.new(); spark_mesh.radius = 0.12; spark_mesh.height = 0.24
+		spark.mesh = spark_mesh; spark.position = Vector3(0.18, 0.98, 0.0)
+		spark.material_override = fuse_mat
+		fruit_root.add_child(spark)
+		# Espirais coral elevadas acompanham a casca arredondada, em vez de cubos.
+		var swirl_mat := StandardMaterial3D.new()
+		swirl_mat.albedo_color = Color(0.92, 0.28, 0.42)
+		for i in range(7):
+			var swirl := MeshInstance3D.new()
+			var torus := TorusMesh.new(); torus.inner_radius = 0.055; torus.outer_radius = 0.082
+			swirl.mesh = torus
+			var a := TAU * float(i) / 7.0
+			swirl.position = Vector3(cos(a) * 0.34, -0.22 + float(i % 3) * 0.20, sin(a) * 0.34)
+			swirl.rotation = Vector3(PI * 0.5, 0.0, -a)
+			swirl.material_override = swirl_mat
+			fruit_root.add_child(swirl)
 
 	# --- 5. Talo / Haste Cúbica de Madeira e Folha Voxel ---
 	var stem_inst := MeshInstance3D.new()

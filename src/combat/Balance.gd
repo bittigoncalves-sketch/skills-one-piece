@@ -53,11 +53,21 @@ const HP_BASE := 2048.0
 # contra 60 s). Repetir o número aqui criaria um TERCEIRO valor e transformaria
 # uma divergência conhecida numa armadilha. Este arquivo manda em dano, só.
 const SLOT := {
-	"Z": {"unico": [80.0, 96.0],   "por_hit": 40.0, "teto": 200.0},
+	# ⚠️ O Z GANHOU FAIXA DE CARGA em 2026-08-31, com a Bomu Bomu — a primeira
+	# fruta do jogo com um Z CARREGADO. Sem ela, `ref.get("carregado",
+	# ref["unico"])` caía no único ([80, 96]) e reprovava qualquer carga de Z,
+	# por mais equilibrada que fosse: não era a Bomu que estava fora da régua, era
+	# a régua que não existia para este slot.
+	#
+	# O intervalo segue o mesmo desenho dos outros três: começa no topo do dano
+	# ÚNICO do slot (96) e termina no TETO dele (200) — carregar é o que separa
+	# o piso do teto, e é o padrão exato do X (único até 192, carga de 192 a 256).
+	"Z": {"unico": [80.0, 96.0],   "por_hit": 40.0, "teto": 200.0,
+		  "carregado": [96.0, 200.0]},
 	"X": {"unico": [128.0, 192.0], "por_hit": 64.0, "teto": 256.0,
 		  "carregado": [192.0, 256.0]},
 	"C": {"unico": [192.0, 256.0], "por_hit": 80.0, "teto": 384.0,
-		  "carregado": [256.0, 384.0]},
+		  "carregado": [240.0, 384.0]},
 	"V": {"unico": [512.0, 768.0], "por_hit": 96.0, "teto": 768.0,
 		  "carregado": [512.0, 768.0], "base": 640.0},
 }
@@ -100,7 +110,9 @@ const FRUTAS := {
 		"V": {"tipo": T.MULTI, "dano": 384.0, "hits": 2},
 	},
 	"mera_mera": {
-		"Z": {"tipo": T.MULTI, "dano": 12.0, "hits": 16},
+		# Higan: oito tiros relevantes a 25 cada. O pente curto faz cada acerto
+		# importar quando a mira só conecta parcialmente, sem passar do teto Z.
+		"Z": {"tipo": T.MULTI, "dano": 25.0, "hits": 8, "teto": 200.0, "tempo_de_carga": 0.5},
 		# ⚠️ VIROU MULTI (2026-08-22). O Hiken sempre teve DUAS partes — o punho e a
 		# explosão no fim do trajeto —, mas só o punho estava declarado. E havia um
 		# incentivo invertido: a explosão nascia num temporizador que só corria se a
@@ -108,9 +120,13 @@ const FRUTAS := {
 		# Agora ela nasce também no ponto de impacto, e a `reserva` garante que o
 		# punho não coma o orçamento dela. 160 + 96 = 256, o teto do slot.
 		"X": {"tipo": T.MULTI, "dano": 160.0, "hits": 1,
-			  "partes": {"explosao": 96.0}, "reserva": 96.0},
+			  "partes": {"explosao": 96.0}, "reserva": 96.0, "tempo_de_carga": 1.0},
 		# Vagalumes de Fogo: Uma nuvem de vagalumes, se um é ativado, explode em cadeia.
-		"C": {"tipo": T.UNICO, "dano": 256.0},
+		# Vagalumes: 1 s de preparação anuncia a área. A carga é requisito de
+		# execução (não multiplicador de dano), e o orçamento fecha no primeiro
+		# contato para evitar acúmulo aleatório.
+		"C": {"tipo": T.CARREGADO, "dano": 240.0, "dano_max": 256.0,
+			  "tempo_de_carga": 1.0, "teto": 256.0},
 		# Dai Enkai: Entei (Sol Quadrado)
 		#
 		# ⚠️ 256->384 CORRIGIDO PARA 512->768 em 2026-08-21. O Entei MUDOU DE SLOT
@@ -119,7 +135,15 @@ const FRUTAS := {
 		# Mera estava valendo o mesmo que um C de qualquer outra fruta — metade do
 		# que o slot promete. Quem pegou foi `tools/dev_tests/test_balance.gd`,
 		# checagem [1]: "mera_mera/V: carga 256->384 fora da faixa [512, 768]".
-		"V": {"tipo": T.CARREGADO, "dano": 512.0, "dano_max": 768.0, "tempo_de_carga": 3.5},
+		# Com 2048 HP, carga cheia tira no máximo 31,25%: ameaça alta, sem matar
+		# sozinha ou variar conforme quantas zonas do Sol tocam o mesmo alvo.
+		"V": {"tipo": T.CARREGADO, "dano": 512.0, "dano_max": 640.0, "tempo_de_carga": 1.5, "teto": 640.0},
+	},
+	# Bomu Bomu compensa ter somente dois slots com dano alto dentro do teto
+	# normal. Ambos carregam em 0,5 s; a recarga única de 10 s mora no Player.
+	"bomu_bomu": {
+		"Z": {"tipo": T.CARREGADO, "dano": 144.0, "dano_max": 200.0, "tempo_de_carga": 0.5},
+		"X": {"tipo": T.CARREGADO, "dano": 192.0, "dano_max": 256.0, "tempo_de_carga": 0.5},
 	},
 	"bara_bara": {
 		"Z": {"tipo": T.UNICO, "dano": 92.0},
