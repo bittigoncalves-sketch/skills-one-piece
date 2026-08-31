@@ -1,7 +1,7 @@
 # Combate contextual — plano vivo e implementação
 
 **Estado:** Fase 0 documentada; Fase 1 implementada e validada em singleplayer
-**e em rede**; Fase 2 (counter hit) implementada e validada.  
+**e em rede**; Fases 2 (counter hit) e 3 (launcher) implementadas e validadas.  
 **Última revisão:** 2026-08-31.  
 **Escopo desta frente:** ampliar o corpo a corpo sem substituir o combo M1,
 a Aú, a queda esmagadora ou a rota exclusiva dos Minks.
@@ -205,10 +205,38 @@ em startup?" responderia **sempre falso**, e o counter nunca aconteceria — sem
 erro e sem aviso. Quem decide continua sendo o servidor, porque é lá que a
 `DamageZone` nasce.
 
+## Fase 3 — launcher (implementada em 2026-08-31)
+
+No **quarto** golpe do combo, W deixa de ser cotovelada e vira lançamento. Nos
+três primeiros a cotovelada continua valendo — senão o jogador perderia a
+variação de avanço no meio da sequência.
+
+| | |
+|---|---|
+| dano | 72 (o finalizador que ele substitui dá 112) |
+| impulso | 15, vertical puro |
+| frame data | 0,18 / 0,09 / 0,26 |
+
+O dano é menor de propósito: o que se perde se ganha em ROTA, porque o alvo
+sobe e abre a perseguição. Um launcher que também desse 112 seria a escolha
+óbvia sempre, e o finalizador normal deixaria de existir.
+
+### O bloqueio contra loop
+
+⚠️ **É o requisito, não um detalhe.** Um launcher que funciona e não bloqueia é
+pior que nenhum: lançar → perseguir → lançar prende o alvo no ar e decide a luta
+sem o outro jogar.
+
+- um corpo que **já está no ar por lançamento** não pode ser lançado de novo;
+- a marca se limpa **sozinha** quando ele toca o chão — ninguém precisa lembrar
+  de apagá-la, e um alvo que caiu volta a ser lançável numa troca posterior;
+- a perseguição é **uma só** por lançamento (`consumir_perseguicao`).
+
+O golpe de perseguição em si é o "chute aéreo simples" da fase seguinte; o
+mecanismo que o limita já está pronto e testado.
+
 ## Próximas fases, ainda não implementadas
 
-2. **Launcher + uma perseguição aérea:** troca o quarto M1 por lançamento com
-   W; só uma continuação aérea por alvo, com bloqueios contra loop infinito.
 3. **Chute aéreo simples:** ocupa o espaço entre M1 no ar e queda esmagadora,
    sem competir com a Aú.
 4. **Chute de parede:** exige raycast confiável, uma utilização por contato e
@@ -239,4 +267,5 @@ erro e sem aviso. Quem decide continua sendo o servidor, porque é lá que a
 | 2026-08-31 | `test_compila.gd` | saída 0; os avisos de autoload no modo `--script` são tolerados pelo próprio teste |
 | 2026-08-31 | `net_contextual_*_probe` (2 processos) | passou nos dois lados. **Nunca tinha rodado**: o lado cliente não compilava (dois `:=` sem inferir de `Variant`) e a sonda media a apresentação 0,70 s depois do clique, quando o golpe dura 0,42 s — reprovava a limpeza correta |
 | 2026-08-31 | `test_counter_hit.gd` | passou: dano zero, hitstun ampliado, empurrão extra, leitura da fase no Player e ordem dos sinais |
+| 2026-08-31 | `test_launcher.gd` | passou: 19 asserções — a escolha (só no 4º golpe, só com W), o impulso vertical, e o bloqueio contra loop nas duas pontas (não relança no ar, limpa ao aterrissar, uma perseguição só) |
 | 2026-08-31 | `test_melee_trava.gd` | atualizado para a regra NOVA: o M1 deixa o corpo livre. O pedido de 2026-08-15 foi revogado pelo dono — "travava o jogador demais, fazendo os movimentos não serem tão fluidos" |

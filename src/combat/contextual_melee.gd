@@ -40,6 +40,21 @@ const ESPECIFICACOES := {
 		"deslocamento": 1.00, "direcao": "frente",
 		"vfx": "cotovelo",
 	},
+	# ⚠️ SUBSTITUI O QUARTO M1, e por isso é a única variação que não é "mais uma
+	# opção": ela TROCA o finalizador de 112 por 72. O que se perde em dano se
+	# ganha em rota — o alvo sobe e abre a perseguição aérea, que é o item
+	# seguinte do plano. Um launcher que também desse 112 seria escolha óbvia
+	# sempre, e o finalizador normal deixaria de existir.
+	"context_launcher": {
+		"nome": "Lançamento",
+		"pose": "context_launcher",
+		"startup": 0.18, "ativo": 0.09, "recuperacao": 0.26,
+		"dano": 72.0, "knockback": 12.0, "hitstun": 0.70,
+		"alcance": 1.40, "raio": 1.34,
+		"deslocamento": 0.55, "direcao": "frente",
+		"vfx": "cotovelo",
+		"lanca": 15.0,
+	},
 	"context_retreat_kick": {
 		"nome": "Chute Recuando",
 		"pose": "context_retreat_kick",
@@ -107,7 +122,29 @@ static func contexto_do_player(dono: Node, yaw: float) -> Dictionary:
 		"attack_yaw": yaw,
 		"attack_basis": Basis(Vector3.UP, yaw),
 		"race_id": raca,
+		# Qual golpe do combo M1 sairia AGORA (0..3). O launcher só existe no
+		# quarto, então o resolvedor precisa saber onde a sequência está.
+		"combo_step": _passo_do_combo(dono),
 	}
+
+
+## O índice do próximo M1, lido do `MeleeController`. −1 quando não há combo em
+## andamento ou o controlador não está acessível.
+##
+## ⚠️ É O PRÓXIMO, NÃO O EM CURSO. `_passo` é o que o `pedir()` vai usar; o
+## `_passo_em_curso` é o que já está no ar. Ler o segundo faria o launcher sair
+## um golpe atrasado.
+static func _passo_do_combo(dono: Node) -> int:
+	if dono == null:
+		return -1
+	var mc = dono.get("_melee")
+	if mc == null:
+		return -1
+	var janela: float = float(mc.get("_janela"))
+	# Janela vencida = a sequência recomeça do zero, e não há quarto golpe.
+	if janela <= 0.0:
+		return 0
+	return int(mc.get("_passo"))
 
 static func resolver(contexto: Dictionary) -> String:
 	if not contexto.get("grounded", false):
@@ -125,6 +162,12 @@ static func resolver(contexto: Dictionary) -> String:
 	if frente < -0.01:
 		return "context_retreat_kick"
 	if frente > 0.01:
+		# No QUARTO golpe do combo (índice 3), W deixa de ser cotovelada e vira
+		# lançamento — é a troca que o plano descreve. Nos três primeiros a
+		# cotovelada continua valendo, senão o jogador perderia a variação de
+		# avanço no meio da sequência.
+		if int(contexto.get("combo_step", -1)) == 3:
+			return "context_launcher"
 		return "context_elbow"
 	return ""
 
@@ -243,6 +286,8 @@ static func golpear(mundo: Node, caster: Node3D, id: String, origem: Vector3, fw
 			if alvo != null and is_instance_valid(alvo) \
 					and em_startup.get(alvo.get_instance_id(), false):
 				_aplicar_counter(alvo, caster, e, frente, escala)
+			if float(e.get("lanca", 0.0)) > 0.0:
+				_aplicar_lancamento(alvo, caster, e, escala)
 			if is_instance_valid(caster):
 				if caster.has_method("_confirmar_acerto_contextual_servidor"):
 					caster.call("_confirmar_acerto_contextual_servidor", sequencia)
@@ -272,3 +317,63 @@ static func _aplicar_counter(alvo: Node, caster: Node3D, e: Dictionary,
 	if alvo.has_method("set_meta"):
 		# Marca para quem apresenta: o VFX de counter é outro assunto, e lê isto.
 		alvo.set_meta("counter_hit_em", Time.get_ticks_msec())
+
+
+## ============================================================================
+##  LANÇAMENTO (Fase 3 de docs/PLANO_COMBATE_CONTEXTUAL.md)
+##
+##  "Launcher + uma perseguição aérea: troca o quarto M1 por lançamento com W;
+##   só uma continuação aérea por alvo, com bloqueios contra loop infinito."
+##
+##  ⚠️ O BLOQUEIO É O REQUISITO, NÃO UM DETALHE. Sem ele, lançar → perseguir →
+##  lançar de novo prende o alvo no ar indefinidamente, e quem começou a troca
+##  ganha a luta sem o outro jogar. A regra: um corpo que JÁ ESTÁ no ar por
+##  lançamento não pode ser lançado outra vez — a marca só é limpa quando ele
+##  volta a tocar o chão.
+## ============================================================================
+
+## Enquanto esta marca existir, o alvo não pode ser lançado de novo.
+const META_LANCADO := "lancado_no_ar"
+## E esta diz que ele ainda tem UMA perseguição aérea disponível.
+const META_PERSEGUICAO := "perseguicao_livre"
+
+
+static func _aplicar_lancamento(alvo: Node, caster: Node3D, e: Dictionary,
+		escala: float) -> void:
+	if alvo == null or not is_instance_valid(alvo) or not alvo.has_method("take_damage"):
+		return
+	if ja_esta_lancado(alvo):
+		return              # sem relançar: é o bloqueio contra o loop infinito
+
+	var forca: float = float(e["lanca"]) * escala
+	var origem: Vector3 = caster.global_position if is_instance_valid(caster) else alvo.global_position
+	# ⚠️ Dano 0: o dano do golpe já foi aplicado pela própria zona. Aqui só o
+	# impulso, pelo mesmo caminho que o counter usa.
+	alvo.take_damage(0.0, origem, Vector3.UP * forca, float(e["hitstun"]))
+	alvo.set_meta(META_LANCADO, true)
+	alvo.set_meta(META_PERSEGUICAO, true)
+
+
+## true enquanto o alvo estiver no ar por um lançamento. A marca se limpa
+## sozinha quando ele volta ao chão — assim ninguém precisa lembrar de apagá-la,
+## e um alvo que caiu pode ser lançado de novo numa troca posterior.
+static func ja_esta_lancado(alvo: Node) -> bool:
+	if alvo == null or not is_instance_valid(alvo):
+		return false
+	if not alvo.has_meta(META_LANCADO):
+		return false
+	if alvo.has_method("is_on_floor") and alvo.call("is_on_floor"):
+		alvo.remove_meta(META_LANCADO)
+		if alvo.has_meta(META_PERSEGUICAO):
+			alvo.remove_meta(META_PERSEGUICAO)
+		return false
+	return true
+
+
+## Consome a única perseguição aérea daquele alvo. Devolve false quando ela já
+## foi usada — é o que impede a segunda continuação no mesmo lançamento.
+static func consumir_perseguicao(alvo: Node) -> bool:
+	if alvo == null or not is_instance_valid(alvo) or not alvo.has_meta(META_PERSEGUICAO):
+		return false
+	alvo.remove_meta(META_PERSEGUICAO)
+	return true
