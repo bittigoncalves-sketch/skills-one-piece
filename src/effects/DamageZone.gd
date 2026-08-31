@@ -4,6 +4,14 @@ extends Area3D
 # o próprio caster). Já pronta para inimigos futuros; hoje só não acha alvos.
 
 signal hit_landed(target: Node)
+## ⚠️ EMITIDO ANTES DE O DANO SER APLICADO, e é para isso que ele existe.
+##
+## `hit_landed` chega tarde demais para quem precisa saber o ESTADO do alvo no
+## instante do impacto: quando ele dispara, o `take_damage` já rodou e já
+## interrompeu o golpe que o alvo estava carregando. O counter hit depende
+## exatamente dessa informação — "ele estava em startup?" — e a leria sempre
+## como falsa.
+signal antes_do_acerto(target: Node)
 signal collided_with_any(body: Node)
 
 # ⚠️ O `DAMAGE_SCALE` de 0,12 QUE MORAVA AQUI FOI REMOVIDO (2026-08-21).
@@ -175,6 +183,9 @@ func _on_body(body: Node3D) -> void:
 	collided_with_any.emit(body)
 	
 	if body.has_method("take_damage"):
+		# A camuflagem só quebra ao acertar OUTRO jogador, não ao tocar dummy.
+		if body.is_in_group("player") and is_instance_valid(caster) and caster.has_method("revelar_invisibilidade"):
+			caster.revelar_invisibilidade()
 		_hit[body] = true
 		
 		# KNOCKBACK -> src/mechanics/Knockback.gd (2026-08-14).
@@ -212,6 +223,7 @@ func _on_body(body: Node3D) -> void:
 		# Dano e knockback são mecânicas separadas neste jogo — quem mata é o
 		# buraco do mapa — e um golpe que parasse de empurrar ao esgotar o teto
 		# perderia a sua função principal.
+		antes_do_acerto.emit(body)
 		CombatResolver.aplicar(body, damage, cast_id, teto, global_position, kb, hitstun,
 			reserva, reservado)
 		hit_landed.emit(body)

@@ -7,6 +7,36 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-31 — quase apaguei 884 linhas do Codex com um `git checkout`
+
+**Sintoma:** para saber se uma regressão era minha, revertí `Player.gd` e
+`DamageZone.gd` com `git checkout --`. O `Player.gd` tinha **884 linhas não
+commitadas** de outro agente (o `_girar_modelo` corrigido para a Gura Gura,
+`FRUTA_INICIAL` mudada para `suke_suke`, e o combate contextual inteiro).
+
+**Causa raiz:** tratei "reverter para comparar" como operação barata. Num
+repositório onde outro agente trabalha e não commita, `git checkout --` é
+destrutivo e silencioso: não avisa que está descartando trabalho, e o que
+descarta não está em lugar nenhum. O arquivo tinha 884 linhas de diferença e eu
+não olhei antes.
+
+**Evidência:** `git diff --stat Player.gd` depois de restaurar: 884 linhas. O
+trabalho só sobreviveu porque eu havia copiado os três arquivos para o
+scratchpad antes — hábito, não decisão consciente de que havia algo a proteger.
+
+**E a comparação ainda saiu errada:** revertendo o Player INTEIRO, eu não
+testava "sem a minha mudança", e sim "sem a minha mudança E sem as 884 do
+outro agente". O `test_melee_trava` passou, e eu quase conclui que a regressão
+era minha. Refeito removendo **apenas** as minhas linhas, ele continuou
+falhando — a mudança era do outro agente, e proposital.
+
+**Correção:** para isolar uma mudança própria num arquivo compartilhado, tirar
+só as próprias linhas (recorte pontual), nunca `git checkout` do arquivo.
+
+**Como detectar de novo:** antes de qualquer `git checkout --`, rodar
+`git diff --stat` no alvo. Se houver mais linhas do que as que eu escrevi,
+alguém mais mexeu ali.
+
 ## 2026-08-29 — a asa não aponta para um lado: ela sobe E cai ao mesmo tempo
 
 **Sintoma:** depois de pôr as asas "na vertical" a pedido do dono, ele mandou

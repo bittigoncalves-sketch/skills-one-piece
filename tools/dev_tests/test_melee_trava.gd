@@ -1,9 +1,22 @@
 extends SceneTree
 ## ============================================================================
-##  O GOLPE PRENDE O CORPO? — a trava do corpo a corpo, medida em METROS.
+##  O GOLPE PRENDE O CORPO? — NÃO deve prender, e isso é medido em METROS.
 ##
-##  O pedido (2026-08-15): "ao clicar não vai ser possível se mover até que a
-##  animação do combate se encerre".
+##  ⚠️ A REGRA MUDOU EM 2026-08-31, E A MUDANÇA É DO DONO.
+##
+##  O pedido original (2026-08-15) era: "ao clicar não vai ser possível se mover
+##  até que a animação do combate se encerre". Ele foi REVOGADO com estas
+##  palavras: "a remoção da trava de M1 foi proposital; apesar de ela fazer
+##  sentido, travava o jogador demais, fazendo os movimentos não serem tão
+##  fluidos".
+##
+##  Este arquivo continua existindo, e não virou lixo: o que ele guarda agora é
+##  a regra NOVA — que o M1 deixa o corpo livre — e o item 4, que nunca mudou:
+##  clicar no ar não pode congelar a queda.
+##
+##  A EXCEÇÃO (a mordida Mink, que ainda prende porque controla a própria
+##  velocidade enquanto segura o alvo) é guardada pelo `test_mink_combate`, que
+##  afere o `_mink_hold_timer` diretamente. Não se duplica aqui.
 ##
 ##  "Não vai ser possível se mover" vira número aqui: a DISTÂNCIA que o jogador
 ##  percorre segurando W durante o golpe. Zero é o alvo, e o controle é a mesma
@@ -11,8 +24,10 @@ extends SceneTree
 ##  distingue trava funcionando de tecla que não chegou.
 ##
 ##  QUATRO PERGUNTAS:
-##    1. ANDA?     distância durante a trava ≈ 0 (contra o controle, que anda).
-##    2. PULA?     o Espaço durante o golpe não pode tirar os pés do chão.
+##    1. ANDA?     o M1 NÃO pode prender: a distância durante o golpe tem de
+##                 acompanhar o controle (a mesma corrida sem golpe nenhum).
+##    2. PULA?     o Espaço durante o golpe TIRA os pés do chão — faz parte da
+##                 fluidez que o dono pediu.
 ##    3. DESTRAVA? passada a animação, a corrida volta ao normal.
 ##    4. CAI?      clicar NO AR não pode congelar a queda (o defeito do
 ##                 `lock_movement`, que é a trava dos casts e zera a gravidade).
@@ -49,7 +64,7 @@ func _init() -> void:
 
 	print("")
 	print("╔══════════════════════════════════════════════════════════════════╗")
-	print("║  CORPO A CORPO — O GOLPE PRENDE O CORPO?                         ║")
+	print("║  CORPO A CORPO — O M1 DEIXA O CORPO LIVRE?                       ║")
 	print("╚══════════════════════════════════════════════════════════════════╝")
 
 	var trava := Melee.recuo(0, "")
@@ -83,8 +98,11 @@ func _init() -> void:
 	var travado: float = _plano(_player.global_position - p1)
 	_aplicar([])
 	print("  GOLPE    — segurando W, clicando:    andou %.2f m" % travado)
-	var anda_ok: bool = travado < 0.35
-	_dizer(anda_ok, "o corpo fica plantado durante o golpe (%.2f m contra %.2f m do controle)" % [
+	# ⚠️ COMPARADO AO CONTROLE, não a um número fixo. O alvo agora é "anda
+	# praticamente como quem não está socando": metade da corrida livre já
+	# separa "não prende" de "prende um pouco", e não engessa a velocidade.
+	var anda_ok: bool = travado > corrida * 0.5
+	_dizer(anda_ok, "o M1 NÃO prende o corpo (%.2f m contra %.2f m do controle)" % [
 		travado, corrida])
 	falhas += 0 if anda_ok else 1
 
@@ -99,9 +117,9 @@ func _init() -> void:
 		await _quadros(1)
 		subiu = maxf(subiu, _player.global_position.y - chao_y)
 	_aplicar([])
-	var pulo_ok: bool = subiu < 0.20
+	var pulo_ok: bool = subiu > 0.20
 	print("")
-	_dizer(pulo_ok, "o Espaço NÃO cancela o golpe (subiu %.2f m)" % subiu)
+	_dizer(pulo_ok, "o Espaço TIRA os pés do chão durante o golpe (subiu %.2f m)" % subiu)
 	falhas += 0 if pulo_ok else 1
 
 	# ----------------------------------------------------------- 4) E DESTRAVA?
@@ -133,7 +151,7 @@ func _init() -> void:
 
 	print("")
 	if falhas == 0:
-		print("✅ A TRAVA ESTÁ DE PÉ — o golpe prende o corpo e devolve depois.")
+		print("✅ O M1 NÃO PRENDE — o corpo anda e pula durante o golpe (2026-08-31).")
 	else:
 		print("❌ %d verificação(ões) falharam." % falhas)
 	quit(1 if falhas > 0 else 0)

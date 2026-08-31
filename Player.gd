@@ -31,20 +31,21 @@ const ALTURA_DO_ROLAMENTO := 0.55
 ## RECURSO, não um modo de locomoção grátis.
 const CUSTO_PAREDE_POR_SEG := 22.0
 
-## Gira o modelo para uma base ALVO preservando a ESCALA dele.
+## Gira o modelo para uma base ALVO preservando a ESCALA MUNDIAL dele.
 ##
 ## ⚠️ `global_basis = ...orthonormalized()` DESTRÓI A ESCALA. Uma base
 ## ortonormalizada tem escala 1, e o modelo do jogador está em **0,4167** — o
-## personagem ficava 2,4× MAIOR ao encostar na parede, que foi exatamente o que
-## o dono relatou. Base carrega rotação E escala juntas; mexer numa sem repor a
-## outra é perder a outra.
+## personagem ficava 2,4× MAIOR ao encostar na parede. Com a Gura Gura, que
+## escala o Player em 2×, preservar somente a escala local encolhe o modelo ao
+## escrever no espaço global. Base carrega rotação E escala juntas; elas devem
+## ser lidas e repostas no mesmo espaço.
 func _girar_modelo(alvo: Basis, delta: float) -> void:
 	if _char_model == null:
 		return
-	var escala: Vector3 = _char_model.scale
+	var escala_global: Vector3 = _char_model.global_transform.basis.get_scale()
 	var atual := _char_model.global_basis.orthonormalized()
 	var nova := atual.slerp(alvo.orthonormalized(), clampf(VELOCIDADE_FACING * delta, 0.0, 1.0))
-	_char_model.global_basis = nova.orthonormalized().scaled(escala)
+	_char_model.global_basis = nova.orthonormalized().scaled(escala_global)
 
 
 ## true enquanto o corpo ainda está inclinado por ter andado numa superfície e
@@ -82,7 +83,7 @@ const MOUSE_SENS := 0.0035
 # disputar o fruto e perdê-lo ao morrer (ver `docs/frutas/README.md`). Se este
 # atalho chegar ao jogador final, essa economia deixa de existir.
 # GATILHO para apagar: quando houver escolha de fruta/personagem no menu.
-const FRUTA_INICIAL := "mera_mera"
+const FRUTA_INICIAL := "suke_suke"
 
 var current_fruit_id: String = FRUTA_INICIAL
 var active_style: String = "basic"
@@ -116,6 +117,7 @@ var max_energy: float:
 	set(v): _vida.energia_max = v
 const ENERGY_BULLET := 10.0        # por bala da rajada Z
 const ENERGY_SKILL := 180.0        # por skill lançada
+const ENERGIA_INVISIBILIDADE_POR_SEG := 55.0
 # SILÊNCIO (Yami) -> CastController (passo 6d). Vistas: `is_suppressed` é lido
 # em 5 pontos aqui e por sondas de fora.
 var is_suppressed: bool:
@@ -247,10 +249,24 @@ var _dash_dir: Vector3:
 	get: return _dash.direcao()
 var _dash_cooldown: float:
 	get: return _dash.recarga()
-# Mera Mera Z: rajada de balas de fogo (segura pra atirar; para ao soltar ou 16 balas).
+# Mera Mera Z: rajada de balas de fogo (segura pra atirar; para ao soltar ou 8 balas).
 # Rajada Z e pistola da Yami -> src/player/disparo_sustentado.gd (passo 6a).
 # Aqui só as VISTAS.
 var _disparo := DisparoSustentado.new()
+const FootDustController = preload("res://src/player/foot_dust_controller.gd")
+const RunAccelerationController = preload("res://src/player/run_acceleration_controller.gd")
+const FallImpactController = preload("res://src/player/fall_impact_controller.gd")
+const AirSlamFXClass = preload("res://src/effects/AirSlamFX.gd")
+const SpinKickFXClass = preload("res://src/effects/SpinKickFX.gd")
+const ContextualMeleeData = preload("res://src/combat/contextual_melee.gd")
+const ContextualMeleeFXClass = preload("res://src/effects/contextual_melee_fx.gd")
+const AfterimageTrail = preload("res://src/player/afterimage_trail.gd")
+const IronBodyController = preload("res://src/player/iron_body_controller.gd")
+var _poeira_dos_pes := FootDustController.new()
+var _aceleracao_da_corrida := RunAccelerationController.new()
+var _impacto_de_queda := FallImpactController.new()
+var _ecos_de_movimento := AfterimageTrail.new()
+var _corpo_de_ferro := IronBodyController.new()
 var _rapid_fire: bool:
 	get: return _disparo.rajada_ativa()
 var _gun_recoil: float = 0.0   # coice da rajada Z (1->0 por tiro) p/ a pose de mira
@@ -300,12 +316,60 @@ var _style_cooldowns: Dictionary = {"Z": 0.0, "X": 0.0, "C": 0.0, "V": 0.0}
 var _skill_cooldowns: Dictionary:
 	get: return _fruit_cooldowns if combat_mode == "fruit" else _style_cooldowns
 var _combo_breaker_cooldown: float = 0.0
-var aim_assist: bool = false   # assistência de mira (liga/desliga no E)
+var aim_assist: bool = false   # Haki da Observação (liga/desliga no E)
 var _gura_rush_active := false
 var _gura_rush_timer := 0.0
 var _gura_rush_dir := Vector3.ZERO
 var _gura_rush_target: Node3D = null
 var _gura_grab_timer := 0.0
+var _bomu_rush_active := false
+var _bomu_rush_timer := 0.0
+var _bomu_grab_timer := 0.0
+var _bomu_rush_dir := Vector3.ZERO
+var _bomu_rush_target: Node3D = null
+var _bomu_hand_charge: Node3D = null
+var _mink_bite_dash := false
+var _mink_bite_timer := 0.0
+var _mink_bite_dir := Vector3.ZERO
+var _mink_bite_target: Node3D = null
+var _mink_hold_timer := 0.0
+# A investida só é punida quando a mordida CONFIRMA o agarrão. Errar é uma
+# abertura curta de movimento, não uma habilidade perdida.
+const RECARGA_MORDIDA_MINK := 3.0
+var _mink_bite_cooldown := 0.0
+const RECARGA_QUEDA_ESMAGADORA := 3.0
+var _air_slam_active := false
+var _air_slam_cooldown := 0.0
+var _spin_kick_active := false
+var _spin_kick_angle := 0.0
+var _spin_kick_rest_position := Vector3.ZERO
+var _spin_kick_yaw := 0.0
+const RECARGA_CHUTE_GIRATORIO := 5.0
+var _spin_kick_cooldown := 0.0
+# Ataques W/A/S/D compartilham o relógio do MeleeController. Estes campos são
+# apenas a apresentação e a base congelada, inclusive nas cópias remotas.
+var _contextual_attack_id := ""
+var _contextual_attack_yaw := 0.0
+var _contextual_presentation_token := 0
+# Sequência monotônica do dono. Ela separa duas cotoveladas iguais em rede e
+# permite que confirmação, rejeição e cancelamento atinjam somente o golpe que
+# lhes deu origem — nunca uma ação posterior que reutilizou o mesmo ID.
+var _contextual_attack_seq := 0
+var _contextual_presented_seq := -1
+# O servidor não lê teclado remoto; em vez disso valida enum, arma, chão,
+# origem e cadência. A sequência e o token também impedem RPC repetido e timers
+# de hitbox que sobreviveram a dano, dash-cancel ou respawn.
+var _server_contextual_next_ms := 0
+var _server_contextual_last_seq := -1
+var _server_contextual_active_seq := -1
+var _server_contextual_token := 0
+var _server_contextual_deadline_ms := 0
+# Após dano real, poderes de fruta aguardam uma janela curta. Estilos e M1
+# continuam livres: esta é recuperação da Akuma no Mi, não um stun geral.
+const TRAVA_FRUTA_APOS_DANO := 1.0
+var _fruit_damage_lock_timer := 0.0
+var _invisivel := false
+var _materiais_antes_da_invisibilidade: Dictionary = {}
 
 # ---- corpo a corpo (botão esquerdo): soco D -> soco E -> chute ----
 # Ver src/combat/Melee.gd. `_melee_janela` conta o tempo que ainda resta pra
@@ -375,6 +439,8 @@ func trigger_skill_cooldown(slot: String) -> void:
 	else:
 		if current_fruit_id == "":
 			_fruit_cooldowns[slot] = 0.0
+		elif current_fruit_id == "bomu_bomu" or current_fruit_id == "suke_suke":
+			_fruit_cooldowns[slot] = 10.0
 		else:
 			_fruit_cooldowns[slot] = RECARGA_POR_SLOT[slot]
 var _mesh: MeshInstance3D
@@ -446,6 +512,10 @@ var _hitstop_timer: float = 0.0
 @export var net_velocity: Vector3 = Vector3.ZERO   # replicado (autoridade -> demais)
 @export var net_facing: float = 0.0
 @export var net_on_floor: bool = true
+# Estado visual de cargas que precisam aparecer antes do impacto. São somente
+# apresentação: o servidor continua sendo a autoridade que cria o golpe final.
+@export var net_charge_pose: String = ""
+@export var net_charge_progress: float = 0.0
 
 func _ready() -> void:
 	add_to_group("player")
@@ -501,6 +571,8 @@ func _ready() -> void:
 	_fsm.init(self, state_idle.get_path())
 	_buki.montar_em(self, _rig)
 	_disparo.montar_em(self)
+	_poeira_dos_pes.montar_em(self)
+	_corpo_de_ferro.montar_em(self)
 	_cast.montar_em(self)
 	_melee.montar_em(self)
 	_vida.montar_em(self)
@@ -609,7 +681,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		# 2026-08-22: o E deixou de ser só assistência de mira. Com ele ligado, os
 		# corpos e os ATAQUES EM VOO dos outros passam a ser desenhados através das
 		# paredes (`ScreenFX`: `no_depth_test` no material de destaque).
-		print("🎯 Visão de combate (mira assistida + ver através de paredes): ",
+		print("👁️ Observação (alvos e preparações através de paredes): ",
 			"LIGADA" if aim_assist else "DESLIGADA")
 		var hud := get_tree().get_first_node_in_group("hud")
 		if hud and hud.has_method("set_aim_assist"):
@@ -618,6 +690,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_node("/root/ScreenFX").set_aim_assist(aim_assist, self)
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_G:
 		_request_combo_breaker()
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F:
+		_pedir_corpo_de_ferro()
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		if not event.echo:
 			var hud := get_tree().get_first_node_in_group("hud")
@@ -998,10 +1072,18 @@ func _physics_process(delta: float) -> void:
 # Energia, recargas e o laço das armas na mão. Roda SEMPRE que há autoridade —
 # inclusive travado, senão a recarga congelaria junto com o personagem.
 func _etapa_estado_de_combate(delta: float) -> void:
+	_corpo_de_ferro.atualizar(delta)
 	for g in _pistols:
 		if is_instance_valid(g):
-			g.visible = _rapid_fire or _yami_pistol_active
+			# A Mera Z usa as mesmas armas durante a carga: primeiro nos coldres,
+			# depois nas mãos. O rig é dono desse estado para não apagar a arma no
+			# quadro entre o fim da carga e o primeiro disparo.
+			g.visible = _rapid_fire or _yami_pistol_active or _rig.pistolas_em_saque()
 	_vida.regenerar(delta)     # regen contínua de energia
+	if _invisivel:
+		energy = maxf(energy - ENERGIA_INVISIBILIDADE_POR_SEG * delta, 0.0)
+		if energy <= 0.0:
+			revelar_invisibilidade()
 	# RECARGA CONGELA DURANTE UMA HABILIDADE (regra do dono do projeto).
 	# Enquanto um golpe está em andamento, a recarga das OUTRAS técnicas para de
 	# correr — só a do próprio golpe em uso continua. Sem isso dava para segurar
@@ -1023,6 +1105,14 @@ func _etapa_estado_de_combate(delta: float) -> void:
 		_style_cooldowns[slot_k] = maxf(_style_cooldowns[slot_k] - delta, 0.0)
 	if _combo_breaker_cooldown > 0.0:
 		_combo_breaker_cooldown = maxf(_combo_breaker_cooldown - delta, 0.0)
+	if _mink_bite_cooldown > 0.0:
+		_mink_bite_cooldown = maxf(_mink_bite_cooldown - delta, 0.0)
+	if _air_slam_cooldown > 0.0:
+		_air_slam_cooldown = maxf(_air_slam_cooldown - delta, 0.0)
+	if _fruit_damage_lock_timer > 0.0:
+		_fruit_damage_lock_timer = maxf(_fruit_damage_lock_timer - delta, 0.0)
+	if _spin_kick_cooldown > 0.0:
+		_spin_kick_cooldown = maxf(_spin_kick_cooldown - delta, 0.0)
 	if _yami_pistol_active:
 		_disparo.atualizar_yami(delta, _yaw, _pitch)
 	if _buki.empunhando():
@@ -1055,8 +1145,15 @@ func _etapa_travamento(delta: float) -> bool:
 			if _proc_anim:
 				# Na RAJADA Z não passa charge_slot: senão herda o active_skill ("C") e o
 				# animator aplica o tremor de torso do Gatling, quebrando a pose das pistolas.
-				var slot_to_pass = "" if _pose_de_arma() else (_charge_slot if _charging else get_meta("active_skill", ""))
-				_proc_anim.update(velocity, is_on_floor(), false, delta, _pitch, false, _charging, slot_to_pass, "", _pose_de_arma(), _gun_recoil)
+				var pose_custom := str(get_meta("custom_pose", ""))
+				var slot_to_pass = "" if _pose_de_arma() or pose_custom == "mera_z_charge" or pose_custom == "mera_x_charge" else (_charge_slot if _charging else get_meta("active_skill", ""))
+				var mera_z_progress := _cast.progresso_mera_z() if _cast else 0.0
+				var mera_x_progress := _cast.progresso_mera_x() if _cast else 0.0
+				# Esta publicação fica no caminho travado porque o `return` abaixo não
+				# deixa `_etapa_publicar_rede` rodar enquanto a tecla está pressionada.
+				net_charge_pose = pose_custom if pose_custom in ["mera_z_charge", "mera_x_charge"] else ""
+				net_charge_progress = mera_x_progress if pose_custom == "mera_x_charge" else mera_z_progress if pose_custom == "mera_z_charge" else 0.0
+				_proc_anim.update(velocity, is_on_floor(), false, delta, _pitch, false, _charging, slot_to_pass, "", _pose_de_arma(), _gun_recoil, mera_z_progress, _disparo.lado_do_ultimo_tiro(), mera_x_progress, pose_custom)
 			move_and_slide()
 			_disparo.tick_rajada(delta, ENERGY_BULLET)    # dispara as balas de fogo/gelo enquanto a rajada dura
 			
@@ -1136,28 +1233,21 @@ func _etapa_locomocao(delta: float) -> void:
 			_melee.cancelar_golpe()
 		_fsm.transition_to("Idle") # Quebra o estado de combate se o dash conseguiu disparar
 
-	# GOLPE EM CURSO: o corpo fica plantado até a animação acabar (2026-08-15).
-	#
-	# É DEPOIS do dash de propósito — a esquiva lê `q.dir` para saber para onde ir,
-	# e ela é o cancelamento legítimo do combo. É ANTES do `aplicar_pulos` também
-	# de propósito: é o que impede o pulo de cancelar o golpe de graça.
-	#
-	# ⚠️ POR QUE NÃO `lock_movement()`, que já existe: aquela trava é a dos casts e
-	# zera a velocidade INTEIRA, sem gravidade ("fica parado inclusive NO AR", ver
-	# `_etapa_travamento`). Usá-la aqui faria quem clicasse no ar ficar boiando
-	# 1,5 s. Aqui só o horizontal morre; a gravidade segue e o jogador cai normal.
-	#
-	# Levar tranco tem precedência: sob hitstun o corpo é do knockback, não do
-	# golpe — senão atacar viraria imunidade a empurrão.
-	var is_stunned_now = _fsm and _fsm.state and _fsm.state.name == "Stunned"
-	var golpe_prende: bool = _melee.trava() > 0.0 and not is_stunned_now
+	# M1 normal não prende mais o deslocamento: o jogador pode andar enquanto
+	# soca/chuta. As exceções são estilos especiais que controlam a própria
+	# velocidade (hoje, a mordida Mink ao segurar alguém).
+	var golpe_prende := _mink_hold_timer > 0.0
 	if golpe_prende:
 		q.travar_golpe()
 
 	# `bonus_velocidade` é o impulso horizontal do salto longo / vault: o parkour
 	# devolve o FATOR e quem multiplica é a etapa. Componente não escreve na
 	# velocidade dos outros.
-	var effective_speed := SPEED * speed_multiplier * (1.5 if q.sprint else 1.0) * _parkour.bonus_velocidade()
+	# A corrida começa em 1,5× a caminhada e, mantida no chão por 3 segundos,
+	# chega ao dobro dela (3× a caminhada). Qualquer interrupção zera o embalo.
+	var impulso_corrida := _aceleracao_da_corrida.atualizar(delta,
+		q.sprint and is_on_floor() and not _parkour.assumiu() and not golpe_prende)
+	var effective_speed := SPEED * speed_multiplier * (1.5 if q.sprint else 1.0) * impulso_corrida * _parkour.bonus_velocidade()
 
 	# ⚠️ O CUSTO DA SUPERFÍCIE É COBRADO AQUI, e não junto da velocidade. Andar
 	# na parede entra por `_parkour.assumiu()` (a mesma porta da escalada e do
@@ -1174,6 +1264,11 @@ func _etapa_locomocao(delta: float) -> void:
 		# Gravidade.
 		if not is_on_floor():
 			velocity.y -= GRAVITY * delta
+			# A queda esmagadora usa exatamente 3× a aceleração da gravidade. A
+			# velocidade do clique já foi triplicada na ativação; esta linha mantém
+			# a mesma proporção até o pouso, sem impor uma velocidade artificial.
+			if _air_slam_active:
+				velocity.y -= GRAVITY * delta * 2.0
 
 		# Vault, salto longo, pulo normal e geppo: o parkour recebe a velocidade
 		# e devolve a velocidade — não escreve nela.
@@ -1182,10 +1277,28 @@ func _etapa_locomocao(delta: float) -> void:
 		if _dash.passo() > 0.0:
 			velocity = _dash.velocidade(delta)
 
+		elif _bomu_rush_active:
+			velocity.x = _bomu_rush_dir.x * effective_speed * 4.6
+			velocity.z = _bomu_rush_dir.z * effective_speed * 4.6
+			_process_bomu_rush(delta)
 		elif _gura_rush_active:
 			velocity.x = _gura_rush_dir.x * effective_speed * 4.0
 			velocity.z = _gura_rush_dir.z * effective_speed * 4.0
 			_process_gura_rush(delta) # HITBOX e Timer da Investida!
+		elif _mink_bite_dash:
+			velocity.x = _mink_bite_dir.x * effective_speed * 3.8
+			velocity.z = _mink_bite_dir.z * effective_speed * 3.8
+			_process_mink_bite(delta)
+		elif _mink_hold_timer > 0.0:
+			velocity.x = 0.0
+			velocity.z = 0.0
+			_process_mink_hold(delta)
+		elif _melee and _melee.contextual_ativo():
+			_processar_movimento_contextual()
+		elif _spin_kick_active:
+			var giro_frente := RosaDosVentos.frente(_spin_kick_yaw)
+			velocity.x = giro_frente.x * 8.0
+			velocity.z = giro_frente.z * 8.0
 		else:
 			velocity.x = q.dir.x * effective_speed
 			velocity.z = q.dir.z * effective_speed
@@ -1258,9 +1371,27 @@ func _etapa_locomocao(delta: float) -> void:
 			var target_rot := atan2(_parkour.parede_frontal().x, _parkour.parede_frontal().z)
 			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, target_rot,
 				VELOCIDADE_FACING * delta)
+		elif not _contextual_attack_id.is_empty():
+			# W/A/S/D fixa a direção no clique. A câmera ainda gira para mirar o
+			# próximo golpe, mas não altera a silhueta do corpo comprometido.
+			_char_model.rotation.y = _contextual_attack_yaw
 		else:
 			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw,
 				VELOCIDADE_FACING * delta)
+
+	# A mira normalmente reescreve a orientação do modelo a cada quadro. Na aú,
+	# isso mudaria o eixo da rotação no meio do movimento: captura-se o yaw no
+	# clique e a estrelinha inteira segue a visão daquele instante.
+	if _char_model and _spin_kick_active:
+		_spin_kick_angle = fmod(_spin_kick_angle + TAU * delta / 0.42, TAU)
+		var angulo_au := -_spin_kick_angle
+		# A aú começa DE LADO para a câmera. Com o corpo 90° à direita, o eixo
+		# lateral local (X) aponta para a frente da visão capturada, e a roda
+		# atravessa o rumo do jogador em vez de fazê-lo cambalhotar para o lado.
+		_char_model.rotation.y = _spin_kick_yaw + PI * 0.5
+		_char_model.rotation.z = angulo_au
+		_char_model.position.x = _spin_kick_rest_position.x + ALTURA_DO_ROLAMENTO * sin(angulo_au)
+		_char_model.position.y = _spin_kick_rest_position.y + ALTURA_DO_ROLAMENTO * (1.0 - cos(angulo_au))
 
 	# ⚠️ O GIRO DO ROLAMENTO DE COSTAS mora aqui, e não no animador, porque quem
 	# tem a raiz do modelo é o Player. A pose encolhida sozinha pareceria um
@@ -1374,6 +1505,10 @@ func _etapa_publicar_rede() -> void:
 	# Rede (Fase 4): a autoridade publica seu estado p/ os outros clientes replicarem.
 	net_velocity = velocity
 	net_on_floor = is_on_floor()
+	# A cópia local acabou a carga; limpa o estado visual que foi replicado no
+	# caminho de trava. O golpe final continua viajando pelo RPC de cast normal.
+	net_charge_pose = ""
+	net_charge_progress = 0.0
 	if _char_model:
 		net_facing = _char_model.rotation.y
 
@@ -1404,7 +1539,14 @@ func _etapa_mover(delta: float) -> void:
 	var empurrao := _vida.impulso_do_quadro(delta)
 	if empurrao != Vector3.ZERO:
 		velocity += empurrao
+	var velocidade_y_antes_do_pouso := velocity.y
 	move_and_slide()
+	if _air_slam_active and is_on_floor():
+		_finalizar_ataque_aereo()
+	_impacto_de_queda.atualizar(self, is_on_floor(), velocidade_y_antes_do_pouso)
+	_ecos_de_movimento.atualizar(delta, _char_model, _is_sprinting() and is_on_floor())
+	_poeira_dos_pes.atualizar(delta, velocity, is_on_floor(),
+		_dash.ativo() or _parkour.escalando() or _parkour.correndo_na_parede() or _charging or _rapid_fire)
 	
 	if _fsm and _fsm.state and _fsm.state.name == "Stunned":
 		if is_on_wall() and empurrao.length_squared() > 4.0:
@@ -1478,6 +1620,15 @@ func _do_tame(enemy_name: String, owner_peer: int) -> void:
 ## replicada). Só reproduz a animação a partir do estado replicado e vira o modelo
 ## pelo facing replicado, pra parecer vivo na tela dos outros.
 func _remote_process(delta: float) -> void:
+	# O servidor também costuma ver jogadores de clientes por este caminho;
+	# portanto o relógio autoritativo do Corpo de Ferro não pode depender da
+	# autoridade local.
+	_corpo_de_ferro.atualizar(delta)
+	# No servidor, os corpos dos clientes passam por este caminho. A trava da
+	# fruta também precisa andar aqui, senão o servidor recusaria casts deles
+	# para sempre depois do primeiro dano.
+	if _fruit_damage_lock_timer > 0.0:
+		_fruit_damage_lock_timer = maxf(_fruit_damage_lock_timer - delta, 0.0)
 	velocity = net_velocity
 	_buki_apontar_canhao()   # canhão-corpo da Buki acompanha o facing replicado
 	if _char_model:
@@ -1485,7 +1636,50 @@ func _remote_process(delta: float) -> void:
 	if _skel_anim:
 		_skel_anim.update(net_velocity, net_on_floor, false, delta, false)
 	elif _proc_anim:
-		_proc_anim.update(net_velocity, net_on_floor, false, delta, _pitch, false)
+		var charge_x := net_charge_progress if net_charge_pose == "mera_x_charge" else 0.0
+		_proc_anim.update(net_velocity, net_on_floor, false, delta, _pitch, false,
+			net_charge_pose != "", "", "", false, 0.0, 0.0, -1, charge_x, net_charge_pose)
+	_poeira_dos_pes.atualizar(delta, net_velocity, net_on_floor, false)
+	_impacto_de_queda.atualizar(self, net_on_floor, net_velocity.y)
+	_ecos_de_movimento.atualizar(delta, _char_model, net_on_floor and Vector2(net_velocity.x, net_velocity.z).length() > SPEED * 1.35)
+
+# Corpo de Ferro (F): o pedido do cliente nunca escreve imunidade diretamente.
+# O servidor valida dono + recarga e só então replica o efeito de um segundo.
+func _pedir_corpo_de_ferro() -> void:
+	_resetar_impulso_de_corrida()
+	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
+		_do_server_corpo_de_ferro()
+	else:
+		_net_corpo_de_ferro_req.rpc_id(1)
+
+@rpc("any_peer", "reliable")
+func _net_corpo_de_ferro_req() -> void:
+	if not multiplayer.is_server():
+		return
+	var remetente := multiplayer.get_remote_sender_id()
+	if remetente != 0 and remetente != get_multiplayer_authority():
+		return
+	_do_server_corpo_de_ferro()
+
+func _do_server_corpo_de_ferro() -> void:
+	if not _corpo_de_ferro.pronto():
+		return
+	if multiplayer.has_multiplayer_peer():
+		_net_play_corpo_de_ferro.rpc()
+	else:
+		_net_play_corpo_de_ferro()
+
+@rpc("any_peer", "call_local", "reliable")
+func _net_play_corpo_de_ferro() -> void:
+	if multiplayer.has_multiplayer_peer():
+		var remetente := multiplayer.get_remote_sender_id()
+		if remetente != 0 and remetente != 1:
+			return
+	_corpo_de_ferro.ativar_confirmado()
+	print("🛡️ Corpo de Ferro: imune por 1 s. Recarga: 30 s.")
+
+func limpar_silencio_de_corpo_de_ferro() -> void:
+	_cast.limpar_silencio()
 
 func set_character(cid: String) -> void:
 	# Coage aqui também: abaixo o `match cid` escolhe a fruta inicial, e ele
@@ -1695,18 +1889,104 @@ func _buki_mostrar_arma(slot: String) -> void:
 func _atualizar_visibilidade_corpo() -> void:
 	if _char_model == null:
 		return
-	_char_model.visible = (_camera == null or not _camera.em_primeira_pessoa()) and _buki_visual != "X"
+	var pode_ver_corpo := (_camera == null or not _camera.em_primeira_pessoa()) and _buki_visual != "X"
+	_char_model.visible = pode_ver_corpo and (not _invisivel or _is_authority)
+	_aplicar_transparencia_invisivel()
+
+func iniciar_invisibilidade() -> void:
+	# Z é alternável: a segunda pressão encerra a camuflagem voluntariamente.
+	if _invisivel:
+		revelar_invisibilidade()
+		return
+	if energy <= 0.0 or current_fruit_id != "suke_suke": return
+	if multiplayer.has_multiplayer_peer():
+		_pedir_invisibilidade.rpc_id(NetworkConfig.SERVER_ID)
+	else:
+		_aplicar_invisibilidade(true)
+
+func revelar_invisibilidade() -> void:
+	if not _invisivel: return
+	if multiplayer.has_multiplayer_peer():
+		_pedir_revelar_invisibilidade.rpc_id(NetworkConfig.SERVER_ID)
+	else:
+		_aplicar_invisibilidade(false)
+
+@rpc("any_peer", "call_local", "reliable")
+func _pedir_invisibilidade() -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server(): return
+	var remetente := multiplayer.get_remote_sender_id()
+	if multiplayer.has_multiplayer_peer() and remetente != 0 and remetente != get_multiplayer_authority(): return
+	_definir_invisibilidade.rpc(true)
+
+@rpc("any_peer", "call_local", "reliable")
+func _pedir_revelar_invisibilidade() -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server(): return
+	var remetente := multiplayer.get_remote_sender_id()
+	if multiplayer.has_multiplayer_peer() and remetente != 0 and remetente != get_multiplayer_authority(): return
+	_definir_invisibilidade.rpc(false)
+
+@rpc("authority", "call_local", "reliable")
+func _definir_invisibilidade(ativa: bool) -> void:
+	_aplicar_invisibilidade(ativa)
+
+func _aplicar_invisibilidade(ativa: bool) -> void:
+	if _invisivel == ativa: return
+	_invisivel = ativa
+	if not ativa:
+		trigger_skill_cooldown("Z") # os 10 s começam SOMENTE ao revelar
+	_atualizar_visibilidade_corpo()
+
+func _aplicar_transparencia_invisivel() -> void:
+	if _char_model == null or not _is_authority: return
+	for m in _char_model.find_children("*", "MeshInstance3D", true, false):
+		var mesh := m as MeshInstance3D
+		if mesh == null: continue
+		if _invisivel:
+			if not _materiais_antes_da_invisibilidade.has(mesh):
+				_materiais_antes_da_invisibilidade[mesh] = mesh.material_override
+			var mat := StandardMaterial3D.new()
+			mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			mat.albedo_color = Color(0.70, 0.88, 1.0, 0.28)
+			mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			mesh.material_override = mat
+		elif _materiais_antes_da_invisibilidade.has(mesh):
+			mesh.material_override = _materiais_antes_da_invisibilidade[mesh]
+	if not _invisivel:
+		_materiais_antes_da_invisibilidade.clear()
 
 # ---------------------------------------------------------------- combate ---
+func _registrar_trava_de_fruta_por_dano(amount: float) -> void:
+	if amount > 0.0:
+		_fruit_damage_lock_timer = TRAVA_FRUTA_APOS_DANO
+
+func fruta_bloqueada_por_dano() -> bool:
+	return combat_mode == "fruit" and _fruit_damage_lock_timer > 0.0
+
+## ⚠️ A JANELA QUE O COUNTER HIT PUNE. `true` do clique até a hitbox nascer —
+## quando o corpo já está comprometido com um golpe e ainda não tem como acertar.
+## Serve para o CONTEXTUAL e para o M1, porque `MeleeController.fase()` já
+## responde pelos dois com o mesmo relógio.
+##
+## É consultado pelo SERVIDOR, no instante do impacto e antes de o dano correr —
+## depois do dano o golpe do alvo já foi interrompido e a resposta seria sempre
+## falsa (ver `DamageZone.antes_do_acerto`).
+func em_startup_de_ataque() -> bool:
+	return _melee != null and _melee.fase() == "startup"
+
+
 func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knockback: Vector3 = Vector3.ZERO, hitstun_duration: float = 0.3) -> void:
+	if _invisivel:
+		revelar_invisibilidade()
 	# `in_black_hole` entrou aqui em 2026-08-11: o Black Hole da Yami é CONTROLE
 	# PURO — puxa, afunda e silencia, e quem mata é o buraco do mapa depois.
 	# `TrainingDummy.gd:64` e `disabled/enemies/Enemy.gd` já recusavam dano de
 	# quem está preso; só o jogador não recusava, e a mesma habilidade tinha
 	# regra diferente dependendo de quem caía nela.
-	if get_meta("damage_immune", false) or get_meta("custom_pose", "") == "hibashira" or get_meta("in_black_hole", false):
+	if get_meta("damage_immune", false) or get_meta("iron_body_active", false) or get_meta("custom_pose", "") == "hibashira" or get_meta("in_black_hole", false):
 		print("🛡️ DANO E KNOCKBACK BLOQUEADOS! O usuário está IMUNE a danos durante a habilidade!")
 		return
+	_registrar_trava_de_fruta_por_dano(amount)
+	_resetar_impulso_de_corrida()
 
 	# 1. INTERRUPÇÃO DE ATAQUE SOBRE DANO
 	#
@@ -1828,6 +2108,7 @@ func net_vida_do_servidor(nova_vida: float, dano: float) -> void:
 			return                      # só o servidor manda na vida
 	_vida.vida = nova_vida
 	if dano > 0.0:
+		_registrar_trava_de_fruta_por_dano(dano)
 		_feedback_de_dano(dano)
 		_cast.liberar_por_dano()
 		SkillSystem.interrupt_casting(self) # Usa o hitstun padrão na cópia remota (ou poderíamos enviar pelo RPC também)
@@ -1953,6 +2234,7 @@ func net_force_respawn() -> void:
 	if is_instance_valid(_gura_rush_target):
 		_gura_rush_target.set_meta("is_frozen", false)
 		_gura_rush_target = null
+	_encerrar_bomu_rush()
 	# timer removido
 	_disparo.parar_rajada()
 	_disparo.desligar_yami()
@@ -1990,6 +2272,7 @@ func lock_movement(duration: float, skill_id: String = "") -> void:
 # CAST — a decisão mora em src/player/cast_controller.gd (passo 6c). Aqui ficam
 # as cascas: a API pública que o input, a HUD e a rede já conhecem.
 func begin_charge(slot: String) -> void:
+	_resetar_impulso_de_corrida()
 	_cast.comecar(slot)
 
 func release_charge(slot: String) -> void:
@@ -1997,9 +2280,11 @@ func release_charge(slot: String) -> void:
 
 # Compat: disparo imediato (sem segurar).
 func cast_skill_slot(slot_key: String) -> void:
+	_resetar_impulso_de_corrida()
 	_cast.conjurar_direto(slot_key)
 
 func _request_cast(slot: String) -> void:
+	_resetar_impulso_de_corrida()
 	_cast.pedir_cast(slot)
 
 # ---- casting SERVIDOR-AUTORIDADE ----
@@ -2184,12 +2469,481 @@ func _request_melee() -> void:
 		return # Não faz buffer se estiver atordoado
 	_add_input_to_buffer("attack")
 
+## Espaço + M1 — chute giratório curto inspirado em luta de rua. Não depende de
+## alvo para começar: é uma variação intencional de mobilidade e acerta quem
+## entrar na faixa frontal durante o giro.
+func tentar_chute_giratorio(_yaw_ignorado: float = 0.0) -> bool:
+	if equipped_weapon != "" or not Input.is_key_pressed(KEY_SPACE):
+		return false
+	if _spin_kick_active or _air_slam_active:
+		return true
+	if _spin_kick_cooldown > 0.0:
+		return false
+	_encerrar_mordida_mink()
+	if _melee:
+		_melee.cancelar_golpe()
+	_spin_kick_active = true
+	_spin_kick_cooldown = RECARGA_CHUTE_GIRATORIO
+	_spin_kick_angle = 0.0
+	_spin_kick_yaw = _yaw
+	if _char_model:
+		_spin_kick_rest_position = _char_model.position
+	set_meta("custom_pose", "spin_kick")
+	var frente := RosaDosVentos.frente(_spin_kick_yaw)
+	velocity.x = frente.x * 8.0
+	velocity.z = frente.z * 8.0
+	if is_on_floor():
+		velocity.y = JUMP_VELOCITY * 0.62
+	var impacto := get_tree().create_timer(0.16)
+	impacto.timeout.connect(func():
+		if not _spin_kick_active:
+			return
+		var mundo := get_tree().current_scene
+		if mundo:
+			SpinKickFXClass.disparar(mundo, global_position, RosaDosVentos.frente(_spin_kick_yaw), self))
+	var fim := get_tree().create_timer(0.42)
+	fim.timeout.connect(_encerrar_chute_giratorio)
+	return true
+
+func _encerrar_chute_giratorio() -> void:
+	_spin_kick_active = false
+	_spin_kick_angle = 0.0
+	if _char_model:
+		_char_model.rotation.z = 0.0
+		_char_model.position = _spin_kick_rest_position
+	if String(get_meta("custom_pose", "")) == "spin_kick":
+		remove_meta("custom_pose")
+
+## Queda esmagadora — M1 no ar com adversário abaixo. Esta consulta é separada
+## do cone frontal normal porque o alvo pode estar diretamente sob os pés.
+func tentar_ataque_aereo(_yaw_ignorado: float = 0.0) -> bool:
+	if equipped_weapon != "" or is_on_floor() or _air_slam_active or _air_slam_cooldown > 0.0:
+		return false
+	# O mergulho só existe acima da altura que já é forte o bastante para rachar
+	# o solo no pouso normal. A constante é a mesma do FallImpactController —
+	# não há um segundo número de "queda alta" para os dois efeitos divergirem.
+	if _altura_para_impacto_aereo() < FallImpactController.ALTURA_MINIMA:
+		return false
+	var alvo := _alvo_abaixo_para_queda()
+	if alvo == null:
+		return false
+	# O mergulho ganha de qualquer outro especial: não pode sobrar agarrão,
+	# pose ou timer da mordida enquanto o corpo está caindo.
+	_encerrar_mordida_mink()
+	if _melee:
+		_melee.cancelar_golpe()
+	_air_slam_active = true
+	_air_slam_cooldown = RECARGA_QUEDA_ESMAGADORA
+	# Se acabou de sair do ápice, ainda pode estar quase em 0: dá o primeiro
+	# impulso descendente mínimo e, fora isso, triplica o vetor de queda real.
+	velocity.y = -maxf(absf(velocity.y) * 3.0, 3.0)
+	set_meta("custom_pose", "air_slam_dive")
+	return true
+
+func _altura_para_impacto_aereo() -> float:
+	if get_world_3d() == null:
+		return 0.0
+	var inicio := global_position + Vector3.UP * 0.15
+	var consulta := PhysicsRayQueryParameters3D.create(inicio, inicio + Vector3.DOWN * 40.0, 15, [get_rid()])
+	var hit := get_world_3d().direct_space_state.intersect_ray(consulta)
+	if hit.is_empty():
+		return 0.0
+	return inicio.y - (hit["position"] as Vector3).y
+
+func _alvo_abaixo_para_queda() -> Node3D:
+	var melhor: Node3D = null
+	var melhor_dist := INF
+	for candidato in get_tree().get_nodes_in_group("enemy") + get_tree().get_nodes_in_group("player"):
+		if candidato == self or not is_instance_valid(candidato) or not candidato is Node3D:
+			continue
+		var alvo := candidato as Node3D
+		var delta := alvo.global_position - global_position
+		# Só vale queda de verdade: o inimigo está abaixo e razoavelmente sob o
+		# jogador, não um oponente distante que aconteça a estar mais baixo.
+		if delta.y > -0.45 or Vector2(delta.x, delta.z).length() > 5.6:
+			continue
+		var dist := delta.length_squared()
+		if dist < melhor_dist:
+			melhor = alvo
+			melhor_dist = dist
+	return melhor
+
+func _finalizar_ataque_aereo() -> void:
+	_air_slam_active = false
+	if String(get_meta("custom_pose", "")) == "air_slam_dive":
+		remove_meta("custom_pose")
+	var mundo := get_tree().current_scene
+	if mundo:
+		AirSlamFXClass.impactar(mundo, global_position + Vector3(0, -0.72, 0), self)
+
+
+## Estilo Mink — galope, mordida e chute. Só nasce em sprint e com uma raça
+## Mink montada no modelo; a escolha evita transformar qualquer M1 em especial.
+func tentar_combo_mink(yaw: float) -> bool:
+	if equipped_weapon != "" or not _is_sprinting() or _char_model == null:
+		return false
+	var raca := String(_char_model.get_meta("raca_id", ""))
+	if not raca in ["mink_coelho", "mink_lobo", "mink_lobo_neve"]:
+		return false
+	if is_instance_valid(_mink_bite_target) and _mink_hold_timer > 0.0:
+		_executar_chute_mink()
+		return true
+	if _mink_bite_dash:
+		return true
+	# Durante a recarga o clique segue para o M1 móvel normal. Assim o jogador
+	# não fica sem atacar só porque a variação de corrida está indisponível.
+	if _mink_bite_cooldown > 0.0:
+		return false
+	var alvo := find_best_melee_target(11.0)
+	if alvo == null:
+		return false
+	var plano := alvo.global_position - global_position
+	plano.y = 0.0
+	if plano.length_squared() < 0.01:
+		return false
+	_mink_bite_dir = plano.normalized()
+	_yaw = atan2(-_mink_bite_dir.x, -_mink_bite_dir.z)
+	_mink_bite_target = alvo
+	_mink_bite_dash = true
+	_mink_bite_timer = 0.46
+	set_meta("custom_pose", "mink_bite_dash")
+	return true
+
+
+func _process_mink_bite(delta: float) -> void:
+	_mink_bite_timer -= delta
+	if not is_instance_valid(_mink_bite_target) or _mink_bite_timer <= 0.0:
+		_encerrar_mordida_mink()
+		return
+	var dist := global_position.distance_to(_mink_bite_target.global_position)
+	if dist > 1.75:
+		return
+	_mink_bite_dash = false
+	_mink_hold_timer = 1.15
+	_mink_bite_cooldown = RECARGA_MORDIDA_MINK
+	_mink_bite_target.set_meta("is_frozen", true)
+	StatusFX.aplicar(_mink_bite_target, StatusFX.CONGELADO, _mink_hold_timer)
+	# A mordida confirma o agarrão; o chute seguinte é o golpe de arremesso.
+	_mink_bite_target.take_damage(54.0, _mink_bite_target.global_position, Vector3.ZERO, 0.28)
+	set_meta("custom_pose", "mink_bite_hold")
+
+
+func _process_mink_hold(delta: float) -> void:
+	if not is_instance_valid(_mink_bite_target):
+		_encerrar_mordida_mink()
+		return
+	_mink_hold_timer -= delta
+	_mink_bite_target.global_position = global_position + _mink_bite_dir * 1.05 + Vector3.UP * 0.35
+	if _mink_hold_timer <= 0.0:
+		_encerrar_mordida_mink()
+
+
+func _executar_chute_mink() -> void:
+	if not is_instance_valid(_mink_bite_target):
+		_encerrar_mordida_mink()
+		return
+	_mink_bite_target.set_meta("is_frozen", false)
+	var impulso := (_mink_bite_dir + Vector3.UP * 0.32).normalized() * 48.0
+	_mink_bite_target.take_damage(116.0, _mink_bite_target.global_position, impulso, 0.72)
+	set_meta("custom_pose", "mink_kick")
+	var limpar := get_tree().create_timer(0.34)
+	limpar.timeout.connect(_encerrar_mordida_mink)
+
+
+func _encerrar_mordida_mink() -> void:
+	_mink_bite_dash = false
+	_mink_bite_timer = 0.0
+	_mink_hold_timer = 0.0
+	if is_instance_valid(_mink_bite_target):
+		_mink_bite_target.set_meta("is_frozen", false)
+	_mink_bite_target = null
+	if String(get_meta("custom_pose", "")).begins_with("mink_"):
+		remove_meta("custom_pose")
+
+## W/A/S/D — ataque contextual. O MeleeController é o dono do relógio; o
+## Player só fixa direção, aplica root motion, apresenta e atravessa a rede.
+func iniciar_ataque_contextual(id: String, yaw: float) -> bool:
+	if not ContextualMeleeData.e_id_valido(id) or equipped_weapon != "" or not is_on_floor():
+		return false
+	if id == "context_retreat_kick" and not _recuo_contextual_livre(yaw):
+		return false
+	_resetar_impulso_de_corrida()
+	_contextual_attack_seq += 1
+	_apresentar_ataque_contextual(id, yaw, _contextual_attack_seq)
+	var escala := scale.y
+	var origem := global_position + Vector3.UP * escala
+	pedir_ataque_contextual_no_servidor(_contextual_attack_seq, id, origem,
+		RosaDosVentos.frente(yaw))
+	return true
+
+func sequencia_contextual_atual() -> int:
+	return _contextual_attack_seq
+
+func _recuo_contextual_livre(yaw: float) -> bool:
+	if get_world_3d() == null:
+		return false
+	var frente := RosaDosVentos.frente(yaw)
+	var inicio := global_position + Vector3.UP * 0.80
+	var consulta := PhysicsRayQueryParameters3D.create(inicio, inicio - frente * 1.05, 15, [get_rid()])
+	consulta.collide_with_areas = false
+	consulta.collide_with_bodies = true
+	var hit := get_world_3d().direct_space_state.intersect_ray(consulta)
+	if hit.is_empty():
+		return true
+	# Um adversário atrás não é parede e não deve desligar S + M1. A colisão
+	# continua resolvida pelo CharacterBody; esta consulta só evita iniciar a
+	# ação já comprimido contra cenário sólido.
+	var collider = hit.get("collider")
+	if collider is Node and ((collider as Node).is_in_group("player") or (collider as Node).is_in_group("enemy")):
+		return true
+	return false
+
+func _processar_movimento_contextual() -> void:
+	if _melee == null or not _melee.contextual_ativo():
+		return
+	var id := _melee.contextual_id()
+	var frente := RosaDosVentos.frente(_contextual_attack_yaw)
+	var rumo := ContextualMeleeData.direcao_de_deslocamento(id, frente)
+	var velocidade := ContextualMeleeData.velocidade_de_deslocamento(id, _melee.tempo_na_fase())
+	velocity.x = rumo.x * velocidade
+	velocity.z = rumo.z * velocidade
+
+func _limpar_vfx_contextual(id: String) -> void:
+	# Uma nova ação pode reutilizar o mesmo ID antes de o fade da anterior acabar.
+	# Limpar pelo prefixo evita uma pilha de telegráficos e garante que uma
+	# rejeição local desapareça imediatamente, não após o autofree visual.
+	var prefixo := "ContextualMeleeFX_" + id
+	for filho in get_children():
+		if str(filho.name).begins_with(prefixo):
+			filho.queue_free()
+
+func _apresentar_ataque_contextual(id: String, yaw: float, sequencia: int) -> void:
+	# O host prevê antes de o RPC voltar. A deduplicação é por sequência, não por
+	# ID: duas cotoveladas consecutivas são ações diferentes; o eco da primeira
+	# não pode apagar nem recriar a segunda.
+	if sequencia == _contextual_presented_seq:
+		return
+	if not _contextual_attack_id.is_empty() and _contextual_attack_id != id:
+		_limpar_vfx_contextual(_contextual_attack_id)
+	elif not _contextual_attack_id.is_empty():
+		_limpar_vfx_contextual(id)
+	_contextual_attack_id = id
+	_contextual_attack_yaw = yaw
+	_contextual_presented_seq = sequencia
+	_contextual_presentation_token += 1
+	var token := _contextual_presentation_token
+	var ficha := ContextualMeleeData.especificacao(id)
+	set_meta("custom_pose", str(ficha.get("pose", "")))
+	if _char_model:
+		_char_model.rotation.y = yaw
+	ContextualMeleeFXClass.apresentar(self, id, yaw)
+	# Este timer existe apenas para cópias remotas, que não rodam o
+	# MeleeController da autoridade. O relógio de gameplay continua único e vive
+	# no controlador; os 0,12 s cobrem a recuperação extra de whiff visual.
+	var fim := get_tree().create_timer(ContextualMeleeData.duracao(id) + 0.12)
+	fim.timeout.connect(func():
+		if _contextual_presentation_token == token and _contextual_presented_seq == sequencia:
+			encerrar_ataque_contextual(id))
+
+func encerrar_ataque_contextual(id: String) -> void:
+	if id != _contextual_attack_id:
+		return
+	var pose := str(ContextualMeleeData.especificacao(id).get("pose", ""))
+	_contextual_attack_id = ""
+	if String(get_meta("custom_pose", "")) == pose:
+		remove_meta("custom_pose")
+
+func cancelar_ataque_contextual(id: String, sequencia: int, avisar_servidor: bool = true) -> void:
+	# Esta entrada é chamada pelo MeleeController em dash-cancel, troca por uma
+	# ação de prioridade maior e limpeza de estado. O mesmo seq jamais cancela um
+	# ataque iniciado depois.
+	if sequencia != _contextual_attack_seq or id != _contextual_attack_id:
+		return
+	_contextual_presentation_token += 1
+	_limpar_vfx_contextual(id)
+	encerrar_ataque_contextual(id)
+	if avisar_servidor:
+		pedir_cancelamento_contextual_no_servidor(sequencia)
+
+func _cancelar_contextual_local(sequencia: int) -> void:
+	if sequencia != _contextual_attack_seq:
+		return
+	if _melee and _melee.has_method("cancelar_contextual_por_seq"):
+		_melee.cancelar_contextual_por_seq(sequencia)
+	elif not _contextual_attack_id.is_empty():
+		cancelar_ataque_contextual(_contextual_attack_id, sequencia, false)
+
+func pedir_ataque_contextual_no_servidor(sequencia: int, id: String, origem: Vector3, fwd: Vector3) -> void:
+	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
+		_do_server_contextual_melee(sequencia, id, origem, fwd)
+	else:
+		_net_contextual_melee.rpc_id(1, sequencia, id, origem, fwd)
+
+func pedir_cancelamento_contextual_no_servidor(sequencia: int) -> void:
+	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
+		_cancelar_contextual_servidor(sequencia, false)
+	else:
+		_net_cancel_contextual_melee.rpc_id(1, sequencia)
+
+func _resetar_impulso_de_corrida() -> void:
+	_aceleracao_da_corrida.resetar()
+
 @rpc("any_peer", "call_remote", "reliable")
 func _net_melee(passo: int, origem: Vector3, fwd: Vector3) -> void:
 	if multiplayer.is_server():
 		var cid = multiplayer.get_remote_sender_id()
 		if cid != 0 and cid != get_multiplayer_authority(): return
 		_do_server_melee(passo, origem, fwd)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _net_contextual_melee(sequencia: int, id: String, origem: Vector3, fwd: Vector3) -> void:
+	if multiplayer.is_server():
+		var cid := multiplayer.get_remote_sender_id()
+		if cid != 0 and cid != get_multiplayer_authority():
+			return
+		_do_server_contextual_melee(sequencia, id, origem, fwd)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _net_cancel_contextual_melee(sequencia: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var cid := multiplayer.get_remote_sender_id()
+	if cid != 0 and cid != get_multiplayer_authority():
+		return
+	_cancelar_contextual_servidor(sequencia, false)
+
+func _esta_no_chao_contextual_servidor() -> bool:
+	# Em cópias remotas o servidor não roda move_and_slide(), logo is_on_floor()
+	# não descreve aquele corpo. A flag publicada pelo dono é só o primeiro
+	# indício; o raycast do servidor confirma que existe solo próximo à posição
+	# replicada antes de aceitar uma variação exclusiva do chão.
+	if _is_authority:
+		return is_on_floor()
+	if not net_on_floor or get_world_3d() == null:
+		return false
+	var inicio := global_position + Vector3.UP * 0.35
+	var fim := inicio + Vector3.DOWN * 2.10
+	var consulta := PhysicsRayQueryParameters3D.create(inicio, fim, 15, [get_rid()])
+	consulta.collide_with_areas = false
+	consulta.collide_with_bodies = true
+	return not get_world_3d().direct_space_state.intersect_ray(consulta).is_empty()
+
+func _rejeitar_contextual_servidor(sequencia: int) -> void:
+	var dono := get_multiplayer_authority()
+	if multiplayer.has_multiplayer_peer() and dono != multiplayer.get_unique_id():
+		_net_contextual_rejected.rpc_id(dono, sequencia)
+	else:
+		_net_contextual_rejected(sequencia)
+
+func _cancelar_contextual_servidor(sequencia: int = -1, rejeitado: bool = false) -> void:
+	if _server_contextual_active_seq < 0:
+		return
+	if sequencia >= 0 and sequencia != _server_contextual_active_seq:
+		return
+	var seq_cancelada := _server_contextual_active_seq
+	_server_contextual_token += 1
+	_server_contextual_active_seq = -1
+	_server_contextual_deadline_ms = 0
+	var dono := get_multiplayer_authority()
+	if multiplayer.has_multiplayer_peer() and dono != multiplayer.get_unique_id():
+		if rejeitado:
+			_net_contextual_rejected.rpc_id(dono, seq_cancelada)
+		else:
+			_net_contextual_cancelled.rpc_id(dono, seq_cancelada)
+	elif rejeitado:
+		_net_contextual_rejected(seq_cancelada)
+	else:
+		_net_contextual_cancelled(seq_cancelada)
+
+func _contextual_servidor_pode_gerar_zona(sequencia: int, token: int) -> bool:
+	return sequencia == _server_contextual_active_seq \
+		and token == _server_contextual_token \
+		and Time.get_ticks_msec() <= _server_contextual_deadline_ms
+
+func _confirmar_acerto_contextual_servidor(sequencia: int) -> void:
+	if sequencia != _server_contextual_active_seq:
+		return
+	var dono := get_multiplayer_authority()
+	if multiplayer.has_multiplayer_peer() and dono != multiplayer.get_unique_id():
+		_net_contextual_hit_confirmed.rpc_id(dono, sequencia)
+	else:
+		_net_contextual_hit_confirmed(sequencia)
+
+func _do_server_contextual_melee(sequencia: int, id: String, origem: Vector3, fwd: Vector3) -> void:
+	# O servidor não recebe teclas do cliente. Ele valida tudo que pode observar
+	# sem inventar uma segunda simulação de input: enum, arma, chão, direção,
+	# origem e cadência. A DamageZone abaixo continua sendo a única fonte de dano.
+	# `last_seq` é marcada antes das demais recusas para que um pacote repetido
+	# não possa ser testado indefinidamente até achar uma janela válida.
+	if sequencia <= _server_contextual_last_seq:
+		return
+	_server_contextual_last_seq = sequencia
+	if sequencia < 0 or not ContextualMeleeData.e_id_valido(id) or equipped_weapon != "" \
+		or not _esta_no_chao_contextual_servidor():
+		_rejeitar_contextual_servidor(sequencia)
+		return
+	if fwd.length_squared() < 0.25 or absf(fwd.y) > 0.15:
+		_rejeitar_contextual_servidor(sequencia)
+		return
+	if global_position.distance_to(origem) > 3.0 or absf(origem.y - global_position.y) > 2.5:
+		_rejeitar_contextual_servidor(sequencia)
+		return
+	if id == "context_retreat_kick" and not _recuo_contextual_livre(atan2(-fwd.x, -fwd.z)):
+		_rejeitar_contextual_servidor(sequencia)
+		return
+	var agora := Time.get_ticks_msec()
+	if agora < _server_contextual_next_ms:
+		_rejeitar_contextual_servidor(sequencia)
+		return
+	_server_contextual_next_ms = agora + int(ContextualMeleeData.duracao(id) * 1000.0)
+	_server_contextual_active_seq = sequencia
+	_server_contextual_token += 1
+	_server_contextual_deadline_ms = _server_contextual_next_ms
+	var frente := Vector3(fwd.x, 0.0, fwd.z).normalized()
+	ContextualMeleeData.golpear(get_tree().current_scene, self, id, origem, frente,
+		sequencia, _server_contextual_token)
+	if multiplayer.has_multiplayer_peer():
+		_net_play_contextual_melee.rpc(sequencia, id, frente)
+	else:
+		_net_play_contextual_melee(sequencia, id, frente)
+
+@rpc("any_peer", "call_local", "reliable")
+func _net_play_contextual_melee(sequencia: int, id: String, fwd: Vector3) -> void:
+	if multiplayer.has_multiplayer_peer():
+		var sender := multiplayer.get_remote_sender_id()
+		if sender != 0 and sender != 1:
+			return
+	if not ContextualMeleeData.e_id_valido(id):
+		return
+	var plano := Vector3(fwd.x, 0.0, fwd.z)
+	if plano.length_squared() < 0.001:
+		return
+	_apresentar_ataque_contextual(id, atan2(-plano.x, -plano.z), sequencia)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _net_contextual_hit_confirmed(sequencia: int) -> void:
+	if multiplayer.has_multiplayer_peer():
+		var sender := multiplayer.get_remote_sender_id()
+		if sender != 0 and sender != 1:
+			return
+	if _melee and _melee.has_method("confirmar_contextual"):
+		_melee.confirmar_contextual(sequencia)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _net_contextual_rejected(sequencia: int) -> void:
+	if multiplayer.has_multiplayer_peer():
+		var sender := multiplayer.get_remote_sender_id()
+		if sender != 0 and sender != 1:
+			return
+	_cancelar_contextual_local(sequencia)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _net_contextual_cancelled(sequencia: int) -> void:
+	if multiplayer.has_multiplayer_peer():
+		var sender := multiplayer.get_remote_sender_id()
+		if sender != 0 and sender != 1:
+			return
+	_cancelar_contextual_local(sequencia)
 
 # SERVIDOR: cria a hitbox (a DamageZone só machuca no servidor) e manda todos
 # reproduzirem a animação do golpe.
@@ -2288,8 +3042,68 @@ func _process_gura_rush(delta: float) -> void:
 			pedir_cast_no_servidor("Z", _gura_rush_dir, global_position, 1.0)
 			break
 
+# --- BOMU BOMU Z: corrida, agarrão e detonação ---
+func start_bomu_rush(aim_dir: Vector3, _charge: float = 0.5) -> void:
+	if _bomu_rush_active:
+		return
+	_bomu_rush_active = true
+	_bomu_rush_timer = 0.72
+	_bomu_grab_timer = 0.0
+	var flat := Vector3(aim_dir.x, 0.0, aim_dir.z)
+	_bomu_rush_dir = flat.normalized() if flat.length_squared() > 0.01 else -global_transform.basis.z
+	set_meta("custom_pose", "bomu_z_charge")
+	_bomu_hand_charge = BomuFX.criar_carga_na_mao(self)
+
+func _process_bomu_rush(delta: float) -> void:
+	if _bomu_grab_timer > 0.0:
+		velocity = Vector3.ZERO
+		_bomu_grab_timer -= delta
+		if is_instance_valid(_bomu_rush_target):
+			_bomu_rush_target.global_position = global_position + _bomu_rush_dir * 1.28 + Vector3.UP * 0.35
+		if _bomu_grab_timer <= 0.0:
+			pedir_cast_no_servidor("Z", _bomu_rush_dir, global_position, 0.5)
+			_encerrar_bomu_rush()
+		return
+	_bomu_rush_timer -= delta
+	if _bomu_rush_timer <= 0.0:
+		_encerrar_bomu_rush()
+		return
+	var query := PhysicsShapeQueryParameters3D.new()
+	var sphere := SphereShape3D.new()
+	sphere.radius = 1.15
+	query.shape = sphere
+	query.transform = Transform3D(Basis(), global_position + Vector3.UP + _bomu_rush_dir * 1.35)
+	query.collide_with_areas = true
+	query.collide_with_bodies = true
+	query.collision_mask = 15
+	query.exclude = [get_rid()]
+	for hit in get_world_3d().direct_space_state.intersect_shape(query):
+		var alvo := hit.get("collider") as Node3D
+		if alvo != self and is_instance_valid(alvo) and alvo.has_method("take_damage") and not alvo.get_meta("is_frozen", false):
+			_bomu_rush_target = alvo
+			_bomu_rush_target.set_meta("is_frozen", true)
+			StatusFX.aplicar(_bomu_rush_target, StatusFX.CONGELADO, 0.42)
+			_bomu_grab_timer = 0.20
+			set_meta("custom_pose", "bomu_z_strike")
+			break
+
+func _encerrar_bomu_rush() -> void:
+	_bomu_rush_active = false
+	_bomu_rush_timer = 0.0
+	_bomu_grab_timer = 0.0
+	if is_instance_valid(_bomu_rush_target):
+		_bomu_rush_target.set_meta("is_frozen", false)
+		_bomu_rush_target = null
+	if is_instance_valid(_bomu_hand_charge):
+		_bomu_hand_charge.queue_free()
+	_bomu_hand_charge = null
+	if get_meta("custom_pose", "").begins_with("bomu_"):
+		remove_meta("custom_pose")
+
 # SERVIDOR = autoridade: (validaria cooldown/estado) e manda TODOS reproduzirem.
 func _do_server_cast(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.0) -> void:
+	if combat_mode == "fruit" and _fruit_damage_lock_timer > 0.0:
+		return # validação autoritativa: cliente não pula a recuperação por RPC
 	# BUKI BUKI: o cast É o saque da arma. É AQUI, na cópia autoritativa, que a
 	# munição do servidor é carregada — o cliente não escolhe quantas balas tem.
 	# Já sai com uma a menos porque o próprio saque dispara o primeiro tiro.
@@ -2351,7 +3165,7 @@ func _net_bullet_play(aim: Vector3, origin: Vector3, arma: String) -> void:
 		AudioFX.gunshot(get_tree().current_scene, origin, randf_range(0.95, 1.12))
 	# ⚠️ AQUI MORAVAM TRÊS LITERAIS (`8.0`, `25.0`, `8.0`) escritos à mão, que
 	# ignoravam a tabela de skills — ela dizia 20 para a Mera Z e 28 para a Hie Z,
-	# e nenhum dos dois era usado. Com 16 balas por rajada, o erro se multiplicava.
+	# e nenhum dos dois era usado. Com 8 balas por rajada, o erro se multiplicava.
 	var spec_r := _spec_do_disparo(current_fruit_id, "Z")
 	if current_fruit_id == "hie_hie":
 		IceFX.bullet(get_tree().current_scene, origin, aim, spec_r.dano, self, spec_r)
@@ -2361,7 +3175,7 @@ func _net_bullet_play(aim: Vector3, origin: Vector3, arma: String) -> void:
 		FireFX.bullet(get_tree().current_scene, origin, aim, spec_r.dano, self, spec_r)
 
 # ---------------------------------------------------- CONJURAÇÃO DE DISPARO
-# A spec do pente/rajada em curso. Uma rajada de 16 balas e um pente de 100 são
+# A spec do pente/rajada em curso. Uma rajada de 8 balas e um pente de 100 são
 # UMA conjuração, não 16 ou 100 — é isso que dá teto a elas.
 #
 # ⚠️ Só o valor do SERVIDOR importa: a `DamageZone` sai cedo em clientes, então
@@ -2518,6 +3332,7 @@ func _fire_skill(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.
 			"yami_yami": YamiFX.cast(world, origin, aim, variant, dano, self, spec)
 			"bara_bara": BaraFX.cast(world, origin, aim, variant, dano, self, spec)
 			"gura_gura": GuraFX.cast(world, origin, aim, variant, dano, self, charge, spec)
+			"bomu_bomu": BomuFX.cast(world, origin, aim, variant, dano, self, charge, spec)
 			"buki_buki":
 				# SAQUE DA ARMA. Roda em TODOS os peers (este método é a
 				# presentation do cast), então o adversário vê a arma aparecer
@@ -2756,4 +3571,3 @@ func equip_item(item_node: Node3D) -> void:
 	if item_node is SwordPickup:
 		equipped_weapon = "sword"
 		print("[Player] Arma equipada: sword")
-
