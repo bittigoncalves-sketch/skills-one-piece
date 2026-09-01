@@ -633,7 +633,12 @@ func _apply_perspective() -> void:
 func _input(event: InputEvent) -> void:
 	if not _is_authority:
 		return
-	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+	# ⚠️ NO TOQUE NÃO EXISTE MOUSE CAPTURADO. O `ToqueHud` traduz o arrasto do
+	# dedo em `InputEventMouseMotion` para reaproveitar exatamente esta rotina —
+	# mas `MOUSE_MODE_CAPTURED` nunca é verdade num celular, e sem esta segunda
+	# condição a câmera simplesmente não giraria lá.
+	if event is InputEventMouseMotion \
+			and (Input.mouse_mode == Input.MOUSE_MODE_CAPTURED or ToqueHud.ativo()):
 		# LUNETA DA SNIPER: com o zoom ligado a mira anda mais devagar. Sem isso o
 		# zoom só aumenta a imagem e piora a pontaria (o mesmo movimento de mouse
 		# varre 3x mais mundo).

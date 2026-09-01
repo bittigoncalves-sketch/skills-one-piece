@@ -4,6 +4,10 @@ extends CanvasLayer
 
 const MainMenuClass := preload("res://src/ui/MainMenu.gd")
 const StatsHudClass := preload("res://src/ui/StatsHud.gd")
+const MinkBiteHudClass := preload("res://src/ui/MinkBiteHud.gd")
+const AirSlamHudClass := preload("res://src/ui/AirSlamHud.gd")
+const FruitRecoveryHudClass := preload("res://src/ui/FruitRecoveryHud.gd")
+const SpinKickHudClass := preload("res://src/ui/SpinKickHud.gd")
 # `Player.local_player(tree)` = o corpo DESTE peer. Ver o comentário lá: no
 # cliente, `get_first_node_in_group("player")` devolve o corpo do HOST.
 const PlayerScript := preload("res://Player.gd")
@@ -15,9 +19,15 @@ var _main_menu: Node
 var _stats: Node
 var _match: MatchHud
 var _status: StatusEffectsHud
+var _mink_bite: Control
+var _air_slam: Control
+var _fruit_recovery: Control
+var _spin_kick: Control
 var _ammo: AmmoHud
 var _scope: SniperScope
 var _dummies: DummyToggleHud
+
+var _toque: ToqueHud = null
 
 func _ready() -> void:
 	add_to_group("hud")   # o Player encontra a HUD por este grupo ao equipar fruta
@@ -44,6 +54,30 @@ func _ready() -> void:
 	_status = StatusEffectsHud.new()
 	_status.name = "StatusEffectsHud"
 	add_child(_status)
+
+	_mink_bite = MinkBiteHudClass.new()
+	_mink_bite.name = "MinkBiteHud"
+	add_child(_mink_bite)
+
+	# ⚠️ POR ÚLTIMO, para ficar POR CIMA. O toque precisa receber o dedo antes de
+	# qualquer painel que esteja embaixo; adicionado no meio da lista, um HUD
+	# desenhado depois cobriria os botões e o jogador não entenderia por que a
+	# skill não sai. Ele se esconde sozinho fora de celular (`ToqueHud.ativo()`).
+	_toque = ToqueHud.new()
+	_toque.name = "ToqueHud"
+	add_child(_toque)
+
+	_air_slam = AirSlamHudClass.new()
+	_air_slam.name = "AirSlamHud"
+	add_child(_air_slam)
+
+	_fruit_recovery = FruitRecoveryHudClass.new()
+	_fruit_recovery.name = "FruitRecoveryHud"
+	add_child(_fruit_recovery)
+
+	_spin_kick = SpinKickHudClass.new()
+	_spin_kick.name = "SpinKickHud"
+	add_child(_spin_kick)
 
 	# LUNETA DA SNIPER (Buki Buki, slot C). Vem ANTES do AmmoHud de propósito: a
 	# máscara é preta opaca e cobre os irmãos somados antes dela, e o contador de
@@ -179,4 +213,3 @@ func _unhandled_input(event: InputEvent) -> void:
 			player.begin_charge(slot)
 	elif player.has_method("release_charge"):
 		player.release_charge(slot)
-

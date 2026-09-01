@@ -156,6 +156,10 @@ for arq in tools/dev_tests/test_*.gd; do
 	[ "$nome" = "test_melee_trava" ] && continue
 	# Mesma razão: mede a distância andada com a tecla do golpe SEGURADA.
 	[ "$nome" = "test_segurar_ataque" ] && continue
+	# E os controles de toque: `InputEventScreenTouch` precisa de um viewport
+	# para ser entregue ao `_input`. Headless, o dedo não chega ao HUD e o teste
+	# reprova um joystick que funciona — medido, três asserções de uma vez.
+	[ "$nome" = "test_toque" ] && continue
 	if [ $RAPIDO -eq 1 ] && [[ " $LENTOS " == *" $nome "* ]]; then
 		printf '  %-24s %s\n' "$nome" "$(amarelo pulado)"; PULADO=$((PULADO+1)); continue
 	fi
@@ -297,6 +301,18 @@ if quer "segurar" || quer "ataque"; then
 	else
 		roda "test_segurar_ataque" "$GODOT" --path "$PROJ" \
 			--script tools/dev_tests/test_segurar_ataque.gd
+	fi
+fi
+
+# CONTROLES DE TOQUE — precisa de tela pelo mesmo motivo dos dois acima: sem
+# viewport, `InputEventScreenTouch` não chega ao `_input` do HUD.
+if quer "toque" || quer "mobile"; then
+	if [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ]; then
+		printf '  %-24s %s\n' "test_toque" "$(amarelo 'pulado — sem tela')"
+		PULADO=$((PULADO+1))
+	else
+		roda "test_toque" "$GODOT" --path "$PROJ" \
+			--script tools/dev_tests/test_toque.gd
 	fi
 fi
 
