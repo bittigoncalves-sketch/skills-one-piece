@@ -1,5 +1,6 @@
 class_name BukiFX
 extends RefCounted
+const FxQualityPolicy = preload("res://src/effects/FxQuality.gd")
 # ============================================================================
 #  BUKI FX — Buki Buki no Mi (fruta da Baby 5). Paramecia: o corpo vira arma.
 #
@@ -349,8 +350,8 @@ static func _fogacho(world: Node, origin: Vector3, dir: Vector3, escala: float) 
 		return
 	var fwd := dir.normalized()
 	var flash := GPUParticles3D.new()
-	flash.amount = int(40 * escala) + 8
-	flash.lifetime = 0.18 + 0.22 * escala
+	flash.amount = FxQualityPolicy.quantidade(int(40 * escala) + 8, "essencial")
+	flash.lifetime = FxQualityPolicy.duracao(0.18 + 0.22 * escala, "essencial")
 	flash.one_shot = true
 	flash.emitting = true
 	var pm := ParticleProcessMaterial.new()
@@ -370,21 +371,22 @@ static func _fogacho(world: Node, origin: Vector3, dir: Vector3, escala: float) 
 	# LUZ DO DISPARO. É o que mais rende no fogacho: sem ela o clarão não toca no
 	# personagem nem no chão, e o tiro parece um adesivo colado na tela. Vive
 	# 0,07 s — arma de fogo pisca, não ilumina.
-	var luz := OmniLight3D.new()
-	luz.light_color = Color(1.0, 0.80, 0.45)
-	luz.light_energy = 7.0 * escala + 1.5
-	luz.omni_range = 5.0 + 7.0 * escala
-	luz.shadow_enabled = false          # 6 tiros x sombra = tranco de frame
-	world.add_child(luz)
-	(luz as Node3D).global_position = origin + fwd * 0.7
-	var tw := luz.create_tween()
-	tw.tween_property(luz, "light_energy", 0.0, 0.07)
-	tw.tween_callback(luz.queue_free)
+	if FxQualityPolicy.permite_luz("padrao"):
+		var luz := OmniLight3D.new()
+		luz.light_color = Color(1.0, 0.80, 0.45)
+		luz.light_energy = (7.0 * escala + 1.5) * FxQualityPolicy.fator("padrao")
+		luz.omni_range = (5.0 + 7.0 * escala) * FxQualityPolicy.fator("padrao")
+		luz.shadow_enabled = false          # 6 tiros x sombra = tranco de frame
+		world.add_child(luz)
+		(luz as Node3D).global_position = origin + fwd * 0.7
+		var tw := luz.create_tween()
+		tw.tween_property(luz, "light_energy", 0.0, 0.07)
+		tw.tween_callback(luz.queue_free)
 
 	# FUMAÇA — cinza, lenta, subindo. Fica DEPOIS do clarão, senão some junto.
 	var fumaca := GPUParticles3D.new()
-	fumaca.amount = int(10 * escala) + 4
-	fumaca.lifetime = 0.9 + 0.6 * escala
+	fumaca.amount = FxQualityPolicy.quantidade(int(10 * escala) + 4, "padrao")
+	fumaca.lifetime = FxQualityPolicy.duracao(0.9 + 0.6 * escala, "padrao")
 	fumaca.one_shot = true
 	fumaca.emitting = true
 	var fp := ParticleProcessMaterial.new()

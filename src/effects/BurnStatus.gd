@@ -29,7 +29,9 @@ func setup(target: Node3D, duration: float, dps: float, spec: DamageSpec = null)
 		pm.scale_max = 1.5
 		pm.color_ramp = FxUtil.gradient([Color(1.0, 0.4, 0.05), Color(1.0, 0.1, 0.0, 0.5), Color(0,0,0,0)])
 		
-		var fire = FxUtil.particles(50, 0.8, false, pm, FxUtil.grain(0.5))
+		# Indicador de estado: precisa sobreviver aos perfis menores para que o
+		# jogador continue reconhecendo queimadura, mesmo sem adornos hero.
+		var fire = FxUtil.particles(50, 0.8, false, pm, FxUtil.grain(0.5), 0.0, "essencial")
 		fire.name = "BurnVFX"
 		_target.add_child(fire)
 

@@ -411,7 +411,9 @@ static func _storm(world: Node, pos: Vector3, damage: float, caster: Node,
 	pm.emission_box_extents = Vector3(25.0, 5.0, 25.0) # Cobre todo o raio do deserto (grid_size=25)
 	pm.color = Color(0.85, 0.65, 0.35, 0.25) # Opacidade baixa (leve e sutil)
 	
-	var parts := FxUtil.particles(400, 4.0, false, pm, FxUtil.grain(0.7))
+	# Camada atmosférica da ultimate: o chão, a hitbox e a telegraphia continuam
+	# íntegros; só a densidade secundária se adapta ao perfil.
+	var parts := FxUtil.particles(400, 4.0, false, pm, FxUtil.grain(0.7), 0.0, "hero")
 	# Aumentar a AABB das partículas para que não sumam ao virar a câmera
 	parts.visibility_aabb = AABB(Vector3(-30, -10, -30), Vector3(60, 20, 60))
 	zone.add_child(parts)

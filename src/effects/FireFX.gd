@@ -76,7 +76,7 @@ static func _magma_material() -> StandardMaterial3D:
 static func bullet(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
 		spec: DamageSpec = null) -> void:
 	# Uma bala da RAJADA Z. A spec é a mesma do pente inteiro (ver
-	# `Player._spec_do_disparo`), então as 16 balas dividem o teto do slot.
+	# `Player._spec_do_disparo`), então as 8 balas dividem o teto do slot.
 	var fwd := dir.normalized()
 	var zone := DamageZone.new()
 	world.add_child(zone)
@@ -86,8 +86,8 @@ static func bullet(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 
 	var body := MeshInstance3D.new()
 	var cap := CapsuleMesh.new()
-	cap.radius = 0.09
-	cap.height = 0.5
+	cap.radius = 0.055
+	cap.height = 0.32
 	body.mesh = cap
 	body.rotation_degrees.x = 90                  # deita a cápsula ao longo do Z (da mira)
 	var m := StandardMaterial3D.new()
@@ -100,10 +100,10 @@ static func bullet(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 
 	var core := MeshInstance3D.new()              # miolo branco-quente na ponta
 	var sm := SphereMesh.new()
-	sm.radius = 0.12
-	sm.height = 0.24
+	sm.radius = 0.075
+	sm.height = 0.15
 	core.mesh = sm
-	core.position.z = -0.26
+	core.position.z = -0.17
 	var cm := StandardMaterial3D.new()
 	cm.albedo_color = Color(1.0, 0.95, 0.8)
 	cm.emission_enabled = true
@@ -120,10 +120,10 @@ static func bullet(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 	pm.scale_min = 0.3
 	pm.scale_max = 0.8
 	pm.color_ramp = FxUtil.gradient([Color(1, 0.7, 0.2), Color(1, 0.3, 0.05), Color(0.2, 0.05, 0, 0)])
-	zone.add_child(FxUtil.particles(28, 0.35, false, pm, FxUtil.grain(0.25)))
+	zone.add_child(FxUtil.particles(18, 0.24, false, pm, FxUtil.grain(0.16)))
 
 	AudioFX.gunshot(world, origin, randf_range(0.95, 1.1)) # som de tiro potente
-	zone.setup(damage, 9.0, fwd * 55.0, 0.7, caster, 0.35)   # bala RÁPIDA + knockback
+	zone.setup(damage, 9.0, fwd * 82.0, 0.65, caster, 0.35)  # menor e bem mais veloz
 	if spec != null:
 		spec.marcar(zone)
 
@@ -172,8 +172,8 @@ static func _higan(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 	var shots := [0]
 	timer.timeout.connect(func():
 		shots[0] += 1
-		# "dispara até 16 balas de fogo"
-		if shots[0] > 16:
+		# Caminho compatível com a rajada jogável: oito tiros de impacto alto.
+		if shots[0] > 8:
 			controller.queue_free()
 			return
 		

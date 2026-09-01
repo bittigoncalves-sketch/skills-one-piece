@@ -103,8 +103,28 @@ static func chao(cor: Color, celula: float) -> Material:
 		var g := (m as ShaderMaterial).duplicate() as ShaderMaterial
 		g.set_shader_parameter("usar_grade", true)
 		g.set_shader_parameter("grade_celula", celula)
+		g.set_shader_parameter("usar_variacao_chao", true)
+		g.set_shader_parameter("variacao_escala", 12.0)
+		g.set_shader_parameter("variacao_forca", 0.055)
 		return g
 	return m
+
+## Famílias da arena. Os nomes carregam a intenção de arte; o cel shader mantém
+## a mesma luz em faixas para que pedra, bloco e borda pertençam ao mesmo mundo.
+static func pedra_gasta(cor: Color) -> Material:
+	var m := superficie(cor)
+	if m is ShaderMaterial:
+		# Cópia: o material base é cacheado por cor. A variação é exclusiva da
+		# família de pedra, nunca deve infiltrar em personagens da mesma cor.
+		var pedra := (m as ShaderMaterial).duplicate() as ShaderMaterial
+		pedra.set_shader_parameter("usar_variacao_pedra", true)
+		pedra.set_shader_parameter("variacao_pedra_escala", 4.5)
+		pedra.set_shader_parameter("variacao_pedra_forca", 0.028)
+		return pedra
+	return m
+
+static func borda_abismo() -> Material:
+	return superficie(Color(0.15, 0.20, 0.28))
 
 
 ## Limpa o cache — o respawn do mundo recria tudo, e material de mundo antigo

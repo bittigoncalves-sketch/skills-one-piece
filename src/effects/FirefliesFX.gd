@@ -12,6 +12,9 @@ static func cast_fireflies(world: Node, origin: Vector3, damage: float, caster: 
 	controller.global_position = origin + Vector3.UP * 1.5
 
 class FirefliesController extends Node3D:
+	# O C é controle de espaço: 15 brasas preservam a ameaça visual sem encher a
+	# arena com 45 hitboxes concorrentes. É exatamente 1/3 da versão anterior.
+	const QUANTIDADE_VAGALUMES := 15
 	var caster: Node
 	var damage: float
 	var spec: DamageSpec
@@ -24,8 +27,7 @@ class FirefliesController extends Node3D:
 		spec = s
 		
 	func _ready() -> void:
-		var count = 45
-		for i in range(count):
+		for i in range(QUANTIDADE_VAGALUMES):
 			var f = FireflyNode.new(self)
 			add_child(f)
 			# Posições aleatórias ao redor do jogador
