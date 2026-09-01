@@ -2663,7 +2663,11 @@ func _encerrar_mordida_mink() -> void:
 ## W/A/S/D — ataque contextual. O MeleeController é o dono do relógio; o
 ## Player só fixa direção, aplica root motion, apresenta e atravessa a rede.
 func iniciar_ataque_contextual(id: String, yaw: float) -> bool:
-	if not ContextualMeleeData.e_id_valido(id) or equipped_weapon != "" or not is_on_floor():
+	if not ContextualMeleeData.e_id_valido(id) or equipped_weapon != "":
+		return false
+	# O chute aéreo e o de parede existem justamente fora do chão; as variações
+	# de solo continuam exigindo os pés apoiados. Ver `ContextualMelee.exige_chao`.
+	if ContextualMeleeData.exige_chao(id) and not is_on_floor():
 		return false
 	if id == "context_retreat_kick" and not _recuo_contextual_livre(yaw):
 		return false
@@ -2878,8 +2882,13 @@ func _do_server_contextual_melee(sequencia: int, id: String, origem: Vector3, fw
 	if sequencia <= _server_contextual_last_seq:
 		return
 	_server_contextual_last_seq = sequencia
-	if sequencia < 0 or not ContextualMeleeData.e_id_valido(id) or equipped_weapon != "" \
-		or not _esta_no_chao_contextual_servidor():
+	if sequencia < 0 or not ContextualMeleeData.e_id_valido(id) or equipped_weapon != "":
+		_rejeitar_contextual_servidor(sequencia)
+		return
+	# A exigência de chão é POR GOLPE desde a Fase 4: as variações aéreas seriam
+	# rejeitadas aqui em partida com rede, e passariam no singleplayer — onde o
+	# cliente é o servidor. O tipo de bug que só aparece com duas máquinas.
+	if ContextualMeleeData.exige_chao(id) and not _esta_no_chao_contextual_servidor():
 		_rejeitar_contextual_servidor(sequencia)
 		return
 	if fwd.length_squared() < 0.25 or absf(fwd.y) > 0.15:

@@ -1,7 +1,9 @@
 # Combate contextual — plano vivo e implementação
 
 **Estado:** Fase 0 documentada; Fase 1 implementada e validada em singleplayer
-**e em rede**; Fases 2 (counter hit) e 3 (launcher) implementadas e validadas.  
+**e em rede**; Fases 2 (counter hit), 3 (launcher), 4 (chute aéreo) e 5 (chute
+de parede) implementadas e validadas. Resta a Fase 6 (defesa), que ainda não tem
+especificação.  
 **Última revisão:** 2026-08-31.  
 **Escopo desta frente:** ampliar o corpo a corpo sem substituir o combo M1,
 a Aú, a queda esmagadora ou a rota exclusiva dos Minks.
@@ -235,13 +237,45 @@ sem o outro jogar.
 O golpe de perseguição em si é o "chute aéreo simples" da fase seguinte; o
 mecanismo que o limita já está pronto e testado.
 
+## Fases 4 e 5 — chute aéreo e chute de parede (implementadas em 2026-08-31)
+
+| | chute aéreo | chute de parede |
+|---|---|---|
+| quando | no ar, sem parede | no ar, com parede, uma vez por contato |
+| dano | 54 | 58 |
+| deslocamento | 0,70 | **1,45** (o maior — o valor dele é reposicionar) |
+
+**No ar existe UMA opção, não quatro.** As direções não se ramificam lá: o corpo
+já está comprometido com uma trajetória, e quatro variações aéreas dariam ao
+jogador no ar mais escolhas do que ele tem no chão — o contrário do que esta
+frente quer. A Aú e a queda esmagadora continuam vindo antes, na prioridade do
+`MeleeController`.
+
+O chute aéreo é também a **perseguição** do launcher: ele sustenta o alvo no ar,
+mas só na primeira vez por lançamento. O segundo chute acerta normalmente — dano,
+empurrão e hitstun — e não sustenta, então o alvo cai. É o que quebra o loop sem
+tirar do jogador a chance de encostar no adversário.
+
+### A validação da parede
+
+O raycast varre **quatro direções horizontais**, e não a do movimento: o jogador
+pode estar caindo parado ao lado de um muro, sem direção nenhuma. E valida a
+NORMAL (`|n.y| < 0.35`, a mesma régua do wall run) — um raycast que só pergunta
+"bateu em algo?" aceitaria o piso, e o chute viraria impulso grátis perto do chão.
+
+### ⚠️ A exigência de chão passou a ser POR GOLPE
+
+A validação autoritativa recusava todo contextual fora do chão. Era correta
+enquanto as quatro variações eram de solo, e teria barrado as duas aéreas **em
+rede** — passando no singleplayer, onde o cliente é o servidor. A exceção agora
+é declarada na ficha (`no_ar`), então quem escrever um golpe aéreo novo não
+precisa achar os dois `is_on_floor` espalhados.
+
 ## Próximas fases, ainda não implementadas
 
-3. **Chute aéreo simples:** ocupa o espaço entre M1 no ar e queda esmagadora,
-   sem competir com a Aú.
-4. **Chute de parede:** exige raycast confiável, uma utilização por contato e
-   validação de normal no servidor.
-5. **Defesa avançada:** não reutilizar F, pois F já pertence ao Corpo de Ferro.
+1. **Defesa avançada:** não reutilizar F, pois F já pertence ao Corpo de Ferro.
+   ⚠️ Ainda **sem especificação**: o plano diz onde ela não pode ficar, mas não
+   o que ela faz. Precisa de uma decisão de design antes de virar código.
 
 ## Critérios de aceite da Fase 1
 
@@ -268,4 +302,5 @@ mecanismo que o limita já está pronto e testado.
 | 2026-08-31 | `net_contextual_*_probe` (2 processos) | passou nos dois lados. **Nunca tinha rodado**: o lado cliente não compilava (dois `:=` sem inferir de `Variant`) e a sonda media a apresentação 0,70 s depois do clique, quando o golpe dura 0,42 s — reprovava a limpeza correta |
 | 2026-08-31 | `test_counter_hit.gd` | passou: dano zero, hitstun ampliado, empurrão extra, leitura da fase no Player e ordem dos sinais |
 | 2026-08-31 | `test_launcher.gd` | passou: 19 asserções — a escolha (só no 4º golpe, só com W), o impulso vertical, e o bloqueio contra loop nas duas pontas (não relança no ar, limpa ao aterrissar, uma perseguição só) |
+| 2026-08-31 | `test_launcher.gd` (ampliado) | 36 asserções: launcher, perseguição, chute de parede e a exigência de chão por golpe |
 | 2026-08-31 | `test_melee_trava.gd` | atualizado para a regra NOVA: o M1 deixa o corpo livre. O pedido de 2026-08-15 foi revogado pelo dono — "travava o jogador demais, fazendo os movimentos não serem tão fluidos" |

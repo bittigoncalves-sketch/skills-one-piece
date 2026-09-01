@@ -21,6 +21,8 @@ func _init() -> void:
 	await process_frame
 	_a_regra_de_escolha()
 	await _o_impulso()
+	await _a_perseguicao()
+	await _o_chute_de_parede()
 	print("\n%d conferem | %d divergem" % [_ok_n, _falhas])
 	quit(1 if _falhas > 0 else 0)
 
@@ -87,6 +89,95 @@ func _o_impulso() -> void:
 	await process_frame
 	_ok("depois de aterrissar, pode ser lançado de novo", alvo.chamadas.size() == 2)
 	alvo.queue_free()
+
+
+## 3. A PERSEGUIÇÃO AÉREA — "só uma continuação aérea por alvo".
+##
+## O segundo chute no mesmo lançamento ACERTA (dano, empurrão, hitstun), mas não
+## SUSTENTA: o alvo cai. É o que quebra o loop sem tirar do jogador a
+## possibilidade de encostar no adversário.
+func _a_perseguicao() -> void:
+	print("\n=== 3. a perseguição aérea ===")
+	var e: Dictionary = ContextualMelee.especificacao("context_air_kick")
+	_ok("o chute aéreo declara sustento", float(e.get("sustenta", 0.0)) > 0.0)
+	print("   dano %.0f | sustento %.1f" % [float(e["dano"]), float(e.get("sustenta", 0.0))])
+
+	var alvo := AlvoNoAr.new()
+	get_root().add_child(alvo)
+
+	# ⚠️ CONTROLE PRIMEIRO: quem NUNCA foi lançado não sustenta. O chute aéreo é
+	# um golpe comum contra quem está no ar por conta própria.
+	ContextualMelee._aplicar_sustento(alvo, alvo, e, 1.0)
+	await process_frame
+	_ok("alvo nunca lançado NÃO é sustentado", alvo.chamadas.is_empty())
+
+	# Agora lança e persegue.
+	var lanc: Dictionary = ContextualMelee.especificacao("context_launcher")
+	ContextualMelee._aplicar_lancamento(alvo, alvo, lanc, 1.0)
+	await process_frame
+	var apos_lanc := alvo.chamadas.size()
+
+	ContextualMelee._aplicar_sustento(alvo, alvo, e, 1.0)
+	await process_frame
+	_ok("a PRIMEIRA perseguição sustenta", alvo.chamadas.size() == apos_lanc + 1)
+	if alvo.chamadas.size() > apos_lanc:
+		var kb: Vector3 = alvo.chamadas[apos_lanc]["kb"]
+		_ok("o sustento empurra para CIMA", kb.y > 1.0)
+
+	ContextualMelee._aplicar_sustento(alvo, alvo, e, 1.0)
+	await process_frame
+	_ok("a SEGUNDA perseguição NÃO sustenta (o alvo cai)",
+		alvo.chamadas.size() == apos_lanc + 1)
+	alvo.queue_free()
+
+
+## 4. O CHUTE DE PAREDE — Fase 5 do plano.
+func _o_chute_de_parede() -> void:
+	print("\n=== 4. o chute de parede ===")
+	var e: Dictionary = ContextualMelee.especificacao("context_wall_kick")
+	print("   dano %.0f | deslocamento %.2f (o maior das variações)"
+		% [float(e["dano"]), float(e["deslocamento"])])
+	_ok("o chute de parede desloca mais que o aéreo comum",
+		float(e["deslocamento"]) > float(ContextualMelee.especificacao("context_air_kick")["deslocamento"]))
+
+	var com_parede := _ctx_ar(Vector3(1, 0, 0), false)
+	_ok("no ar COM parede sai o chute de parede",
+		ContextualMelee.resolver(com_parede) == "context_wall_kick")
+	_ok("no ar SEM parede sai o chute aéreo comum",
+		ContextualMelee.resolver(_ctx_ar(Vector3.ZERO, false)) == "context_air_kick")
+	# ⚠️ UM POR CONTATO: gasto, volta a ser o chute aéreo comum.
+	_ok("gasto o chute de parede, volta ao chute aéreo",
+		ContextualMelee.resolver(_ctx_ar(Vector3(1, 0, 0), true)) == "context_air_kick")
+	# ⚠️ E NO CHÃO A PAREDE NÃO VALE: lá quem manda são as variações de solo.
+	var no_chao := _ctx(1.0, 0.0, 0)
+	no_chao["wall_normal"] = Vector3(1, 0, 0)
+	_ok("no CHÃO a parede não sequestra a cotovelada",
+		ContextualMelee.resolver(no_chao) == "context_elbow")
+
+	# A validação da normal: chão e teto não podem contar como parede.
+	print("   limiar de normal: |n.y| < %.2f" % ContextualMelee.LIMIAR_NORMAL_PAREDE)
+	_ok("o limiar recusa piso e teto (normal vertical)",
+		ContextualMelee.LIMIAR_NORMAL_PAREDE < 0.5)
+
+	# ⚠️ A EXIGÊNCIA DE CHÃO É POR GOLPE. Sem isto o servidor rejeitaria as duas
+	# variações aéreas em partida com rede — e elas passariam no singleplayer,
+	# onde o cliente é o servidor. Bug que só aparece com duas máquinas.
+	print("\n   exige chão?")
+	for id in ["context_elbow", "context_retreat_kick", "context_side_hook_l",
+			"context_launcher"]:
+		_ok("   %s exige chão" % id, ContextualMelee.exige_chao(id))
+	for id in ["context_air_kick", "context_wall_kick"]:
+		_ok("   %s NÃO exige chão" % id, not ContextualMelee.exige_chao(id))
+
+
+func _ctx_ar(normal: Vector3, gasto: bool) -> Dictionary:
+	return {
+		"grounded": false, "sprinting": false, "weapon": "",
+		"input_forward": 0.0, "input_side": 0.0,
+		"attack_yaw": 0.0, "attack_basis": Basis.IDENTITY,
+		"race_id": "", "combo_step": 0,
+		"wall_normal": normal, "wall_kick_gasto": gasto,
+	}
 
 
 func _ctx(frente: float, lado: float, passo: int) -> Dictionary:

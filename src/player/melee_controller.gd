@@ -1,5 +1,6 @@
 class_name MeleeController
 extends RefCounted
+const ContextualMeleeData = preload("res://src/combat/contextual_melee.gd")
 # ============================================================================
 #  CORPO A CORPO — o combo do clique: soco direito, soco esquerdo, chute.
 #
@@ -61,6 +62,16 @@ var _buffer: float = 0.0   # clique que chegou na recuperação, esperando a vez
 var _t_golpe: float = 0.0
 var _passo_em_curso: int = -1   # índice do golpe em voo; -1 = nenhum
 var _whiff_resolvido: bool = false
+# ID da variação W/A/S/D em voo. Não usa índice do COMBO: as duas famílias têm
+# frame data diferente, mas compartilham exatamente o mesmo relógio e a mesma
+# FSM. Isso evita uma segunda máquina de estados para os contextuais.
+var _context_id := ""
+# Sequência do Player para a variação em voo. IDs se repetem (W pode virar W
+# de novo), logo confirmação e cancelamento remotos nunca podem se apoiar só no
+# texto `context_elbow`.
+var _context_seq := -1
+var _context_whiff_extra := 0.0
+const CONTEXT_CONFIRM_GRACE := 0.14
 
 func montar_em(dono: Node) -> void:
 	_dono = dono
@@ -73,11 +84,21 @@ func trava() -> float:  return _trava
 # Índice do golpe EM VOO (-1 = nenhum). Diferente de `passo()`, que já foi
 # incrementado para o PRÓXIMO clique.
 func passo_em_curso() -> int: return _passo_em_curso
+func contextual_ativo() -> bool: return not _context_id.is_empty()
+func contextual_id() -> String: return _context_id
+func usa_auto_lunge() -> bool: return _context_id.is_empty()
 
 # Em que fase o golpe está AGORA: "startup" | "ativo" | "recuperacao" | "".
 # É o que a FSM lê para escolher entre AttackStartup/AttackActive/AttackRecovery
 # (ver a nota "A FASE" no cabeçalho: o relógio é um só).
 func fase() -> String:
+	if not _context_id.is_empty():
+		if _trava <= 0.0:
+			return ""
+		var fase_contextual := ContextualMeleeData.fase(_context_id, _t_golpe)
+		# Whiff estende só a recuperação; o relógio pode passar da duração-base,
+		# mas a FSM continua corretamente em recuperação até a trava abrir.
+		return fase_contextual if not fase_contextual.is_empty() else "recuperacao"
 	if _passo_em_curso < 0 or _trava <= 0.0:
 		return ""
 	var w = _dono.equipped_weapon if _dono and "equipped_weapon" in _dono else ""
@@ -96,7 +117,16 @@ func tempo_na_fase() -> float:
 # Zera o golpe em voo. Chamado por quem CANCELA (dash-cancel, combo breaker,
 # morte): sem isso o `_passo_em_curso` fica apontando para um golpe que já não
 # está mais em tela e a `fase()` mente para a FSM.
-func cancelar_golpe() -> void:
+func cancelar_golpe(avisar_cancelamento: bool = true) -> void:
+	if not _context_id.is_empty() and _dono:
+		if _dono.has_method("cancelar_ataque_contextual"):
+			_dono.call("cancelar_ataque_contextual", _context_id, _context_seq,
+				avisar_cancelamento)
+		elif _dono.has_method("encerrar_ataque_contextual"):
+			_dono.call("encerrar_ataque_contextual", _context_id)
+	_context_id = ""
+	_context_seq = -1
+	_context_whiff_extra = 0.0
 	_passo_em_curso = -1
 	_t_golpe = 0.0
 	_whiff_resolvido = false
@@ -108,6 +138,18 @@ func cancelar_golpe() -> void:
 func pedir(yaw: float) -> void:
 	if not _dono._is_authority or _dono._charging:
 		return
+	# Espaço + clique é a variação aérea/girante. Vem antes da queda e da
+	# mordida porque a combinação explícita do jogador tem prioridade.
+	if _dono.has_method("tentar_chute_giratorio") and _dono.call("tentar_chute_giratorio", yaw):
+		return
+	# Queda esmagadora tem prioridade absoluta: no ar ela cancela inclusive a
+	# mordida Mink, pois o jogador já comprometeu o corpo a descer.
+	if _dono.has_method("tentar_ataque_aereo") and _dono.call("tentar_ataque_aereo", yaw):
+		return
+	# O estilo Mink intercepta apenas a corrida: fora dela, o mesmo personagem
+	# continua usando o combo humano normal.
+	if _dono.has_method("tentar_combo_mink") and _dono.call("tentar_combo_mink", yaw):
+		return
 	var hud := _dono.get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("is_menu_open") and hud.is_menu_open():
 		return
@@ -116,6 +158,14 @@ func pedir(yaw: float) -> void:
 	if _trava > 0.0:
 		if _trava <= BUFFER:
 			_buffer = BUFFER
+		return
+
+	# W/A/S/D no chão: o resolvedor só escolhe o ID. O Player valida geometria
+	# (por exemplo parede atrás do chute recuando), fixa a attack_basis, prevê a
+	# apresentação e pede a hitbox ao servidor.
+	var contexto := ContextualMeleeData.contexto_do_player(_dono, yaw)
+	var id_contextual := ContextualMeleeData.resolver(contexto)
+	if not id_contextual.is_empty() and _iniciar_contextual(id_contextual, yaw):
 		return
 
 	var w = _dono.equipped_weapon if _dono and "equipped_weapon" in _dono else ""
@@ -167,17 +217,68 @@ func pedir(yaw: float) -> void:
 	_dono.pedir_golpe_no_servidor(_passo, origem, fwd)
 	_passo += 1
 
+func _iniciar_contextual(id: String, yaw: float) -> bool:
+	if not ContextualMeleeData.e_id_valido(id) or _dono == null:
+		return false
+	if not _dono.has_method("iniciar_ataque_contextual"):
+		return false
+	if not _dono.call("iniciar_ataque_contextual", id, yaw):
+		return false
+	# ⚠️ O CHUTE DE PAREDE É UM POR CONTATO. Marcado AQUI, no instante em que o
+	# golpe é aceito — marcar no acerto deixaria o jogador chutar a parede
+	# infinitas vezes desde que errasse, que é o oposto do limite pedido. A
+	# marca se limpa sozinha quando ele toca o chão.
+	if id == "context_wall_kick":
+		ContextualMeleeData.marcar_chute_de_parede(_dono)
+	_context_id = id
+	_context_seq = int(_dono.call("sequencia_contextual_atual")) \
+		if _dono.has_method("sequencia_contextual_atual") else -1
+	_passo = 0
+	_janela = 0.0
+	_passo_em_curso = -1
+	_t_golpe = 0.0
+	_trava = ContextualMeleeData.duracao(id)
+	_whiff_resolvido = false
+	_context_whiff_extra = 0.0
+	if "hit_confirmed" in _dono:
+		_dono.hit_confirmed = false
+	return true
+
+func confirmar_contextual(sequencia: int) -> void:
+	if sequencia != _context_seq or _context_id.is_empty():
+		return
+	if _dono and "hit_confirmed" in _dono:
+		_dono.hit_confirmed = true
+	# Em rede, a confirmação pode atravessar o fim da janela ativa. Se a graça
+	# já venceu e a punição de whiff foi adicionada, reconciliar o relógio em vez
+	# de manter o jogador preso por um erro que o servidor já confirmou como hit.
+	if _context_whiff_extra > 0.0:
+		_trava = maxf(_trava - _context_whiff_extra, 0.0)
+		_context_whiff_extra = 0.0
+
+func cancelar_contextual_por_seq(sequencia: int) -> void:
+	if sequencia == _context_seq and not _context_id.is_empty():
+		cancelar_golpe(false)
+
 # --------------------------------------------------------------------- ciclo
 # Corre os relógios do combo.
 func tick(delta: float, yaw: float) -> void:
-	if _passo_em_curso >= 0:
+	if _passo_em_curso >= 0 or not _context_id.is_empty():
 		_t_golpe += delta
 		_resolver_whiff()
 
 	if _trava > 0.0:
 		_trava = maxf(_trava - delta, 0.0)
 		if _trava == 0.0:
-			_passo_em_curso = -1      # o golpe saiu de tela; não há mais fase
+			if not _context_id.is_empty():
+				var id_encerrado := _context_id
+				_context_id = ""
+				_context_seq = -1
+				_context_whiff_extra = 0.0
+				if _dono and _dono.has_method("encerrar_ataque_contextual"):
+					_dono.call("encerrar_ataque_contextual", id_encerrado)
+			else:
+				_passo_em_curso = -1  # o golpe saiu de tela; não há mais fase
 			if _buffer > 0.0:
 				_buffer = 0.0
 				pedir(yaw)            # o clique guardado sai agora que a trava abriu
@@ -206,6 +307,15 @@ func tick(delta: float, yaw: float) -> void:
 func _resolver_whiff() -> void:
 	if _whiff_resolvido:
 		return
+	if not _context_id.is_empty():
+		if _t_golpe < ContextualMeleeData.startup(_context_id) + ContextualMeleeData.ativo(_context_id) + CONTEXT_CONFIRM_GRACE:
+			return
+		_whiff_resolvido = true
+		if _dono and "hit_confirmed" in _dono and _dono.hit_confirmed:
+			return
+		_context_whiff_extra = ContextualMeleeData.recuperacao(_context_id) * (Melee.WHIFF_MULT - 1.0)
+		_trava += _context_whiff_extra
+		return
 	var w = _dono.equipped_weapon if _dono and "equipped_weapon" in _dono else ""
 	if not Melee.tem_frame_data(_passo_em_curso, w):
 		_whiff_resolvido = true
@@ -216,4 +326,3 @@ func _resolver_whiff() -> void:
 	if _dono and "hit_confirmed" in _dono and _dono.hit_confirmed:
 		return                        # acertou: recuperação normal
 	_trava += Melee.recuperacao(_passo_em_curso, w) * (Melee.WHIFF_MULT - 1.0)
-
