@@ -226,7 +226,7 @@ class ElThorController extends Node3D:
 		pm.scale_min = 1.6
 		pm.scale_max = 4.2
 		pm.color_ramp = FxUtil.gradient([Color(0, 0, 0, 0), GoroFX.STORM_NAVY, GoroFX.STORM_BLUE, Color(0, 0, 0, 0)])
-		var bruma := FxUtil.particles(150, 2.4, false, pm, FxUtil.grain(2.0))
+		var bruma := FxUtil.particles(150, 2.4, false, pm, FxUtil.grain(2.0), 0.0, "hero")
 		add_child(bruma)
 		bruma.position = Vector3(0, ALTURA_NUVEM - 1.5, 0)
 

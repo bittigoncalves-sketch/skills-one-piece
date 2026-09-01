@@ -1,5 +1,6 @@
 class_name GomuRedHawk
 extends Node3D
+const FxQualityPolicy = preload("res://src/effects/FxQuality.gd")
 
 const FIRE_COLOR := Color(1.0, 0.4, 0.05)
 const CORE_COLOR := Color(1.0, 0.9, 0.4)
@@ -74,7 +75,7 @@ func _spawn_blink_trail(from: Vector3, to: Vector3) -> void:
 	pm.scale_max = 2.5
 	pm.color_ramp = FxUtil.gradient([TRAIL_COLOR, Color(1,0,0,0)])
 	
-	var trail := FxUtil.particles(40, 0.4, true, pm, FxUtil.grain(0.8))
+	var trail := FxUtil.particles(40, 0.4, true, pm, FxUtil.grain(0.8), 0.0, "hero")
 	_world.add_child(trail)          # add_child ANTES: global_position fora da árvore erra
 	trail.global_position = from
 	FxUtil.autofree(trail, 0.5)
@@ -124,7 +125,7 @@ func _attach_fire_to_fist(arm: GomuArm, dir: Vector3) -> void:
 	pm.scale_max = 2.5
 	pm.color_ramp = FxUtil.gradient([CORE_COLOR, FIRE_COLOR, Color(0.2, 0.0, 0.0, 0.0)])
 	
-	var fire := FxUtil.particles(150, 0.5, false, pm, FxUtil.grain(0.8))
+	var fire := FxUtil.particles(150, 0.5, false, pm, FxUtil.grain(0.8), 0.0, "hero")
 	arm.add_child(fire) # Segue o braço
 	
 func _impact(pos: Vector3) -> void:
@@ -175,23 +176,20 @@ func _impact(pos: Vector3) -> void:
 	queue_free()
 
 func _spawn_explosion(pos: Vector3) -> void:
-	# Flash
-	var light := OmniLight3D.new()
-	light.light_color = FIRE_COLOR
-	light.light_energy = 15.0
-	light.omni_range = 25.0
-	_world.add_child(light)
-	light.global_position = pos + Vector3.UP * 1.0
-	# O tween TEM que nascer na própria luz, não em `self`: este método é chamado
-	# de dentro de _impact(), que termina com queue_free() no GomuRedHawk. Um tween
-	# criado em `self` morre junto com o nó no fim do frame, o tween_callback nunca
-	# roda e a OmniLight3D fica ACESA no mapa para sempre (1 luz por uso do V).
-	var tw := light.create_tween()
-	tw.tween_property(light, "light_energy", 0.0, 0.4)
-	tw.tween_callback(light.queue_free)
-	# Rede de segurança: se o tween for interrompido por qualquer motivo, a luz
-	# ainda sai de cena. 0.6 > 0.4 do fade, então não corta o efeito.
-	FxUtil.autofree(light, 0.6)
+	# Flash hero: o impacto e a cratera existem em todos os perfis; a luz é um
+	# realce caro e sai somente do celular.
+	if FxQualityPolicy.permite_luz("hero"):
+		var light := OmniLight3D.new()
+		light.light_color = FIRE_COLOR
+		light.light_energy = 15.0
+		light.omni_range = 25.0
+		_world.add_child(light)
+		light.global_position = pos + Vector3.UP * 1.0
+		# O tween nasce na luz: este controlador pode sumir no fim do impacto.
+		var tw := light.create_tween()
+		tw.tween_property(light, "light_energy", 0.0, 0.4)
+		tw.tween_callback(light.queue_free)
+		FxUtil.autofree(light, 0.6)
 	
 	# Explosão de chamas
 	var pm := ParticleProcessMaterial.new()
@@ -205,7 +203,7 @@ func _spawn_explosion(pos: Vector3) -> void:
 	pm.scale_max = 4.0
 	pm.color_ramp = FxUtil.gradient([CORE_COLOR, FIRE_COLOR, Color(0.1, 0.1, 0.1, 0.5), Color(0,0,0,0)])
 	
-	var exp := FxUtil.particles(400, 1.0, true, pm, FxUtil.grain(0.8))
+	var exp := FxUtil.particles(400, 1.0, true, pm, FxUtil.grain(0.8), 0.0, "hero")
 	_world.add_child(exp)            # add_child ANTES: global_position fora da árvore erra
 	exp.global_position = pos
 	FxUtil.autofree(exp, 1.2)

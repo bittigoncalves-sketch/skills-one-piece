@@ -36,8 +36,8 @@ extends RefCounted
 #  recebe a resposta por parâmetro.
 # ============================================================================
 
-const INTERVALO := 0.09     # cadência da rajada Z
-const MAX_BALAS := 16       # a rajada para sozinha depois disto
+const INTERVALO := 0.16     # cadência da rajada Z: dá tempo de ler saque, coice e retorno
+const MAX_BALAS := 8        # menos projéteis, cada um com impacto de dano relevante
 const YAMI_CADENCIA := 0.35 # tempo entre tiros da pistola da Yami
 
 var _dono: Node = null
@@ -54,6 +54,7 @@ var _yami_cd: float = 0.0
 # Alterna a mão a cada tiro (0 = esquerda, 1 = direita). É das duas mecânicas:
 # a pistola existe nas DUAS mãos e o disparo alterna.
 var _mao: int = 0
+var _lado_do_ultimo_tiro: int = -1
 
 func montar_em(dono: Node) -> void:
 	_dono = dono
@@ -61,6 +62,7 @@ func montar_em(dono: Node) -> void:
 # ------------------------------------------------------------------ leitura
 func rajada_ativa() -> bool: return _rajada
 func yami_ativa() -> bool:   return _yami
+func lado_do_ultimo_tiro() -> int: return _lado_do_ultimo_tiro
 # "Este corpo está com pistola na mão?" — é o que decide a visibilidade dela no
 # rig e vários portões (soco, dash, troca de slot).
 func armado() -> bool:       return _rajada or _yami
@@ -111,8 +113,10 @@ func tick_rajada(delta: float, custo_por_bala: float) -> void:
 # CONVERGIR nele partindo do cano da pistola — assim ela acerta exatamente onde
 # a mira aponta, e não paralelo a ela.
 func pedir_bala() -> void:
-	var origem: Vector3 = _dono._mira.boca_da_pistola(_dono._pistols, _mao, _dono._cam)   # alterna esquerda/direita
+	var lado := _mao
+	var origem: Vector3 = _dono._mira.boca_da_pistola(_dono._pistols, lado, _dono._cam)   # alterna esquerda/direita
 	_mao = 1 - _mao
+	_lado_do_ultimo_tiro = lado
 	var alvo: Vector3 = _dono._mira.ponto_de_mira(_dono._cam, _dono.aim_assist)
 	var aim := alvo - origem
 	if aim.length() < 0.01:

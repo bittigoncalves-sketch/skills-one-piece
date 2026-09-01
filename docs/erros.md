@@ -7,6 +7,568 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-08-31 — quase apaguei 884 linhas do Codex com um `git checkout`
+
+**Sintoma:** para saber se uma regressão era minha, revertí `Player.gd` e
+`DamageZone.gd` com `git checkout --`. O `Player.gd` tinha **884 linhas não
+commitadas** de outro agente (o `_girar_modelo` corrigido para a Gura Gura,
+`FRUTA_INICIAL` mudada para `suke_suke`, e o combate contextual inteiro).
+
+**Causa raiz:** tratei "reverter para comparar" como operação barata. Num
+repositório onde outro agente trabalha e não commita, `git checkout --` é
+destrutivo e silencioso: não avisa que está descartando trabalho, e o que
+descarta não está em lugar nenhum. O arquivo tinha 884 linhas de diferença e eu
+não olhei antes.
+
+**Evidência:** `git diff --stat Player.gd` depois de restaurar: 884 linhas. O
+trabalho só sobreviveu porque eu havia copiado os três arquivos para o
+scratchpad antes — hábito, não decisão consciente de que havia algo a proteger.
+
+**E a comparação ainda saiu errada:** revertendo o Player INTEIRO, eu não
+testava "sem a minha mudança", e sim "sem a minha mudança E sem as 884 do
+outro agente". O `test_melee_trava` passou, e eu quase conclui que a regressão
+era minha. Refeito removendo **apenas** as minhas linhas, ele continuou
+falhando — a mudança era do outro agente, e proposital.
+
+**Correção:** para isolar uma mudança própria num arquivo compartilhado, tirar
+só as próprias linhas (recorte pontual), nunca `git checkout` do arquivo.
+
+**Como detectar de novo:** antes de qualquer `git checkout --`, rodar
+`git diff --stat` no alvo. Se houver mais linhas do que as que eu escrevi,
+alguém mais mexeu ali.
+
+## 2026-08-29 — a asa não aponta para um lado: ela sobe E cai ao mesmo tempo
+
+**Sintoma:** depois de pôr as asas "na vertical" a pedido do dono, ele mandou
+outro print: a PONTA estava para cima e devia estar para baixo. Uma folha nova
+(`lunarian 2`) mostrou por quê.
+
+**Causa raiz:** a asa era tratada como uma peça RÍGIDA que aponta para alguma
+direção, e toda a conversa girou em torno de "para cima ou para baixo?" — a
+pergunta errada. Na folha ela faz as duas coisas ao mesmo tempo: o arco do dorso
+SOBE do ombro até acima da cabeça, e as penas longas CAEM desse arco até a
+altura do quadril. Perseguir um ângulo só nunca ia chegar lá, e cada ajuste
+trocava um erro pelo outro — "vertical" me deu a ponta para cima, que era
+exatamente o que ele não queria.
+
+**Evidência:** a métrica antiga era um número — o ângulo da ponta — e por isso
+não conseguia sequer EXPRIMIR a forma certa. Com duas medidas, o repouso passou
+a ler topo do arco +0,69 (acima do ombro) e ponta das penas −0,90 (abaixo), que
+é a silhueta da folha.
+
+**Correção:** `src/customizacao/AsaLunar.gd` — a geometria virou um ARCO com
+penas penduradas nele (`sin(t·π·0,72)` põe o pico a dois terços da envergadura,
+onde fica a "mão" da asa), em duas camadas. As poses viraram desvios a partir de
+uma forma que já está certa parada, em vez de tentativas de apontar a asa.
+
+**Como detectar de novo:** `medir_visual_no_jogo` afere TOPO e PONTA
+separadamente. Se a asserção voltar a ser um número só, ela volta a aprovar uma
+asa que aponta toda para o mesmo lado.
+
+**Padrão a levar adiante:** quando ajustes sucessivos trocam um defeito por
+outro sem convergir, o problema costuma ser a métrica, não o valor. Uma forma
+que precisa de duas medidas não cabe numa asserção de uma.
+
+## 2026-08-29 — nenhum valor de inclinação punha a asa na vertical
+
+**Sintoma:** o dono mandou um print e pediu as asas na vertical. Aumentar a
+inclinação não resolvia: passava de um ponto e a asa PIORAVA.
+
+**Causa raiz:** as penas crescem para TRÁS (+Z local, que é o comprimento
+delas), e a inclinação gira em Z — o eixo que levanta a ENVERGADURA, não o
+comprimento. Com a ponta a ~0,74 de recuo, o ângulo vertical tem um teto
+geométrico: nenhum valor de inclinação a leva acima dele, porque o problema não
+estava nela.
+
+**Evidência:** varredura do ângulo real da ponta contra a inclinação escrita —
+1,02 rad → +38,5°; 1,32 → +48,3°; **1,60 → +53,3° (o pico)**; 1,90 → +52,4°;
+2,20 → +45,4°; 2,50 → +32,8°. A curva sobe, satura e desce.
+
+**Descartado:** *o leque das penas*. Era a suspeita, e a inclinação em leque
+(`-t * 0.30`, que apontava a ponta para baixo) foi reduzida — o pico subiu de
++53,1° para apenas +53,5°. A medição matou a hipótese em uma execução.
+
+**Correção:** `src/customizacao/AsaLunar.gd` — um terceiro eixo, `pitch`, que
+gira em X e é justamente o que leva +Z para +Y, levantando o COMPRIMENTO da
+asa. Varredura 2-D de pitch × inclinação achou o par: `pitch −0,60` com
+`inclinacao 1,70` dá +87,5°, com a ponta acima do ombro e quase sem
+espalhamento lateral.
+
+**Erro no meio da correção:** `_angulos_da_asa` continuou setando só dois eixos
+depois que o terceiro entrou, e media a asa com o `pitch` do estado ANTERIOR —
+"pulando" deu −13,7° em vez de −64,2° e reprovou uma pose correta. Pose
+incompleta mede outra pose.
+
+**Como detectar de novo:** quando aumentar um parâmetro parar de melhorar e
+começar a piorar, o eixo está errado — varrer o parâmetro e olhar a curva custa
+uma execução e mostra o teto na hora.
+
+## 2026-08-29 — testei o parâmetro que escrevi, não o ângulo que saía
+
+**Sintoma:** o dono olhou o print e disse "a asa está na horizontal", com a
+asserção "a asa de repouso não é horizontal" passando verde.
+
+**Causa raiz:** a asserção era `POSE["repouso"]["inclinacao"] > 0.35` — o
+PARÂMETRO DE ENTRADA, não o resultado. E os dois não coincidem: as penas descem
+ao longo da envergadura (`queda` mais o rebaixamento por `t`), e essa geometria
+come cerca de 17° da elevação. Com 0,52 rad escritos (30°) a ponta da asa subia
++12,3°, que é horizontal a olho — exatamente o que ele viu. O teste confirmava
+que eu tinha digitado 0,52; nunca perguntou onde a asa foi parar.
+
+**Evidência:** ângulo vertical da ponta, medido: repouso +12,3°, andando +2,0°,
+correndo −9,1°. Depois de calibrar CONTRA a medição: +38,7°, +13,1°, +4,9°, com
+pulando em −45,5° e caindo em +48,4°.
+
+**Segundo erro, no meio da correção:** a primeira medição do ângulo foi feita em
+espaço GLOBAL, e a mesma pose deu +38,7° no boneco do menu e −40,3° no do jogo —
+a rotação e a escala do modelo do jogador entravam na conta. "Para cima" e "para
+trás" são do PERSONAGEM: o referencial certo é o pai da asa, e a medição passou
+a ser `a.transform * ponta.position - a.position`.
+
+**Correção:** `src/customizacao/AsaLunar.gd` — as cinco poses recalibradas
+contra o ângulo medido, e a queda interna das penas reduzida (era ela que roubava
+a elevação). `tools/dev_tests/medir_visual_no_jogo.gd` — `_angulos_da_asa` mede a
+PONTA no espaço do ombro e afere os cinco casos do pedido.
+
+**Como detectar de novo:** asserção sobre aparência tem de medir o que aparece.
+Se o teste lê uma constante do próprio catálogo, ele só confirma que o número
+foi digitado — e passa verde com a tela errada.
+
+**Padrão a levar adiante:** quando o usuário e o teste discordam sobre o que está
+na tela, o teste está medindo a coisa errada. É a terceira vez nesta sessão
+(antes: a camada de material errada, e o eixo da própria rotação).
+
+## 2026-08-29 — não dá para simular "andando" escrevendo em `velocity`
+
+**Sintoma:** a asserção "andando no chão -> andando" reprovou. A sonda escrevia
+`p.velocity = Vector3(6, 0, 0)` e lia o estado da asa quatro quadros depois:
+vinha `repouso`, com velocidade plana 0,00.
+
+**Causa raiz:** o `Player` RECALCULA a velocidade todo quadro de física a partir
+do input (`MoveFrame.ler` → `_etapa_locomocao`). Escrever nela de fora dura
+menos de um quadro — sem tecla pressionada, o próximo passo zera. A leitura do
+estado estava certa; a SIMULAÇÃO é que não se sustentava.
+
+**Descartado:** *injetar a tecla*. Foi a tentativa seguinte, e também não serviu:
+medido, `velocidade plana 0,00` mesmo segurando W nesta sonda — `MoveFrame.ler`
+depende de mouse capturado e menu fechado, e neste contexto o input não chega.
+
+**Correção:** a regra virou função PURA — `AsaLunar.estado_de(no_chao, vel,
+correndo)` — e `estado()` ficou só com a leitura dos três valores do corpo.
+Assim os cinco estados são verificáveis sem mundo nenhum (incluindo "saltou
+correndo → pulando, não correndo"), e o que ainda depende do corpo é testado no
+que dá para provocar de verdade: o ar, onde a velocidade vertical persiste.
+
+**Como detectar de novo:** se uma asserção sobre movimento só passa quando o
+personagem se move, e o personagem não se move na sonda, o problema é o
+acoplamento do teste ao mundo. Separar a regra da leitura resolve, e de quebra
+permite testar os casos que o mundo não produz sob demanda.
+
+**Padrão a levar adiante:** estado derivado de física é caro de provocar e
+barato de calcular. Quando a decisão couber numa função de argumentos simples,
+ela deve morar lá — não porque fica "mais limpo", mas porque passa a ser
+testável nos casos que importam em vez de nos que o ambiente permite.
+
+## 2026-08-29 — a chama parecia mal posicionada, e o UV é que estava invertido
+
+**Sintoma:** a chama 2D das costas do Lunariano aparecia só ACIMA da cabeça,
+como uma tocha boiando no ar, em vez de subir pelas costas. Ajustei a âncora
+duas vezes achando que era posição.
+
+**Causa raiz:** o `QuadMesh` do Godot tem o UV com **Y invertido** — `UV.y = 0`
+é o TOPO do plano, não a base. A máscara de altura do shader
+(`1.0 - smoothstep(0.15, 1.0, uv.y)`) foi escrita supondo o contrário, então
+desenhava o fogo forte em cima e fraco embaixo: o oposto do pretendido. A chama
+sempre esteve no lugar certo; o que estava errado era o DESENHO dentro dela.
+
+**Evidência:** medida a posição em vez de olhada — a chama ia de y=1,73 a 2,98
+no espaço do modelo, com a cabeça em 2,70. Ou seja, cobria as costas inteiras
+desde antes de eu mexer em qualquer âncora. Depois de inverter o UV, o fogo
+apareceu na base, no lugar em que já estava.
+
+**Descartado:** *posição da âncora* e *oclusão pelo corpo* — as duas suspeitas
+naturais, e as duas mortas pela mesma medição.
+
+**Correção:** `src/fx/shaders/chama_lunar.gdshader` — `vec2 uv = vec2(UV.x, 1.0
+- UV.y)` logo no começo do `fragment`.
+
+**Como detectar de novo:** quando um efeito parecer estar no lugar errado,
+imprimir a posição GLOBAL dele e a do corpo antes de mover qualquer coisa. Dois
+ajustes de âncora foram gastos por não fazer isso primeiro.
+
+---
+
+## 2026-08-29 — medi o eixo da rotação e disse que a asa não se mexia
+
+**Sintoma:** a asserção "a asa BATE de verdade" reprovou com variação exata de
+`0.0000`, num batimento que estava funcionando.
+
+**Causa raiz:** o teste comparava `basis.z` antes e depois, e o batimento é uma
+rotação EM TORNO de Z — o eixo de uma rotação é justamente a coluna que ela não
+mexe. Medi o único dos três eixos que não podia mudar.
+
+**Evidência:** `_process` rodando (`_t = 0.3228` depois de 40 quadros) com
+`basis.z` imóvel. Comparando as três colunas: variação 0,0842.
+
+**Correção:** `tools/dev_tests/medir_visual_no_jogo.gd` soma a diferença das
+três colunas da base, o que é robusto a qual eixo gira.
+
+**Como detectar de novo:** ao medir rotação, nunca olhar uma coluna só — ou
+saber qual é o eixo e olhar outra. É o terceiro caso desta sessão em que a sonda
+reprovou algo que funcionava por estar olhando o lugar errado (os outros: a
+coluna central da tela que cruzava o personagem, e o `surface_override_material`
+enquanto o bug morava no `material_override`).
+
+## 2026-08-29 — o menu apagava a cor da raça um quadro depois de pintá-la
+
+**Sintoma:** achado ao conferir as raças novas: escolher Oni no menu pintava o
+corpo de vermelho e a cor sumia em seguida. A raça continuava aplicada — as
+peças estavam lá —, mas o corpo voltava ao cinza.
+
+**Causa raiz:** a ação do botão de raça terminava com um `_pintar()`, sobra de
+quando a TELA era dona da cor. Essa função lia `_cor_idx`, campo do menu que
+deixou de ser escrito quando o estado migrou para o `Visual` e ficou preso em
+−1 — e `-1` significa "original", cujo efeito é `material_override = null` em
+todas as malhas. A sequência era: `Visual.aplicar` pinta de vermelho, a linha
+seguinte apaga.
+
+**Evidência:** clicando o botão "Oni" pelo caminho real, o corpo lia
+`(0, 0, 0, 0)` (sem material) em vez de `(0.70, 0.16, 0.14)`. Depois de remover
+a chamada: `(0.70, 0.16, 0.14)`.
+
+**Por que dois testes deixaram passar:** ambos chamavam `Racas.aplicar` e
+`Visual.aplicar` DIRETO. O defeito não estava em nenhuma das duas — estava no
+que a tela fazia depois delas. Um teste que exercita só as funções nunca vê uma
+regressão que mora no chamador.
+
+**Correção:** `src/ui/CustomizacaoMenu.gd` — a chamada saiu, e a função
+`_pintar` e os campos `_cor_idx`/`_cor_grupo` foram removidos por inteiro: eram
+uma segunda fonte de verdade sobre a cor, que discordava da primeira. Quem pinta
+é `Visual.pintar`, a mesma função que a partida usa.
+
+**Como detectar de novo:** `medir_customizacao.gd` agora CLICA no botão "Oni"
+(`_clicar`, que emite o `gui_input` como o jogador faria) e confere a cor
+depois. É o único jeito de cobrir o que a tela faz além de chamar a função.
+
+**Padrão a levar adiante:** ao mover um estado de um lugar para outro, o perigo
+não é o código novo — é o código velho que continua lendo o campo antigo. Ele
+compila, roda, e opera sobre um valor que ninguém mais atualiza.
+
+## 2026-08-29 — test_segurar_ataque é INTERMITENTE (aberto, não é regressão)
+
+**Sintoma:** `./validar.sh rapido` reprovou `test_segurar_ataque` com "o controle
+não andou: a tecla não chegou. Medição inválida." numa execução em que só a arte
+de fundo do menu de Customização tinha mudado — código que esse teste nem toca.
+
+**Causa raiz:** não é o jogo: é o próprio teste se recusando a medir. Ele precisa
+de TELA e injeta teclas por `Input.parse_input_event` numa janela real; quando a
+tecla não é registrada a tempo, ele aborta de propósito em vez de reportar um
+número falso — o que é a decisão certa dele. A fragilidade está na injeção, não
+na mecânica testada.
+
+**Evidência:** duas execuções seguidas do MESMO commit, sem nenhuma alteração
+entre elas: a primeira saiu com código 1 e a segunda com 0. A suíte completa,
+rodada de novo, deu 35 de pé e 0 falhas.
+
+**Descartado:** *regressão da arte de fundo*. A mudança foi um `TextureRect` e a
+transparência do SubViewport dentro do `CustomizacaoMenu`; `test_segurar_ataque`
+não abre esse menu.
+
+**Correção:** nenhuma ainda — fica registrado como flakiness conhecida. O
+conserto de verdade é o teste esperar a tecla ser vista (condição) em vez de
+contar quadros, que é o mesmo padrão de duas asserções instáveis já corrigidas
+em 2026-08-27.
+
+**Como detectar de novo:** ao ver essa mensagem, rodar o teste isolado duas
+vezes. Se uma passa e outra não, é isto — e não a mudança que estava em curso.
+
+## 2026-08-29 — ao entrar no jogo tudo virava azul (corpo E acessórios)
+
+**Sintoma:** relato do dono — "bug encontrado na cor: ao logar a cor se torna
+automaticamente azul, tanto do acessório quanto do jogador". A customização
+aparecia certa por um instante e era substituída.
+
+**Causa raiz:** são DUAS coisas no mesmo ponto, e as duas em `_tingir_modelo`.
+
+1. *Por que azul:* no spawn o `Main` dá a cada peer uma cor da paleta
+   (`Main.gd:237`) e o peer 1 — o único que existe no singleplayer — recebe a
+   PRIMEIRA, que é azul. A chamada é `call_deferred` (`Main.gd:278`), ou seja
+   roda DEPOIS de o rig estar montado e a customização aplicada, e pinta por
+   cima. Sozinho no mundo não há quem distinguir: a cor de time não resolvia
+   nada ali e só apagava a escolha do jogador.
+
+2. *Por que o acessório junto:* `_tingir_modelo` varre TODAS as malhas do
+   modelo, sem distinguir corpo de guarda-roupa. Pior, ele pinta por
+   `material_override`, que no Godot VENCE o `surface_override_material` com que
+   os acessórios são pintados — a cor original continuava intacta na camada de
+   baixo, invisível.
+
+**Evidência:** com a customização montada (pele, cabelo loiro, cartola), depois
+de `aplicar_cor_do_jogador(0)` os três liam `(0.16, 0.42, 0.95)` — o azul da
+paleta. Depois da correção: corpo `(0.94, 0.78, 0.63)`, cabelo `(0.9, 0.75,
+0.32)`, cartola `(0.29, 0.29, 0.33)`.
+
+**O código já sabia, e tinha deixado passar:** a nota de `_tingir_modelo`
+registrava que uma arma da Buki na mão saía tingida junto e concluía que "não
+vale complicar por isso enquanto for só cosmético". Era verdade enquanto a arma
+voltava ao normal no saque seguinte; deixou de ser quando a Customização passou
+a pendurar peças permanentes no mesmo modelo.
+
+**Correção:** `Player._tingir_modelo` pula o que for adorno (`Visual.e_adorno`),
+e desiste da pintura quando o jogador escolheu uma cor E não há outros peers —
+em partida com gente a cor de time continua mandando, porque ali ela diz quem é
+quem, e isso vale mais que a preferência estética.
+
+**Erro meu, e o que ele ensina:** minha primeira medição disse que o acessório
+NÃO tinha virado azul — duas asserções passaram enquanto o bug relatado estava
+na tela. A sonda lia `surface_override_material` e o bug morava em
+`material_override`, a camada que vence. Foi ler a camada errada, exatamente
+como já tinha acontecido ao medir a coluna central da tela que cruzava o
+personagem. Quando o relato do dono e a minha medição discordam, a suspeita
+começa pela medição.
+
+**Como detectar de novo:** `medir_visual_no_jogo.gd`, seções 6 e 7. A 7 é o
+CONTROLE: sem ela, "consertar" o bug matando a cor de time passaria no teste e
+quebraria a identificação de jogadores no PvP.
+
+## 2026-08-29 — estado persistido contamina teste que não o zera
+
+**Sintoma:** depois de ligar a customização ao mundo, o `medir_customizacao`
+passou a reprovar quatro asserções que nada tinham a ver com a mudança —
+"cenário montado: dois acessórios na cabeça", "equipar na MESMA parte não
+empilha", "as quatro convivem no mesmo nó" e "começa sem olhos". O código
+testado estava correto.
+
+**Causa raiz:** o menu passou a chamar `Visual.carregar_uma_vez()` ao abrir, e
+uma execução anterior — do `medir_visual_no_jogo`, que salva de propósito, ou do
+jogo de verdade — tinha deixado um personagem montado em `user://visual.cfg`. O
+boneco da prévia nascia com cabelo, boca, cartola e máscara, e toda contagem do
+teste mudava. As asserções contavam acessórios sem controlar quantos já havia.
+
+**Evidência:** 101 conferem / 5 divergem com o arquivo salvo; 107 / 0 depois de
+zerar `Visual` no começo da sonda. Nenhuma linha do código de produção mudou
+entre as duas execuções.
+
+**Correção:** `tools/dev_tests/medir_customizacao.gd` zera o estado e marca
+`Visual._carregado = true` antes de montar o menu, impedindo a releitura do
+disco. A quinta falha era diferente e legítima: "há quatro categorias" virou
+cinco, porque `cabelo` ganhou categoria própria.
+
+**Como detectar de novo:** rodar a sonda duas vezes seguidas. Se a segunda
+execução divergir da primeira, ela está lendo o que a primeira deixou no disco.
+
+**Padrão a levar adiante:** no instante em que um sistema ganha persistência,
+todo teste que o toca herda uma dependência invisível de execuções passadas — e
+falha contando coisas que ninguém equipou naquela execução. O teste precisa
+zerar o estado, não presumir que ele começa vazio.
+
+## 2026-08-29 — o menu e a partida não usam a mesma cabeça, e o acessório não sabia disso
+
+**Sintoma:** o chapéu de palha aparece esticado para trás na prévia do menu de
+Customização, atravessando a nuca — e coroa, cartola e máscara da peste, recém
+modeladas, saíam com o mesmo alongamento. No jogo, as mesmas peças assentam
+certo.
+
+**Causa raiz:** são DOIS modelos de personagem com cabeças diferentes. O menu
+monta por `CharacterBuilder.build_character("base")`, cujo `Head` tem AABB
+`tam(0,500, 0,500, 0,400)`; a partida monta pelo rig, cujo `Head` tem
+`tam(0,500, 0,500, 0,740)` — quase o dobro da profundidade. O acessório é um
+`.glb` de tamanho ABSOLUTO: a âncora sempre foi fração da caixa e se adaptava,
+mas o tamanho não. Modelado para uma cabeça, sobra na outra.
+
+**Evidência:** a divergência estava escrita no próprio repositório, em duas
+tabelas que ninguém tinha comparado — `tools/blender/acessorios.py` documenta
+`Head tam(0.500, 0.500, 0.400)` e `tools/blender/chapeu_palha.py` documenta
+`tamanho (0,500, 0,500, 0,740)`. Cada uma foi medida num modelo diferente, e as
+duas estavam certas sobre o modelo que mediram. Confirmado em runtime: o `Head`
+do player é um `MeshInstance3D` com malha própria de 0,740 de profundidade, sem
+filhos que pudessem inflar a união de AABBs.
+
+**Descartado:** *escala do rig*. Era a suspeita imediata, e o próprio
+`CustomizacaoMenu` tem uma nota dizendo que o modelo do `CharacterBuilder` vem
+no tamanho nativo, "sem a escala que o rig aplica em partida". Mas escala
+uniforme não muda proporção, e aqui largura e altura batem (0,500 nas duas) e só
+a profundidade diverge — é geometria diferente, não escala.
+
+**Correção:** `src/customizacao/Acessorios.gd` — a peça declara no catálogo a
+caixa `ref` para a qual foi modelada, e `equipar()` aplica
+`scale = caixa_real / ref`. Não-uniforme de propósito: o que muda entre as duas
+cabeças é só a profundidade, e é só nela que a peça deve encolher. Declarado nas
+seis peças novas e no chapéu de palha, que tinha o defeito desde que nasceu.
+
+**Alcance não corrigido:** as outras cinco peças de `acessorios.py` (chinelo,
+capa da marinha, colete, calção, espadas) foram modeladas pela tabela do MENU e
+têm o mesmo descompasso ao contrário — a tabela do Torso também diverge (0,360
+documentado contra 0,666 medido no rig). Ficaram sem `ref` porque estão fora do
+que o dono pediu; a correção é uma linha por peça quando ele quiser.
+
+**Como detectar de novo:** `medir_customizacao.gd` imprime a caixa do `Head` do
+menu e afere posição em FRAÇÃO da caixa, não em metros — uma asserção em metros
+passa num modelo e reprova no outro sem que a peça tenha nada de errado.
+
+## 2026-08-28 — na parede o WASD girava 90°, porque a frente da câmera é horizontal
+
+**Sintoma:** relato do dono — "as teclas A W S D na parede ficam invertidas: o W
+e o S passam a ir para os lados e o A e o D para cima e para baixo. Ocorre
+quando o jogador pula tendo como origem alguma parte próxima à lateral do
+bloco."
+
+**Causa raiz:** `_atualizar_base_da_superficie` montava a base do movimento com
+`Basis.looking_at(proj, n)`, onde `proj` era a frente da CÂMERA projetada no
+plano da parede. Só que `q.frente` vem de `RosaDosVentos.base_do_corpo(yaw)` —
+a base do pivô **só com yaw, sem pitch**, de propósito, para o dash ser sempre
+horizontal (`MoveFrame.ler`). Ou seja, `q.frente` é horizontal por construção, e
+projetar um vetor horizontal no plano de uma parede a prumo devolve sempre a
+tangente horizontal, nunca "subir". O eixo do W virava o lado e o do A/D virava
+a vertical — 90° de rotação, exatamente o relato.
+
+**Evidência:** `tools/dev_tests/medir_teclas_parede.gd`, deslocamento decomposto
+nos dois eixos do plano da parede:
+
+    câmera de frente ....... W subida +1,53 | lado +0,00   ✅
+    câmera a 45 graus ...... W subida +0,07 | lado −1,45   ❌
+    câmera ao longo ........ W subida +0,08 | lado −1,53   ❌
+    câmera a 45 (outro lado) W subida +0,08 | lado +1,53   ❌
+
+12 erros em 16 medições. Depois da correção: 16/16, com `lado +0,00` — sem
+contaminação em nenhum ângulo.
+
+**O que o caso "perto da lateral" tem de especial:** nada, no fim. Ele é só a
+postura em que o jogador chega olhando ao LONGO da face em vez de encará-la. A
+medição mostrou que o bug valia para todo ângulo menos um, e não para uma
+geometria específica — o relato descrevia a situação em que ele é fácil de
+provocar, não a condição que o causa.
+
+**A inversão que explica tudo:** o único ângulo que funcionava era a câmera de
+frente para a parede, e funcionava porque ali a projeção DEGENERA e o código
+caía no fallback "para cima da parede". O caminho principal produzia o bug e o
+caminho de exceção produzia o acerto — por isso a mecânica parecia funcionar
+quando testada de frente, que é como se testa naturalmente.
+
+**Descartado:** *degeneração numérica / histerese*. Era a suspeita natural, por
+causa do bug intermitente de 2026-08-27 no mesmo arquivo (base por projeção
+invertendo com 5° de mouse). Mas o erro aqui é de 90° exatos, estável e
+reprodutível em todo ângulo — não é ruído perto do limiar, é o eixo errado.
+
+**Correção:** `src/player/parkour_controller.gd` — a base agora se decide pela
+GEOMETRIA da superfície, não pela câmera: em superfície vertical
+(`LIMIAR_VERTICAL = 0.7`, ou seja mais de 45° de inclinação) a frente é o UP do
+mundo projetado, "subir", e a câmera não entra na conta; em superfície
+horizontal (topo, teto) segue a frente da câmera, que é o controle de chão de
+sempre, com a histerese que já existia. A direita não é escolhida: com frente e
+normal fixas ela sai da geometria, e sai concordando com a tela.
+
+**Como detectar de novo:** `medir_teclas_parede.gd` mede o eixo dominante de
+cada tecla em quatro ângulos de câmera. Se o dominante do W mudar conforme o
+yaw, a base voltou a depender da câmera.
+
+## 2026-08-28 — a cópia do dono regenera 10x mais rápido do que deveria (ABERTO)
+
+**Sintoma:** na tela do próprio jogador a barra de vida sobe mais rápido do que
+o servidor está curando. Medido: logo após um golpe, o servidor tinha 1920,0 e
+a cópia do cliente marcava 1930,2 — 10,2 hp de vida que o servidor não deu, em
+cerca de 1 s.
+
+**Causa raiz:** a penalidade de combate (`PENALIDADE_DANO = 0.10`, que derruba a
+regeneração de 10,24 hp/s para 1,02 hp/s nos 5 s seguintes a um dano) depende de
+`_t_ultimo_dano`, e esse campo só é escrito por `HealthController.sofrer_dano()`
+— que roda **no servidor**. Na cópia do dono a vida chega por
+`net_vida_do_servidor` (Player.gd:1744), que escreve `_vida.vida` direto e não
+toca em `_t_ultimo_dano`. Ou seja: a cópia que o jogador enxerga não sabe que
+acabou de apanhar, sai da penalidade e regenera a taxa cheia. Como o corpo do
+dono tem autoridade no processo dele, o `_physics_process` roda e a regen local
+acontece de verdade.
+
+**Evidência:** `net_dano_client_probe.gd`, item D. O corpo do host visto pelo
+cliente — cópia remota, que não regenera ali — bate exato (1792,0 = 1792,0), e
+só o corpo do próprio cliente deriva. A assimetria entre os dois números na
+mesma leitura é o que aponta a regen local como causa, e não perda de pacote.
+
+**Descartado:** *atraso de rede*. O RPC é `reliable` e a vida do host, medida na
+mesma leitura, chega exata; se fosse transporte, os dois números erravam juntos.
+
+**Alcance:** é divergência de APRESENTAÇÃO, não vantagem de jogo — a vida do
+servidor continua sendo a verdadeira e sobrescreve no dano seguinte. O jogador
+vê uma barra otimista entre um golpe e outro.
+
+**Correção:** ainda não aplicada (o pedido era o teste). O conserto natural é
+`net_vida_do_servidor` marcar o combate na cópia local quando `dano > 0` — o
+mesmo instante em que já chama `_feedback_de_dano`.
+
+**Como detectar de novo:** `net_dano_probe` no `validar.sh`, item D do relatório
+do cliente. Ele imprime a deriva sempre; se um dia aparecer perto de zero, o
+comportamento mudou e o item A pode voltar a ler a vida tardia em vez do degrau.
+
+## 2026-08-28 — teto absoluto num sinal cuja escala eu mesmo mudei
+
+**Sintoma:** ao desacelerar a marcha (pedido do usuário: animação mais lenta sem
+mexer no deslocamento), `test_walk_run` passou a reprovar `base / WALK` com
+"não achei período — a marcha não está ciclando". A animação estava ciclando
+normalmente na tela.
+
+**Causa raiz:** `_periodo()` julgava a qualidade do casamento da série com
+tolerâncias **absolutas em radianos** (0,004 para "fecha bem" e 0,02 para
+"aceita"), calibradas quando a coxa oscilava 87°. A desaceleração veio de baixar
+o quadril (`H_CORRIDA` 0.80→0.70, `H_SPRINT` 0.76→0.66), o que **aumenta a
+amplitude** da coxa para 112° — a perna precisa abrir mais para cobrir a mesma
+passada com o quadril mais baixo. O resíduo do casamento escala junto com o
+sinal, estourou 0,02, e o teste reprovou uma marcha correta. A propriedade que o
+teste quer verificar ("a série se repete") é de **forma**, não de escala; o teto
+não podia ser fixo.
+
+**Evidência:** amplitude da coxa 87° → 112° (1,29×) exatamente quando a falha
+apareceu; as outras três marchas, com amplitude ~103°, passaram raspando. Com o
+teto proporcional (0,0132 × amplitude, a mesma fração que 0,02/1,518 rad
+representava antes), as quatro passam mantendo o rigor relativo original.
+
+**Descartado:** *falta de amostra*. A primeira hipótese foi que o ciclo mais
+longo (33,4 quadros) não cabia na janela de 90 quadros; alonguei para 180 e a
+falha **continuou idêntica** — o que matou a hipótese antes de eu mexer em
+qualquer constante do jogo.
+
+**Correção:** `tools/dev_tests/test_walk_run.gd:263` — `_periodo()` calcula
+`_amplitude(s)` e deriva `fecha`/`aceita` como fração dela; o teto do erro de
+loop virou `0,033 × amplitude`.
+
+**Como detectar de novo:** sabotagem — `CADENCIA_ESCALA := 0.0` em
+`src/anim/ProceduralAnimator.gd` faz o teste voltar a imprimir "não achei
+período". Se não imprimir, o teto foi afrouxado demais e o teste está cego.
+
+**Padrão a levar adiante:** quando eu mudo uma constante que altera a **escala**
+de um sinal, todo limiar absoluto medido sobre esse sinal vira suspeito. O teste
+não estava errado antes — ele estava amarrado a uma escala que deixou de valer.
+
+---
+
+## 2026-08-28 — detector de período só testava atrasos inteiros num ciclo fracionário
+
+**Sintoma:** mesmo depois de passar, `base / WALK` fechava o loop com erro 0,0561
+contra um teto de 0,0645 (87% do teto), enquanto as outras três marchas — de
+qualidade idêntica — ficavam entre 0,0001 e 0,0062, duas ordens de grandeza
+abaixo. Uma assertion prestes a piscar no próximo ajuste de constante.
+
+**Causa raiz:** `_periodo()` só avaliava atrasos **inteiros** em quadros, mas o
+ciclo real é fracionário (33,4 quadros). Nenhum atraso inteiro fecha nele: o
+resíduo que sobrava não media a qualidade da marcha, media **o quanto um múltiplo
+do ciclo por acaso caiu perto de um inteiro**. O próprio comentário do teste já
+descrevia o fenômeno ("o ciclo real é fracionário e nenhum atraso inteiro fecha
+nele") mas o tratava como limitação aceita em vez de defeito de medição.
+
+**Evidência:** com amostragem sub-quadro o erro de `base / WALK` caiu de 0,0561
+para 0,0155 (24% do teto) **sem nenhuma mudança na animação**. O atraso refinado
+deu 66,80 quadros = 2 × 33,4, batendo com o ciclo medido de forma independente
+por `_ciclo()` (cruzamentos de média) — duas medições por métodos diferentes
+concordando.
+
+**Correção:** `tools/dev_tests/test_walk_run.gd` — `_erro_no_atraso()` amostra a
+série em atraso fracionário por interpolação linear, e `_refinar_atraso()` varre
+±0,5 quadro em passos de 0,05 em torno do melhor atraso inteiro.
+
+**Como detectar de novo:** se o erro de loop de uma marcha ficar acima de ~50% do
+teto enquanto as demais ficam abaixo de 10%, é desalinhamento de amostragem, não
+animação ruim — compare o atraso impresso com o `ciclo N frames` da mesma linha:
+ele tem que ser um múltiplo inteiro dele.
+
 ## 2026-08-25 — o transformador que consertava 28 sítios quebrou 6 e esvaziou 3 blocos
 
 **Sintoma:** depois de rodar um script que converteu "emissão → albedo HDR" em

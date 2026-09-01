@@ -78,6 +78,7 @@ var _aberr_pulso := 0.0    # pico de impacto/dash, decai sozinho
 var aim_assist_active := false
 var _local_player: Node3D = null
 var _red_target_mat: StandardMaterial3D
+var _alertas_de_observacao: Dictionary = {} # instance_id -> MeshInstance3D
 # Ataques em voo (golpes dos OUTROS). Âmbar para não se confundir com o vermelho
 # dos corpos — quando as duas coisas aparecem juntas atrás de um muro, cor igual
 # viraria uma mancha só.
@@ -136,6 +137,7 @@ func _process(delta: float) -> void:
 		if _highlight_timer <= 0.0:
 			_highlight_timer = 0.15
 			update_aim_highlights(true)
+		_animar_alertas_de_observacao()
 
 # ---- API ----
 func flash(color: Color = Color(1, 1, 1), strength: float = 0.5) -> void:
@@ -225,6 +227,71 @@ func update_aim_highlights(enable: bool) -> void:
 			else:
 				if geo.material_overlay == _red_target_mat:
 					geo.material_overlay = null
+		if enable and _esta_preparando_ataque(target):
+			_garantir_alerta_de_observacao(target)
+		else:
+			_remover_alerta_de_observacao(target.get_instance_id())
+	if not enable:
+		for id in _alertas_de_observacao.keys().duplicate():
+			_remover_alerta_de_observacao(id)
+	else:
+		var ids_ativos: Array[int] = []
+		for alvo in targets:
+			if _esta_preparando_ataque(alvo):
+				ids_ativos.append(alvo.get_instance_id())
+		for id in _alertas_de_observacao.keys().duplicate():
+			if not ids_ativos.has(id):
+				_remover_alerta_de_observacao(id)
+
+func _esta_preparando_ataque(alvo: Node3D) -> bool:
+	if alvo == null or not is_instance_valid(alvo):
+		return false
+	if bool(alvo.get_meta("preparing_attack", false)) or bool(alvo.get_meta("is_casting", false)):
+		return true
+	# Jogadores usam uma FSM; o startup é a janela exata entre apertar e golpear.
+	var fsm: Variant = alvo.get("_fsm")
+	if fsm != null and fsm.get("state") != null:
+		return str(fsm.get("state").name) == "AttackStartup"
+	return bool(alvo.get("_charging"))
+
+func _garantir_alerta_de_observacao(alvo: Node3D) -> void:
+	var id := alvo.get_instance_id()
+	if _alertas_de_observacao.has(id) and is_instance_valid(_alertas_de_observacao[id]):
+		return
+	var alerta := MeshInstance3D.new()
+	alerta.name = "AlertaObservacao"
+	var esfera := SphereMesh.new()
+	esfera.radius = 1.05
+	esfera.height = 2.45
+	alerta.mesh = esfera
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.no_depth_test = true
+	mat.render_priority = 101
+	mat.albedo_color = FxUtil.brilho(Color(1.0, 0.06, 0.03, 0.18), 3.0)
+	alerta.material_override = mat
+	alvo.add_child(alerta)
+	alerta.position = Vector3(0, 0.25, 0)
+	_alertas_de_observacao[id] = alerta
+
+func _remover_alerta_de_observacao(id: int) -> void:
+	var alerta = _alertas_de_observacao.get(id)
+	if is_instance_valid(alerta):
+		alerta.queue_free()
+	_alertas_de_observacao.erase(id)
+
+func _animar_alertas_de_observacao() -> void:
+	var pulso := (sin(_tempo * 11.0) + 1.0) * 0.5
+	for id in _alertas_de_observacao.keys().duplicate():
+		var alerta = _alertas_de_observacao[id] as MeshInstance3D
+		if not is_instance_valid(alerta):
+			_alertas_de_observacao.erase(id)
+			continue
+		alerta.scale = Vector3.ONE * lerpf(0.96, 1.12, pulso)
+		var mat := alerta.material_override as StandardMaterial3D
+		if mat:
+			mat.albedo_color.a = lerpf(0.10, 0.28, pulso)
 
 func is_aim_target_highlighted(node: Node3D) -> bool:
 	if not aim_assist_active or node == null or node == _local_player:

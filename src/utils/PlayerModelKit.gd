@@ -22,6 +22,32 @@ static func build_pistol() -> Node3D:
 	gun.add_child(hand_box(Vector3(0.035, 0.04, 0.05), Vector3(0, -0.02, 0.06), Vector3.ZERO, steel))
 	return gun
 
+# Pistolas criadas para o saque da Mera Mera Z. O cano aponta no eixo -Y local,
+# igual à pistola comum, para o cálculo de mira continuar usando a ponta visível.
+static func build_mera_pistol() -> Node3D:
+	var gun := Node3D.new()
+	gun.name = "MeraFirelock"
+	var charcoal := Color(0.075, 0.045, 0.035)
+	var iron := Color(0.22, 0.16, 0.12)
+	var brass := Color(0.78, 0.29, 0.045)
+	var ember := Color(1.0, 0.18, 0.015)
+	# Corpo compacto, slide superior e cano longo — silhueta legível mesmo de longe.
+	gun.add_child(hand_box(Vector3(0.09, 0.25, 0.11), Vector3(0, -0.10, 0.0), Vector3.ZERO, charcoal))
+	gun.add_child(hand_box(Vector3(0.065, 0.39, 0.065), Vector3(0, -0.22, 0.0), Vector3.ZERO, iron))
+	# Câmara incandescente e duas faixas de latão, marcando que é uma arma de fogo.
+	gun.add_child(emissive_box(Vector3(0.10, 0.045, 0.115), Vector3(0, -0.05, 0.0), brass, 1.2))
+	gun.add_child(emissive_box(Vector3(0.078, 0.028, 0.078), Vector3(0, -0.31, 0.0), ember, 3.5))
+	gun.add_child(hand_box(Vector3(0.104, 0.022, 0.118), Vector3(0, -0.16, 0.0), Vector3.ZERO, brass))
+	# Mira, guarda-mato e empunhadura inclinada para a palma.
+	gun.add_child(emissive_box(Vector3(0.025, 0.042, 0.035), Vector3(0, -0.27, -0.065), ember, 2.5))
+	gun.add_child(hand_box(Vector3(0.070, 0.18, 0.10), Vector3(0, 0.055, 0.10), Vector3(28, 0, 0), charcoal))
+	gun.add_child(hand_box(Vector3(0.052, 0.055, 0.065), Vector3(0, -0.005, 0.065), Vector3.ZERO, brass))
+	# Três aletas emissivas formam uma chama estilizada na traseira da arma.
+	for i in 3:
+		gun.add_child(emissive_box(Vector3(0.018, 0.055 + i * 0.018, 0.024),
+			Vector3((i - 1) * 0.026, 0.105 + i * 0.012, -0.005), ember, 2.2))
+	return gun
+
 static func hand_box(size: Vector3, pos: Vector3, rot_deg: Vector3, color: Color) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	var b := BoxMesh.new()
@@ -33,6 +59,14 @@ static func hand_box(size: Vector3, pos: Vector3, rot_deg: Vector3, color: Color
 	m.albedo_color = color
 	m.roughness = 0.75
 	mi.material_override = m
+	return mi
+
+static func emissive_box(size: Vector3, pos: Vector3, color: Color, energy: float) -> MeshInstance3D:
+	var mi := hand_box(size, pos, Vector3.ZERO, color)
+	var material := mi.material_override as StandardMaterial3D
+	material.emission_enabled = true
+	material.emission = color
+	material.emission_energy_multiplier = energy
 	return mi
 
 # Estica o eixo Z (profundidade) dos vértices de cada malha, embutindo a grossura.

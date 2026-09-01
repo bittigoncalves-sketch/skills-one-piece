@@ -145,8 +145,46 @@ static func _platform(parent: Node) -> void:
 		col.shape = shape
 		col.position = origin
 		body.add_child(col)
+	_bordas_visuais_dos_buracos(body)
 
 	parent.add_child(body)
+
+# Uma faixa escura no lado SEGURO de cada buraco. Não recebe colisão nem nó por
+# borda: todas as tiras compartilham uma MultiMesh, então o aviso de abismo tem
+# custo de um draw call em vez de dezenas. A grade ainda comunica a célula; a
+# faixa comunica o perigo quando ela aparece pequena na tela.
+static func _bordas_visuais_dos_buracos(body: Node3D) -> void:
+	var tiras: Array[Transform3D] = []
+	var lados := [
+		{"passo": Vector2i(0, -1), "desloc": Vector3(0, 0.03, -CELL * 0.5 - 0.14), "escala": Vector3(CELL, 0.045, 0.28)},
+		{"passo": Vector2i(0, 1),  "desloc": Vector3(0, 0.03, CELL * 0.5 + 0.14),  "escala": Vector3(CELL, 0.045, 0.28)},
+		{"passo": Vector2i(-1, 0), "desloc": Vector3(-CELL * 0.5 - 0.14, 0.03, 0), "escala": Vector3(0.28, 0.045, CELL)},
+		{"passo": Vector2i(1, 0),  "desloc": Vector3(CELL * 0.5 + 0.14, 0.03, 0),  "escala": Vector3(0.28, 0.045, CELL)},
+	]
+	for celula in _holes.keys():
+		var c := celula as Vector2i
+		var centro2 := _cell_center(c.x, c.y)
+		for lado in lados:
+			var vizinho: Vector2i = c + (lado["passo"] as Vector2i)
+			if vizinho.x < 0 or vizinho.y < 0 or vizinho.x >= GRID or vizinho.y >= GRID or _holes.has(vizinho):
+				continue
+			var origem := Vector3(centro2.x, 0, centro2.y) + (lado["desloc"] as Vector3)
+			tiras.append(Transform3D(Basis.IDENTITY.scaled(lado["escala"] as Vector3), origem))
+	if tiras.is_empty():
+		return
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	var unidade := BoxMesh.new()
+	unidade.size = Vector3.ONE
+	mm.mesh = unidade
+	mm.instance_count = tiras.size()
+	for i in tiras.size():
+		mm.set_instance_transform(i, tiras[i])
+	var faixa := MultiMeshInstance3D.new()
+	faixa.name = "BordasDosAbismos"
+	faixa.multimesh = mm
+	faixa.material_override = Materiais.borda_abismo()
+	body.add_child(faixa)
 
 # Junta células sólidas vizinhas na MESMA linha (eixo X) numa corrida só.
 # Devolve [{gx, gz, len}] — gx = primeira célula da corrida.
@@ -162,6 +200,52 @@ static func _merge_runs() -> Array:
 				out.append({"gx": start, "gz": gz, "len": gx - start})
 				start = -1
 	return out
+
+# Reserva de decoração de perto. As marcas lineares foram removidas da arena
+# principal: à distância elas se comprimiam em riscos escuros e quebravam a
+# leitura limpa das lajes. A variação de altura, escala e três tons dos blocos
+# já dá identidade ao cenário sem introduzir esse ruído.
+#
+# Mantida para uma futura arena menor, com câmera próxima e um LOD próprio.
+static func _marcas_de_desgaste(parent: Node) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = WORLD_SEED + 73
+	var transformes: Array[Transform3D] = []
+	var locais := 0
+	var tentativas := 0
+	while locais < 24 and tentativas < 300:
+		tentativas += 1
+		var px := rng.randf_range(-88.0, 88.0)
+		var pz := rng.randf_range(-88.0, 88.0)
+		if Vector2(px, pz).length() < 10.0 or is_hole_area(px, pz, 5.0, 5.0):
+			continue
+		locais += 1
+		var ponta := Vector2(px, pz)
+		var angulo := rng.randf_range(0.0, TAU)
+		for _segmento in 3:
+			var tamanho := rng.randf_range(0.55, 1.25)
+			angulo += rng.randf_range(-0.45, 0.45)
+			var dir := Vector2(sin(angulo), cos(angulo))
+			var centro := ponta + dir * tamanho * 0.5
+			transformes.append(Transform3D(
+				Basis(Vector3.UP, angulo).scaled(Vector3(0.035, 0.014, tamanho)),
+				Vector3(centro.x, 0.035, centro.y)))
+			ponta += dir * tamanho
+	if transformes.is_empty():
+		return
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	var risco := BoxMesh.new()
+	risco.size = Vector3.ONE
+	mm.mesh = risco
+	mm.instance_count = transformes.size()
+	for i in transformes.size():
+		mm.set_instance_transform(i, transformes[i])
+	var marcas := MultiMeshInstance3D.new()
+	marcas.name = "MarcasDeDesgaste"
+	marcas.multimesh = mm
+	marcas.material_override = Materiais.pedra_gasta(Color(0.22, 0.24, 0.28))
+	parent.add_child(marcas)
 
 # --------------------------------------------------------------------- blocos
 static func _blocks(parent: Node) -> Array:
@@ -192,7 +276,8 @@ static func _blocks(parent: Node) -> Array:
 		var block := StaticBody3D.new()
 		var m := MeshInstance3D.new()
 		m.mesh = shared_mesh
-		var g := rng.randf_range(0.32, 0.62)
+		# Três tons de pedra gasta quebram a repetição dos pilares sem textura.
+		var g: float = float([0.34, 0.45, 0.57][rng.randi_range(0, 2)]) + rng.randf_range(-0.025, 0.025)
 		m.material_override = _gray(g, 0.8)
 		block.add_child(m)
 
@@ -217,4 +302,4 @@ static func _blocks(parent: Node) -> Array:
 # parâmetro fica na assinatura para não mexer nas duas chamadas — e porque ele
 # volta a valer se alguém devolver o material padrão.
 static func _gray(value: float, rough: float) -> Material:
-	return Materiais.superficie(Color(value, value, value))
+	return Materiais.pedra_gasta(Color(value * 0.94, value * 0.98, value))

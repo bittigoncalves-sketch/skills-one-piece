@@ -65,6 +65,16 @@ uniform bool usar_grade = false;
 uniform float grade_celula = 10.0;
 uniform float grade_forca : hint_range(0.0, 1.0) = 0.16;
 uniform float grade_largura : hint_range(0.5, 4.0) = 1.5;
+// Variação de pedra em espaço de mundo: quebra o chão monocromático sem textura,
+// nós, colisores ou draw calls extras. Só a fábrica `Materiais.chao` a habilita.
+uniform bool usar_variacao_chao = false;
+uniform float variacao_escala = 3.5;
+uniform float variacao_forca : hint_range(0.0, 0.2) = 0.055;
+// Pedra usa uma variação ainda mais discreta e tridimensional. Diferente de
+// decalque/risco, ela não cria linhas que viram ruído quando a arena afasta.
+uniform bool usar_variacao_pedra = false;
+uniform float variacao_pedra_escala = 4.5;
+uniform float variacao_pedra_forca : hint_range(0.0, 0.1) = 0.028;
 uniform float suavidade : hint_range(0.005, 0.2) = 0.035;
 // ⚠️ PISO BAIXO. A primeira tentativa usou 0,42 e a cena ficou CHAPADA: a face
 // que não olha para o sol recebia quase metade da luz, e a diferença entre lado
@@ -72,6 +82,19 @@ uniform float suavidade : hint_range(0.005, 0.2) = 0.035;
 // captura, o contraste entre as faces de um bloco caiu abaixo do que o Lambert
 // padrão já dava.
 uniform float sombra_min : hint_range(0.0, 0.9) = 0.16;
+
+// Ruído de valor interpolado: a variação do piso precisa parecer pedra gasta,
+// não um segundo tabuleiro sob a grade funcional.
+float ruido_suave(vec2 p) {
+	vec2 cel = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	float a = fract(sin(dot(cel, vec2(127.1, 311.7))) * 43758.5453);
+	float b = fract(sin(dot(cel + vec2(1.0, 0.0), vec2(127.1, 311.7))) * 43758.5453);
+	float c = fract(sin(dot(cel + vec2(0.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
+	float d = fract(sin(dot(cel + vec2(1.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
+	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
 
 void fragment() {
 	vec3 base = cor.rgb;
@@ -86,6 +109,20 @@ void fragment() {
 		vec2 d = abs(fract(c - 0.5) - 0.5) / max(fwidth(c), vec2(0.00001));
 		float linha = 1.0 - min(min(d.x, d.y) / grade_largura, 1.0);
 		base *= 1.0 - linha * grade_forca;
+	}
+	if (usar_variacao_chao) {
+		vec3 mundo = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+		float ruido = ruido_suave(mundo.xz / variacao_escala);
+		base *= mix(1.0 - variacao_forca, 1.0 + variacao_forca, ruido);
+	}
+	if (usar_variacao_pedra) {
+		vec3 mundo = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+		// Média nos três planos: a pedra continua variada nas faces superior,
+		// frontal e lateral, sem depender da orientação do bloco.
+		float ruido = (ruido_suave(mundo.xz / variacao_pedra_escala)
+			+ ruido_suave(mundo.xy / variacao_pedra_escala)
+			+ ruido_suave(mundo.zy / variacao_pedra_escala)) / 3.0;
+		base *= mix(1.0 - variacao_pedra_forca, 1.0 + variacao_pedra_forca, ruido);
 	}
 	ALBEDO = base;
 	// ⚠️ NÃO ESCREVER `ALPHA` AQUI. Medido em 2026-08-27.

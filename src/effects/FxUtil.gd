@@ -1,5 +1,6 @@
 class_name FxUtil
 extends RefCounted
+const FxQualityPolicy = preload("res://src/effects/FxQuality.gd")
 # Helpers para VFX 100% procedurais (sem texturas em disco):
 # gradientes de cor, curvas de escala, materiais de partícula e um builder
 # de GPUParticles3D. Usado por SandFX / FireFX / IceFX.
@@ -103,10 +104,11 @@ static func particle_material(base: Color, emission_energy: float, additive: boo
 
 # Cria um GPUParticles3D já configurado.
 static func particles(amount: int, lifetime: float, one_shot: bool,
-		proc: ParticleProcessMaterial, mesh: Mesh, explosiveness: float = 0.0) -> GPUParticles3D:
+		proc: ParticleProcessMaterial, mesh: Mesh, explosiveness: float = 0.0,
+		categoria: String = "padrao") -> GPUParticles3D:
 	var p := GPUParticles3D.new()
-	p.amount = amount
-	p.lifetime = lifetime
+	p.amount = FxQualityPolicy.quantidade(amount, categoria)
+	p.lifetime = FxQualityPolicy.duracao(lifetime, categoria)
 	p.one_shot = one_shot
 	p.explosiveness = explosiveness
 	p.process_material = proc

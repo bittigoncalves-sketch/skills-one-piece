@@ -33,6 +33,8 @@ func _init() -> void:
 	_tetos()
 	_orcamento_corta()
 	_reservas()
+	_mera_porcentagens_da_vida()
+	_mera_tempos_de_carga()
 	_tabelas_espelhadas()
 
 	print("\n%d checagens, %d falha(s)." % [_checagens, _falhas])
@@ -162,6 +164,35 @@ func _orcamento_corta() -> void:
 
 	CombatResolver.limpar_tudo()
 	alvo.free()
+
+# ---------------------------------------------------------------------------
+# Mera é a referência desta rodada: o dano completo precisa ser previsível em
+# relação aos 2048 HP, inclusive para golpes que geram muitas zonas visuais.
+func _mera_porcentagens_da_vida() -> void:
+	print("[8] Mera Mera estabilizada para a vida base")
+	var z := Balance.spec("mera_mera", "Z")
+	var x := Balance.spec("mera_mera", "X")
+	var c := Balance.spec("mera_mera", "C")
+	var v := Balance.spec("mera_mera", "V")
+	_ok(is_equal_approx(_total_alcancavel(z), 200.0) and z.hits == 8,
+		"mera_mera/Z: esperado 8 x 25 = 200, veio %d x %.1f" % [z.hits, z.dano])
+	_ok(is_equal_approx(c.teto, 256.0),
+		"mera_mera/C: teto deve ficar estável em 256, veio %.1f" % c.teto)
+	_ok(is_equal_approx(x.teto, 256.0),
+		"mera_mera/X: teto deve ficar estável em 256, veio %.1f" % x.teto)
+	_ok(is_equal_approx(v.dano_max, 640.0) and is_equal_approx(v.teto, 640.0),
+		"mera_mera/V: máximo e teto devem ser 640, vieram %.1f / %.1f" % [v.dano_max, v.teto])
+	_ok(v.teto <= Balance.HP_BASE * 0.3125,
+		"mera_mera/V: %.1f passa de 31,25%% da vida %.1f" % [v.teto, Balance.HP_BASE])
+
+func _mera_tempos_de_carga() -> void:
+	print("[9] tempos de carga da Mera Mera")
+	var esperados := {"Z": 0.5, "X": 1.0, "C": 1.0, "V": 1.5}
+	for slot in esperados:
+		var spec := Balance.spec("mera_mera", slot)
+		_ok(spec != null and is_equal_approx(spec.tempo_de_carga, float(esperados[slot])),
+			"mera_mera/%s: carga %.1fs, esperado %.1fs" % [slot,
+				spec.tempo_de_carga if spec != null else -1.0, float(esperados[slot])])
 
 # ---------------------------------------------------------------------------
 # 7. A RESERVA cobre o clímax, e o clímax cabe no teto.

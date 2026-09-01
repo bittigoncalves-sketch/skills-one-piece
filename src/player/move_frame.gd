@@ -48,7 +48,11 @@ var _espaco_antes: bool = false
 func ler(yaw: float, menu_fechado: bool = true) -> void:
 	# Fallback seguro: ou o mouse está de fato capturado, ou sabemos que o menu
 	# está fechado (resolve o bug do Wayland ignorar as teclas WASD).
-	var ativo := menu_fechado and (Input.mouse_mode == Input.MOUSE_MODE_CAPTURED or OS.get_name() == "Linux" or OS.get_name() == "FreeBSD")
+	# Android e iOS entram pelo mesmo motivo que Linux já estava aqui: lá o
+	# `mouse_mode` nunca é CAPTURED, e sem isto as teclas que o `ToqueHud` injeta
+	# seriam descartadas — o jogador arrastaria o joystick e o boneco não andaria.
+	var ativo := menu_fechado and (Input.mouse_mode == Input.MOUSE_MODE_CAPTURED \
+		or OS.get_name() in ["Linux", "FreeBSD", "Android", "iOS"])
 
 	f = 0.0
 	r = 0.0

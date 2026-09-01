@@ -82,6 +82,11 @@ func _init() -> void:
 	if parede == Vector3.ZERO:
 		print("   ⚠ nenhum bloco alto encontrado — pulando esta parte")
 	else:
+		# Regressão: Gura Gura aplica escala 2× ao Player. O giro de parede deve
+		# preservar a escala mundial do modelo visual, e não somente a local.
+		p.equip_fruit("gura_gura")
+		await process_frame
+		_ok("Gura Gura aplica escala 2× ao Player", p.scale.is_equal_approx(Vector3(2.0, 2.0, 2.0)))
 		await _testar_parede(p, parede)
 
 	print("\n%d conferem | %d divergem" % [_ok_n, _falhas])
@@ -99,6 +104,7 @@ func _testar_parede(p: Node3D, junto: Vector3) -> void:
 	p._yaw = PI
 	p._camera.apontar(PI, -0.1)
 	var escala_antes: Vector3 = p._char_model.scale
+	var escala_global_antes: Vector3 = p._char_model.global_transform.basis.get_scale()
 	var tam_antes := _tamanho(p._char_model)
 	for i in 20:
 		await process_frame
@@ -138,9 +144,12 @@ func _testar_parede(p: Node3D, junto: Vector3) -> void:
 		str(escala_antes), str(p._char_model.scale)])
 	print("   tamanho (cabeça→pé): antes %.3f | na parede %.3f" % [
 		tam_antes, _tamanho(p._char_model)])
-	_ok("o personagem NÃO muda de tamanho ao grudar",
+	_ok("a escala do personagem é preservada ao grudar",
 		p._char_model.scale.is_equal_approx(escala_antes)
-		and absf(_tamanho(p._char_model) - tam_antes) < 0.15)
+		and p._char_model.global_transform.basis.get_scale().is_equal_approx(escala_global_antes))
+	# A pose inclinada aproxima os pontos de cabeça e pé sem alterar a escala.
+	# 20 cm cobre a variação geométrica do rig, mas não mascara uma redução real.
+	_ok("a altura visual permanece estável ao grudar", absf(_tamanho(p._char_model) - tam_antes) < 0.20)
 	if not grudou:
 		_tecla(KEY_W, false)
 		return

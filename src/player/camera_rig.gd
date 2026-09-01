@@ -29,6 +29,13 @@ extends Node3D
 #  dos 22 campos compartilhados que travavam a partição. Virou pedido.
 # ============================================================================
 
+## Multiplicador de altura da câmera. 1.0 para todo mundo; o Gigante sobe junto
+## com o corpo, senão enxergaria a partir do próprio peito (2026-08-29).
+var escala_do_corpo: float = 1.0
+
+func definir_escala(e: float) -> void:
+	escala_do_corpo = maxf(e, 0.05)
+
 const CAM_HEIGHT_TPS := 2.2   # altura do pivô em 3ª pessoa
 const CAM_HEIGHT_FPS := 0.6   # altura do "olho" em 1ª pessoa
 const SHOULDER_RIGHT := 1.1   # deslocamento p/ o ombro direito
@@ -135,11 +142,11 @@ func aplicar_perspectiva() -> void:
 	if _spring == null:
 		return
 	if _primeira_pessoa:
-		position.y = CAM_HEIGHT_FPS
+		position.y = CAM_HEIGHT_FPS * escala_do_corpo
 		_ombro.position.x = 0.0
 		_spring.spring_length = 0.0
 	else:
-		position.y = CAM_HEIGHT_TPS
+		position.y = CAM_HEIGHT_TPS * escala_do_corpo
 		_ombro.position.x = SHOULDER_RIGHT
 		_spring.spring_length = distancia
 

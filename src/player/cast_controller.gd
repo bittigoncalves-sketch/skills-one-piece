@@ -65,7 +65,7 @@ var _slot_carregado := ""
 
 # Quais golpes são carregáveis. Tabela em vez de `if` espalhado: quando a
 # segunda skill carregável existir, é uma linha.
-const CARREGAVEIS := {"goro_goro": ["V"], "gura_gura": ["X"], "mera_mera": ["V"]}
+const CARREGAVEIS := {"goro_goro": ["V"], "gura_gura": ["X"], "mera_mera": ["V", "Z", "X", "C"], "bomu_bomu": ["Z", "X"]}
 
 func montar_em(dono: Node) -> void:
 	_dono = dono
@@ -76,14 +76,28 @@ func tempo_de_silencio() -> float: return _suprimido_t
 func carregando() -> bool: return _carregando
 func carregando_skill() -> bool: return is_instance_valid(_carregado)
 
+# Relógio da animação local da Mera Z. Mantê-lo no nó de carga garante que a
+# pose, a barra e o instante de sacar terminem no mesmo quadro.
+func progresso_mera_z() -> float:
+	if _slot_carregado == "Z" and is_instance_valid(_carregado) and _carregado.has_method("progresso"):
+		return _carregado.progresso()
+	return 0.0
+
+func progresso_mera_x() -> float:
+	if _slot_carregado == "X" and is_instance_valid(_carregado) and _carregado.has_method("progresso"):
+		return _carregado.progresso()
+	return 0.0
+
 func _e_carregavel(fruta: String, slot_pedido: String) -> bool:
 	return CARREGAVEIS.has(fruta) and slot_pedido in CARREGAVEIS[fruta]
 
 # A tecla foi desligada pelo ESTILO em uso? Só faz sentido no modo "style" — no
 # modo fruta a tabela consultada é outra e todas as 4 teclas existem.
 func _slot_desabilitado(slot_pedido: String) -> bool:
-	if _dono.combat_mode != "style":
-		return false
+	if _dono.combat_mode == "fruit":
+		var skills: Dictionary = SkillSystem.get_fruit_skills().get(_dono.current_fruit_id, {})
+		return bool((skills.get(slot_pedido, {}) as Dictionary).get("desabilitado", false))
+	if _dono.combat_mode != "style": return false
 	var estilo: String = _dono.estilo_atual()
 	if not FightingStyles.STYLES.has(estilo):
 		return false
@@ -110,6 +124,11 @@ func tick_silencio(delta: float) -> void:
 		_suprimido = false
 		print("✨ Poderes reativados!")
 
+func limpar_silencio() -> void:
+	_suprimido = false
+	_suprimido_t = 0.0
+	StatusFX.remover(_dono, StatusFX.SILENCIADO)
+
 # Usado pelo respawn/troca de fruta: aborta sem disparar nada.
 func abortar() -> void:
 	_carregando = false
@@ -134,12 +153,15 @@ func comecar(slot_pedido: String) -> void:
 	if _suprimido:
 		print("❌ Poderes desativados (Yami Yami).")
 		return
+	if _dono.has_method("fruta_bloqueada_por_dano") and _dono.fruta_bloqueada_por_dano():
+		print("💥 Fruta em recuperação após dano (%.1fs)." % _dono.get("_fruit_damage_lock_timer"))
+		return
 	# TECLA DESABILITADA PELO ESTILO. Vem antes da recarga de propósito: uma tecla
 	# que não existe não deve nem reclamar de recarga. Lê a FLAG dos dados
 	# (`FightingStyles.STYLES[...]["desabilitado"]`), não o nome do estilo — ver o
 	# comentário do dicionário lá.
 	if _slot_desabilitado(slot_pedido):
-		print("🚫 O estilo %s não usa a tecla %s." % [_dono.estilo_atual(), slot_pedido])
+		print("🚫 Esta configuração não usa a tecla %s." % slot_pedido)
 		return
 	if _dono._skill_cooldowns.get(slot_pedido, 0.0) > 0.0:
 		print("⏳ Habilidade [%s] em recarga! Aguarde %.1fs." % [
@@ -193,6 +215,10 @@ func comecar(slot_pedido: String) -> void:
 		if _dono.has_method("start_gura_rush"):
 			_dono.start_gura_rush(mira_c["aim"])
 		return
+	if slot_pedido == "Z" and na_fruta and fruta == "suke_suke":
+		if _dono.has_method("iniciar_invisibilidade"):
+			_dono.iniciar_invisibilidade()
+		return
 
 	# CHARGE-UP: a skill NASCE AGORA e cresce enquanto a tecla estiver segurada.
 	# A recarga e a energia são cobradas no aperto, senão dava para "espiar" o
@@ -230,6 +256,22 @@ func comecar(slot_pedido: String) -> void:
 			_dono.get_tree().current_scene.add_child(_carregado)
 			_dono.add_camera_shake(0.5)
 			_dono.set_meta("custom_pose", "mera_v_charge")
+		elif fruta == "mera_mera" and slot_pedido == "Z":
+			_carregado = MeraZChargeNode.new(self, _dono, slot_pedido, dano_c, spec_c)
+			_dono.get_tree().current_scene.add_child(_carregado)
+			_dono.add_camera_shake(0.2)
+			_dono.set_meta("custom_pose", "mera_z_charge")
+		elif fruta == "mera_mera" and (slot_pedido == "X" or slot_pedido == "C"):
+			_carregado = MeraXChargeNode.new(self, _dono, slot_pedido, dano_c, spec_c)
+			_dono.get_tree().current_scene.add_child(_carregado)
+			_dono.add_camera_shake(0.3)
+			if slot_pedido == "X":
+				_dono.set_meta("custom_pose", "mera_x_charge")
+		elif fruta == "bomu_bomu":
+			_carregado = BomuFX.ChargeNode.new(_dono, slot_pedido, spec_c)
+			_dono.get_tree().current_scene.add_child(_carregado)
+			_dono.add_camera_shake(0.25)
+			_dono.set_meta("custom_pose", "bomu_%s_charge" % slot_pedido.to_lower())
 		else:
 			# ⚠️ O MAMARAGAN (V da Goro) NÃO IA PARA A REDE (corrigido em 2026-08-22).
 			#
@@ -255,9 +297,9 @@ func comecar(slot_pedido: String) -> void:
 
 	# Z RAJADA (Mera = balas de fogo; Hie = flechas de gelo) — começa ao
 	# PRESSIONAR, não congela o corpo; para ao soltar ou ao acabar o pente.
-	if slot_pedido == "Z" and na_fruta and (fruta == "mera_mera" or fruta == "hie_hie"):
+	if slot_pedido == "Z" and na_fruta and (fruta == "hie_hie"):
 		_dono.trigger_skill_cooldown("Z")
-		# A rajada inteira é UMA conjuração: as 16 balas dividem o teto do slot Z
+		# A rajada inteira é UMA conjuração: as 8 balas dividem o teto do slot Z
 		# (200). Encerrar aqui abre uma conjuração nova a cada aperto de tecla —
 		# sem isto, a segunda rajada nasceria com o orçamento da primeira gasto.
 		_dono.encerrar_disparo()
@@ -368,6 +410,8 @@ func liberar_por_dano() -> void:
 func conjurar_direto(slot_pedido: String) -> void:
 	if _suprimido or _dono._skill_cooldowns.get(slot_pedido, 0.0) > 0.0:
 		return
+	if _dono.has_method("fruta_bloqueada_por_dano") and _dono.fruta_bloqueada_por_dano():
+		return
 	if _dono._buki_ativa():
 		_dono._buki_empunhar(slot_pedido)   # na Buki o slot empunha, não lança
 		return
@@ -377,6 +421,9 @@ func conjurar_direto(slot_pedido: String) -> void:
 # Calcula a mira e entrega ao Player, que fala com a rede.
 func pedir_cast(slot_pedido: String) -> void:
 	if not _dono._is_authority or _suprimido:
+		_dono.set_meta("is_casting", false)
+		return
+	if _dono.has_method("fruta_bloqueada_por_dano") and _dono.fruta_bloqueada_por_dano():
 		_dono.set_meta("is_casting", false)
 		return
 	if _dono.combat_mode == "fruit":
@@ -436,7 +483,7 @@ class GuraChargeNode extends Node:
 					_orb = load("res://src/effects/SeismicOrb.gd").new()
 					arm.add_child(_orb)
 					_orb.position = Vector3(0, -0.3, 0) # Offset para a ponta do braço
-				
+
 	func _process(delta: float) -> void:
 		# O teto da carga vem da tabela (`tempo_de_carga`), não de um `3.0`
 		# escrito aqui: é ele que define onde a interpolação 192 -> 256 chega ao fim.
@@ -461,15 +508,261 @@ class GuraChargeNode extends Node:
 				_dono.pedir_soco_de_fov(5.0)
 			if Engine.has_singleton("ScreenFX"):
 				Engine.get_singleton("ScreenFX").chromatic_pulse(0.4)
-				
+
 			var mira := _dono.mira_do_cast() as Dictionary
-			
+
 			if _slot == "X":
 				# O aim que chega é a direção, e o servidor vai processar como projétil
 				# Passamos origin + aim como 'target pos' para direcionar o projétil
 				_dono.pedir_cast_no_servidor(_slot, mira["origem"] + aim * 100.0, mira["origem"], _tempo)
 			else:
 				_dono.pedir_cast_no_servidor(_slot, aim, mira["origem"], _tempo)
+		queue_free()
+
+class MeraZChargeNode extends Node:
+	var _cast_ctrl: CastController
+	var _dono: Node
+	var _slot: String
+	var _dano: float
+	var _tempo: float = 0.0
+	var _spec: DamageSpec = null
+	var _hand_fx: Array = []
+	var _ui_canvas: CanvasLayer = null
+	var _ui_bar: ProgressBar = null
+	var _fired: bool = false
+
+	func _init(cast_ctrl: CastController, dono: Node, slot: String, dano: float, spec: DamageSpec = null) -> void:
+		_cast_ctrl = cast_ctrl
+		_dono = dono
+		_slot = slot
+		_dano = dano
+		_spec = spec
+
+	func _ready() -> void:
+		if is_instance_valid(_dono):
+			# O saque começa na cintura. A pose `mera_z_charge` leva as mãos aos
+			# coldres enquanto a barra enche; só no término as armas vão para a mira.
+			if _dono.has_node("PlayerRig"):
+				var rig := _dono.get_node("PlayerRig") as PlayerRig
+				if rig:
+					rig.guardar_pistolas_mera()
+			var model := _dono.get("_char_model") as Node3D
+			if is_instance_valid(model):
+				var hand_r = model.find_child("*Hand_R*", true, false)
+				var hand_l = model.find_child("*Hand_L*", true, false)
+				var firefx = load("res://src/effects/FireFX.gd")
+				var pm_r = firefx._flame_proc(Vector3.UP, 10.0, 0.5, 1.5, Vector3(0, 1.0, 0), 0.2, 0.5, 0.5)
+				var pm_l = firefx._flame_proc(Vector3.UP, 10.0, 0.5, 1.5, Vector3(0, 1.0, 0), 0.2, 0.5, 0.5)
+
+				var hand_blocks = [
+					Vector3(0, 0, 0),       # palma
+					Vector3(0, 0, -0.2),    # base do indicador
+					Vector3(0, 0, -0.4),    # ponta do indicador
+					Vector3(0, 0.2, 0)      # polegar para cima
+				]
+				var create_gun = func() -> MultiMeshInstance3D:
+					var mmi = MultiMeshInstance3D.new()
+					var mm = MultiMesh.new()
+					mm.transform_format = MultiMesh.TRANSFORM_3D
+					mm.instance_count = hand_blocks.size()
+					var box = BoxMesh.new(); box.size = Vector3.ONE * 0.2
+					mm.mesh = box
+					for i in hand_blocks.size():
+						mm.set_instance_transform(i, Transform3D(Basis(), hand_blocks[i]))
+					mmi.multimesh = mm
+					if firefx.has_method("_voxel_material"):
+						mmi.material_override = firefx._voxel_material()
+					return mmi
+
+				if hand_r:
+					var gun_r = create_gun.call()
+					hand_r.add_child(gun_r)
+					_hand_fx.append(gun_r)
+					var fx_r = FxUtil.particles(20, 0.5, false, pm_r, FxUtil.grain(0.3))
+					hand_r.add_child(fx_r)
+					_hand_fx.append(fx_r)
+				if hand_l:
+					var gun_l = create_gun.call()
+					hand_l.add_child(gun_l)
+					_hand_fx.append(gun_l)
+					var fx_l = FxUtil.particles(20, 0.5, false, pm_l, FxUtil.grain(0.3))
+					hand_l.add_child(fx_l)
+					_hand_fx.append(fx_l)
+
+			_ui_canvas = CanvasLayer.new()
+			var margin = MarginContainer.new()
+			margin.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+			margin.offset_bottom = -200
+			margin.offset_top = -220
+			margin.offset_left = -150
+			margin.offset_right = 150
+			_ui_bar = ProgressBar.new()
+			_ui_bar.max_value = _tempo_maximo()
+			_ui_bar.value = 0.0
+			_ui_bar.size_flags_vertical = Control.SIZE_EXPAND_FILL
+			var sb = StyleBoxFlat.new()
+			sb.bg_color = Color(0.1, 0.1, 0.1, 0.8)
+			_ui_bar.add_theme_stylebox_override("background", sb)
+			var sbf = StyleBoxFlat.new()
+			sbf.bg_color = Color(1.0, 0.5, 0.1)
+			_ui_bar.add_theme_stylebox_override("fill", sbf)
+			margin.add_child(_ui_bar)
+			_ui_canvas.add_child(margin)
+			_dono.get_tree().current_scene.add_child(_ui_canvas)
+
+	func _process(delta: float) -> void:
+		if _fired:
+			return
+		_tempo = minf(_tempo + delta, _tempo_maximo())
+		if is_instance_valid(_dono) and _dono.has_method("add_camera_shake"):
+			_dono.add_camera_shake(minf(_tempo * 0.2, 0.5))
+		if is_instance_valid(_ui_bar):
+			_ui_bar.value = _tempo
+
+		if _tempo >= _tempo_maximo() and is_instance_valid(_cast_ctrl):
+			_fired = true
+			_cast_ctrl._liberar_carregado()
+
+	func progresso() -> float:
+		return _tempo / _tempo_maximo()
+
+	func _tempo_maximo() -> float:
+		return _spec.tempo_de_carga if _spec != null and _spec.tempo_de_carga > 0.0 else 1.0
+
+	func _exit_tree() -> void:
+		for fx in _hand_fx:
+			if is_instance_valid(fx):
+				fx.queue_free()
+		if is_instance_valid(_ui_canvas):
+			_ui_canvas.queue_free()
+		# Sem esta limpeza a pose de saque ficava gravada para sempre no Player:
+		# o primeiro Z terminava, mas todo golpe seguinte continuava no estado
+		# `mera_z_charge` e parecia travado.
+		if is_instance_valid(_dono) and _dono.has_meta("custom_pose") and _dono.get_meta("custom_pose") == "mera_z_charge":
+			_dono.remove_meta("custom_pose")
+		# Carga abortada (morte, troca de fruta ou soltura antes de 100%): não
+		# deixa armas fantasmas presas na cintura.
+		if not _fired and is_instance_valid(_dono) and _dono.has_node("PlayerRig"):
+			var rig := _dono.get_node("PlayerRig") as PlayerRig
+			if rig:
+				rig.esconder_pistolas_mera()
+
+	func soltar(aim: Vector3) -> void:
+		if is_instance_valid(_dono):
+			if _tempo >= _tempo_maximo():
+				# A barra acabou: transfere as duas armas para as mãos ANTES do
+				# pedido de cast, então o primeiro tiro já sai da posição visível.
+				if _dono.has_node("PlayerRig"):
+					var rig := _dono.get_node("PlayerRig") as PlayerRig
+					if rig:
+						rig.empunhar_pistolas_mera()
+						# Só guarda depois do último tiro: a duração acompanha a cadência
+						# declarada pela própria rajada, sem um número mágico desatualizado.
+						var holster_timer := _dono.get_tree().create_timer(
+							DisparoSustentado.MAX_BALAS * DisparoSustentado.INTERVALO + 0.15)
+						holster_timer.timeout.connect(func():
+							if is_instance_valid(rig):
+								rig.esconder_pistolas_mera())
+				if _dono.has_method("pedir_soco_de_fov"):
+					_dono.pedir_soco_de_fov(3.0)
+				# O Z carregado não lança um VFX separado: ele liga a rajada real do
+				# Player. Assim cada tiro sai do cano visível, alterna as mãos, recebe
+				# coice e usa o canal servidor-autoritativo de balas.
+				_dono.encerrar_disparo()
+				_dono._disparo.iniciar_rajada()
+			else:
+				print("Mera Z cancelado: carga insuficiente (< %.2fs)." % _tempo_maximo())
+		queue_free()
+
+class MeraXChargeNode extends Node:
+	var _cast_ctrl: CastController
+	var _dono: Node
+	var _slot: String
+	var _dano: float
+	var _tempo: float = 0.0
+	var _spec: DamageSpec = null
+	var _hand_fx: Array = []
+	var _ui_canvas: CanvasLayer = null
+	var _ui_bar: ProgressBar = null
+	var _fired: bool = false
+
+	func _init(cast_ctrl: CastController, dono: Node, slot: String, dano: float, spec: DamageSpec = null) -> void:
+		_cast_ctrl = cast_ctrl
+		_dono = dono
+		_slot = slot
+		_dano = dano
+		_spec = spec
+
+	func _ready() -> void:
+		if is_instance_valid(_dono):
+			if _dono.has_node("_char_model"):
+				var model = _dono.get_node("_char_model")
+				var hand_r = model.find_child("*Hand_R*", true, false)
+				var firefx = load("res://src/effects/FireFX.gd")
+				var pm_r = firefx._flame_proc(Vector3.UP, 15.0, 1.0, 2.5, Vector3(0, 1.0, 0), 0.5, 1.0, 1.0)
+				if hand_r:
+					var fx_r = FxUtil.particles(40, 0.5, false, pm_r, FxUtil.grain(0.5))
+					hand_r.add_child(fx_r)
+					_hand_fx.append(fx_r)
+
+			_ui_canvas = CanvasLayer.new()
+			var margin = MarginContainer.new()
+			margin.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+			margin.offset_bottom = -200
+			margin.offset_top = -220
+			margin.offset_left = -150
+			margin.offset_right = 150
+			_ui_bar = ProgressBar.new()
+			_ui_bar.max_value = _tempo_maximo()
+			_ui_bar.value = 0.0
+			_ui_bar.size_flags_vertical = Control.SIZE_EXPAND_FILL
+			var sb = StyleBoxFlat.new()
+			sb.bg_color = Color(0.1, 0.1, 0.1, 0.8)
+			_ui_bar.add_theme_stylebox_override("background", sb)
+			var sbf = StyleBoxFlat.new()
+			sbf.bg_color = Color(1.0, 0.2, 0.0) # Vermelho intenso
+			_ui_bar.add_theme_stylebox_override("fill", sbf)
+			margin.add_child(_ui_bar)
+			_ui_canvas.add_child(margin)
+			_dono.get_tree().current_scene.add_child(_ui_canvas)
+
+	func _process(delta: float) -> void:
+		if _fired:
+			return
+		_tempo = minf(_tempo + delta, _tempo_maximo())
+		if is_instance_valid(_dono) and _dono.has_method("add_camera_shake"):
+			_dono.add_camera_shake(minf(_tempo * 0.3, 1.0))
+		if is_instance_valid(_ui_bar):
+			_ui_bar.value = _tempo
+
+		if _tempo >= _tempo_maximo() and is_instance_valid(_cast_ctrl):
+			_fired = true
+			_cast_ctrl._liberar_carregado()
+
+	func progresso() -> float:
+		return _tempo / _tempo_maximo()
+
+	func _tempo_maximo() -> float:
+		return _spec.tempo_de_carga if _spec != null and _spec.tempo_de_carga > 0.0 else 1.5
+
+	func _exit_tree() -> void:
+		for fx in _hand_fx:
+			if is_instance_valid(fx):
+				fx.queue_free()
+		if is_instance_valid(_ui_canvas):
+			_ui_canvas.queue_free()
+		if is_instance_valid(_dono) and _dono.has_meta("custom_pose") and _dono.get_meta("custom_pose") == "mera_x_charge":
+			_dono.remove_meta("custom_pose")
+
+	func soltar(aim: Vector3) -> void:
+		if is_instance_valid(_dono):
+			if _tempo >= _tempo_maximo():
+				if _dono.has_method("pedir_soco_de_fov"):
+					_dono.pedir_soco_de_fov(5.0)
+				var mira := _dono.mira_do_cast() as Dictionary
+				_dono.pedir_cast_no_servidor(_slot, aim, mira["origem"], _tempo_maximo())
+			else:
+				print("Mera X cancelado: carga insuficiente (< %.1fs)." % _tempo_maximo())
 		queue_free()
 
 class MeraChargeNode extends Node:
@@ -523,9 +816,9 @@ class MeraChargeNode extends Node:
 				_dono.pedir_soco_de_fov(5.0)
 			if Engine.has_singleton("ScreenFX"):
 				Engine.get_singleton("ScreenFX").chromatic_pulse(0.5)
-				
+
 			var mira := _dono.mira_do_cast() as Dictionary
-			
+
 			if is_instance_valid(_sun_ctrl):
 				# Destrói o sol local, pois o _net_play_cast vai instanciar
 				# um novo sol sincronizado e dispará-lo imediatamente para todos.

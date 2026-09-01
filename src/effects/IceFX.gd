@@ -322,7 +322,7 @@ static func _ice_age(world: Node, center_pos: Vector3, damage: float, caster: No
 		twc.tween_property(cr, "scale", Vector3.ONE, 0.3 + randf() * 0.3).set_trans(Tween.TRANS_BACK)
 
 	# Partículas de ventania congelante (raio base; cresce com a placa)
-	var particles := FxUtil.particles(300, 2.0, false, _frost_proc(4.7, 1.5), FxUtil.grain(0.5))
+	var particles := FxUtil.particles(300, 2.0, false, _frost_proc(4.7, 1.5), FxUtil.grain(0.5), 0.0, "hero")
 	age_zone.add_child(particles)
 
 	# Área de verificação contínua do chão (duração: 50 segundos)

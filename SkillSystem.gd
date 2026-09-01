@@ -53,6 +53,21 @@ static func get_fruit_skills() -> Dictionary:
 			"C": {"nome": "Vagalumes de Fogo", "cor": Color(1.0, 0.8, 0.0)},
 			"V": {"nome": "Dai Enkai: Entei (Sol Quadrado)", "cor": Color(1.0, 0.65, 0.1)}
 		},
+		# BOMU BOMU — fruta de teste deliberadamente enxuta: só Z e X. C/V
+		# permanecem visíveis na barra, mas desativados, para a tecla nunca lançar
+		# um efeito genérico sem hitbox.
+		"bomu_bomu": {
+			"Z": {"nome": "Impacto Detonador", "cor": Color(1.0, 0.48, 0.08)},
+			"X": {"nome": "Detonação Corporal", "cor": Color(1.0, 0.72, 0.12)},
+			"C": {"nome": "— (sem técnica)", "cor": Color(0.35, 0.22, 0.12), "desabilitado": true},
+			"V": {"nome": "— (sem técnica)", "cor": Color(0.35, 0.22, 0.12), "desabilitado": true}
+		},
+		"suke_suke": {
+			"Z": {"nome": "Camuflagem Transparente", "cor": Color(0.62, 0.86, 1.0)},
+			"X": {"nome": "— (sem técnica)", "cor": Color(0.2, 0.3, 0.4), "desabilitado": true},
+			"C": {"nome": "— (sem técnica)", "cor": Color(0.2, 0.3, 0.4), "desabilitado": true},
+			"V": {"nome": "— (sem técnica)", "cor": Color(0.2, 0.3, 0.4), "desabilitado": true}
+		},
 		"bara_bara": {
 			"Z": {"nome": "Corte Único (Dismantle)", "cor": Color(0.8, 0.1, 0.1)},
 			"X": {"nome": "Buggy Ball", "cor": Color(1.0, 0.0, 0.0)},
@@ -104,10 +119,12 @@ static func get_fruit_skills() -> Dictionary:
 			var molde := Balance.spec(f_id, slot)
 			linha["spec"] = molde
 			linha["dano"] = molde.dano if molde != null else 0.0
-			linha["cooldown"] = get_slot_cooldown(slot)
+			linha["cooldown"] = get_slot_cooldown(slot, f_id)
 	return identidade
 
-static func get_slot_cooldown(slot: String) -> float:
+static func get_slot_cooldown(slot: String, fruit_id: String = "") -> float:
+	if fruit_id == "bomu_bomu":
+		return 10.0
 	match slot:
 		"Z": return 5.0
 		"X": return 7.0

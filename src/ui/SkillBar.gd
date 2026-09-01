@@ -14,19 +14,19 @@ var _skill_labels: Dictionary = {}
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_anchor_bottom_left()
+	_anchor_bottom_right()
 	_build()
 
-func _anchor_bottom_left() -> void:
-	anchor_left = 0.0
+func _anchor_bottom_right() -> void:
+	anchor_left = 1.0
 	anchor_top = 1.0
-	anchor_right = 0.0
+	anchor_right = 1.0
 	anchor_bottom = 1.0
-	offset_left = 14.0
+	offset_left = -14.0
 	offset_top = -14.0
-	offset_right = 14.0
+	offset_right = -14.0
 	offset_bottom = -14.0
-	grow_horizontal = Control.GROW_DIRECTION_END
+	grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	grow_vertical = Control.GROW_DIRECTION_BEGIN
 
 var _title_lbl: Label

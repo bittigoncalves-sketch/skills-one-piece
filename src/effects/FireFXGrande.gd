@@ -1,5 +1,6 @@
 class_name FireFXGrande
 extends RefCounted
+const FxQualityPolicy = preload("res://src/effects/FxQuality.gd")
 # ============================================================================
 #  MERA MERA — OS GOLPES GRANDES (Hibashira legado, Inferno e a explosão).
 #
@@ -141,7 +142,7 @@ static func _hibashira_legado(world: Node, pos: Vector3, damage: float, caster: 
 	var pm := FireFX._flame_proc(Vector3.UP, 8.0, 18.0, 30.0, Vector3(0, 8.0, 0), 2.0, 6.0, 3.5)
 	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
 	pm.emission_box_extents = Vector3(2.8, 0.5, 2.8)
-	zone.add_child(FxUtil.particles(600, 1.6, false, pm, FxUtil.grain(1.0)))
+	zone.add_child(FxUtil.particles(600, 1.6, false, pm, FxUtil.grain(1.0), 0.0, "hero"))
 	zone.add_child(FireFX._embers())
 	
 	if is_instance_valid(world):
@@ -278,7 +279,7 @@ static func _explosion(world: Node, pos: Vector3, damage: float, caster: Node,
 	world.add_child(zone)
 	zone.global_position = pos + Vector3.UP * 1.0
 	var pm := FireFX._flame_proc(Vector3.UP, 90.0, 6.0, 14.0, Vector3(0, 1.0, 0), 2.0, 5.0, 4.0, 1.5)
-	var fire := FxUtil.particles(700, 1.4, true, pm, FxUtil.grain(1.2), 0.85)
+	var fire := FxUtil.particles(700, 1.4, true, pm, FxUtil.grain(1.2), 0.85, "hero")
 	fire.material_override = FxUtil.particle_material(Color(1, 0.4, 0.1), 4.0, true)
 	zone.add_child(fire)
 	zone.add_child(FireFX._embers())
@@ -317,14 +318,15 @@ class EnteiSunController extends Node3D:
 		add_child(sun)
 		sun.scale = Vector3(0.1, 0.1, 0.1)
 
-		light = OmniLight3D.new()
-		light.light_color = Color(1.0, 0.5, 0.1)
-		light.light_energy = 0.0
-		light.omni_range = 45.0
-		add_child(light)
+		if FxQualityPolicy.permite_luz("hero"):
+			light = OmniLight3D.new()
+			light.light_color = Color(1.0, 0.5, 0.1)
+			light.light_energy = 0.0
+			light.omni_range = 45.0
+			add_child(light)
 
 		var pm := FireFX._flame_proc(Vector3.UP, 180.0, 2.0, 8.0, Vector3(0, 4.0, 0), 0.5, 2.0, 1.0)
-		var p_flames := FxUtil.particles(300, 0.8, false, pm, FxUtil.grain(0.8))
+		var p_flames := FxUtil.particles(300, 0.8, false, pm, FxUtil.grain(0.8), 0.0, "hero")
 		add_child(p_flames)
 
 		if get_tree() and get_tree().current_scene:
@@ -484,4 +486,3 @@ class EnteiSunController extends Node3D:
 			tw_exp.tween_callback(exp_mesh.queue_free).set_delay(0.6)
 
 		queue_free()   # o `zone` já foi liberado no topo de `_explode`
-

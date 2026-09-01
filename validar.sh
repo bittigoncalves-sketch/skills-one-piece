@@ -156,6 +156,10 @@ for arq in tools/dev_tests/test_*.gd; do
 	[ "$nome" = "test_melee_trava" ] && continue
 	# Mesma razão: mede a distância andada com a tecla do golpe SEGURADA.
 	[ "$nome" = "test_segurar_ataque" ] && continue
+	# E os controles de toque: `InputEventScreenTouch` precisa de um viewport
+	# para ser entregue ao `_input`. Headless, o dedo não chega ao HUD e o teste
+	# reprova um joystick que funciona — medido, três asserções de uma vez.
+	[ "$nome" = "test_toque" ] && continue
 	if [ $RAPIDO -eq 1 ] && [[ " $LENTOS " == *" $nome "* ]]; then
 		printf '  %-24s %s\n' "$nome" "$(amarelo pulado)"; PULADO=$((PULADO+1)); continue
 	fi
@@ -237,6 +241,38 @@ if quer "mp"; then
 	fi
 fi
 
+# ------------------------------ 3b. dano recíproco em rede: dois processos
+# Complementa o net_mp_probe, que bate no cliente até matar (um sentido, e só
+# a morte). Aqui os DOIS corpos apanham na mesma partida, a QUANTIA é conferida
+# contra o que foi pedido, e o cliente confere o mesmo par de vidas do lado dele
+# — que é o único jeito de pegar "o dano do servidor não atravessou a rede",
+# invisível no processo do host.
+if quer "mp"; then
+	echo
+	echo "-- dano recíproco (dois processos: host algoz + cliente testemunha) --"
+	printf '  %-24s ' "net_dano_probe"
+	timeout 200 "$GODOT" --headless --path "$PROJ" \
+		--script tools/dev_tests/net_dano_host_probe.gd >"$TMP/dano_host.log" 2>&1 &
+	DANO_PID=$!
+	sleep 5                                    # o host precisa estar no ar antes
+	t0=$SECONDS
+	timeout 200 "$GODOT" --headless --path "$PROJ" \
+		--script tools/dev_tests/net_dano_client_probe.gd >"$TMP/dano_cli.log" 2>&1
+	cod=$?
+	wait "$DANO_PID" 2>/dev/null; cod_host=$?
+	dt=$((SECONDS - t0))
+	if _falhou "$cod" "$TMP/dano_cli.log" || _falhou "$cod_host" "$TMP/dano_host.log"; then
+		echo "$(vermelho FALHOU) (${dt}s)"
+		grep -E '✗|❌' "$TMP/dano_host.log" "$TMP/dano_cli.log" | head -4 | sed 's/^/        /'
+		cp "$TMP/dano_host.log" /tmp/validar_dano_host.log
+		cp "$TMP/dano_cli.log" /tmp/validar_dano_cli.log
+		FALHOU=$((FALHOU+1)); FALHAS+=("net_dano_probe")
+	else
+		echo "$(verde ok) (${dt}s)"
+		PASSOU=$((PASSOU+1))
+	fi
+fi
+
 # ------------------------------------------ 4. regressão de locomoção (golden)
 # Este é diferente dos outros: compara a trajetória com um arquivo de
 # referência commitado. É o que pega "o personagem não anda" / "atravessa
@@ -265,6 +301,18 @@ if quer "segurar" || quer "ataque"; then
 	else
 		roda "test_segurar_ataque" "$GODOT" --path "$PROJ" \
 			--script tools/dev_tests/test_segurar_ataque.gd
+	fi
+fi
+
+# CONTROLES DE TOQUE — precisa de tela pelo mesmo motivo dos dois acima: sem
+# viewport, `InputEventScreenTouch` não chega ao `_input` do HUD.
+if quer "toque" || quer "mobile"; then
+	if [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ]; then
+		printf '  %-24s %s\n' "test_toque" "$(amarelo 'pulado — sem tela')"
+		PULADO=$((PULADO+1))
+	else
+		roda "test_toque" "$GODOT" --path "$PROJ" \
+			--script tools/dev_tests/test_toque.gd
 	fi
 fi
 

@@ -65,6 +65,32 @@ static func superficie(cor: Color, textura: Texture2D = null) -> Material:
 	return m
 
 
+## LUZ PRÓPRIA. Para a peça que É uma fonte de luz na arte, não um objeto
+## iluminado — hoje só a auréola do menu de Customização.
+##
+## ⚠️ NÃO É `superficie()` COM A COR MAIS CLARA. O cel shading escurece o que
+## está na sombra, e a graça da auréola é justamente não obedecer à luz da cena:
+## um anel amarelo chapado, escurecendo do lado oposto ao sol, lê como aro de
+## plástico. `unshaded` + `emission` é o que faz o desenho da folha 2D — o anel
+## como fonte, e não como refletor.
+##
+## Fica aqui, e não solto no catálogo, porque material é assunto de Materiais:
+## era assim que as cinco cópias da base da câmera nasceram, cada uma num
+## arquivo, até uma sair negada.
+static func brilho(cor: Color) -> Material:
+	var chave := "brilho|%s" % cor
+	if _cache.has(chave):
+		return _cache[chave]
+	var m := StandardMaterial3D.new()
+	m.albedo_color = cor
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.emission_enabled = true
+	m.emission = cor
+	m.emission_energy_multiplier = 1.6
+	_cache[chave] = m
+	return m
+
+
 ## O CHÃO. É a superfície com a grade do mapa desenhada — ver a nota da grade
 ## em `cel.gdshader`. `celula` vem do `MapBuilder`, para a linha cair onde a
 ## célula de verdade acaba.
@@ -77,8 +103,28 @@ static func chao(cor: Color, celula: float) -> Material:
 		var g := (m as ShaderMaterial).duplicate() as ShaderMaterial
 		g.set_shader_parameter("usar_grade", true)
 		g.set_shader_parameter("grade_celula", celula)
+		g.set_shader_parameter("usar_variacao_chao", true)
+		g.set_shader_parameter("variacao_escala", 12.0)
+		g.set_shader_parameter("variacao_forca", 0.055)
 		return g
 	return m
+
+## Famílias da arena. Os nomes carregam a intenção de arte; o cel shader mantém
+## a mesma luz em faixas para que pedra, bloco e borda pertençam ao mesmo mundo.
+static func pedra_gasta(cor: Color) -> Material:
+	var m := superficie(cor)
+	if m is ShaderMaterial:
+		# Cópia: o material base é cacheado por cor. A variação é exclusiva da
+		# família de pedra, nunca deve infiltrar em personagens da mesma cor.
+		var pedra := (m as ShaderMaterial).duplicate() as ShaderMaterial
+		pedra.set_shader_parameter("usar_variacao_pedra", true)
+		pedra.set_shader_parameter("variacao_pedra_escala", 4.5)
+		pedra.set_shader_parameter("variacao_pedra_forca", 0.028)
+		return pedra
+	return m
+
+static func borda_abismo() -> Material:
+	return superficie(Color(0.15, 0.20, 0.28))
 
 
 ## Limpa o cache — o respawn do mundo recria tudo, e material de mundo antigo

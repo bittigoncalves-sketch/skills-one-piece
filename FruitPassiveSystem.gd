@@ -39,6 +39,18 @@ static func get_all_passives() -> Dictionary:
 			"speed_mod": 1.15,
 			"jump_mod": 1.0
 		},
+		"bomu_bomu": {
+			"nome": "Salto Explosivo",
+			"descricao": "Paramecia: saltos explodem sob os pés, elevando o usuário e deixando uma nuvem curta de fumaça e faíscas.",
+			"tipo": "Paramecia",
+			"speed_mod": 1.0,
+			"jump_mod": 1.25
+		},
+		"suke_suke": {
+			"nome": "Corpo Translúcido",
+			"descricao": "Paramecia: Z torna o usuário invisível para inimigos e translúcido para si mesmo enquanto houver energia.",
+			"tipo": "Paramecia", "speed_mod": 1.0, "jump_mod": 1.0
+		},
 		"hie_hie": {
 			"nome": "Trilha Congelante (Frost Trail)",
 			"descricao": "Logia Ativa: Deixa um rastro de gelo ao correr que desacelera inimigos em 35% e dá +15% de velocidade de movimento ao usuário.",

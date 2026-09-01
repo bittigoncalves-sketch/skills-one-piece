@@ -496,7 +496,7 @@ class BaraDomainController extends Node:
 			pm_ash.initial_velocity_min = 1.0
 			pm_ash.initial_velocity_max = 3.0
 			pm_ash.color = Color(0.1, 0.1, 0.1, 0.8)
-			var ash := FxUtil.particles(500, 5.0, true, pm_ash, FxUtil.grain(0.1))
+			var ash := FxUtil.particles(500, 5.0, true, pm_ash, FxUtil.grain(0.1), 0.0, "hero")
 			add_child(ash)
 			ash.global_position = center_position + Vector3(0, 20.0, 0)
 
