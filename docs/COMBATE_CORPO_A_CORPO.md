@@ -19,7 +19,8 @@ específica ganha da mais genérica.
 
 | # | condição | resultado |
 |---:|---|---|
-| 1 | Espaço + clique | Aú / estrelinha |
+| 0 | Skypean, no ar, 2º pulo gasto e alvo por perto | **Asas de Anjo** |
+| 1 | Espaço + clique, **até 2,00 m do chão** | Aú / estrelinha |
 | 2 | no ar, alvo abaixo, altura de queda válida | queda esmagadora |
 | 3 | Mink correndo, mordida disponível, alvo válido | investida → agarrão → chute |
 | 4 | no ar, **com parede** ao lado, não gasto neste voo | chute de parede |
@@ -145,6 +146,38 @@ maior de todas as variações, porque o valor dele é o REPOSICIONAMENTO.
   marcar no acerto deixaria chutar a parede infinitas vezes desde que errasse.
 
 ---
+
+## 6-B. Asas de Anjo — exclusivo do Skypean
+
+Pedido do dono (2026-09-01). Segundo pulo + clique: um script procura alguém por
+perto e o jogador se lança numa voadora **na direção do alvo — acima, abaixo ou
+ao lado**.
+
+| | |
+|---|---|
+| dano | 88 (abaixo do finalizador: o valor é alcançar quem está fora de alcance) |
+| velocidade | 27, por 0,58 s |
+| busca | 24 m, em `player` **e** `enemy` |
+| recarga | 11 s, **só se acertar** |
+
+**As três condições** — raça, segundo pulo gasto e alvo por perto — são o que
+separa um golpe de identidade de uma mobilidade grátis. Sem alvo ele nem sai, e
+o clique segue para a Aú ou para o combo.
+
+⚠️ **Errar não cobra recarga**, e isso muda o caráter do golpe: ele é uma
+**aposta de leitura**, não um recurso a ser gerido. Quem erra perde o tempo do
+voo e a posição — punição suficiente — e pode tentar de novo.
+
+⚠️ **A direção é em três dimensões.** Achatar o vetor em X/Z faria o Skypean
+passar por cima de quem está no chão, que é exatamente a situação em que ele
+estará ao usar isto.
+
+### O teto de altura da Aú
+
+A Aú passou a exigir **no máximo 2,00 m do chão** para começar. O número é
+derivado, não digitado: `v²/2g` com o pulo real (16 e 32) dá 4,00 m, e o teto é
+metade. Sem ele a Aú virava mobilidade aérea de graça — subir de geppo e abrir o
+chute lá em cima, longe da leitura de quem está no chão.
 
 ## 7. Defesa — Corpo de Ferro (F)
 

@@ -138,6 +138,11 @@ func cancelar_golpe(avisar_cancelamento: bool = true) -> void:
 func pedir(yaw: float) -> void:
 	if not _dono._is_authority or _dono._charging:
 		return
+	# ASAS DE ANJO (Skypean) vem ANTES da Aú: é mais específica que ela — exige
+	# a raça, o segundo pulo já gasto E alguém por perto. Sem alvo ela devolve
+	# false e o clique segue para a Aú, como antes.
+	if _dono.has_method("tentar_asas_de_anjo") and _dono.call("tentar_asas_de_anjo", yaw):
+		return
 	# Espaço + clique é a variação aérea/girante. Vem antes da queda e da
 	# mordida porque a combinação explícita do jogador tem prioridade.
 	if _dono.has_method("tentar_chute_giratorio") and _dono.call("tentar_chute_giratorio", yaw):

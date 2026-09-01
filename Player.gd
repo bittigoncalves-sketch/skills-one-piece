@@ -62,6 +62,14 @@ func _endireitando() -> bool:
 var _rolando_de_costas := false
 var _pose_repouso := Vector3.ZERO
 const GRAVITY := 32.0        # gravidade reforcada (Godot padrao ~9.8)
+
+## A altura que um pulo simples alcança: v²/2g. Com 16 e 32, exatamente 4,00 m.
+const ALTURA_DE_UM_PULO := (JUMP_VELOCITY * JUMP_VELOCITY) / (2.0 * GRAVITY)
+## E o teto para começar a Aú — metade dela (2,00 m). Ver `tentar_chute_giratorio`.
+const ALTURA_MAX_CHUTE_GIRATORIO := ALTURA_DE_UM_PULO * 0.5
+## Até onde o raio procura chão. Acima disso a resposta é "muito alto" de
+## qualquer jeito, e um raio infinito custaria mais sem mudar decisão nenhuma.
+const ALCANCE_RAIO_CHAO := 40.0
 const MOUSE_SENS := 0.0035
 
 # A câmera virou COMPONENTE (Fase 2 — ver docs/ARQUITETURA_PLAYER.md). O rig é
@@ -340,6 +348,16 @@ var _mink_bite_cooldown := 0.0
 const RECARGA_QUEDA_ESMAGADORA := 3.0
 var _air_slam_active := false
 var _air_slam_cooldown := 0.0
+## ASAS DE ANJO — o golpe exclusivo do Skypean. Ver `src/player/asas_de_anjo.gd`.
+var _asas_ativas := false
+var _asas_recarga := 0.0
+var _asas_t := 0.0
+var _asas_rumo := Vector3.ZERO
+## ⚠️ É ELE QUE DECIDE A RECARGA. O dono pediu que errar NÃO cobre recarga, então
+## o custo só é debitado se a hitbox conectar — ver `_encerrar_asas_de_anjo`.
+var _asas_acertou := false
+var _asas_zona: DamageZone = null
+
 var _spin_kick_active := false
 var _spin_kick_angle := 0.0
 var _spin_kick_rest_position := Vector3.ZERO
@@ -1118,6 +1136,10 @@ func _etapa_estado_de_combate(delta: float) -> void:
 		_fruit_damage_lock_timer = maxf(_fruit_damage_lock_timer - delta, 0.0)
 	if _spin_kick_cooldown > 0.0:
 		_spin_kick_cooldown = maxf(_spin_kick_cooldown - delta, 0.0)
+	if _asas_recarga > 0.0:
+		_asas_recarga = maxf(_asas_recarga - delta, 0.0)
+	if _asas_ativas:
+		_tick_asas_de_anjo(delta)
 	if _yami_pistol_active:
 		_disparo.atualizar_yami(delta, _yaw, _pitch)
 	if _buki.empunhando():
@@ -2492,12 +2514,141 @@ func _request_melee() -> void:
 ## Espaço + M1 — chute giratório curto inspirado em luta de rua. Não depende de
 ## alvo para começar: é uma variação intencional de mobilidade e acerta quem
 ## entrar na faixa frontal durante o giro.
+## A que altura do chão o corpo está, em metros. 0,0 quando apoiado.
+##
+## ⚠️ POR RAIO, e não pela diferença até onde o pulo começou: o jogador pode ter
+## saltado de uma plataforma alta e estar a 1 m do telhado de baixo, ou ter caído
+## num buraco. O que importa para a leitura de quem olha é a distância até o chão
+## que está SOB ele agora.
+func altura_do_chao() -> float:
+	if is_on_floor():
+		return 0.0
+	var espaco := get_world_3d().direct_space_state
+	if espaco == null:
+		return 0.0
+	var de := global_position
+	var par := PhysicsRayQueryParameters3D.create(de, de + Vector3.DOWN * ALCANCE_RAIO_CHAO)
+	par.exclude = [get_rid()]
+	var hit := espaco.intersect_ray(par)
+	if hit.is_empty():
+		return ALCANCE_RAIO_CHAO
+	return de.distance_to(hit["position"])
+
+
+## ASAS DE ANJO. Chamado pelo `MeleeController` ANTES da Aú: é mais específico
+## que ela (exige raça, segundo pulo e alvo), e a regra da casa é a intenção mais
+## específica vencer. Sem alvo por perto ele devolve `false` e o clique segue seu
+## caminho normal — a Aú, ou o combo.
+func tentar_asas_de_anjo(_yaw_ignorado: float = 0.0) -> bool:
+	if _asas_ativas:
+		return true
+	if not AsasDeAnjo.disponivel(self, _asas_recarga):
+		return false
+	var alvo: Node3D = AsasDeAnjo.alvo_de(self)
+	if alvo == null:
+		return false
+
+	_encerrar_mordida_mink()
+	if _melee:
+		_melee.cancelar_golpe()
+	_asas_ativas = true
+	_asas_t = 0.0
+	_asas_acertou = false
+	_asas_rumo = AsasDeAnjo.rumo(self, alvo)
+	# O corpo olha para onde vai: a voadora sobe, desce ou atravessa, e a
+	# silhueta precisa contar isso para quem está do outro lado.
+	_yaw = atan2(-_asas_rumo.x, -_asas_rumo.z)
+	set_meta("custom_pose", "asas_de_anjo")
+	velocity = _asas_rumo * AsasDeAnjo.VELOCIDADE
+
+	# A hitbox acompanha o corpo durante o voo inteiro: o golpe É o deslocamento,
+	# então não há uma janela ativa separada do movimento.
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		pedir_asas_de_anjo_no_servidor.rpc_id(1, _asas_rumo)
+	else:
+		_criar_hitbox_asas_de_anjo()
+	return true
+
+
+## O cliente pede; o servidor decide. Mesmo desenho dos ataques contextuais: o
+## pedido leva só a DIREÇÃO, e o servidor confere o que consegue observar de
+## forma autoritativa antes de instanciar a hitbox.
+@rpc("any_peer", "call_remote", "reliable")
+func pedir_asas_de_anjo_no_servidor(rumo: Vector3) -> void:
+	if not multiplayer.is_server():
+		return
+	# ⚠️ O SERVIDOR REVALIDA. Um cliente adulterado poderia pedir a voadora no
+	# chão, sem geppo, sem ser Skypean ou com o golpe em recarga — as quatro
+	# condições são conferidas aqui de novo, com o estado que ESTE processo vê.
+	if not AsasDeAnjo.disponivel(self, _asas_recarga):
+		return
+	if rumo.length_squared() < 0.5 or rumo.length_squared() > 1.5:
+		return
+	_asas_rumo = rumo.normalized()
+	_criar_hitbox_asas_de_anjo()
+
+
+func _criar_hitbox_asas_de_anjo() -> void:
+	var zona := DamageZone.new()
+	zona.name = "AsasDeAnjo"
+	get_parent().add_child(zona)
+	zona.global_position = global_position
+	zona.override_kb_dir = _asas_rumo
+	zona.hit_landed.connect(func(_alvo):
+		# ⚠️ AQUI é que a recarga passa a ser devida. Enquanto não conectar, o
+		# golpe sai de graça — pedido do dono.
+		_asas_acertou = true
+		hit_confirmed = true)
+	zona.setup(AsasDeAnjo.DANO, AsasDeAnjo.KNOCKBACK, Vector3.ZERO,
+		AsasDeAnjo.DURACAO, self, AsasDeAnjo.RAIO_HITBOX, null, AsasDeAnjo.HITSTUN)
+	# A zona segue o corpo — quem a move é o `_tick_asas_de_anjo`, a cada quadro.
+	# Sem isso ela ficaria parada no ponto de partida e a voadora atravessaria o
+	# alvo sem tocar nele.
+	_asas_zona = zona
+
+
+func _tick_asas_de_anjo(delta: float) -> void:
+	_asas_t += delta
+	if is_instance_valid(_asas_zona):
+		_asas_zona.global_position = global_position
+	if _asas_t >= AsasDeAnjo.DURACAO:
+		_encerrar_asas_de_anjo()
+		return
+	# mantém o rumo: a gravidade não deve curvar a voadora no meio do caminho
+	velocity = _asas_rumo * AsasDeAnjo.VELOCIDADE
+
+
+func _encerrar_asas_de_anjo() -> void:
+	_asas_ativas = false
+	_asas_t = 0.0
+	if get_meta("custom_pose", "") == "asas_de_anjo":
+		remove_meta("custom_pose")
+	if is_instance_valid(_asas_zona):
+		_asas_zona.queue_free()
+	_asas_zona = null
+	# ⚠️ A RECARGA SÓ AGORA, E SÓ SE ACERTOU. Errar custa o tempo do voo e a
+	# posição — punição suficiente, segundo o dono — e o golpe fica disponível.
+	if _asas_acertou:
+		_asas_recarga = AsasDeAnjo.RECARGA
+	_asas_acertou = false
+
+
 func tentar_chute_giratorio(_yaw_ignorado: float = 0.0) -> bool:
 	if equipped_weapon != "" or not Input.is_key_pressed(KEY_SPACE):
 		return false
 	if _spin_kick_active or _air_slam_active:
 		return true
 	if _spin_kick_cooldown > 0.0:
+		return false
+	# ⚠️ TETO DE ALTURA (pedido do dono, 2026-09-01): a Aú só começa até METADE
+	# da altura de um pulo simples. Sem isso ela vira mobilidade aérea de graça —
+	# o jogador sobe com geppo e abre o chute lá em cima, longe de qualquer
+	# leitura de quem está no chão.
+	#
+	# A altura é DERIVADA, não digitada: v²/2g com os valores reais do pulo
+	# (16 e 32) dá 4,00 m, e a metade é 2,00 m. Se o pulo mudar, o teto
+	# acompanha sozinho.
+	if altura_do_chao() > ALTURA_MAX_CHUTE_GIRATORIO:
 		return false
 	_encerrar_mordida_mink()
 	if _melee:
