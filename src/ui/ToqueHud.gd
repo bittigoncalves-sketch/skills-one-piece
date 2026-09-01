@@ -67,14 +67,17 @@ const BOTOES := [
 	# M1 no canto SUPERIOR direito, sozinho: é o botão mais usado e não pode
 	# disputar espaço com o resto.
 	{"nome": "M1",   "mouse": true,      "canto": "cima_dir",  "x": 0.09, "y": 0.14, "r": 62.0},
-	# ⚠️ À ESQUERDA DA COLUNA DE SKILLS, não colado nela. As skills se alinham à
-	# `SkillBar` e caem por volta de x=878 numa tela de 1280; a primeira versão
-	# punha o PULO em x=883 — SOBRE o botão do C, com os dois círculos
-	# praticamente no mesmo ponto. O teste agora confere que nenhum par de
-	# botões se toca, porque conferir isso no olho falhou.
-	{"nome": "PULO", "tecla": KEY_SPACE, "canto": "baixo_dir", "x": 0.42, "y": 0.11, "r": 54.0},
-	{"nome": "DASH", "tecla": KEY_Q,     "canto": "baixo_dir", "x": 0.42, "y": 0.30, "r": 44.0},
-	{"nome": "F",    "tecla": KEY_F,     "canto": "baixo_dir", "x": 0.55, "y": 0.19, "r": 44.0},
+	# ⚠️ EM FILEIRA ACIMA DA `SkillBar` (pedido do dono, 2026-08-31: "os botões de
+	# pulo, o F e os demais na parte de cima da barra de skills"). Eles estavam
+	# espalhados à esquerda dela, disputando espaço com a coluna Z/X/C/V — o
+	# polegar direito tinha de escolher entre região de skill e região de ação
+	# no mesmo pedaço de tela. Empilhados acima da barra, cada dedo tem a sua
+	# faixa: ações em cima, skills ao lado, e o menu continua legível embaixo.
+	#
+	# `ordem` é a posição na fileira, da esquerda para a direita.
+	{"nome": "PULO", "tecla": KEY_SPACE, "fileira": true, "ordem": 2, "r": 50.0},
+	{"nome": "DASH", "tecla": KEY_Q,     "fileira": true, "ordem": 1, "r": 44.0},
+	{"nome": "F",    "tecla": KEY_F,     "fileira": true, "ordem": 0, "r": 44.0},
 ]
 
 ## As quatro skills, na ORDEM da `SkillBar` — é o que "ordem correta" quer dizer:
@@ -94,6 +97,10 @@ const RAIO_SKILL := 34.0
 const PASSO_SKILL := 74.0
 ## Respiro mínimo entre um botão e a borda da tela.
 const MARGEM_TELA := 10.0
+## Distância entre a fileira de ações e o topo da `SkillBar`.
+const FOLGA_ACIMA := 22.0
+## Espaço entre os centros da fileira. Como o da coluna, é o que um dedo pede.
+const PASSO_FILEIRA := 108.0
 ## Distância entre o botão e a borda esquerda da barra.
 const FOLGA_DA_BARRA := 26.0
 ## Onde as skills caem se a `SkillBar` não for encontrada — só uma reserva para
@@ -249,6 +256,8 @@ func _centro_do_botao(i: int) -> Vector2:
 	if i >= BOTOES.size():
 		return _centro_da_skill(i - BOTOES.size())
 	var b: Dictionary = BOTOES[i]
+	if bool(b.get("fileira", false)):
+		return _centro_na_fileira(int(b["ordem"]), float(b["r"]))
 	var fx := float(b["x"])
 	var fy := float(b["y"])
 	match String(b.get("canto", "baixo_dir")):
@@ -281,6 +290,22 @@ func _centro_da_skill(indice: int) -> Vector2:
 	var maximo := size.y - RAIO_SKILL - MARGEM_TELA - altura
 	topo = clampf(topo, minimo, maxf(minimo, maximo))
 	return Vector2(x, topo + PASSO_SKILL * indice)
+
+
+## Um lugar na fileira que corre por cima da `SkillBar`, alinhada à direita dela.
+##
+## ⚠️ ALINHADA À DIREITA, e não centrada: assim a fileira termina onde a barra
+## termina, e sobra espaço à esquerda em vez de ela invadir a coluna de skills.
+func _centro_na_fileira(ordem: int, raio: float) -> Vector2:
+	var b := _barra()
+	if b == null:
+		return Vector2(size.x - MARGEM_TELA - raio - PASSO_FILEIRA * ordem,
+			size.y * 0.55)
+	var r: Rect2 = b.get_global_rect()
+	var y := r.position.y - FOLGA_ACIMA - raio
+	y = maxf(y, raio + MARGEM_TELA)
+	var direita := r.position.x + r.size.x - raio
+	return Vector2(direita - PASSO_FILEIRA * ordem, y)
 
 
 func _barra() -> Control:

@@ -35,9 +35,21 @@ canto superior direito"*.
 |---|---|
 | **inferior esquerdo** | joystick, que **nasce onde o dedo tocou** |
 | **superior direito** | M1, sozinho — é o botão mais usado e não disputa espaço |
-| **inferior direito** | PULO, e ao lado dele DASH e F |
-| **ao lado da `SkillBar`** | Z, X, C, V, na mesma ordem que o menu mostra |
+| **fileira acima da `SkillBar`** | F, DASH e PULO |
+| **coluna ao lado da `SkillBar`** | Z, X, C, V, na mesma ordem que o menu mostra |
 | metade direita, fora dos botões | arrasta para girar a câmera |
+
+### Por que as ações subiram para cima da barra
+
+Pedido do dono: *"os botões de pulo, o F e os demais na parte de cima da barra
+de skills — assim fica melhor para se jogar no celular"*. Antes eles ficavam
+espalhados à esquerda da barra, disputando espaço com a coluna Z/X/C/V: o
+polegar direito tinha de escolher entre região de skill e região de ação no
+mesmo pedaço de tela. Empilhados acima, cada dedo ganha a sua faixa — **ações em
+cima, skills ao lado, e o menu continua legível embaixo**.
+
+A fileira é alinhada **à direita** da barra, não centrada: assim ela termina onde
+a barra termina e sobra espaço à esquerda, em vez de invadir a coluna de skills.
 
 O arrasto só vale **fora dos botões**: sem isso, apertar uma skill perto da
 borda giraria a câmera junto. E o joystick nasce só no **canto** inferior

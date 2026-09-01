@@ -205,9 +205,20 @@ func _o_layout(toque: ToqueHud) -> void:
 	var m1 := toque._centro_do_botao(0)
 	_ok("o M1 fica no canto SUPERIOR DIREITO",
 		m1.x > t.x * 0.6 and m1.y < t.y * 0.35)
-	var pulo := toque._centro_do_botao(1)
-	_ok("o PULO fica na parte INFERIOR DIREITA",
-		pulo.x > t.x * 0.5 and pulo.y > t.y * 0.6)
+	# ⚠️ A REGRA MUDOU (2026-08-31): as ações saíram do canto inferior direito e
+	# subiram para uma FILEIRA acima da barra — "assim fica melhor para jogar no
+	# celular", palavras do dono. A asserção antiga exigia `y > 60% da tela` e
+	# reprovava o layout novo, que é o certo.
+	var barra_topo := toque._barra().get_global_rect().position.y if toque._barra() else t.y
+	for idx in [1, 2, 3]:      # PULO, DASH, F
+		var c := toque._centro_do_botao(idx)
+		var nome := String(toque._dados_do_botao(idx)["nome"])
+		print("   %s em %s" % [nome, str(c)])
+		_ok("o %s fica ACIMA da barra de skills" % nome,
+			c.y + toque._raio_do_botao(idx) <= barra_topo)
+	# e continuam do lado direito, ao alcance do polegar que já segura a câmera
+	_ok("a fileira fica no lado direito da tela",
+		toque._centro_do_botao(1).x > t.x * 0.5)
 
 	# As skills, ao lado da barra e NA ORDEM que ela mostra.
 	var barra := toque._barra()
