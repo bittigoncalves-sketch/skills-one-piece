@@ -27,20 +27,42 @@ trata `f` e `r` como −1/0/1 mesmo no teclado.
 
 ## O layout
 
-**Esquerda anda, direita olha** — a convenção que todo jogo 3D de celular usa, e
-que o jogador já conhece de outros.
+Pedido do dono (2026-08-31): *"as teclas de skill do lado do menu de habilidade,
+na ordem correta; movimentação esquerda inferior; pulo direita inferior; o M no
+canto superior direito"*.
 
-| | |
+| onde | o quê |
 |---|---|
-| metade esquerda | joystick, que **nasce onde o dedo tocou** em vez de ocupar um canto fixo o tempo todo |
-| metade direita | arrasta para girar a câmera |
-| botões | M1, PULO, DASH, F, Z, X, C, V |
+| **inferior esquerdo** | joystick, que **nasce onde o dedo tocou** |
+| **superior direito** | M1, sozinho — é o botão mais usado e não disputa espaço |
+| **inferior direito** | PULO, e ao lado dele DASH e F |
+| **ao lado da `SkillBar`** | Z, X, C, V, na mesma ordem que o menu mostra |
+| metade direita, fora dos botões | arrasta para girar a câmera |
 
-O arrasto da direita só vale **fora dos botões**: sem isso, apertar uma skill
-perto da borda giraria a câmera junto.
+O arrasto só vale **fora dos botões**: sem isso, apertar uma skill perto da
+borda giraria a câmera junto. E o joystick nasce só no **canto** inferior
+esquerdo, não na metade esquerda inteira — com a metade toda, um toque alto à
+esquerda (onde ficam vida, energia e placar) fazia o jogador andar sem querer ao
+tentar ler a própria barra.
 
 Empurrar o joystick além de 82% do raio equivale a segurar Shift — é o que
 substitui a corrida, que não tem dedo sobrando.
+
+### As skills perguntam onde a barra está
+
+⚠️ **Alinhadas em runtime, não em coordenada fixa.** A `SkillBar` mostra Z/X/C/V
+com nome e recarga, e o dedo tem de cair ao lado da linha que o jogador lê. Se a
+barra mudar de tamanho, fonte ou posição, botões fixos descolariam dela e
+ninguém perceberia até alguém errar a skill numa luta.
+
+Mas o alinhamento **não é 1:1**: as linhas da barra ficam a 32 px uma da outra, e
+um botão de dedo tem 68 px de diâmetro — um por linha empilha os círculos e o
+toque dispara a skill errada. Então a barra dá o **lado** e o **centro**, e o
+espaçamento é o que um dedo pede (74 px entre centros).
+
+O canto inferior direito é da própria barra (medido: 322×212 numa tela de
+1280×720), e é por isso que o PULO fica à esquerda dela — o "direita inferior"
+possível sem cobrir o menu que o jogador precisa ler.
 
 ---
 
@@ -82,7 +104,15 @@ perto de 500 px: um arrasto deliberado.
 só confere "o joystick registrou o toque" passa com o boneco parado — entre a
 injeção e o personagem andar existem o `MoveFrame`, a FSM e a física.
 
-Duas armadilhas custaram medição:
+Quatro armadilhas custaram medição:
+
+- **o PULO nasceu em cima do botão do C**, com os dois centros a 5 px um do
+  outro. Eu não vi olhando a lista de coordenadas — quem viu foi a asserção de
+  que nenhum par de botões pode se tocar;
+- **o V ficava com um terço fora da tela** (y=711, raio 34, tela de 720). A
+  coluna de quatro botões espaçados por dedo ocupa 290 px e a barra tem 212;
+  centrada nela, transbordava a borda. Hoje a coluna é empurrada para dentro, e
+  há asserção de que todo botão cabe inteiro;
 
 - **os blocos interferiam entre si.** Com o joystick antes, o pulo falhava em 1
   de 3; invertendo a ordem, o pulo passou a funcionar sempre e quem falhava era o

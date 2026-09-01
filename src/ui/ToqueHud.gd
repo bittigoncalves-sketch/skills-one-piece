@@ -35,20 +35,72 @@ const ZONA_MORTA := 0.22        # fração do raio abaixo da qual não anda
 ## 1,35 a medição deu 75° para 160 px, ou seja meia volta a cada ~220 px — um
 ## polegar percorre isso sem querer, e a câmera ficava incontrolável. 0,55 põe a
 ## meia volta perto de 500 px, que é um arrasto deliberado numa tela de celular.
+## O canto de onde o joystick pode nascer: metade da largura, 60% da altura, a
+## partir da borda inferior esquerda.
+const ZONA_MOV_X := 0.5
+const ZONA_MOV_Y := 0.6
+
 const SENS_CAMERA := 0.55
 
-## Os botões da direita: rótulo, tecla que injetam, e onde ficam (fração da
-## tela, a partir do canto inferior direito).
+## ============================================================================
+##  O LAYOUT (pedido do dono, 2026-08-31)
+##
+##  "as teclas de skill do lado do menu de habilidade, na ordem correta;
+##   movimentação esquerda inferior; pulo direita inferior; o M no canto
+##   superior direito."
+##
+##  ⚠️ AS SKILLS SE ALINHAM À `SkillBar` EM RUNTIME, não a números fixos. A barra
+##  já mostra Z/X/C/V com nome e recarga de cada golpe, e o dedo tem de cair AO
+##  LADO da linha que ele lê — se a barra mudar de tamanho, de fonte ou de
+##  posição, botões em coordenada fixa descolariam dela e ninguém perceberia até
+##  alguém errar a skill no meio de uma luta. Aqui cada botão pergunta onde está
+##  a linha dele.
+##
+##  O canto inferior direito é da própria `SkillBar` (medido: 322x212 numa tela
+##  de 1280x720). Por isso o PULO fica logo à esquerda dela, que é o "direita
+##  inferior" possível sem cobrir o menu que o jogador precisa ler.
+## ============================================================================
+
+## Botões de posição FIXA, em fração da tela a partir do canto que cada um usa.
+## As skills não entram aqui — elas se alinham à barra (ver `_centro_do_botao`).
 const BOTOES := [
-	{"nome": "M1",    "tecla": KEY_NONE,  "mouse": true, "x": 0.10, "y": 0.16, "r": 58.0},
-	{"nome": "PULO",  "tecla": KEY_SPACE, "x": 0.24, "y": 0.10, "r": 48.0},
-	{"nome": "DASH",  "tecla": KEY_Q,     "x": 0.24, "y": 0.30, "r": 40.0},
-	{"nome": "F",     "tecla": KEY_F,     "x": 0.10, "y": 0.36, "r": 40.0},
-	{"nome": "Z",     "tecla": KEY_Z,     "x": 0.38, "y": 0.34, "r": 38.0},
-	{"nome": "X",     "tecla": KEY_X,     "x": 0.38, "y": 0.16, "r": 38.0},
-	{"nome": "C",     "tecla": KEY_C,     "x": 0.52, "y": 0.30, "r": 38.0},
-	{"nome": "V",     "tecla": KEY_V,     "x": 0.52, "y": 0.12, "r": 38.0},
+	# M1 no canto SUPERIOR direito, sozinho: é o botão mais usado e não pode
+	# disputar espaço com o resto.
+	{"nome": "M1",   "mouse": true,      "canto": "cima_dir",  "x": 0.09, "y": 0.14, "r": 62.0},
+	# ⚠️ À ESQUERDA DA COLUNA DE SKILLS, não colado nela. As skills se alinham à
+	# `SkillBar` e caem por volta de x=878 numa tela de 1280; a primeira versão
+	# punha o PULO em x=883 — SOBRE o botão do C, com os dois círculos
+	# praticamente no mesmo ponto. O teste agora confere que nenhum par de
+	# botões se toca, porque conferir isso no olho falhou.
+	{"nome": "PULO", "tecla": KEY_SPACE, "canto": "baixo_dir", "x": 0.42, "y": 0.11, "r": 54.0},
+	{"nome": "DASH", "tecla": KEY_Q,     "canto": "baixo_dir", "x": 0.42, "y": 0.30, "r": 44.0},
+	{"nome": "F",    "tecla": KEY_F,     "canto": "baixo_dir", "x": 0.55, "y": 0.19, "r": 44.0},
 ]
+
+## As quatro skills, na ORDEM da `SkillBar` — é o que "ordem correta" quer dizer:
+## a mesma de cima para baixo que o jogador lê no menu.
+const SKILLS := [
+	{"nome": "Z", "tecla": KEY_Z},
+	{"nome": "X", "tecla": KEY_X},
+	{"nome": "C", "tecla": KEY_C},
+	{"nome": "V", "tecla": KEY_V},
+]
+## ⚠️ O DEDO É MAIOR QUE A LINHA DO MENU. As linhas da `SkillBar` ficam a 32 px
+## uma da outra — alinhar um botão a cada linha empilha círculos de 68 px e o
+## dedo dispara a skill errada. Então a barra dá o LADO e o CENTRO, e o
+## espaçamento é o que um dedo pede: 74 px entre centros, com raio 34 (68 de
+## diâmetro, acima do mínimo confortável de toque).
+const RAIO_SKILL := 34.0
+const PASSO_SKILL := 74.0
+## Respiro mínimo entre um botão e a borda da tela.
+const MARGEM_TELA := 10.0
+## Distância entre o botão e a borda esquerda da barra.
+const FOLGA_DA_BARRA := 26.0
+## Onde as skills caem se a `SkillBar` não for encontrada — só uma reserva para
+## o jogo não ficar sem botão de golpe.
+const SKILL_RESERVA_X := 0.30
+const SKILL_RESERVA_Y0 := 0.62
+const SKILL_RESERVA_DY := 0.10
 
 var _base := Vector2.ZERO       # centro do joystick, fixado onde o dedo tocou
 var _manopla := Vector2.ZERO
@@ -88,7 +140,12 @@ func _ao_tocar(e: InputEventScreenTouch) -> void:
 			_dedo_botao[e.index] = b
 			_apertar(b, true)
 			return
-		if e.position.x < size.x * 0.5 and _dedo_mov < 0:
+		# ⚠️ INFERIOR ESQUERDO, não a metade esquerda inteira (pedido do dono).
+		# Com a metade toda, um toque alto à esquerda — onde ficam vida, energia
+		# e o placar — armava o joystick e o jogador começava a andar sem querer
+		# ao tentar ler a própria barra.
+		if e.position.x < size.x * ZONA_MOV_X \
+				and e.position.y > size.y * (1.0 - ZONA_MOV_Y) and _dedo_mov < 0:
 			_dedo_mov = e.index
 			_base = e.position          # o joystick nasce ONDE o dedo tocou
 			_manopla = e.position
@@ -158,7 +215,7 @@ func _definir(tecla: Key, ligada: bool) -> void:
 
 
 func _apertar(indice: int, ligado: bool) -> void:
-	var b: Dictionary = BOTOES[indice]
+	var b: Dictionary = _dados_do_botao(indice)
 	if bool(b.get("mouse", false)):
 		var m := InputEventMouseButton.new()
 		m.button_index = MOUSE_BUTTON_LEFT
@@ -170,14 +227,95 @@ func _apertar(indice: int, ligado: bool) -> void:
 	queue_redraw()
 
 
+## O total de botões: os fixos mais as quatro skills. Os índices de `SKILLS`
+## continuam depois dos de `BOTOES`.
+func _total_botoes() -> int:
+	return BOTOES.size() + SKILLS.size()
+
+
+func _dados_do_botao(i: int) -> Dictionary:
+	if i < BOTOES.size():
+		return BOTOES[i]
+	return SKILLS[i - BOTOES.size()]
+
+
+func _raio_do_botao(i: int) -> float:
+	if i < BOTOES.size():
+		return float(BOTOES[i]["r"])
+	return RAIO_SKILL
+
+
 func _centro_do_botao(i: int) -> Vector2:
+	if i >= BOTOES.size():
+		return _centro_da_skill(i - BOTOES.size())
 	var b: Dictionary = BOTOES[i]
-	return Vector2(size.x * (1.0 - float(b["x"])), size.y * (1.0 - float(b["y"])))
+	var fx := float(b["x"])
+	var fy := float(b["y"])
+	match String(b.get("canto", "baixo_dir")):
+		"cima_dir":
+			return Vector2(size.x * (1.0 - fx), size.y * fy)
+		"baixo_esq":
+			return Vector2(size.x * fx, size.y * (1.0 - fy))
+		_:
+			return Vector2(size.x * (1.0 - fx), size.y * (1.0 - fy))
+
+
+## AO LADO da linha correspondente na `SkillBar`. Ver a nota do layout.
+func _centro_da_skill(indice: int) -> Vector2:
+	var b := _barra()
+	if b == null:
+		return Vector2(size.x * (1.0 - SKILL_RESERVA_X),
+			size.y * (SKILL_RESERVA_Y0 + SKILL_RESERVA_DY * indice))
+	var r: Rect2 = b.get_global_rect()
+	var x := r.position.x - FOLGA_DA_BARRA - RAIO_SKILL
+	# A coluna fica CENTRADA na barra: o primeiro botão sobe metade do total e
+	# os quatro descem na ordem em que o menu os mostra.
+	var meio := r.position.y + r.size.y * 0.5
+	var altura := PASSO_SKILL * (SKILLS.size() - 1)
+	var topo := meio - altura * 0.5
+	# ⚠️ A COLUNA É MAIS ALTA QUE A BARRA. Quatro botões espaçados por dedo
+	# ocupam 290 px; a `SkillBar` tem 212. Centrada nela, a coluna transbordava
+	# a borda inferior — metade do botão do V ficava fora da tela e não dava
+	# para apertar. Empurrar para dentro é o que garante que os quatro caibam.
+	var minimo := RAIO_SKILL + MARGEM_TELA
+	var maximo := size.y - RAIO_SKILL - MARGEM_TELA - altura
+	topo = clampf(topo, minimo, maxf(minimo, maximo))
+	return Vector2(x, topo + PASSO_SKILL * indice)
+
+
+func _barra() -> Control:
+	var hud := get_tree().get_first_node_in_group("hud") if get_tree() else null
+	if hud == null:
+		return null
+	return hud.get_node_or_null("SkillBar") as Control
+
+
+func _borda_esquerda_da_barra() -> float:
+	var b := _barra()
+	return b.get_global_rect().position.x if b != null else size.x * 0.72
+
+
+## A linha de um slot dentro da barra, achada pelo rótulo `[Z]` que ela mostra.
+func _linha_da_barra(letra: String) -> Control:
+	var b := _barra()
+	if b == null:
+		return null
+	for n in _descendentes(b):
+		if n is Label and String((n as Label).text) == "[%s]" % letra:
+			return n as Control
+	return null
+
+
+func _descendentes(n: Node) -> Array:
+	var out: Array = [n]
+	for f in n.get_children():
+		out.append_array(_descendentes(f))
+	return out
 
 
 func _botao_em(p: Vector2) -> int:
-	for i in BOTOES.size():
-		if p.distance_to(_centro_do_botao(i)) <= float(BOTOES[i]["r"]):
+	for i in _total_botoes():
+		if p.distance_to(_centro_do_botao(i)) <= _raio_do_botao(i):
 			return i
 	return -1
 
@@ -191,10 +329,10 @@ func _draw() -> void:
 		draw_circle(_manopla, RAIO_MANOPLA, Color(1, 1, 1, 0.28))
 
 	var fonte := ThemeDB.fallback_font
-	for i in BOTOES.size():
-		var b: Dictionary = BOTOES[i]
+	for i in _total_botoes():
+		var b: Dictionary = _dados_do_botao(i)
 		var c := _centro_do_botao(i)
-		var r := float(b["r"])
+		var r := _raio_do_botao(i)
 		var apertado := _dedo_botao.values().has(i)
 		draw_circle(c, r, Color(1, 1, 1, 0.22 if apertado else 0.12))
 		draw_arc(c, r, 0, TAU, 32, Color(1, 1, 1, 0.45), 2.0)

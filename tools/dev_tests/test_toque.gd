@@ -49,6 +49,7 @@ func _init() -> void:
 	await _o_joystick(p, toque)
 	await _os_botoes(p, toque)
 	await _a_camera(p, toque)
+	_o_layout(toque)
 
 	ToqueHud.forcar = false
 	print("\n%d conferem | %d divergem" % [_ok_n, _falhas])
@@ -163,6 +164,70 @@ func _assentar(p: Node3D) -> void:
 			break
 	# mais alguns quadros para a FSM sair de qualquer estado de transição
 	await _quadros(10)
+
+
+## O LAYOUT pedido pelo dono (2026-08-31), e a regra que ele implica.
+##
+## ⚠️ NENHUM PAR DE BOTÕES PODE SE TOCAR. A primeira versão pôs o PULO em cima
+## do botão do C — os dois centros a 5 px um do outro — e eu não vi olhando a
+## lista de coordenadas. Um dedo ali dispararia os dois, ou o errado.
+func _o_layout(toque: ToqueHud) -> void:
+	print("\n=== 4. o layout ===")
+	var t_tela: Vector2 = toque.size
+	var n := toque._total_botoes()
+	var colisoes: Array[String] = []
+	for i in n:
+		for j in range(i + 1, n):
+			var d := toque._centro_do_botao(i).distance_to(toque._centro_do_botao(j))
+			var minimo := toque._raio_do_botao(i) + toque._raio_do_botao(j)
+			if d < minimo:
+				colisoes.append("%s×%s (%.0f px, precisa de %.0f)" % [
+					String(toque._dados_do_botao(i)["nome"]),
+					String(toque._dados_do_botao(j)["nome"]), d, minimo])
+	for c in colisoes:
+		print("      ❗ %s" % c)
+	_ok("nenhum botão se sobrepõe a outro", colisoes.is_empty())
+
+	# ⚠️ E TODOS TÊM DE CABER NA TELA. O V ficava em y=711 com raio 34 numa tela
+	# de 720: um terço do botão fora, e o dedo não alcança o que não é desenhado.
+	var fora: Array[String] = []
+	for i in n:
+		var c := toque._centro_do_botao(i)
+		var r := toque._raio_do_botao(i)
+		if c.x - r < 0.0 or c.y - r < 0.0 or c.x + r > t_tela.x or c.y + r > t_tela.y:
+			fora.append("%s em %s (r=%.0f)" % [String(toque._dados_do_botao(i)["nome"]), str(c), r])
+	for f in fora:
+		print("      ❗ fora da tela: %s" % f)
+	_ok("todo botão cabe inteiro na tela", fora.is_empty())
+
+	# As posições que o dono pediu, cada uma no seu canto.
+	var t: Vector2 = t_tela
+	var m1 := toque._centro_do_botao(0)
+	_ok("o M1 fica no canto SUPERIOR DIREITO",
+		m1.x > t.x * 0.6 and m1.y < t.y * 0.35)
+	var pulo := toque._centro_do_botao(1)
+	_ok("o PULO fica na parte INFERIOR DIREITA",
+		pulo.x > t.x * 0.5 and pulo.y > t.y * 0.6)
+
+	# As skills, ao lado da barra e NA ORDEM que ela mostra.
+	var barra := toque._barra()
+	_ok("a SkillBar foi encontrada", barra != null)
+	if barra == null:
+		return
+	var ys: Array[float] = []
+	for k in ToqueHud.SKILLS.size():
+		var c := toque._centro_do_botao(ToqueHud.BOTOES.size() + k)
+		ys.append(c.y)
+		print("   %s em %s" % [String(ToqueHud.SKILLS[k]["nome"]), str(c)])
+		_ok("%s fica À ESQUERDA do menu de habilidade"
+			% String(ToqueHud.SKILLS[k]["nome"]),
+			c.x < barra.get_global_rect().position.x)
+	# "na ordem correta" = a mesma de cima para baixo que o menu mostra.
+	var em_ordem := true
+	for k in range(1, ys.size()):
+		if ys[k] <= ys[k - 1]:
+			em_ordem = false
+	_ok("Z, X, C e V descem na MESMA ordem do menu", em_ordem)
 
 
 func _tocar(indice: int, pos: Vector2, pressionado: bool) -> void:
