@@ -115,6 +115,16 @@ func _integracao(nome: String, tecla: Key, id: String, rumo: Vector3, deve_danif
 func _preparar() -> void:
 	_aplicar([])
 	_player._melee.cancelar_golpe()
+	# ⚠️ ZERAR A SEQUÊNCIA DO COMBO, e não só o golpe em voo. Desde 2026-09-01 a
+	# variação contextual OCUPA o passo 0 e deixa a janela aberta — é o que faz
+	# segurar W dar cotovelada→soco→soco→lançamento em vez de quatro cotoveladas.
+	# `cancelar_golpe` preserva a sequência de propósito (o dash-cancel é o
+	# cancelamento legítimo, e o jogador pode retomar o combo), então cada caso
+	# deste teste tem de pedir explicitamente um começo do zero — senão o
+	# segundo caso em diante herda o combo do anterior e a variação nem é
+	# oferecida.
+	_player._melee._passo = 0
+	_player._melee._janela = 0.0
 	_player._server_contextual_next_ms = 0
 	_player._input_buffer.clear()
 	_player._yaw = 0.0

@@ -233,8 +233,23 @@ func _iniciar_contextual(id: String, yaw: float) -> bool:
 	_context_id = id
 	_context_seq = int(_dono.call("sequencia_contextual_atual")) \
 		if _dono.has_method("sequencia_contextual_atual") else -1
-	_passo = 0
-	_janela = 0.0
+	# ⚠️ A VARIAÇÃO É O PRIMEIRO GOLPE DA SEQUÊNCIA, não um golpe isolado.
+	#
+	# Aqui estava `_passo = 0` e `_janela = 0.0`: o combo voltava ao início e a
+	# janela de encadeamento FECHAVA. Com W ainda segurado, o clique seguinte
+	# resolvia cotovelada de novo — e de novo, para sempre. Medido: quatro
+	# cliques, quatro cotoveladas idênticas (relato do dono, 2026-09-01).
+	#
+	# Agora ela OCUPA o passo 0 e deixa a janela aberta, então o clique seguinte
+	# cai no passo 1 e o combo continua normalmente:
+	#
+	#     cotovelada → Soco Esquerdo → Chute Lateral → Finalizador
+	#     (ou lançamento, se W estiver segurado no quarto)
+	#
+	# Quem impede a variação de sair de novo no meio da sequência é o
+	# `ContextualMelee.resolver`, que só a oferece com o combo no começo.
+	_passo = 1
+	_janela = Melee.JANELA
 	_passo_em_curso = -1
 	_t_golpe = 0.0
 	_trava = ContextualMeleeData.duracao(id)

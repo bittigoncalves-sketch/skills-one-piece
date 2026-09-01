@@ -268,6 +268,13 @@ static func resolver(contexto: Dictionary) -> String:
 		return "context_air_kick"
 	if contexto.get("sprinting", false):
 		return ""
+	# ⚠️ NO CHÃO, AS VARIAÇÕES SÓ ABREM A SEQUÊNCIA. Com o combo em andamento, o
+	# clique seguinte pertence ao combo — senão segurar W repete a mesma
+	# cotovelada indefinidamente, que foi o relato do dono. A exceção é o
+	# LANÇAMENTO, que existe justamente no quarto golpe e é tratado logo abaixo.
+	var passo := int(contexto.get("combo_step", 0))
+	if passo > 0 and passo != 3:
+		return ""
 	# Lateral vence frente/ré se os dois vieram juntos: a leitura em tela fica
 	# clara e coincide com a tabela de prioridade documentada.
 	var lado := float(contexto.get("input_side", 0.0))

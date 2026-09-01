@@ -30,12 +30,20 @@ func _init() -> void:
 ## 1. QUANDO o launcher sai. Só no quarto golpe, e só com W.
 func _a_regra_de_escolha() -> void:
 	print("=== 1. a escolha ===")
-	for passo in [0, 1, 2]:
-		_ok("passo %d + W ainda é a cotovelada" % passo,
-			ContextualMelee.resolver(_ctx(1.0, 0.0, passo)) == "context_elbow")
+	# ⚠️ A REGRA MUDOU EM 2026-09-01. Antes, W dava cotovelada em qualquer passo
+	# do combo — e era esse o defeito que o dono relatou: segurar W repetia a
+	# mesma cotovelada para sempre. Agora a variação só ABRE a sequência; do
+	# passo 1 em diante o clique pertence ao combo M1.
+	_ok("passo 0 + W abre com a cotovelada",
+		ContextualMelee.resolver(_ctx(1.0, 0.0, 0)) == "context_elbow")
+	for passo in [1, 2]:
+		_ok("passo %d + W já é combo M1, não cotovelada" % passo,
+			ContextualMelee.resolver(_ctx(1.0, 0.0, passo)) == "")
 	_ok("passo 3 + W vira o LANÇAMENTO",
 		ContextualMelee.resolver(_ctx(1.0, 0.0, 3)) == "context_launcher")
 	# As outras direções não podem ser afetadas pelo passo do combo.
+	# No quarto golpe as outras direções continuam valendo: o passo 3 é a
+	# exceção que existe para o lançamento, e ela não fecha S/A/D.
 	_ok("passo 3 + S continua o chute recuando",
 		ContextualMelee.resolver(_ctx(-1.0, 0.0, 3)) == "context_retreat_kick")
 	_ok("passo 3 + A continua o gancho lateral",
