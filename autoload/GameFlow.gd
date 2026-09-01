@@ -82,12 +82,83 @@ func start_dedicated(port: int = NetConf.DEFAULT_PORT) -> void:
 func start_singleplayer() -> void:
 	mode = Mode.SINGLEPLAYER
 	room_id = ""
+	# As sondas sobem a mesma arena da partida. O AutoDummy persegue e ataca,
+	# interferindo no jogador no meio de cargas e medições; o TrainingDummy
+	# passivo fica, pois é alvo legítimo de vários testes. Não usar set_dummy:
+	# isso gravaria a preferência de teste no settings.cfg do jogador.
+	if _executando_teste_automatizado():
+		dummies["AutoDummy"] = false
+		print("[GameFlow] teste automatizado: AutoDummy desativado")
 	# Singleplayer = SERVIDOR LOCAL (host = você, peer id 1). Exatamente o mesmo
 	# caminho do multiplayer -> zero lógica duplicada.
 	if not ServerManager.host_offline():
 		push_error("[GameFlow] falha ao iniciar servidor local offline")
 		return
 	_enter_world()
+
+func _executando_teste_automatizado() -> bool:
+	for arg in OS.get_cmdline_args():
+		if "tools/dev_tests/" in arg or "src/tests/" in arg:
+			return true
+	return false
+
+## ============================================================================
+##  HOSPEDAR PARA FORA DA REDE DE CASA
+##
+##  `create_room()` continua sendo a sala de LAN: o ID codifica o IP local e só
+##  vale para quem está na mesma casa. Esta versão faz o que falta para alguém
+##  de outro lugar entrar:
+##
+##    1. sobe o servidor normalmente (é o mesmo ENet, a mesma porta);
+##    2. pede ao roteador que encaminhe a porta (UPnP);
+##    3. troca o ID da sala por um que codifica o IP PÚBLICO.
+##
+##  ⚠️ O ID SÓ É TROCADO SE A PORTA ABRIR. Um ID com IP público e porta fechada
+##  é pior que um ID de LAN: o amigo digita, espera, e o erro não diz nada sobre
+##  a porta. Quando o UPnP falha, a sala continua valendo na LAN e o motivo é
+##  dito em voz alta.
+##
+##  A sala já está NO AR antes de o UPnP responder — ninguém espera o roteador
+##  para começar a jogar em casa.
+## ============================================================================
+signal sala_publica_pronta(ok: bool, id_publico: String, motivo: String)
+
+var _exposicao: ExposicaoPublica = null
+var _porta_exposta := 0
+
+
+func create_room_publica() -> void:
+	create_room()
+	if mode != Mode.HOST:
+		return
+	_porta_exposta = NetConf.DEFAULT_PORT
+	_exposicao = ExposicaoPublica.new()
+	_exposicao.terminou.connect(_ao_expor)
+	print("[GameFlow] pedindo ao roteador a porta %d (UPnP)..." % _porta_exposta)
+	_exposicao.abrir(_porta_exposta)
+
+
+func _ao_expor(ok: bool, ip_publico: String, motivo: String) -> void:
+	var id_publico := ""
+	if ok and not ip_publico.is_empty():
+		id_publico = encode_room_id(ip_publico)
+		if not id_publico.is_empty():
+			room_id = id_publico
+		print("[GameFlow] sala PÚBLICA: %s (ID %s) — %s" % [ip_publico, id_publico, motivo])
+	else:
+		print("[GameFlow] a sala continua só na LAN — %s" % motivo)
+	sala_publica_pronta.emit(ok, id_publico, motivo)
+
+
+## Fecha a porta no roteador. Um mapeamento permanente que ninguém remove fica
+## lá para sempre, e a próxima pessoa a usar a rede herda uma porta aberta.
+func fechar_sala_publica() -> void:
+	if _porta_exposta <= 0:
+		return
+	ExposicaoPublica.fechar(_porta_exposta)
+	_porta_exposta = 0
+	_exposicao = null
+
 
 func create_room() -> void:
 	mode = Mode.HOST
