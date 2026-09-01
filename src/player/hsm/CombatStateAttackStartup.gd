@@ -17,6 +17,11 @@ extends PlayerState
 # ============================================================================
 
 func enter(_previous_state_path: String, _data := {}) -> void:
+	# As variações W/A/S/D já têm root motion próprio. Aplicar o auto-lunge do
+	# M1 por cima transformaria uma esquiva lateral em avanço e faria a hitbox
+	# nascer além da distância especificada.
+	if player._melee and not player._melee.usa_auto_lunge():
+		return
 	# AUTO-MIRA + LUNGE. Estava no `CombatStateAttacking.enter()` e é daqui que
 	# ele sempre quis ser: o puxão para o alvo é a PREPARAÇÃO do golpe, e é o
 	# que dá ao startup de 0,20 s alcance suficiente para valer a pena.
