@@ -147,6 +147,11 @@ func _montar() -> void:
 	titulo.add_theme_font_size_override("font_size", 34)
 	titulo.add_theme_color_override("font_color", COR_TEXTO)
 	coluna.add_child(titulo)
+	var subtitulo := Label.new()
+	subtitulo.text = "MONTE SUA IDENTIDADE  •  A PRÉVIA É A MESMA APARÊNCIA DA PARTIDA"
+	subtitulo.add_theme_font_size_override("font_size", 12)
+	subtitulo.add_theme_color_override("font_color", COR_TEXTO_FRACO)
+	coluna.add_child(subtitulo)
 
 	var linha := HBoxContainer.new()
 	linha.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -229,10 +234,30 @@ func _centro() -> Control:
 	amb.environment = env
 	_viewport.add_child(amb)
 
+	# Base baixa e escura: ancora os pés do personagem e separa sua silhueta da
+	# arte de fundo, sem virar um segundo cenário dentro do menu.
+	var base := MeshInstance3D.new()
+	var disco := CylinderMesh.new()
+	disco.top_radius = 2.25
+	disco.bottom_radius = 2.45
+	disco.height = 0.10
+	disco.radial_segments = 48
+	base.mesh = disco
+	base.position = Vector3(0.0, -0.06, 0.0)
+	base.material_override = Materiais.superficie(Color(0.055, 0.10, 0.20))
+	_viewport.add_child(base)
+
 	var luz := DirectionalLight3D.new()
 	luz.rotation = Vector3(deg_to_rad(-42.0), deg_to_rad(-38.0), 0.0)
 	luz.light_energy = 1.5
 	_viewport.add_child(luz)
+	# Recorte frio no lado oposto: destaca cabelo, asas e acessórios escuros
+	# contra o fundo azul sem achatar a luz principal.
+	var recorte := DirectionalLight3D.new()
+	recorte.rotation = Vector3(deg_to_rad(-28.0), deg_to_rad(132.0), 0.0)
+	recorte.light_color = Color(0.48, 0.72, 1.0)
+	recorte.light_energy = 0.55
+	_viewport.add_child(recorte)
 
 	_camera = Camera3D.new()
 	_camera.fov = 42.0
@@ -372,6 +397,14 @@ func _selecionar_categoria(cat: String) -> void:
 func _encher_direita() -> void:
 	for f in _lista_direita.get_children():
 		f.queue_free()
+	if Visual.customizacao_bloqueada() and _categoria != "raca":
+		var aviso := Label.new()
+		aviso.text = "PRESET BUGGY ATIVO\nAcessórios, cabelo, olhos e cores estão nulos enquanto a raça Palhaço estiver selecionada."
+		aviso.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		aviso.add_theme_font_size_override("font_size", 16)
+		aviso.add_theme_color_override("font_color", COR_TEXTO_FRACO)
+		_lista_direita.add_child(aviso)
+		return
 	match _categoria:
 		"cabelo": _itens_cabelo()
 		"acessorios": _itens_acessorios()
@@ -475,7 +508,7 @@ func _itens_raca() -> void:
 		var b := _botao(String(d["nome"]), atual == id)
 		b.gui_input.connect(func(e, rid = id):
 			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
-				Visual.raca = rid
+				Visual.definir_raca(rid)
 				Visual.aplicar(_modelo)
 				# ⚠️ NÃO REPINTAR AQUI. Havia um `_pintar()` nesta linha, de
 				# quando a tela era dona da cor; ele lia `_cor_idx`, que deixou

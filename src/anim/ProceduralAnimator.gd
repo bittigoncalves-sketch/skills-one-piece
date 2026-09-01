@@ -101,6 +101,13 @@ var _roll_ar_w := 0.0       # cambalhota no ar ao largar a superfície
 var _ljump_w := 0.0         # parkour: salto longo / vault no ar (#1, #2)
 var _gun_w := 0.0           # rajada Z (mera/hie): pose de dedo-revólver mirando
 var _hibashira_w := 0.0     # pose de entrada e sustentação do Hibashira (soca o chão, pernas abertas)
+var _mera_z_charge_w := 0.0 # peso da pose de preparo e saque das pistolas de fogo
+var _mera_z_charge_progress := 0.0 # 0..1, relógio real da animação de saque
+var _mera_x_charge_w := 0.0 # peso da concentração do Hiken (Jajanken: Pedra)
+var _mera_x_charge_progress := 0.0
+var _bomu_z_charge_w := 0.0
+var _bomu_x_charge_w := 0.0
+var _bomu_strike_w := 0.0
 var _gura_x_charge_w := 0.0 # pose de carregamento da Skill X (braço direito esticado para captura)
 var _gura_rush_w := 0.0     # pose assimétrica de investida do Barba Branca (braço direito levantado)
 var _kurouzu_w := 0.0       # pose de atração do Kurouzu (braço à frente)
@@ -247,13 +254,20 @@ func setup(profile: Dictionary) -> void:
 		_trail.endColor = Color(1.0, 1.0, 1.0, 0.0)
 
 # Chamado todo frame pelo Player (suporta is_sprinting pelo Shift).
-func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pitch: float, is_sprinting: bool = false, charging: bool = false, charge_slot: String = "", parkour: String = "", aim_gun: bool = false, gun_recoil: float = 0.0) -> void:
+func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pitch: float, is_sprinting: bool = false, charging: bool = false, charge_slot: String = "", parkour: String = "", aim_gun: bool = false, gun_recoil: float = 0.0, mera_z_charge_progress: float = 0.0, gun_recoil_side: int = -1, mera_x_charge_progress: float = 0.0, custom_pose_override: String = "") -> void:
 	var real_delta := delta
 	if _hitstop_timer > 0.0:
 		_hitstop_timer -= real_delta
 		delta = 0.0
 	
 	_t += delta
+	# A entrada do Player é a fonte do quadro atual. A leitura no pai permanece
+	# para chamadas antigas, mas um clipe de ataque não pode ocultar a preparação.
+	var custom_pose: String = custom_pose_override if not custom_pose_override.is_empty() else (get_parent().get_meta("custom_pose", "") if get_parent() else "")
+	if custom_pose == "mera_x_charge" or custom_pose == "mera_z_charge" or custom_pose.begins_with("bomu_"):
+		_baked = null
+		_baked_fim = -1.0
+		_melee_guarda = ""
 	# Clipe retargetado (Mixamo) sobrepõe TUDO enquanto toca.
 	if _baked != null:
 		_melee_stance_w = lerpf(_melee_stance_w, 1.0 if _melee_guarda != "" else 0.0, 1.0 - exp(-20.0 * delta))
@@ -289,8 +303,18 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 		_roll_lado_sinal = 1.0
 	_ljump_w   = lerpf(_ljump_w,   1.0 if parkour == "long_jump" else 0.0, 1.0 - exp(-12.0 * delta))
 	_gun_w     = lerpf(_gun_w,     1.0 if aim_gun else 0.0,               1.0 - exp(-20.0 * delta))
-	var custom_pose: String = get_parent().get_meta("custom_pose", "") if get_parent() else ""
 	_hibashira_w  = lerpf(_hibashira_w,  1.0 if custom_pose == "hibashira" else 0.0,  1.0 - exp(-20.0 * delta))
+	_mera_z_charge_w = lerpf(_mera_z_charge_w, 1.0 if custom_pose == "mera_z_charge" else 0.0, 1.0 - exp(-15.0 * delta))
+	_mera_z_charge_progress = lerpf(_mera_z_charge_progress,
+		clampf(mera_z_charge_progress, 0.0, 1.0) if custom_pose == "mera_z_charge" else 0.0,
+		1.0 - exp(-30.0 * delta))
+	_mera_x_charge_w = lerpf(_mera_x_charge_w, 1.0 if custom_pose == "mera_x_charge" else 0.0, 1.0 - exp(-18.0 * delta))
+	_mera_x_charge_progress = lerpf(_mera_x_charge_progress,
+		clampf(mera_x_charge_progress, 0.0, 1.0) if custom_pose == "mera_x_charge" else 0.0,
+		1.0 - exp(-28.0 * delta))
+	_bomu_z_charge_w = lerpf(_bomu_z_charge_w, 1.0 if custom_pose == "bomu_z_charge" else 0.0, 1.0 - exp(-22.0 * delta))
+	_bomu_x_charge_w = lerpf(_bomu_x_charge_w, 1.0 if custom_pose == "bomu_x_charge" else 0.0, 1.0 - exp(-22.0 * delta))
+	_bomu_strike_w = lerpf(_bomu_strike_w, 1.0 if custom_pose == "bomu_z_strike" or custom_pose == "bomu_x_burst" else 0.0, 1.0 - exp(-24.0 * delta))
 	_kurouzu_w    = lerpf(_kurouzu_w,    1.0 if custom_pose == "kurouzu" else 0.0,    1.0 - exp(-20.0 * delta))
 	_black_hole_w = lerpf(_black_hole_w, 1.0 if custom_pose == "black_hole" else 0.0, 1.0 - exp(-20.0 * delta))
 	_gura_x_charge_w = lerpf(_gura_x_charge_w, 1.0 if custom_pose == "gura_x_charge" else 0.0, 1.0 - exp(-20.0 * delta))
@@ -328,11 +352,14 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	# ...mas nem todo golpe da Gura faz isso: o soco do Z fecha uma CORRIDA e as
 	# pernas têm que continuar correndo por baixo dele (ver GuraPoses.CORPO_INTEIRO).
 	var gura_corpo: float = _gura_golpe_w if GuraPoses.toma_o_corpo(_gura_golpe_state) else 0.0
-	var upper_free: float = (1.0 - parkour_w) * (1.0 - _hibashira_w) * (1.0 - _kurouzu_w) * (1.0 - _black_hole_w) * (1.0 - gura_corpo)
+	# A mira de pistola domina também no ar. Sem retirar `_gun_w` daqui, a pose
+	# aérea ainda somava os braços abertos por baixo da mira.
+	var upper_free: float = (1.0 - parkour_w) * (1.0 - _gun_w) * (1.0 - _hibashira_w) * (1.0 - _kurouzu_w) * (1.0 - _black_hole_w) * (1.0 - _mera_z_charge_w) * (1.0 - _mera_x_charge_w) * (1.0 - _bomu_z_charge_w) * (1.0 - _bomu_x_charge_w) * (1.0 - _bomu_strike_w) * (1.0 - gura_corpo)
 
 	var ground_w := (1.0 - _air_w) * (1.0 - _climb_w)
 	var loco_w: float = ground_w * smoothstep(0.05, 0.35, speed01) * upper_free
 	var idle_w: float = ground_w * (1.0 - smoothstep(0.05, 0.25, speed01)) * upper_free
+	var mink_galope := usa_corrida_mink(_raca_do_modelo(), is_sprinting)
 
 	# ---- fase da marcha: DERIVADA DA PASSADA -> zero deslize ----
 	# Enquanto um pé está no chão, ele tem que andar para trás EXATAMENTE na
@@ -350,7 +377,7 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	elif parkour == "wall_run":
 		_phase += maxf(planar, 3.5) * delta * (STRIDE_GAIN / leg)   # pernas correndo na parede
 	elif on_floor and planar > 0.15:
-		_phase += cadencia(planar, speed01, is_sprinting) * delta
+		_phase += cadencia(planar, speed01, is_sprinting) * (1.18 if mink_galope else 1.0) * delta
 
 	# ---- acumula offsets de rotação por junta ----
 	var off: Dictionary = {}
@@ -359,7 +386,7 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	_locomotion(off, loco_w, _phase, speed01, is_sprinting)
 	_air(off, _air_w * upper_free, velocity.y)
 	_parkour(off, _phase)
-	_finger_gun(off, _gun_w, pitch, gun_recoil)
+	_finger_gun(off, _gun_w, pitch, gun_recoil, gun_recoil_side)
 	WeaponPoses.two_handed_sword_idle(_add, off, _sword_w, _t)
 	if _sword_slash_type >= 0:
 		WeaponPoses.two_handed_sword_slash(_add, off, _sword_w, _sword_slash_t, _sword_slash_type)
@@ -378,10 +405,16 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 				_trail.emit(false)
 			
 	FruitPoses.hibashira_pose(_add, off, _hibashira_w, _t)
+	FruitPoses.mera_z_charge_pose(_add, off, _mera_z_charge_w, _mera_z_charge_progress)
+	FruitPoses.mera_x_charge_pose(_add, off, _mera_x_charge_w, _mera_x_charge_progress)
+	FruitPoses.bomu_charge_pose(_add, off, _bomu_z_charge_w, _t, "Z")
+	FruitPoses.bomu_charge_pose(_add, off, _bomu_x_charge_w, _t, "X")
+	FruitPoses.bomu_strike_pose(_add, off, _bomu_strike_w, _t, custom_pose == "bomu_x_burst")
 	FruitPoses.kurouzu_pose(_add, off, _kurouzu_w, _t)
 	FruitPoses.black_hole_pose(_add, off, _black_hole_w, _t)
 	FruitPoses.gura_rush_pose(_add, off, _gura_rush_w, _t) # Pose assimetrica sobreposta
 	FruitPoses.gura_x_charge_pose(_add, off, _gura_x_charge_w, _t)
+	_mink_combat_pose(off, custom_pose)
 	GuraPoses.golpe(_add, off, _gura_golpe_w, _t, _gura_golpe_t, _gura_golpe_state)
 	# POR ÚLTIMO entre as poses: o tranco de dano SOMA por cima do que o corpo já
 	# estava fazendo. É o que faz levar um tiro correndo continuar lendo como corrida.
@@ -426,7 +459,7 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 		_bob_suave = lerpf(_bob_suave, bob, a)
 		var bob_final := _bob_suave
 		if loco_w > 0.001:
-			bob_final += _bob_dos_pes(speed01, is_sprinting) * loco_w
+			bob_final += (centro_galope(_phase) if mink_galope else _bob_dos_pes(speed01, is_sprinting)) * loco_w
 		(_n["Torso"] as Node3D).position = _rest_torso_pos + Vector3(0, bob_final, 0)
 
 	# Skinnado: espelha os proxies recém-escritos nos ossos do Skeleton3D.
@@ -482,6 +515,9 @@ func _idle(off: Dictionary, w: float) -> void:
 func _locomotion(off: Dictionary, w: float, phase: float, speed01: float, is_sprinting: bool) -> void:
 	if w <= 0.001:
 		return
+	if usa_corrida_mink(_raca_do_modelo(), is_sprinting):
+		_galope_mink(off, phase, w)
+		return
 
 	# Amplitudes calibradas contra movimento humano real (em radianos).
 	# ATENÇÃO ao mexer: o braço parte do repouso PENDURADO (−90° de elevação), então
@@ -520,23 +556,36 @@ func _locomotion(off: Dictionary, w: float, phase: float, speed01: float, is_spr
 	_perna_ik(off, "Thigh_L", "Shin_L", "Foot_L", phase + PI, speed01, is_sprinting, w, lean)
 	_perna_ik(off, "Thigh_R", "Shin_R", "Foot_R", phase, speed01, is_sprinting, w, lean)
 
-	# Braços SOLTOS, OPOSTOS às pernas (não balançam com pistola erguida, _gun_w).
-	# COSSENO, não seno: a perna agora vem da IK, cuja posição à frente é máxima
-	# em fase 0 (rampa linear de +passada/2 a −passada/2). Com seno o braço ficava
-	# 90° fora de fase — nem oposto nem junto, só estranho.
-	var cL := cos(phase)
-	var cR := cos(phase + PI)
-	var arm_out: float = lerpf(0.09, 0.15, t)   # afasta do corpo; muito abre "asa de galinha"
-	var sL_lag := cos(phase - 0.6)   # atraso -> sensação de braço "solto"
-	var sR_lag := cos(phase + PI - 0.6)
+	# Braços: caminhada/corrida normal balança em contra-fase com as pernas.
+	# No SPRINT vira a silhueta Naruto: os dois ficam apontados para TRÁS, sem
+	# oscilar como uma marcha normal. O peso já remove a pose ao mirar (`_gun_w`),
+	# então a rajada Z continua sendo dona absoluta dos braços.
 	var arm_w: float = w * (1.0 - _gun_w)
 	var arm_r_w: float = arm_w * (1.0 - _gura_rush_w) # Isola o braço direito
-	_add(off, "UpperArm_L", Vector3(-A_arm * cR, 0, -0.08 - arm_out) * arm_w)
-	_add(off, "UpperArm_R", Vector3(-A_arm * cL, 0, 0.08 + arm_out) * arm_r_w)
-	# Cotovelo: dobra um pouco mais quando o braço vem à frente (não fica esticado).
-	var A_elbow: float = lerpf(0.10, 0.25, t) * (2.0 if is_sprinting else 1.0)
-	_add(off, "ForeArm_L", Vector3(0.18 + A_elbow * maxf(sR_lag, 0.0), 0, -0.08) * arm_w)
-	_add(off, "ForeArm_R", Vector3(0.18 + A_elbow * maxf(sL_lag, 0.0), 0, 0.08) * arm_r_w)
+	if is_sprinting:
+		# Convenção do rig: +X leva o membro para −Z (frente); portanto −X leva
+		# os braços para +Z (costas). O cotovelo fica levemente dobrado, sem
+		# transformar a silhueta em dois braços rígidos.
+		var naruto_sway := 0.035 * sin(phase)
+		_add(off, "UpperArm_L", Vector3(-1.08, naruto_sway, -0.18) * arm_w)
+		_add(off, "UpperArm_R", Vector3(-1.08, -naruto_sway, 0.18) * arm_r_w)
+		_add(off, "ForeArm_L", Vector3(0.24, 0, -0.05) * arm_w)
+		_add(off, "ForeArm_R", Vector3(0.24, 0, 0.05) * arm_r_w)
+	else:
+		# COSSENO, não seno: a perna agora vem da IK, cuja posição à frente é máxima
+		# em fase 0 (rampa linear de +passada/2 a −passada/2). Com seno o braço ficava
+		# 90° fora de fase — nem oposto nem junto, só estranho.
+		var cL := cos(phase)
+		var cR := cos(phase + PI)
+		var arm_out: float = lerpf(0.09, 0.15, t) # muito abre "asa de galinha"
+		var sL_lag := cos(phase - 0.6) # atraso -> sensação de braço "solto"
+		var sR_lag := cos(phase + PI - 0.6)
+		_add(off, "UpperArm_L", Vector3(-A_arm * cR, 0, -0.08 - arm_out) * arm_w)
+		_add(off, "UpperArm_R", Vector3(-A_arm * cL, 0, 0.08 + arm_out) * arm_r_w)
+		# Cotovelo: dobra um pouco mais quando o braço vem à frente (não fica esticado).
+		var A_elbow: float = lerpf(0.10, 0.25, t)
+		_add(off, "ForeArm_L", Vector3(0.18 + A_elbow * maxf(sR_lag, 0.0), 0, -0.08) * arm_w)
+		_add(off, "ForeArm_R", Vector3(0.18 + A_elbow * maxf(sL_lag, 0.0), 0, 0.08) * arm_r_w)
 
 	# Torso inclina p/ FRENTE (-Z) + BALANÇO DOS OMBROS: giro no eixo Y (ombros gingam
 	# opostos ao passo) e leve rolamento no Z. rot.x+ joga o topo p/ +Z (trás), logo a
@@ -553,6 +602,147 @@ func _locomotion(off: Dictionary, w: float, phase: float, speed01: float, is_spr
 	# chão) e estabiliza o giro dos ombros. 0.75 = quase nivelada, mas ainda
 	# sobra um resto pra frente, que lê como "determinado".
 	_add(off, "Head", Vector3(lean * 0.75, -shoulder * 0.4 * sin(phase), 0) * w)
+
+
+## Galope Mink: as duas pernas traseiras comprimem e lançam o corpo, enquanto
+## os braços viram patas dianteiras que alcançam o chão, plantam e empurram para
+## trás. Não é uma corrida humana inclinada: há compressão, voo e aterrissagem.
+func _galope_mink(off: Dictionary, phase: float, w: float) -> void:
+	var onda := sin(phase)
+	var voo := maxf(onda, 0.0)       # corpo no ar, após o impulso traseiro
+	var aterrissa := maxf(-onda, 0.0) # mãos/pés recebem o peso no chão
+	var maos_frente := cos(phase)
+	var pernas_frente := cos(phase + 0.34)
+
+	# Patas traseiras: dobram bastante na compressão e estendem no salto.
+	for lado in ["L", "R"]:
+		_add(off, "Thigh_" + lado, Vector3(0.42 + pernas_frente * 0.56 - aterrissa * 0.28, 0.0, 0.0) * w)
+		_add(off, "Shin_" + lado, Vector3(-0.96 + voo * 0.70 - aterrissa * 0.34, 0.0, 0.0) * w)
+		_add(off, "Foot_" + lado, Vector3(0.20 - pernas_frente * 0.22, 0.0, 0.0) * w)
+
+	# Patas dianteiras: vão à frente para tocar o solo e passam para trás no
+	# empurrão. O antebraço dobra na aterrissagem, leitura clara de "mão no chão".
+	_add(off, "UpperArm_L", Vector3(1.18 + maos_frente * 0.62 - voo * 0.20, 0.0, -0.30) * w)
+	_add(off, "UpperArm_R", Vector3(1.18 + maos_frente * 0.62 - voo * 0.20, 0.0, 0.30) * w)
+	_add(off, "ForeArm_L", Vector3(0.72 - maos_frente * 0.34 + aterrissa * 0.36, 0.0, -0.10) * w)
+	_add(off, "ForeArm_R", Vector3(0.72 - maos_frente * 0.34 + aterrissa * 0.36, 0.0, 0.10) * w)
+
+	# Coluna baixa na corrida, mas ergue no voo e abaixa de volta ao aterrissar.
+	# Giro forte no centro: o tronco deixa a vertical humana e vira uma coluna
+	# quase horizontal. A cabeça compensa só parcialmente, olhando para a frente
+	# do galope em vez de continuar ereta como numa corrida bípede.
+	_add(off, "Torso", Vector3(-0.98 + voo * 0.20 + aterrissa * 0.14,
+		0.06 * sin(phase * 2.0), 0.03 * sin(phase)) * w)
+	_add(off, "Head", Vector3(0.52 - voo * 0.18, -0.05 * sin(phase), 0.0) * w)
+
+
+## Altura da trajetória do corpo no salto do galope. A fase positiva é o voo;
+## elevar duas vezes mais que a marcha comum deixa a leitura de animal selvagem.
+static func altura_galope(phase: float) -> float:
+	return maxf(sin(phase), 0.0) * 0.105
+
+
+## O quadril humano deixa as mãos altas demais. No galope, a silhueta inteira
+## baixa 22 cm e só volta parte disso no voo; mãos e pés passam pelo mesmo plano
+## do chão sem alterar a cápsula/colisão real do Player.
+static func centro_galope(phase: float) -> float:
+	# Abaixado até a altura de apoio das mãos; o voo sobe 10,5 cm, mas ainda
+	# fica bem abaixo do centro de uma corrida humana.
+	return -0.42 + altura_galope(phase)
+
+
+## Poses curtas do estilo Mink. A investida inclina cabeça/ombros para a mordida;
+## a presa mantém o alvo junto da boca; o clique seguinte abre a perna no chute.
+func _mink_combat_pose(off: Dictionary, pose: String) -> void:
+	match pose:
+		"mink_bite_dash":
+			_add(off, "Torso", Vector3(-1.12, 0.0, 0.0))
+			_add(off, "Head", Vector3(0.82, 0.0, 0.0))
+			_add(off, "UpperArm_L", Vector3(0.92, 0.0, -0.24))
+			_add(off, "UpperArm_R", Vector3(0.92, 0.0, 0.24))
+		"mink_bite_hold":
+			_add(off, "Torso", Vector3(-0.92, 0.0, 0.0))
+			_add(off, "Head", Vector3(0.96, 0.0, 0.0))
+		"mink_kick":
+			_add(off, "Torso", Vector3(-0.30, 0.0, 0.12))
+			_add(off, "Thigh_R", Vector3(1.38, 0.0, 0.24))
+			_add(off, "Shin_R", Vector3(-0.28, 0.0, 0.0))
+		"air_slam_dive":
+			# Calcanhar mira o chão; braços abrem para a silhueta ler como queda,
+			# e não como o chute horizontal do terceiro M1.
+			_add(off, "Torso", Vector3(0.78, 0.0, 0.0))
+			_add(off, "Thigh_R", Vector3(-1.48, 0.0, 0.18))
+			_add(off, "Shin_R", Vector3(0.30, 0.0, 0.0))
+			_add(off, "UpperArm_L", Vector3(-0.64, 0.0, -0.44))
+			_add(off, "UpperArm_R", Vector3(-0.64, 0.0, 0.44))
+		"spin_kick":
+			# Aú de capoeira: braços buscam o chão para sustentar a passagem e
+			# pernas formam um V alto. O Player gira a raiz lateralmente; esta pose
+			# constrói a silhueta que a pirueta em pé não tinha.
+			_add(off, "Torso", Vector3(0.26, 0.0, 0.0))
+			_add(off, "UpperArm_L", Vector3(1.52, -0.22, -0.34))
+			_add(off, "ForeArm_L", Vector3(0.42, 0.0, 0.0))
+			_add(off, "UpperArm_R", Vector3(1.52, 0.22, 0.34))
+			_add(off, "ForeArm_R", Vector3(0.42, 0.0, 0.0))
+			_add(off, "Thigh_R", Vector3(-1.34, 0.24, 0.42))
+			_add(off, "Shin_R", Vector3(0.22, 0.0, 0.0))
+			_add(off, "Thigh_L", Vector3(-1.10, -0.24, -0.42))
+			_add(off, "Shin_L", Vector3(-0.10, 0.0, 0.0))
+		"context_elbow":
+			# W + M1: centro baixo, ombro direito à frente e cotovelo fechado.
+			# A raiz física faz o avanço; aqui só se vende o peso e a diagonal.
+			_add(off, "Torso", Vector3(-0.38, 0.46, 0.05))
+			_add(off, "Head", Vector3(0.12, -0.12, 0.0))
+			_add(off, "UpperArm_R", Vector3(0.94, 0.18, 0.30))
+			_add(off, "ForeArm_R", Vector3(0.56, 0.0, 0.0))
+			_add(off, "UpperArm_L", Vector3(0.40, -0.12, -0.34))
+			_add(off, "ForeArm_L", Vector3(1.22, 0.0, 0.0))
+			_add(off, "Thigh_L", Vector3(0.28, 0.0, -0.18))
+			_add(off, "Thigh_R", Vector3(0.42, 0.0, 0.20))
+		"context_retreat_kick":
+			# S + M1: tronco recua, joelho sobe e a perna direita abre o chute.
+			_add(off, "Torso", Vector3(0.30, 0.0, -0.08))
+			_add(off, "Head", Vector3(-0.10, 0.0, 0.0))
+			_add(off, "UpperArm_L", Vector3(0.42, 0.0, -0.30))
+			_add(off, "ForeArm_L", Vector3(1.34, 0.0, 0.0))
+			_add(off, "UpperArm_R", Vector3(0.42, 0.0, 0.30))
+			_add(off, "ForeArm_R", Vector3(1.34, 0.0, 0.0))
+			_add(off, "Thigh_R", Vector3(1.22, 0.0, 0.20))
+			_add(off, "Shin_R", Vector3(-0.12, 0.0, 0.0))
+			_add(off, "Thigh_L", Vector3(0.34, 0.0, -0.16))
+		"context_side_hook_l":
+			# A + M1: desvia à esquerda e responde com gancho do braço direito.
+			_add(off, "Torso", Vector3(-0.12, 0.52, -0.36))
+			_add(off, "Head", Vector3(0.16, -0.12, -0.10))
+			_add(off, "UpperArm_R", Vector3(0.78, 0.42, 0.52))
+			_add(off, "ForeArm_R", Vector3(0.50, 0.0, 0.0))
+			_add(off, "UpperArm_L", Vector3(0.46, -0.12, -0.34))
+			_add(off, "ForeArm_L", Vector3(1.28, 0.0, 0.0))
+			_add(off, "Thigh_L", Vector3(0.52, 0.0, -0.42))
+			_add(off, "Thigh_R", Vector3(0.24, 0.0, 0.22))
+		"context_side_hook_r":
+			# D + M1: espelho anatômico do caso esquerdo; o gancho sai do braço E.
+			_add(off, "Torso", Vector3(-0.12, -0.52, 0.36))
+			_add(off, "Head", Vector3(0.16, 0.12, 0.10))
+			_add(off, "UpperArm_L", Vector3(0.78, -0.42, -0.52))
+			_add(off, "ForeArm_L", Vector3(0.50, 0.0, 0.0))
+			_add(off, "UpperArm_R", Vector3(0.46, 0.12, 0.34))
+			_add(off, "ForeArm_R", Vector3(1.28, 0.0, 0.0))
+			_add(off, "Thigh_R", Vector3(0.52, 0.0, 0.42))
+			_add(off, "Thigh_L", Vector3(0.24, 0.0, -0.22))
+
+
+static func usa_corrida_mink(raca: String, sprintando: bool) -> bool:
+	return sprintando and raca in ["mink_coelho", "mink_lobo", "mink_lobo_neve"]
+
+
+func _raca_do_modelo() -> String:
+	var no: Node = _n.get("Torso", null)
+	while no != null:
+		if no is Node3D and (no as Node3D).has_meta("raca_id"):
+			return String((no as Node3D).get_meta("raca_id"))
+		no = no.get_parent()
+	return ""
 
 # Altura do quadril acima do chão. Agacha com a velocidade (corrida é mais baixa).
 func _altura_quadril(speed01: float, sprint: bool) -> float:
@@ -868,19 +1058,26 @@ func _parkour(off: Dictionary, phase: float) -> void:
 # DEDO-REVÓLVER (rajada Z mera/hie): braço direito ESTICADO à frente mirando como
 # uma pistola; o modelo já vira p/ o alvo no yaw, então o -Z do braço aponta no alvo.
 # gun_recoil (1->0 por tiro) dá o COICE: braço pula pra cima e o tronco recua.
-func _finger_gun(off: Dictionary, w: float, pitch: float, gun_recoil: float) -> void:
+func _finger_gun(off: Dictionary, w: float, pitch: float, gun_recoil: float, recoil_side: int) -> void:
 	if w <= 0.001:
 		return
 	# x POSITIVO (~+1.5 = ~90°) estende o braço pra FRENTE (-Z); pitch inclina o cano
 	# p/ cima/baixo. (x negativo puxaria pra TRÁS, como o _charge faz — era o bug.)
-	var aim_x := 1.5 + clampf(pitch, -1.2, 1.2) * 0.9
-	var kick := gun_recoil * 0.5                         # coice do disparo (muzzle sobe)
-	# AMBOS os braços estendidos à frente (akimbo) mirando as duas pistolas; cotovelos
-	# quase retos (canos) e ombros à frente com o coice.
-	_add(off, "UpperArm_R", Vector3(aim_x + kick, 0.0, 0.14) * w)
-	_add(off, "ForeArm_R", Vector3(0.05, 0.0, 0.0) * w)
-	_add(off, "UpperArm_L", Vector3(aim_x + kick, 0.0, -0.14) * w)
-	_add(off, "ForeArm_L", Vector3(0.05, 0.0, 0.0) * w)
+	var aim_x := 1.35 + clampf(pitch, -1.2, 1.2) * 0.72
+	# O coice é um arco curto: ombro sobe/recua, cotovelo dobra e retorna até o
+	# próximo tiro. A cadência de 160 ms deixa a leitura completa acontecer.
+	var recoil_r := gun_recoil if recoil_side == 1 or recoil_side < 0 else 0.0
+	var recoil_l := gun_recoil if recoil_side == 0 or recoil_side < 0 else 0.0
+	var kick_r := recoil_r * 0.32
+	var kick_l := recoil_l * 0.32
+	var bend_r := recoil_r * 0.62
+	var bend_l := recoil_l * 0.62
+	# Os dois braços começam compactos e apontados; apenas a mão que disparou faz
+	# o arco de recuo. Isto impede o T-pose no ar e deixa o tiro alternado legível.
+	_add(off, "UpperArm_R", Vector3(aim_x + kick_r, 0.0, 0.10) * w)
+	_add(off, "ForeArm_R", Vector3(0.18 + bend_r, 0.0, 0.0) * w)
+	_add(off, "UpperArm_L", Vector3(aim_x + kick_l, 0.0, -0.10) * w)
+	_add(off, "ForeArm_L", Vector3(0.18 + bend_l, 0.0, 0.0) * w)
 	# APENAS os braços empunhando as armas ficam fixos à frente! As pernas e o corpo ficam livres!
 	_add(off, "Head", Vector3(0.0, -pitch * 0.5, 0.0) * w)
 
@@ -917,8 +1114,8 @@ func _lookat(off: Dictionary, pitch: float, w: float) -> void:
 	_add(off, "Head", Vector3(clampf(-pitch * 0.6, -0.5, 0.5), 0, 0) * w)
 
 # Pose de CHARGE (estilingue):
-# - Z (Pistol): braço direito puxado p/ trás+cima, cotovelo dobrado, tronco em leve torção/recuo (tensão).
-# - X (Bazooka): dois braços simultaneamente para trás, peito avança, cotovelos flexionam levemente.
+	# - Z (Pistol): braço direito puxado p/ trás+cima, cotovelo dobrado, tronco em leve torção/recuo (tensão).
+	# - X (Bazooka): dois braços simultaneamente para trás, peito avança, cotovelos flexionam levemente.
 func _charge(off: Dictionary, w: float, slot: String) -> void:
 	if w <= 0.001:
 		return

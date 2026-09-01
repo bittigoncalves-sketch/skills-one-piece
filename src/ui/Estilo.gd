@@ -20,6 +20,7 @@ const FUNDO := Color(0.05, 0.07, 0.12, 0.72)
 
 const VIDA := Color(0.30, 0.90, 0.38)
 const ENERGIA := Color(0.32, 0.62, 1.0)
+const DASH := Color(0.85, 0.85, 0.90)
 const AVISO := Color(1.0, 0.82, 0.25)
 const APAGADO := Color(0.72, 0.55, 0.55)
 const LIGADO := Color(0.45, 1.0, 0.55)

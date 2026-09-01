@@ -142,12 +142,21 @@ func _checa(anim, nodes: Dictionary, prof: Dictionary, modelo: Node3D,
 		print("  ✗ não achei período — a marcha não está ciclando")
 		falhas += 1
 
-	# 2. BRAÇO OPOSTO À PERNA: correlação tem que ser negativa
+	# 2. BRAÇOS. Walk preserva o balanço oposto às pernas; sprint usa uma pose
+	# Naruto deliberadamente fixa para trás, portanto correlação de marcha não é
+	# mais um critério válido nesse caso.
 	var corr := _corr(coxa_l, braco_l)
-	print("  braço x perna: correlação %+.2f (tem que ser negativa)" % corr)
-	if corr > -0.3:
-		print("  ✗ braço não está oposto à perna")
-		falhas += 1
+	var braco_rel: float = _media(braco_l) - (prof["rest"].get("UpperArm_L", Vector3.ZERO) as Vector3).x
+	if sprint:
+		print("  braço Naruto: média relativa %+.1f° (tem que apontar para trás)" % rad_to_deg(braco_rel))
+		if braco_rel > -0.70:
+			print("  ✗ braço do sprint não ficou projetado para trás")
+			falhas += 1
+	else:
+		print("  braço x perna: correlação %+.2f (tem que ser negativa)" % corr)
+		if corr > -0.3:
+			print("  ✗ braço não está oposto à perna")
+			falhas += 1
 
 	# 3. TRONCO sobe e desce
 	var amp_y := _amp(torso_y)

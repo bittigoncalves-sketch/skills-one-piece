@@ -114,8 +114,17 @@ const CATALOGO := {
 	},
 	"luffy_calcao": {
 		"nome": "Calção do Luffy", "parte": "pernas",
-		"pecas": [{"cena": BASE + "luffy_calcao.glb", "no": "Torso",
-			"ancora": Vector3(0.5, 0.10, 0.5)}],
+		# Um único .glb preso ao Torso não acompanha as pernas quando elas dobram.
+		# O calção é, portanto, dividido em cintura + uma bainha por coxa. Cada
+		# metade vira filha do nó que a animação realmente movimenta.
+		"pecas": [
+			{"gerador": "calcao_luffy_cintura", "no": "Torso",
+				"ancora": Vector3(0.5, 0.10, 0.5)},
+			{"gerador": "calcao_luffy_perna", "no": "Thigh_R",
+				"ancora": Vector3(0.5, 0.31, 0.5)},
+			{"gerador": "calcao_luffy_perna", "no": "Thigh_L",
+				"ancora": Vector3(0.5, 0.31, 0.5)},
+		],
 	},
 	"espadas_zoro": {
 		"nome": "As 3 Espadas do Zoro", "parte": "cintura",
@@ -276,7 +285,7 @@ const PARTES := {
 	"tronco":  {"rotulo": "Tronco",  "nos": ["Torso"]},
 	"costas":  {"rotulo": "Costas",  "nos": ["Torso"]},
 	"cintura": {"rotulo": "Cintura", "nos": ["Torso"]},
-	"pernas":  {"rotulo": "Pernas",  "nos": ["Torso"]},
+	"pernas":  {"rotulo": "Pernas",  "nos": ["Torso", "Thigh_R", "Thigh_L"]},
 	"pes":     {"rotulo": "Pés",     "nos": ["Foot_R", "Foot_L"]},
 }
 
@@ -340,16 +349,27 @@ static func equipar(modelo: Node3D, id: String, tinta: Color = Color(0, 0, 0, 0)
 		if destino == null:
 			push_warning("[Acessorios] nó '%s' não existe neste modelo" % peca["no"])
 			continue
-		var caminho := String(peca["cena"])
-		if not ResourceLoader.exists(caminho):
-			push_warning("[Acessorios] arquivo ausente: " + caminho)
+		var gerada := peca.has("gerador")
+		var no: Node3D = null
+		if gerada:
+			no = _criar_roupa_gerada(String(peca["gerador"]), destino)
+		else:
+			var caminho := String(peca["cena"])
+			if not ResourceLoader.exists(caminho):
+				push_warning("[Acessorios] arquivo ausente: " + caminho)
+				continue
+			no = (load(caminho) as PackedScene).instantiate() as Node3D
+		if no == null:
 			continue
-		var no := (load(caminho) as PackedScene).instantiate() as Node3D
 		no.name = "%s%s_%d" % [_prefixo(String(d["parte"])), id, i]
 		destino.add_child(no)
+		_fixar_ao_rig(no)
 		var cx := caixa_do_no(destino)
 		var a: Vector3 = peca.get("ancora", Vector3(0.5, 0.5, 0.5))
-		no.position = cx.position + Vector3(cx.size.x * a.x, cx.size.y * a.y, cx.size.z * a.z)
+		# A roupa gerada já posiciona cada painel no espaço do membro; os .glb
+		# continuam usando a âncora única tradicional.
+		if not gerada:
+			no.position = cx.position + Vector3(cx.size.x * a.x, cx.size.y * a.y, cx.size.z * a.z)
 		# ⚠️ A PEÇA SE AJUSTA À CABEÇA EM QUE VESTE (2026-08-29).
 		#
 		# A âncora sempre foi fração da caixa, mas o TAMANHO do .glb era
@@ -371,11 +391,63 @@ static func equipar(modelo: Node3D, id: String, tinta: Color = Color(0, 0, 0, 0)
 			no.scale = Vector3(cx.size.x / r.x, cx.size.y / r.y, cx.size.z / r.z)
 		var pintar := tinta if (bool(d.get("tingivel", false)) and tinta.a > 0.0) \
 			else Color(0, 0, 0, 0)
-		_converter_materiais(no, bool(d.get("brilha", false)), pintar)
+		if not gerada:
+			_converter_materiais(no, bool(d.get("brilha", false)), pintar)
 		if primeiro == null:
 			primeiro = no
 		i += 1
 	return primeiro
+
+
+## Peças simples divididas por membro. O rig do jogador é hierárquico (não um
+## Skeleton3D compartilhável), por isso roupa sem skin precisa nascer em cada
+## membro que se move. Assim a bainha acompanha corrida, salto e golpes.
+static func _criar_roupa_gerada(tipo: String, destino: Node3D) -> Node3D:
+	var raiz := Node3D.new()
+	var cx := caixa_do_no(destino)
+	if tipo == "calcao_luffy_cintura":
+		_adicionar_tecido(raiz, "Cintura", Vector3(cx.size.x * 1.08,
+			maxf(0.08, cx.size.y * 0.12), cx.size.z * 1.08),
+			cx.position + Vector3(cx.size.x * 0.5, cx.size.y * 0.12, cx.size.z * 0.5),
+			Color(0.22, 0.34, 0.62))
+	elif tipo == "calcao_luffy_perna":
+		var altura := maxf(0.12, cx.size.y * 0.52)
+		_adicionar_tecido(raiz, "Tecido", Vector3(cx.size.x * 1.12, altura,
+			cx.size.z * 1.12), cx.position + Vector3(cx.size.x * 0.5,
+			cx.size.y * 0.31, cx.size.z * 0.5), Color(0.22, 0.34, 0.62))
+		_adicionar_tecido(raiz, "Bainha", Vector3(cx.size.x * 1.17,
+			maxf(0.045, altura * 0.18), cx.size.z * 1.17),
+			cx.position + Vector3(cx.size.x * 0.5, cx.size.y * 0.08, cx.size.z * 0.5),
+			Color(0.90, 0.90, 0.88))
+	else:
+		push_warning("[Acessorios] roupa gerada desconhecida: " + tipo)
+		return null
+	return raiz
+
+
+static func _adicionar_tecido(raiz: Node3D, nome: String, tamanho: Vector3,
+		posicao: Vector3, cor: Color) -> void:
+	var malha := MeshInstance3D.new()
+	malha.name = nome
+	var caixa := BoxMesh.new()
+	caixa.size = tamanho
+	malha.mesh = caixa
+	malha.position = posicao
+	malha.material_override = Materiais.superficie(cor)
+	raiz.add_child(malha)
+
+
+## Importações podem marcar nós como `top_level`; nesse modo eles ignoram a
+## transformação do pai e a roupa parece ficar parada no mundo. Forçamos o
+## vínculo local em toda a árvore da peça antes de ela entrar em cena.
+static func _fixar_ao_rig(raiz: Node3D) -> void:
+	var fila: Array[Node] = [raiz]
+	while not fila.is_empty():
+		var atual: Node = fila.pop_back() as Node
+		if atual is Node3D:
+			(atual as Node3D).top_level = false
+		for filho in atual.get_children():
+			fila.append(filho)
 
 
 ## ⚠️ TROCA O MATERIAL DO .glb PELO DO JOGO, mantendo a cor modelada.

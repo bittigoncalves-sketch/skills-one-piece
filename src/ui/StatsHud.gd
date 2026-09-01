@@ -16,6 +16,8 @@ var _hp_fill: BarraHud
 var _hp_label: Label
 var _en_fill: BarraHud
 var _en_label: Label
+var _dash_fill: BarraHud
+var _dash_label: Label
 var _assist_label: Label
 var _dmg_label: Label
 var _room_label: Label
@@ -34,6 +36,10 @@ func _ready() -> void:
 	y += BAR_H + 10.0
 	_en_fill = _add_barra(x, y, Estilo.ENERGIA)
 	_en_label = _add_bar_label(x, y)
+
+	y += BAR_H + 10.0
+	_dash_fill = _add_barra(x, y, Estilo.DASH)
+	_dash_label = _add_bar_label(x, y)
 
 	y += BAR_H + 16.0
 	_dmg_label = _add_text(x, y, 22, Estilo.AVISO)
@@ -95,6 +101,19 @@ func _process(_dt: float) -> void:
 		return
 	_set_bar(_hp_fill, _hp_label, p.get("health"), p.get("max_health"), "VIDA")
 	_set_bar(_en_fill, _en_label, p.get("energy"), p.get("max_energy"), "ENERGIA")
+	_set_dash_bar(_dash_fill, _dash_label, p.get("_dash_cooldown"))
+
+func _set_dash_bar(fill: BarraHud, label: Label, cd) -> void:
+	if cd == null:
+		return
+	var mx: float = DashController.RECARGA
+	# A barra enche conforme recarrega (1.0 = pronto para usar)
+	var r: float = clampf(1.0 - (float(cd) / mx), 0.0, 1.0)
+	fill.valor(r)
+	if r >= 1.0:
+		label.text = "DASH  [PRONTO]"
+	else:
+		label.text = "DASH  [%.1fs]" % cd
 
 func _set_bar(fill: BarraHud, label: Label, val, mx, nome: String) -> void:
 	if val == null or mx == null:
@@ -106,7 +125,7 @@ func _set_bar(fill: BarraHud, label: Label, val, mx, nome: String) -> void:
 func set_aim_assist(on: bool) -> void:
 	if _assist_label == null:
 		return
-	_assist_label.text = "MIRA ASSISTIDA (E): " + ("LIGADA" if on else "DESLIGADA")
+	_assist_label.text = "OBSERVAÇÃO (E): " + ("LIGADA" if on else "DESLIGADA")
 	_assist_label.add_theme_color_override("font_color", Estilo.LIGADO if on else Estilo.APAGADO)
 
 func add_damage_dealt(amount: float) -> void:

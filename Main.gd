@@ -280,7 +280,7 @@ func _spawn_player_data(data: Dictionary) -> Node:
 
 func _make_player_sync() -> MultiplayerSynchronizer:
 	var cfg := SceneReplicationConfig.new()
-	for p in ["position", "net_velocity", "net_facing", "net_on_floor", "current_fruit_id"]:
+	for p in ["position", "net_velocity", "net_facing", "net_on_floor", "net_charge_pose", "net_charge_progress", "current_fruit_id"]:
 		cfg.add_property(NodePath(".:" + p))
 	var sync := MultiplayerSynchronizer.new()
 	sync.name = "Sync"

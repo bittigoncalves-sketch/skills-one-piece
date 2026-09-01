@@ -49,10 +49,31 @@ static var cabelo_idx: int = 0
 
 # ------------------------------------------------------------------- escolhas
 static func equipar(parte: String, id: String) -> void:
+	if customizacao_bloqueada():
+		return
 	if id == "":
 		acessorios.erase(parte)
 	else:
 		acessorios[parte] = id
+
+
+static func definir_raca(id: String) -> void:
+	raca = id
+	# O Palhaço é uma transformação fechada: escolhas externas não atravessam
+	# a maquiagem/roupa do Buggy e ficam literalmente nulas no estado salvo.
+	if customizacao_bloqueada():
+		acessorios.clear()
+		olho = ""
+		cor_grupo = "time"
+		cor_idx = -1
+		cabelo_idx = 0
+		cor_grupo = "time"
+		cor_idx = -1
+		cabelo_idx = 0
+
+
+static func customizacao_bloqueada() -> bool:
+	return Racas.bloqueia_customizacao(raca)
 
 
 static func equipado(parte: String) -> String:
@@ -95,6 +116,11 @@ static func cor_do_cabelo() -> Color:
 static func aplicar(modelo: Node3D, preservar_cor_do_jogo: bool = false) -> void:
 	if modelo == null or not is_instance_valid(modelo):
 		return
+	# Também normaliza configurações antigas carregadas do disco, que podem ter
+	# acessórios gravados antes de o Palhaço virar um preset fechado.
+	if customizacao_bloqueada():
+		acessorios.clear()
+		olho = ""
 
 	# ⚠️ LIMPA TODA PARTE, inclusive as que o estado não menciona. Sem isso,
 	# reaplicar depois de tirar um chapéu deixaria o chapéu velho no lugar — o
@@ -164,8 +190,11 @@ static func e_adorno(n: Node) -> bool:
 	var p: Node = n
 	while p != null:
 		var nome := String(p.name)
+		# Pistolas da Mera são equipamento de fogo, não pele nem peça tingível.
+		# A marca fica no nó-raiz e protege todas as caixas (carvão, ferro, latão
+		# e brasa) tanto da cor de equipe quanto da customização do personagem.
 		if nome.begins_with(Acessorios.MARCA) or nome.begins_with(Racas.MARCA) \
-				or nome.begins_with(Corpo.MARCA):
+				or nome.begins_with(Corpo.MARCA) or nome.begins_with("MeraPistol_"):
 			return true
 		p = p.get_parent()
 	return false

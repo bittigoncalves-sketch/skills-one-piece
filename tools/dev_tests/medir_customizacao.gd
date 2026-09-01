@@ -111,8 +111,8 @@ func _init() -> void:
 	Acessorios.desequipar(modelo, "cabeca")
 
 	# ---------- partes que compartilham o MESMO nó ----------
-	# ⚠️ A ASSERÇÃO QUE FALTAVA. "tronco", "costas", "cintura" e "pernas" penduram
-	# todas no nó `Torso`. Com a limpeza varrendo o nó inteiro por prefixo,
+	# ⚠️ A ASSERÇÃO QUE FALTAVA. "tronco", "costas" e "cintura" penduram
+	# no nó `Torso`. Com a limpeza varrendo o nó inteiro por prefixo,
 	# equipar as espadas (cintura) APAGAVA o colete (tronco) — e a bateria passava
 	# assim mesmo, porque só testava uma parte de cada vez.
 	print("\n--- partes que dividem o mesmo nó ---")
@@ -125,8 +125,18 @@ func _init() -> void:
 	_ok("espadas (cintura) sobrevivem", Acessorios.equipado_na_parte(modelo, "cintura") == "espadas_zoro")
 	_ok("calção (pernas) sobrevive", Acessorios.equipado_na_parte(modelo, "pernas") == "luffy_calcao")
 	_ok("capa (costas) sobrevive", Acessorios.equipado_na_parte(modelo, "costas") == "capa_marinha")
-	print("   as 4 peças no Torso: %d nós de acessório" % _contar_acessorios(modelo))
-	_ok("as quatro convivem no mesmo nó", _contar_acessorios(modelo) == 4)
+	print("   3 peças no Torso + 2 bainhas nas coxas: %d nós de acessório" % _contar_acessorios(modelo))
+	_ok("as quatro escolhas convivem (calção dividido em 3 painéis)", _contar_acessorios(modelo) == 6)
+	# O calção é roupa de perna: cada bainha tem de girar com sua coxa, em vez de
+	# ficar congelada sob o Torso durante corrida, salto ou ataque.
+	var coxa_d := modelo.find_child("Thigh_R", true, false) as Node3D
+	var bainha_d := coxa_d.get_node_or_null("Acessorio_pernas_luffy_calcao_1/Tecido") as Node3D
+	var antes_bainha := bainha_d.global_position
+	coxa_d.rotation.x += 0.55
+	await process_frame
+	_ok("a roupa da perna direita acompanha a animação da coxa",
+		antes_bainha.distance_to(bainha_d.global_position) > 0.01 and not bainha_d.top_level)
+	coxa_d.rotation.x -= 0.55
 	# e trocar UMA delas não derruba as outras
 	Acessorios.desequipar(modelo, "cintura")
 	for i in 3: await process_frame
@@ -210,6 +220,53 @@ func _init() -> void:
 	_ok("a raça anterior sumiu", Racas.atual(modelo) == "mink_coelho")
 	print("   (oni tinha %d peças; mink_coelho tem %d)" % [n_oni, _contar_racas(modelo)])
 
+	# ---------- Minks animados ----------
+	print("\n--- animação Mink ---")
+	Racas.aplicar(modelo, "mink_lobo")
+	for i in 3: await process_frame
+	var animados_mink := 0
+	var cauda_mink: MinkAnimado = null
+	for no in _todos(modelo):
+		if no is MinkAnimado:
+			animados_mink += 1
+			if String((no as MinkAnimado).get("_tipo")) == "cauda":
+				cauda_mink = no as MinkAnimado
+	_ok("Mink Lobo tem duas orelhas e uma cauda animadas", animados_mink == 3)
+	_ok("cauda Mink é uma cadeia de cinco segmentos", cauda_mink != null
+		and cauda_mink.find_children("Segmento_*", "Node3D", true, false).size() == MinkAnimado.SEGMENTOS_DA_CAUDA)
+	_ok("cauda Mink possui tufos de pelo em todos os segmentos", cauda_mink != null
+		and cauda_mink.find_children("Tufo_*", "MeshInstance3D", true, false).size() == MinkAnimado.SEGMENTOS_DA_CAUDA * 4)
+	_ok("cauda de lobo engrossa antes de afinar para a ponta",
+		MinkAnimado.perfil_espessura_cauda(0) < MinkAnimado.perfil_espessura_cauda(2)
+		and MinkAnimado.perfil_espessura_cauda(3) < MinkAnimado.perfil_espessura_cauda(2)
+		and MinkAnimado.perfil_espessura_cauda(4) < MinkAnimado.perfil_espessura_cauda(3))
+	var encaixe_antes := cauda_mink.global_position
+	cauda_mink.rotation.x += 0.35
+	await process_frame
+	_ok("a raiz da cauda permanece fixa ao corpo durante a pose",
+		cauda_mink.global_position.is_equal_approx(encaixe_antes))
+	_ok("cauda desce no pulo e sobe na queda",
+		MinkAnimado.inclinacao_cauda("pulando") > 0.0 and MinkAnimado.inclinacao_cauda("caindo") < 0.0)
+	_ok("estado Mink prioriza pulo e queda sobre corrida",
+		MinkAnimado.estado_de(false, Vector3(3, 2, 0), true) == "pulando" \
+		and MinkAnimado.estado_de(false, Vector3(3, -2, 0), true) == "caindo")
+
+	# ---------- preset Palhaço ----------
+	print("\n--- preset Palhaço (Buggy) ---")
+	Visual.acessorios = {"cabeca": "chapeu_palha"}
+	Visual.olho = "olho_grande"
+	Visual.cor_idx = 1
+	Visual.definir_raca("palhaco")
+	Visual.aplicar(modelo)
+	for i in 3: await process_frame
+	_ok("Palhaço zera acessórios, olhos e cor externa",
+		Visual.acessorios.is_empty() and Visual.olho == "" and Visual.cor_idx < 0)
+	Visual.equipar("cabeca", "chapeu_palha")
+	_ok("Palhaço bloqueia nova customização externa", Visual.acessorios.is_empty())
+	_ok("Palhaço monta o preset visual do Buggy", Racas.atual(modelo) == "palhaco" and _contar_racas(modelo) >= 10)
+	Visual.definir_raca("humano")
+	Visual.aplicar(modelo)
+
 	# escala volta ao original
 	print("\n--- a escala desfaz ---")
 	var braco := modelo.find_child("UpperArm_R", true, false) as Node3D
@@ -238,14 +295,20 @@ func _init() -> void:
 		absf(fator - 1.55) < 0.06)
 	Racas.remover(modelo)
 
-	# a cor do mink lobo
-	print("\n--- o Mink Lobo segue a cor ---")
+	# a pelagem Mink não segue mais a cor escolhida pelo jogador
+	print("\n--- pelagem Mink fixa ---")
 	Racas.aplicar(modelo, "mink_lobo")
 	Visual.cor_idx = 2
 	Visual.pintar(modelo)
 	for i in 3: await process_frame
-	_ok("as peças do Mink Lobo ficam da cor do personagem",
-		_cor_da_peca_raca(modelo) == Paleta.CORES[2]["cor"])
+	_ok("as peças do Mink Lobo NÃO ficam da cor do personagem",
+		_cor_da_peca_raca(modelo) != Paleta.CORES[2]["cor"])
+	_ok("sprint Mink usa a corrida em quatro patas",
+		ProceduralAnimator.usa_corrida_mink("mink_lobo", true) and not ProceduralAnimator.usa_corrida_mink("oni", true))
+	_ok("galope Mink tem fase de voo e aterrissagem",
+		ProceduralAnimator.altura_galope(PI * 0.5) > 0.09 and ProceduralAnimator.altura_galope(PI * 1.5) == 0.0)
+	_ok("galope Mink abaixa o centro para apoiar as mãos",
+		ProceduralAnimator.centro_galope(PI * 1.5) < -0.40 and ProceduralAnimator.centro_galope(PI * 0.5) < -0.30)
 	Racas.aplicar(modelo, "oni")
 	Visual.pintar(modelo)
 	for i in 3: await process_frame
@@ -672,9 +735,18 @@ func _tem_escala_mudada(modelo: Node) -> bool:
 
 func _cor_da_peca_raca(modelo: Node) -> Color:
 	for x in _todos(modelo):
-		if String(x.name).begins_with(Racas.MARCA) and x is MeshInstance3D:
+		if x is MeshInstance3D and _pertence_a_raca(x):
 			return _cor_do_material((x as MeshInstance3D).material_override)
 	return Color(0, 0, 0, 0)
+
+
+func _pertence_a_raca(no: Node) -> bool:
+	var atual: Node = no
+	while atual != null:
+		if String(atual.name).begins_with(Racas.MARCA):
+			return true
+		atual = atual.get_parent()
+	return false
 
 func _todos(n: Node) -> Array:
 	var o: Array = [n]

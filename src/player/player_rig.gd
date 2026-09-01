@@ -54,6 +54,8 @@ var _skel_anim: SkeletalAnimator = null     # animador ESQUELETAL (skinnados)
 var _is_skinned: bool = false               # o personagem atual é skinnado?
 var _head_node: Node3D = null               # cabeça do modelo (âncora do fôlego)
 var _pistols: Array = []                    # pistolas nas DUAS mãos
+var _pistol_holster: Node3D = null          # suporte temporário na cintura (saque da Mera Z)
+var _pistols_in_draw: bool = false          # impede o Player de esconder a arma entre carga e disparo
 var _buki_armas: Dictionary = {}            # slot -> Node3D pré-construído (oculto)
 var _buki_pivot: Node3D = null              # pivô do canhão-corpo (X)
 var item_handle: Node3D = null              # ponto de ancoragem para itens segurados na mão direita
@@ -71,6 +73,7 @@ func procedural() -> ProceduralAnimator: return _proc_anim
 func esqueletal() -> SkeletalAnimator: return _skel_anim
 func cabeca() -> Node3D:            return _head_node
 func pistolas() -> Array:           return _pistols
+func pistolas_em_saque() -> bool:    return _pistols_in_draw
 func armas_buki() -> Dictionary:    return _buki_armas
 func pivo_buki() -> Node3D:         return _buki_pivot
 func skinnado() -> bool:            return _is_skinned
@@ -97,6 +100,8 @@ func montar(cid: String) -> void:
 		_proc_anim.queue_free()
 		_proc_anim = null
 	_pistols = []
+	_pistol_holster = null
+	_pistols_in_draw = false
 	_buki_armas = {}          # morrem junto com o _char_model; o pivô do X é solto abaixo
 	_is_skinned = false
 
@@ -234,22 +239,71 @@ func _fit_model_to_body() -> void:
 	# pés (base da AABB) no fundo da colisão
 	_char_model.position.y = FEET_Y - ky * ab.position.y
 
-# Cria a PISTOLA (oculta) na ponta do antebraço direito. Fica invisível até a rajada
-# Z (mera/hie), quando `_pistol.visible` é ligado. Cano ao longo de -Y = aponta pra
-# frente quando o braço estende na pose de mira (_finger_gun).
+# Cria as duas pistolas da Mera Z. Elas são as MESMAS instâncias que aparecem
+# durante o saque e que definem a origem do projétil: não há arma visual separada
+# do cano usado no combate.
 func _attach_pistol(model: Node3D) -> void:
 	_pistols = []
+	_pistols_in_draw = false
 	if model == null:
 		return
+	_pistol_holster = Node3D.new()
+	_pistol_holster.name = "MeraPistolHolsters"
+	model.add_child(_pistol_holster)
 	for side in ["ForeArm_L", "ForeArm_R"]:
 		var arm := model.find_child(side, true, false)
 		if not (arm is Node3D):
 			continue
-		var gun := PlayerModelKit.build_pistol()
+		var gun := PlayerModelKit.build_mera_pistol()
+		gun.name = "MeraPistol_" + side
 		gun.position = Vector3(0, -0.36, 0.02)   # ponta do antebraço (mão)
 		gun.visible = false
 		(arm as Node3D).add_child(gun)
 		_pistols.append(gun)
+
+# Mera Z começa com as armas visíveis nos coldres. A animação de carga leva as
+# mãos até a cintura; no fim, `empunhar_pistolas_mera` as transfere para as mãos.
+# O coldre é filho do modelo, não do torso, para também funcionar no rig skinnado.
+func guardar_pistolas_mera() -> void:
+	if _pistol_holster == null:
+		return
+	_pistols_in_draw = true
+	for i in _pistols.size():
+		var gun := _pistols[i] as Node3D
+		if not is_instance_valid(gun):
+			continue
+		if gun.get_parent() != _pistol_holster:
+			gun.reparent(_pistol_holster, false)
+		var side := -1.0 if i == 0 else 1.0
+		gun.position = Vector3(0.27 * side, 0.24, 0.13)
+		gun.rotation_degrees = Vector3(0.0, 0.0, -10.0 * side)
+		gun.visible = true
+
+# Final da carga: encaixa cada pistola na mão correspondente já apontada pela
+# pose de mira. O cano continua no eixo -Y local, que é o eixo lido por Mira.
+func empunhar_pistolas_mera() -> void:
+	if _char_model == null:
+		return
+	_pistols_in_draw = true
+	for i in _pistols.size():
+		var gun := _pistols[i] as Node3D
+		if not is_instance_valid(gun):
+			continue
+		var side_name := "ForeArm_L" if i == 0 else "ForeArm_R"
+		var arm := _char_model.find_child(side_name, true, false) as Node3D
+		if arm == null:
+			continue
+		if gun.get_parent() != arm:
+			gun.reparent(arm, false)
+		gun.position = Vector3(0, -0.36, 0.02)
+		gun.rotation = Vector3.ZERO
+		gun.visible = true
+
+func esconder_pistolas_mera() -> void:
+	_pistols_in_draw = false
+	for gun in _pistols:
+		if is_instance_valid(gun):
+			gun.visible = false
 
 # Ponto de ancoragem para itens (como a espada). No voxel vai no braço,
 # no esqueleto usamos BoneAttachment3D para herdar posição E rotação.

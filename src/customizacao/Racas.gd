@@ -42,6 +42,8 @@ const META_SEGUE_COR := Adornos.META_SEGUE_COR
 const META_ESCALA := Adornos.META_ESCALA
 
 const PELE := Color(0.93, 0.78, 0.62)
+const PELO_COELHO := Color(0.90, 0.84, 0.72)
+const PELO_LOBO := Color(0.32, 0.28, 0.23)
 const OSSO := Color(0.92, 0.90, 0.82)
 const CINZA := Color(0.55, 0.58, 0.62)
 
@@ -149,64 +151,58 @@ const CATALOGO := {
 	},
 	"palhaco": {
 		"nome": "Palhaço",
-		"descricao": "cara branca e cabelo colorido",
-		# ⚠️ MUDOU EM 2026-08-29. Era só um nariz vermelho; o dono redefiniu a
-		# raça como "cara branca e cabelo colorido". O nariz fica — é o que
-		# sobrou de icônico e aparece na folha —, mas quem faz a raça agora é a
-		# máscara branca e a juba arco-íris.
+		"descricao": "visual fechado inspirado no Buggy",
+		"bloqueia_customizacao": true,
+		# Buggy é uma identidade completa, não um nariz somado ao avatar atual.
+		# Ao escolhê-lo, `Visual` zera as escolhas externas e esta raça constrói
+		# maquiagem, cabelo azul e roupa de capitão por conta própria.
+		"pele": Color(0.87, 0.68, 0.50),
 		"pecas": [
-			# ⚠️ A CARA BRANCA FICA ATRÁS DOS OLHOS. Na primeira versão ela era
-			# uma placa em `z = 0.0` com 0,10 de profundidade — mais funda que o
-			# olho, que vive no mesmo plano — e TAPAVA os dois. O jogador
-			# escolhia palhaço e perdia o rosto. Empurrada para dentro
-			# (`z = 0.05`) e mais fina, ela pinta a cara e o olho fica na frente.
+			# Maquiagem branca, nariz vermelho e olhos/maquiagem próprios: olhos do
+			# menu ficam nulos enquanto a transformação está ativa.
 			{"no": "Head", "tam": Vector3(0.94, 0.94, 0.05), "ancora": Vector3(0.5, 0.52, 0.05),
 			 "cor": Color(0.97, 0.97, 0.96)},
 			{"no": "Head", "tam": Vector3(0.20, 0.20, 0.22), "ancora": Vector3(0.5, 0.40, 0.0),
 			 "cor": Color(0.90, 0.13, 0.13)},
-			# A JUBA: seis tufos em VOLTA do crânio, alternando a cor. Os quatro
-			# das quinas mais o da nuca e o da testa fecham o anel — amontoados
-			# de um lado, como estavam, liam como um chapéu torto.
-			{"no": "Head", "tam": Vector3(0.30, 0.62, 0.30), "ancora": Vector3(0.02, 0.90, 0.18),
-			 "cor": Color(0.88, 0.15, 0.15)},
-			{"no": "Head", "tam": Vector3(0.30, 0.62, 0.30), "ancora": Vector3(0.98, 0.90, 0.18),
-			 "cor": Color(0.20, 0.45, 0.90)},
-			{"no": "Head", "tam": Vector3(0.30, 0.62, 0.30), "ancora": Vector3(0.02, 0.90, 0.82),
-			 "cor": Color(0.95, 0.75, 0.15)},
-			{"no": "Head", "tam": Vector3(0.30, 0.62, 0.30), "ancora": Vector3(0.98, 0.90, 0.82),
-			 "cor": Color(0.20, 0.68, 0.32)},
-			{"no": "Head", "tam": Vector3(0.55, 0.52, 0.26), "ancora": Vector3(0.5, 0.92, 1.0),
-			 "cor": Color(0.62, 0.25, 0.80)},
-			{"no": "Head", "tam": Vector3(0.55, 0.48, 0.26), "ancora": Vector3(0.5, 0.94, 0.02),
-			 "cor": Color(0.95, 0.45, 0.12)},
+			{"no": "Head", "tam": Vector3(0.18, 0.16, 0.05), "ancora": Vector3(0.32, 0.59, -0.04), "cor": Color(0.05, 0.06, 0.10)},
+			{"no": "Head", "tam": Vector3(0.18, 0.16, 0.05), "ancora": Vector3(0.68, 0.59, -0.04), "cor": Color(0.05, 0.06, 0.10)},
+			# Cabelo azul em duas massas laterais e uma franja, como Buggy.
+			{"no": "Head", "tam": Vector3(0.42, 0.72, 0.34), "ancora": Vector3(0.04, 0.92, 0.48), "cor": Color(0.16, 0.42, 0.90)},
+			{"no": "Head", "tam": Vector3(0.42, 0.72, 0.34), "ancora": Vector3(0.96, 0.92, 0.48), "cor": Color(0.16, 0.42, 0.90)},
+			{"no": "Head", "tam": Vector3(0.72, 0.28, 0.28), "ancora": Vector3(0.50, 0.96, 0.02), "cor": Color(0.16, 0.42, 0.90)},
+			# Casaco rubro, camisa listrada e faixa dourada: a roupa também é parte
+			# do preset, portanto nenhum acessório externo a atravessa.
+			{"no": "Torso", "tam": Vector3(1.10, 1.00, 0.18), "ancora": Vector3(0.50, 0.56, 0.00), "cor": Color(0.62, 0.08, 0.10)},
+			{"no": "Torso", "tam": Vector3(0.56, 0.80, 0.20), "ancora": Vector3(0.50, 0.58, -0.03), "cor": Color(0.94, 0.94, 0.89)},
+			{"no": "Torso", "tam": Vector3(0.62, 0.12, 0.22), "ancora": Vector3(0.50, 0.22, -0.05), "cor": Color(0.92, 0.68, 0.12)},
 		],
 	},
 	"mink_coelho": {
 		"nome": "Mink Coelho",
 		"descricao": "orelhas e rabinho",
 		"pecas": [
-			{"no": "Head", "tam": Vector3(0.26, 1.45, 0.18), "ancora": Vector3(0.30, 1.0, 0.5),
-			 "rot": Vector3(0.0, 0.0, 0.10), "cor": PELE},
-			{"no": "Head", "tam": Vector3(0.26, 1.45, 0.18), "ancora": Vector3(0.70, 1.0, 0.5),
-			 "rot": Vector3(0.0, 0.0, -0.10), "cor": PELE},
+			{"no": "Head", "tam": Vector3(0.34, 1.85, 0.24), "ancora": Vector3(0.27, 1.0, 0.5),
+			 "rot": Vector3(0.0, 0.0, 0.10), "cor": PELO_COELHO, "mink_anim": "orelha", "lado": -1.0},
+			{"no": "Head", "tam": Vector3(0.34, 1.85, 0.24), "ancora": Vector3(0.73, 1.0, 0.5),
+			 "rot": Vector3(0.0, 0.0, -0.10), "cor": PELO_COELHO, "mink_anim": "orelha", "lado": 1.0},
 			# "rabinho de coelho QUADRADO" — o dono foi explícito, e cubo é o que
 			# combina com um jogo feito de caixas.
 			{"no": "Torso", "tam": Vector3(0.46, 0.46, 0.46), "ancora": Vector3(0.5, 0.14, 1.0),
-			 "pivo": Vector3(0, 0, -0.6), "cor": Color(0.98, 0.97, 0.95)},
+			 "pivo": Vector3(0, 0, -0.6), "cor": PELO_COELHO, "mink_anim": "cauda", "lado": 1.0},
 		],
 	},
 	"mink_lobo": {
 		"nome": "Mink Lobo",
 		"descricao": "orelhas e rabo na cor do personagem",
 		"pecas": [
-			{"no": "Head", "tam": Vector3(0.32, 0.80, 0.22), "ancora": Vector3(0.26, 1.0, 0.5),
-			 "rot": Vector3(0.0, 0.0, 0.28), "segue_cor": true},
-			{"no": "Head", "tam": Vector3(0.32, 0.80, 0.22), "ancora": Vector3(0.74, 1.0, 0.5),
-			 "rot": Vector3(0.0, 0.0, -0.28), "segue_cor": true},
+			{"no": "Head", "tam": Vector3(0.42, 1.05, 0.28), "ancora": Vector3(0.24, 1.0, 0.5),
+			 "rot": Vector3(0.0, 0.0, 0.28), "cor": PELO_LOBO, "mink_anim": "orelha", "lado": -1.0},
+			{"no": "Head", "tam": Vector3(0.42, 1.05, 0.28), "ancora": Vector3(0.76, 1.0, 0.5),
+			 "rot": Vector3(0.0, 0.0, -0.28), "cor": PELO_LOBO, "mink_anim": "orelha", "lado": 1.0},
 			# ⚠️ `pivo` na face DIANTEIRA: a cauda tem 3× a profundidade do tronco
 			# e, centrada na âncora, atravessava o corpo e vazava pela FRENTE.
 			{"no": "Torso", "tam": Vector3(0.40, 0.40, 3.0), "ancora": Vector3(0.5, 0.26, 1.0),
-			 "rot": Vector3(-0.60, 0.0, 0.0), "pivo": Vector3(0, 0, -1), "segue_cor": true},
+			 "rot": Vector3(-0.60, 0.0, 0.0), "pivo": Vector3(0, 0, -1), "cor": PELO_LOBO, "mink_anim": "cauda", "lado": 1.0},
 		],
 	},
 	# A variante da neve é o MESMO desenho do lobo, mas branca e sem seguir a cor
@@ -216,13 +212,13 @@ const CATALOGO := {
 		"nome": "Mink Lobo da Neve",
 		"descricao": "lobo branco",
 		"pecas": [
-			{"no": "Head", "tam": Vector3(0.32, 0.80, 0.22), "ancora": Vector3(0.26, 1.0, 0.5),
-			 "rot": Vector3(0.0, 0.0, 0.28), "cor": Color(0.96, 0.97, 0.98)},
-			{"no": "Head", "tam": Vector3(0.32, 0.80, 0.22), "ancora": Vector3(0.74, 1.0, 0.5),
-			 "rot": Vector3(0.0, 0.0, -0.28), "cor": Color(0.96, 0.97, 0.98)},
+			{"no": "Head", "tam": Vector3(0.42, 1.05, 0.28), "ancora": Vector3(0.24, 1.0, 0.5),
+			 "rot": Vector3(0.0, 0.0, 0.28), "cor": Color(0.96, 0.97, 0.98), "mink_anim": "orelha", "lado": -1.0},
+			{"no": "Head", "tam": Vector3(0.42, 1.05, 0.28), "ancora": Vector3(0.76, 1.0, 0.5),
+			 "rot": Vector3(0.0, 0.0, -0.28), "cor": Color(0.96, 0.97, 0.98), "mink_anim": "orelha", "lado": 1.0},
 			{"no": "Torso", "tam": Vector3(0.40, 0.40, 3.0), "ancora": Vector3(0.5, 0.26, 1.0),
 			 "rot": Vector3(-0.60, 0.0, 0.0), "pivo": Vector3(0, 0, -1),
-			 "cor": Color(0.96, 0.97, 0.98)},
+			 "cor": Color(0.96, 0.97, 0.98), "mink_anim": "cauda", "lado": 1.0},
 			# a gola de pelo, que na folha é o que separa o lobo da neve do outro
 			{"no": "Torso", "tam": Vector3(1.15, 0.30, 1.25), "ancora": Vector3(0.5, 1.0, 0.5),
 			 "cor": Color(0.99, 0.99, 1.0)},
@@ -325,9 +321,13 @@ static func aplicar(modelo: Node3D, id: String) -> bool:
 	if d.is_empty():
 		push_warning("[Racas] raça desconhecida: " + id)
 		return false
+	modelo.set_meta("raca_id", id)
 	var i := 0
 	for p in d.get("pecas", []):
-		Adornos.criar_peca(modelo, MARCA, id, p, i)
+		var peca: Dictionary = p
+		var criada := Adornos.criar_peca(modelo, MARCA, id, peca, i)
+		if criada != null and peca.has("mink_anim"):
+			MinkAnimado.vincular(criada, String(peca["mink_anim"]), float(peca.get("lado", 1.0)))
 		i += 1
 	# A CHAMA (só o Lunariano, hoje). Nasce com a MARCA no nome para sair na
 	# próxima troca de raça pelo mesmo caminho das caixas — sem isso ela viraria
@@ -340,6 +340,11 @@ static func aplicar(modelo: Node3D, id: String) -> bool:
 			var cx := Acessorios.caixa_do_no(costas)
 			var chama := ChamaLunar.criar()   # plano 2D com shader (era partícula)
 			chama.name = "%s%s_chama" % [MARCA, id]
+			# A chama depende de um shader que desenha sua silhueta no quad. Um eco
+			# de movimento troca materiais por transparência neutra, portanto copiá-la
+			# exibiria o retângulo inteiro em vez do fogo. Esta marca é genérica para
+			# qualquer futuro adorno animado que não possa virar pós-imagem.
+			chama.set_meta("afterimage_excluir", true)
 			costas.add_child(chama)
 			# nas costas, na altura das omoplatas
 			# no MEIO das costas: a chama tem a origem na base e sobe daqui.
@@ -377,7 +382,13 @@ static func aplicar(modelo: Node3D, id: String) -> bool:
 static func remover(modelo: Node3D) -> void:
 	Adornos.remover_marca(modelo, MARCA)
 	Adornos.restaurar_escalas(modelo, MARCA)
+	if modelo != null and modelo.has_meta("raca_id"):
+		modelo.remove_meta("raca_id")
 
 
 static func segue_cor(n: Node) -> bool:
 	return Adornos.segue_cor(n)
+
+
+static func bloqueia_customizacao(id: String) -> bool:
+	return bool(CATALOGO.get(id, {}).get("bloqueia_customizacao", false))
