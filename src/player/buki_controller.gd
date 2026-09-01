@@ -146,7 +146,7 @@ func empunhar(slot: String, autoridade: bool, suprimido: bool) -> void:
 	_luneta = false
 	print("🔫 Buki: %s EMPUNHADA — %d balas (Bt Esq = atirar%s)." % [
 		BukiFX.nome_da_arma(slot), _municao,
-		" / Bt Dir = luneta" if slot == "C" else " / Bt Dir = mira assistida"])
+		" / Bt Dir = luneta" if slot == "C" else " / Bt Dir = Observação"])
 
 	# ⚠️ SACAR TEM QUE AVISAR O SERVIDOR — e isso quase se perdeu.
 	#

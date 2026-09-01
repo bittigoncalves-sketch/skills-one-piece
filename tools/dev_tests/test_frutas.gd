@@ -93,6 +93,13 @@ func _auditar(fid: String, com_arvore: Array) -> void:
 
 	# --- 3/4. os quatro golpes ---
 	for slot in SLOTS:
+		var identidade: Dictionary = SkillSystem.get_fruit_skills().get(fid, {})
+		var declarada: Dictionary = identidade.get(slot, {})
+		if bool(declarada.get("desabilitado", false)):
+			r["slots"][slot] = {"criou": 0, "hitbox": false, "desabilitada": true}
+			r["vaza"][slot] = 0
+			print("   %s: desabilitada por projeto" % slot)
+			continue
 		var antes := _contar_nos(_main)
 		var zonas_antes := _contar_tipo(_main, "DamageZone")
 		_player._skill_cooldowns[slot] = 0.0
@@ -152,8 +159,12 @@ func _resumo() -> void:
 	for fid in _relatorio:
 		var r: Dictionary = _relatorio[fid]
 		var ok := 0
+		var ativas := 0
 		var mudos: Array = []
 		for s in SLOTS:
+			if bool(r["slots"][s].get("desabilitada", false)):
+				continue
+			ativas += 1
 			if bool(r["slots"][s]["hitbox"]):
 				ok += 1
 			elif int(r["slots"][s]["criou"]) <= 0:
@@ -161,16 +172,16 @@ func _resumo() -> void:
 		var vaz := 0
 		for s in SLOTS:
 			vaz += int(r["vaza"][s])
-		print("%-16s %-8s %-7s %d/4 %-18s %s" % [
+		print("%-16s %-8s %-7s %d/%d %-18s %s" % [
 			fid,
 			"sim" if r["obtivel"] else "NÃO",
 			"sim" if r["equipa"] else "NÃO",
-			ok,
+			ok, ativas,
 			("(mudos: %s)" % ", ".join(mudos)) if not mudos.is_empty() else "",
 			("%d nós" % vaz) if vaz > 0 else "-"])
 		if not r["obtivel"]:
 			sem_arvore.append(fid)
-		if ok < 4:
+		if ok < ativas:
 			quebradas.append(fid)
 		if vaz > 0:
 			vazando.append(fid)
