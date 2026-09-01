@@ -1982,11 +1982,26 @@ func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knock
 	# `TrainingDummy.gd:64` e `disabled/enemies/Enemy.gd` já recusavam dano de
 	# quem está preso; só o jogador não recusava, e a mesma habilidade tinha
 	# regra diferente dependendo de quem caía nela.
-	if get_meta("damage_immune", false) or get_meta("iron_body_active", false) or get_meta("custom_pose", "") == "hibashira" or get_meta("in_black_hole", false):
+	# ⚠️ `iron_body_active` SAIU DESTA LISTA em 2026-08-31. Era aqui que a
+	# invulnerabilidade total do Corpo de Ferro morava — a função retornava e o
+	# golpe sumia inteiro. O dono pediu que a janela passasse a "cortar os danos
+	# pela metade", e meia imunidade não cabe numa guarda que só sabe dizer
+	# "sim ou não": o corte agora acontece logo abaixo, sobre o `amount`.
+	if get_meta("damage_immune", false) or get_meta("custom_pose", "") == "hibashira" or get_meta("in_black_hole", false):
 		print("🛡️ DANO E KNOCKBACK BLOQUEADOS! O usuário está IMUNE a danos durante a habilidade!")
 		return
 	_registrar_trava_de_fruta_por_dano(amount)
 	_resetar_impulso_de_corrida()
+
+	# ⚠️ CORPO DE FERRO CORTA O DANO PELA METADE (2026-08-31). Antes a janela dava
+	# invulnerabilidade e o golpe sumia inteiro; agora ele chega, valendo metade.
+	#
+	# O corte é AQUI, no começo do funil, e não só na subtração da vida: o
+	# `amount` segue para o feedback (número que sobe na tela) e para o RPC que
+	# leva a vida ao dono. Cortar mais adiante mostraria ao jogador um número que
+	# não foi o que ele tomou.
+	if get_meta("iron_body_active", false):
+		amount *= IronBodyController.FATOR_DE_DANO
 
 	# 1. INTERRUPÇÃO DE ATAQUE SOBRE DANO
 	#

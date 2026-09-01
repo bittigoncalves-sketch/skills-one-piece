@@ -1,9 +1,7 @@
 # Combate contextual — plano vivo e implementação
 
 **Estado:** Fase 0 documentada; Fase 1 implementada e validada em singleplayer
-**e em rede**; Fases 2 (counter hit), 3 (launcher), 4 (chute aéreo) e 5 (chute
-de parede) implementadas e validadas. Resta a Fase 6 (defesa), que ainda não tem
-especificação.  
+**e em rede**; Fases 2 a 6 implementadas e validadas. **O plano está completo.**  
 **Última revisão:** 2026-08-31.  
 **Escopo desta frente:** ampliar o corpo a corpo sem substituir o combo M1,
 a Aú, a queda esmagadora ou a rota exclusiva dos Minks.
@@ -271,11 +269,32 @@ rede** — passando no singleplayer, onde o cliente é o servidor. A exceção a
 é declarada na ficha (`no_ar`), então quem escrever um golpe aéreo novo não
 precisa achar os dois `is_on_floor` espalhados.
 
-## Próximas fases, ainda não implementadas
+## Fase 6 — defesa avançada (implementada em 2026-08-31)
 
-1. **Defesa avançada:** não reutilizar F, pois F já pertence ao Corpo de Ferro.
-   ⚠️ Ainda **sem especificação**: o plano diz onde ela não pode ficar, mas não
-   o que ela faz. Precisa de uma decisão de design antes de virar código.
+⚠️ **O plano dizia para NÃO reutilizar F. O dono resolveu por outro caminho:** em
+vez de procurar outra tecla, a defesa **passou a ser** o Corpo de Ferro. Pedido
+dele: "tecla F abre uma janela com a habilidade corpo de ferro que corta os
+danos pela metade e torna a imunidade a qualquer efeito, mesmo que este esteja
+em ação".
+
+As duas metades andam em **sentidos opostos**, e é isso que dá identidade à
+habilidade em vez de "um segundo de imunidade":
+
+| | antes | agora |
+|---|---|---|
+| dano | invulnerabilidade total | **metade** — quem aperta F ainda apanha |
+| efeitos | lista fixa de quatro | **qualquer um**, e os já em ação saem |
+
+O corte de dano fica no começo do `take_damage`, e não só na subtração da vida:
+o `amount` segue para o número que sobe na tela e para o RPC que leva a vida ao
+dono — cortar mais adiante mostraria ao jogador um número diferente do que ele
+tomou. E `iron_body_active` **saiu** da guarda de imunidade total, que era onde
+a invulnerabilidade morava: meia imunidade não cabe num `if` que só sabe dizer
+sim ou não.
+
+A recusa de efeitos mora em `StatusFX.aplicar`, o único ponto por onde todo
+status entra. Uma lista dentro do controlador precisaria ser atualizada a cada
+efeito novo do jogo, e o primeiro esquecido furaria a imunidade em silêncio.
 
 ## Critérios de aceite da Fase 1
 
@@ -303,4 +322,5 @@ precisa achar os dois `is_on_floor` espalhados.
 | 2026-08-31 | `test_counter_hit.gd` | passou: dano zero, hitstun ampliado, empurrão extra, leitura da fase no Player e ordem dos sinais |
 | 2026-08-31 | `test_launcher.gd` | passou: 19 asserções — a escolha (só no 4º golpe, só com W), o impulso vertical, e o bloqueio contra loop nas duas pontas (não relança no ar, limpa ao aterrissar, uma perseguição só) |
 | 2026-08-31 | `test_launcher.gd` (ampliado) | 36 asserções: launcher, perseguição, chute de parede e a exigência de chão por golpe |
+| 2026-08-31 | `test_corpo_de_ferro.gd` | passou: dano pela metade (200 → 100) e inteiro fora da janela, limpeza do efeito já em ação, recusa de efeitos novos, e o controle de que fora da janela eles voltam a pegar |
 | 2026-08-31 | `test_melee_trava.gd` | atualizado para a regra NOVA: o M1 deixa o corpo livre. O pedido de 2026-08-15 foi revogado pelo dono — "travava o jogador demais, fazendo os movimentos não serem tão fluidos" |

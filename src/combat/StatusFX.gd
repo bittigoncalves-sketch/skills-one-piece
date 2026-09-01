@@ -46,8 +46,21 @@ const CATALOGO := {
 }
 
 # ------------------------------------------------------------------- escrita
+## ⚠️ O CORPO DE FERRO RECUSA TUDO (2026-08-31, Fase 6 do plano de combate).
+##
+## Pedido do dono: a janela do Corpo de Ferro "torna a imunidade a qualquer
+## efeito, mesmo que este esteja em ação". A recusa mora AQUI, e não numa lista
+## de efeitos dentro do controlador, porque este é o único ponto por onde todo
+## status entra: uma lista precisaria ser atualizada a cada efeito novo do jogo,
+## e o primeiro que alguém esquecesse furaria a imunidade em silêncio.
+const META_IRON := "iron_body_active"
+
+
 static func aplicar(alvo: Node, id: String, duracao: float) -> void:
 	if alvo == null or not is_instance_valid(alvo) or duracao <= 0.0:
+		return
+	# O próprio INVULNERAVEL do Corpo de Ferro passa: ele É o efeito da janela.
+	if id != INVULNERAVEL and bool(alvo.get_meta(META_IRON, false)):
 		return
 	var mapa: Dictionary = alvo.get_meta(META, {})
 	var agora := Time.get_ticks_msec()
@@ -72,6 +85,17 @@ static func remover(alvo: Node, id: String) -> void:
 # a cada frame.
 #
 # Devolve [{id, nome, cor, icone, restante, total}].
+## Tira TODOS os status do alvo. É o que a janela do Corpo de Ferro faz ao
+## abrir — "mesmo que este esteja em ação" quer dizer que os já rodando saem.
+static func limpar_tudo(alvo: Node) -> void:
+	if alvo == null or not is_instance_valid(alvo):
+		return
+	# ⚠️ `ativos()` devolve DICIONÁRIOS (id, nome, cor, ícone, restante), não uma
+	# lista de ids. Iterar como se fossem strings limpa nada e não avisa.
+	for st in ativos(alvo):
+		remover(alvo, String((st as Dictionary)["id"]))
+
+
 static func ativos(alvo: Node) -> Array:
 	if alvo == null or not is_instance_valid(alvo):
 		return []
