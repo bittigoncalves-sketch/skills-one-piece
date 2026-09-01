@@ -26,6 +26,15 @@ Faltavam duas coisas, e as duas estão em `network/ExposicaoPublica.gd`:
 
 ---
 
+## Precisa configurar o roteador?
+
+**Não.** Foi exatamente isso que o teste verificou: o UPnP pede a porta ao
+roteador em tempo de execução e ele aceita — medido em ~2,1 s nesta máquina.
+Nada de entrar na interface do roteador, nada de encaminhar porta à mão.
+
+A configuração manual só entra se o UPnP **falhar**, e o diagnóstico abaixo diz
+quando é o caso (e qual dos três motivos).
+
 ## Como usar
 
 ```gdscript
