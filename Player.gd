@@ -3448,7 +3448,11 @@ func _net_play_melee(passo: int) -> void:
 		# 0/1/2 batiam. Com o combo virando um PAR (horizontal, vertical) o
 		# passo 1 pediria o tipo 1 — que é o segundo corte HORIZONTAL — e o
 		# vertical nunca sairia. O campo `slash_type` desfaz o acoplamento.
-		_proc_anim.play_procedural_slash(Melee.slash_type(passo, equipped_weapon), speed)
+		# As fronteiras do golpe saem da MESMA tabela que arma a hitbox, para a
+		# lâmina passar exatamente na janela ativa. Ver `Melee.fracao_do_golpe`.
+		var fases := Melee.fracao_do_golpe(passo, equipped_weapon)
+		_proc_anim.play_procedural_slash(
+			Melee.slash_type(passo, equipped_weapon), speed, fases.x, fases.y)
 	else:
 		# Para normal, tocar clipe (.res) retargetado
 		var clipe := Melee.clipe(passo, equipped_weapon)

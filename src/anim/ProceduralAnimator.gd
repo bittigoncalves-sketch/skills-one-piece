@@ -209,7 +209,16 @@ var _sword_slash_type: int = -1
 var _sword_slash_t: float = 0.0
 var _sword_slash_speed: float = 1.0
 
-func play_procedural_slash(type: int, speed: float = 1.0) -> void:
+# Fronteiras do golpe dentro do ciclo, em tempo normalizado. Vêm do frame data
+# via `Melee.fracao_do_golpe`; os padrões só valem se ninguém disser.
+var _sword_golpe_ini := WeaponPoses.GOLPE_INICIO_PADRAO
+var _sword_golpe_fim := WeaponPoses.GOLPE_FIM_PADRAO
+
+func play_procedural_slash(type: int, speed: float = 1.0,
+		golpe_ini: float = WeaponPoses.GOLPE_INICIO_PADRAO,
+		golpe_fim: float = WeaponPoses.GOLPE_FIM_PADRAO) -> void:
+	_sword_golpe_ini = golpe_ini
+	_sword_golpe_fim = golpe_fim
 	_sword_slash_type = type
 	_sword_slash_t = 0.0
 	_sword_slash_speed = maxf(speed, 0.01)
@@ -464,12 +473,19 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	_finger_gun(off, _gun_w, pitch, gun_recoil, gun_recoil_side)
 	WeaponPoses.two_handed_sword_idle(_add, off, _sword_w, _t)
 	if _sword_slash_type >= 0:
-		WeaponPoses.two_handed_sword_slash(_add, off, _sword_w, _sword_slash_t, _sword_slash_type)
+		WeaponPoses.two_handed_sword_slash(_add, off, _sword_w, _sword_slash_t,
+			_sword_slash_type, _sword_golpe_ini, _sword_golpe_fim)
 		_sword_slash_t += delta * _sword_slash_speed
 		
 		# Emite o rastro apenas na parte veloz do golpe (durante a fase de strike)
 		if _trail:
-			if _sword_slash_t >= 0.18 and _sword_slash_t <= 0.32:
+			# ⚠️ A JANELA DO RASTRO SEGUE O GOLPE, e era fixa em 0,18..0,32.
+			# Com as fases vindo do frame data, deixar o rastro num intervalo
+			# escrito à mão o faria brilhar antes ou depois do corte. Um pouco
+			# antes e um pouco depois de propósito: rastro que começa no mesmo
+			# quadro do dano não tem tempo de desenhar arco nenhum.
+			if _sword_slash_t >= _sword_golpe_ini - 0.04 \
+					and _sword_slash_t <= _sword_golpe_fim + 0.08:
 				_trail.emit(true)
 			else:
 				_trail.emit(false)

@@ -7,6 +7,79 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-09-06 — a lâmina passava 0,102 s antes de a hitbox nascer
+
+**Sintoma:** pedido do dono — *"ajustar o tempo e fazer a animação horizontal
+bater com o tempo do ataque"*.
+
+**Causa raiz:** duas descrições independentes da mesma coisa. `WeaponPoses` tinha
+as fases do golpe escritas à mão em **0,20 e 0,26 do ciclo**; a hitbox nascia em
+`startup` e vivia `ativo` **segundos**, vindos de `Melee.COMBO_SWORD`. Nada
+ligava um ao outro.
+
+    corte horizontal (ciclo de 0,49 s)
+      a lâmina VARRE em: 0,098 -> 0,127 s
+      a hitbox VIVE em : 0,200 -> 0,290 s
+
+Seis quadros de defasagem: o fio cruzava o alvo e o dano só aparecia depois, com
+a espada já no arco de volta.
+
+**Correção:** `Melee.fracao_do_golpe(i, arma)` deriva as fronteiras do mesmo
+frame data que arma a hitbox, e o Player as passa para a animação. Erro medido
+depois: **0,0000 s**. A janela do rastro segue as mesmas fronteiras — ela também
+era fixa (0,18..0,32) e brilharia fora do corte.
+
+**Como detectar de novo:** quando animação e mecânica descrevem o mesmo instante
+em unidades diferentes (fração do ciclo contra segundos), elas vão divergir na
+primeira vez que alguém mexer num lado só.
+
+## 2026-09-06 — deduzi o sinal do giro pelos rótulos, e estava invertido
+
+**Sintoma:** com a pose "corrigida", a lâmina ia para a ESQUERDA no preparo e
+voltava para a direita no golpe — o contrário do pedido.
+
+**Causa raiz:** li a convenção de sinal nos nomes das poses existentes. O tipo 0
+chamava-se "Corte Direita para Esquerda" e usava Y negativo, o tipo 1 ("Esquerda
+para Direita") usava positivo; concluí que Y negativo = esquerda. Rastreando a
+ponta da lâmina no eixo lateral do jogador, o preparo levava a espada de +1,07 m
+para −0,11 m — ou seja para a esquerda, com coeficiente negativo. Invertido.
+
+**Evidência:** a curva da ponta por quadro, que também revelou outra coisa que eu
+não tinha visto — o extremo mais à direita do clipe inteiro acontece no RECUO
+(o `ease_out_elastic` devolve a espada), não no preparo. A primeira asserção do
+teste comparava extremos GLOBAIS e reprovava um golpe correto.
+
+**Correção:** coeficiente positivo, medido. E o teste passou a olhar só a IDA,
+com a fronteira vindo de `fracao_do_golpe` em vez de um 0,75 escolhido a olho.
+
+**Como detectar de novo:** rótulo não é medida. Num rig com eixos não óbvios, a
+única fonte confiável de "para que lado isso gira" é rastrear um ponto e olhar
+o número.
+
+## 2026-09-06 — a empunhadura de duas mãos nunca existiu
+
+**Sintoma:** achado ao medir, não relatado. O pedido era "ambos os braços
+grudados na lâmina"; ao instrumentar, a mão esquerda estava a **0,875 m** do cabo
+já no REPOUSO.
+
+**Causa raiz:** a pose de descanso tinha o comentário *"Braço Esquerdo (segunda
+mão no pomo/base da espada) cruza o corpo para alcançar o cabo"* — e os ângulos
+não alcançavam nada. O comentário descrevia a intenção, não o resultado, e
+ninguém tinha medido.
+
+**Correção:** os ângulos saíram de uma BUSCA por cinemática direta (varredura dos
+dois ossos do braço, medindo a distância da mão ao cabo a cada combinação), não
+de tentativa e erro. 0,875 m -> 0,25 m no repouso, 0,38 m no pior instante do
+golpe. O melhor alcançável no auge, por busca exaustiva, é 0,154 m.
+
+**O que ficou como limite conhecido:** braços de um osso só, ombro que não
+translada e a espada rígida no antebraço direito. Baixar de 0,38 m exige mudar o
+RIG, não afinar mais ângulo — está escrito no teste, junto do número.
+
+**Como detectar de novo:** comentário que afirma geometria ("alcança o cabo",
+"aponta para o alvo", "fica na altura do peito") é hipótese até alguém medir.
+
+
 ## 2026-09-06 — o corte de espada usava o efeito do SOCO, e o rastro saía do cotovelo
 
 **Sintoma:** relato do dono, com gravação de tela — *"o efeito do combate corpo a

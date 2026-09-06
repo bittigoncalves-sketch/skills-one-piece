@@ -303,9 +303,23 @@ const COMBO := [
 #      0,20 .. 0,26   joga para a frente  -> ATIVO   (o fio passa aqui)
 #      0,26 .. 1,00   volta ao repouso    -> RECUPERAÇÃO
 #
-#  Com `vel` de 1,4 o ciclo inteiro dura 0,71 s. Os campos abaixo são esse
-#  desenho convertido para segundos — é por isso que o `ativo` é curto: a janela
-#  em que a lâmina realmente cruza o alvo é curta na animação que já existe.
+#  ------------------------------------ ⚠️ A ESPADA É MAIS LENTA QUE O PUNHO
+#  Pedido do dono (2026-09-06): "o ataque da espada demora mais que o ataque
+#  corpo a corpo com os punhos". Os tempos subiram para valer isso:
+#
+#      jab (punho) ........ 0,20 / 0,06 / 0,14 = 0,40 s
+#      corte horizontal ... 0,32 / 0,14 / 0,30 = 0,76 s   (1,9x o jab)
+#      corte vertical ..... 0,40 / 0,16 / 0,44 = 1,00 s   (2,5x o jab)
+#
+#  O `ativo` cresceu junto, e não só o startup: uma lâmina de 1,38 m varrendo o
+#  espaço fica perigosa por mais tempo que um punho, e encolher só o começo
+#  daria uma espada lenta de sacar E fácil de errar — o pior dos dois.
+#
+#  ⚠️ E AS FASES DA ANIMAÇÃO SEGUEM ESTES NÚMEROS. `WeaponPoses` tinha o golpe
+#  fixo em 0,20..0,26 do ciclo, e a hitbox nascia em `startup` segundos: com o
+#  ciclo de 0,49 s a lâmina passava 0,102 s ANTES de o dano existir. Agora o
+#  Player deriva as fases daqui (ver `Melee.fracao_do_golpe`) e os dois não
+#  podem mais divergir.
 #
 #  ⚠️ O `alcance`/`raio` continuam na tabela mas NÃO valem mais para o dano da
 #  espada: quem machuca agora são as bolinhas da `SwordBlade`, presas ao fio.
@@ -318,8 +332,8 @@ const COMBO_SWORD := [
 		# vir por cima em seguida.
 		"nome": "Corte Horizontal", "anim": "", "espelhar": false,
 		"slash_type": 0,
-		"vel": 1.4, "pico": 0.20,
-		"startup": 0.20, "ativo": 0.09, "recuperacao": 0.20,
+		"vel": 1.4, "pico": 0.32,
+		"startup": 0.32, "ativo": 0.14, "recuperacao": 0.30,
 		"hitstun": 0.75,
 		"dano": 64.0, "kb": 15.0, "alcance": 2.5, "raio": 2.0, "shake": 0.35,
 		"melee_guarda": "R",
@@ -334,8 +348,8 @@ const COMBO_SWORD := [
 		# é outro assunto. Fica como decisão do dono, não como herança silenciosa.
 		"nome": "Corte Vertical", "anim": "", "espelhar": false,
 		"slash_type": 2,
-		"vel": 1.2, "pico": 0.25,
-		"startup": 0.25, "ativo": 0.11, "recuperacao": 0.32,
+		"vel": 1.2, "pico": 0.40,
+		"startup": 0.40, "ativo": 0.16, "recuperacao": 0.44,
 		"hitstun": 0.80,
 		"dano": 96.0, "kb": 25.0, "alcance": 3.0, "raio": 2.5, "shake": 0.50,
 	},
@@ -373,6 +387,23 @@ static func tem_frame_data(i: int, weapon: String = "") -> bool:
 ## Existe para o tipo do corte não ser o ÍNDICE do passo. Eram a mesma coisa por
 ## acidente enquanto o combo tinha três golpes na mesma ordem dos três tipos;
 ## bastou o combo virar um par para o segundo clique pedir o corte errado.
+## Em que FRAÇÃO do ciclo o golpe acontece — o par que a animação precisa para
+## fazer o fio passar exatamente na janela ativa.
+##
+## Existe porque `WeaponPoses` tinha essas duas fronteiras escritas à mão
+## (0,20 e 0,26) enquanto a hitbox vinha daqui em segundos. Eram duas descrições
+## independentes da mesma coisa, e não batiam: no corte horizontal a lâmina
+## passava 0,102 s antes de o dano nascer. Derivando as duas do mesmo lugar,
+## divergir deixa de ser possível.
+static func fracao_do_golpe(i: int, weapon: String = "") -> Vector2:
+	var dur := duracao_tocada(i, weapon)
+	if dur <= 0.0:
+		return Vector2(WeaponPoses.GOLPE_INICIO_PADRAO, WeaponPoses.GOLPE_FIM_PADRAO)
+	var ini: float = startup(i, weapon) / dur
+	var fim: float = (startup(i, weapon) + ativo(i, weapon)) / dur
+	return Vector2(ini, fim)
+
+
 static func slash_type(i: int, weapon: String = "") -> int:
 	return int(passo(i, weapon).get("slash_type", i))
 

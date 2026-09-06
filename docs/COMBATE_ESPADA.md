@@ -186,10 +186,31 @@ mão seria a do nó da lâmina, que fica junto ao punho: o clarão sairia do cab
 
 ## O combo: horizontal, depois vertical
 
-| clique | golpe | pose | dano | startup | ativo | recuperação |
-|---|---|---|---|---|---|---|
-| 1º | Corte Horizontal | `slash_type` 0 | 64 | 0,20 s | 0,09 s | 0,20 s |
-| 2º | Corte Vertical | `slash_type` 2 | 96 | 0,25 s | 0,11 s | 0,32 s |
+| clique | golpe | pose | dano | startup | ativo | recuperação | total |
+|---|---|---|---|---|---|---|---|
+| 1º | Corte Horizontal | `slash_type` 0 | 64 | 0,32 s | 0,14 s | 0,30 s | **0,76 s** |
+| 2º | Corte Vertical | `slash_type` 2 | 96 | 0,40 s | 0,16 s | 0,44 s | **1,00 s** |
+| *(referência)* jab de punho | | | 48 | 0,20 s | 0,06 s | 0,14 s | 0,40 s |
+
+**A espada é 1,9× mais lenta que o punho**, a pedido do dono. O `ativo` cresceu
+junto e não só o startup: uma lâmina de 1,38 m varrendo o espaço fica perigosa
+por mais tempo que um punho, e encolher só o começo daria uma espada lenta de
+sacar **e** fácil de errar — o pior dos dois.
+
+### ⚠️ A animação e a hitbox eram duas descrições da mesma coisa, e não batiam
+
+`WeaponPoses` tinha as fases do golpe fixas em 0,20 e 0,26 do ciclo; a hitbox
+nascia em `startup` **segundos**. Medido:
+
+| | a lâmina VARRE | a hitbox VIVE |
+|---|---|---|
+| antes | 0,098 → 0,127 s | 0,200 → 0,290 s |
+| agora | 0,320 → 0,460 s | 0,320 → 0,460 s |
+
+O fio passava **0,102 s antes** de o dano existir — seis quadros —, com a espada
+já no arco de volta quando a hitbox aparecia. Agora as fases saem de
+`Melee.fracao_do_golpe`, derivadas do mesmo frame data que arma a hitbox: erro
+medido **0,0000 s**. A janela do rastro segue as mesmas fronteiras.
 
 Eram **três** passos (corte D-E, corte E-D, corte vertical), e essa era a última
 tabela do projeto ainda escrita no modelo antigo (`atraso`/`vida` em vez de
@@ -242,4 +263,39 @@ dono, não como herança silenciosa.
 - O `SwordPickup` (a espada de cubos) continua no projeto e ainda funciona pelo
   `equip_item`; ele não foi apagado para não quebrar quem o referencia.
 
-Guarda de regressão: `tools/dev_tests/test_espada_yoru.gd` (18 checagens).
+### A pose do corte horizontal
+
+Pedido: *"ambos os braços grudados na lâmina, a lâmina à direita do jogador parte
+para a esquerda"*.
+
+**Os braços giravam para lados opostos** em Y (direito −1,0, esquerdo +0,5): como
+o `frame` multiplica os dois, um ia para a esquerda enquanto o outro ia para a
+direita, e as mãos se afastavam durante o golpe.
+
+⚠️ **O sinal em Y foi MEDIDO, e contraria os rótulos antigos.** Deduzir pelos
+nomes ("tipo 0 = direita para esquerda" usava Y negativo) deu errado:
+rastreando a ponta da lâmina no eixo lateral do jogador, o preparo levava a
+espada para a **esquerda** (+1,07 → −0,11 m) e o golpe a trazia de volta. O
+coeficiente correto é **positivo**. Hoje: direita **+1,72 m** no preparo →
+esquerda **−1,44 m** no corte, nessa ordem.
+
+**A empunhadura de duas mãos nunca existiu de verdade.** O comentário da pose de
+repouso dizia que o braço esquerdo "cruza o corpo para alcançar o cabo"; medido,
+a mão ficava a **0,875 m** dele. Os ângulos atuais saíram de uma **busca por
+cinemática direta** (varredura dos dois ossos medindo a distância da mão ao
+cabo), não de tentativa e erro.
+
+| momento | distância da mão esquerda ao cabo |
+|---|---|
+| pose original | 0,875 m |
+| repouso, hoje | **0,25 m** |
+| pior instante do golpe | **0,38 m** |
+| melhor alcançável no auge (busca exaustiva) | 0,154 m |
+
+⚠️ **O limite é do RIG**, não da pose: braços de um osso só, ombro que não
+translada, e a espada rígida no antebraço direito. Baixar disto exige mudar o
+rig (ombro com translação, ou a espada presa a um ponto entre as duas mãos), não
+afinar mais ângulo.
+
+Guardas de regressão: `tools/dev_tests/test_espada_yoru.gd` (18 checagens) e
+`tools/dev_tests/test_corte_horizontal.gd` (tempo, direção e empunhadura).
