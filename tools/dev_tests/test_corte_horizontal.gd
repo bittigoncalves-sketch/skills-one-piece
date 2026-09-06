@@ -39,6 +39,11 @@ var _mao_ao_cabo: Array[float] = []  # distância da mão esquerda ao cabo
 # como se fosse o preparo. É a mesma lição do resto deste trabalho: a fronteira
 # tem de sair da mesma fonte que a hitbox.
 var _fim_normalizado := 0.60
+var _ini_normalizado := 0.42
+var _lamina: Array[float] = []       # ângulo do fio com a vertical, em graus
+var _tronco: Array[Vector3] = []     # inclinação do tronco
+var _pe_r: Array[Vector2] = []       # pé direito (frente, lado)
+var _pe_l: Array[Vector2] = []
 
 
 func preparar() -> void:
@@ -117,6 +122,16 @@ func test_step(f: int, _d: float) -> void:
 			var ponta: Vector3 = (yoru.ponta as Node3D).global_position
 			_lateral.append((ponta - player.global_position).dot(lado))
 			_mao_ao_cabo.append(_dist_ao_cabo(yoru, _mao_esquerda()))
+			# direção do fio: 90° = deitada (corte horizontal), 0° = em pé
+			var eixo := (ponta - (yoru.guarda as Node3D).global_position).normalized()
+			_lamina.append(rad_to_deg(acos(clampf(absf(eixo.dot(Vector3.UP)), 0.0, 1.0))))
+			var tr := player.find_child("Torso", true, false) as Node3D
+			_tronco.append(tr.rotation if tr else Vector3.ZERO)
+			var frente := -player.global_transform.basis.z
+			for par in [["Foot_R", _pe_r], ["Foot_L", _pe_l]]:
+				var pe := player.find_child(par[0] as String, true, false) as Node3D
+				var rel: Vector3 = (pe.global_position - player.global_position) if pe else Vector3.ZERO
+				(par[1] as Array).append(Vector2(rel.dot(frente), rel.dot(lado)))
 
 	elif _fase == 1 and f == _t0 + AMOSTRAS + 1:
 		# ------------------------------------------ 2. DIREITA -> ESQUERDA
@@ -171,4 +186,55 @@ func test_step(f: int, _d: float) -> void:
 		ok(pior < 0.40,
 			"a mao esquerda acompanha o cabo o golpe inteiro (pior caso %.2f m, piso do rig ~0,15)"
 				% pior)
+
+		# ------------------------------- 4. A DIREÇÃO DA LÂMINA
+		# Num corte HORIZONTAL o fio tem de estar deitado. 90° = deitada,
+		# 0° = em pé. Medido antes deste trabalho: a lâmina EMPINAVA até 43,8°
+		# no meio do golpe — bate de chapa em vez de cortar.
+		print("\n4. A DIRECAO DA LAMINA")
+		var i0 := int(_lamina.size() * _ini_normalizado)
+		var i1 := int(_lamina.size() * _fim_normalizado)
+		var pior_lamina := 999.0
+		for i in range(i0, mini(i1 + 1, _lamina.size())):
+			pior_lamina = minf(pior_lamina, _lamina[i])
+		print("   pior angulo do fio na janela ativa: %.1f graus da vertical" % pior_lamina)
+		ok(pior_lamina > 65.0,
+			"o fio fica DEITADO no golpe (pior %.1f graus, 90 = horizontal)" % pior_lamina)
+
+		# ------------------------------- 5. O BALANÇO DO CORPO
+		print("\n5. O BALANCO DO CORPO")
+		var x0: float = _tronco[0].x
+		var z0: float = _tronco[0].z
+		var dx := 0.0
+		var dz := 0.0
+		for t in _tronco:
+			dx = maxf(dx, absf(t.x - x0))
+			dz = maxf(dz, absf(t.z - z0))
+		print("   tronco: %.1f graus de inclinacao a frente, %.1f de tombo lateral"
+			% [rad_to_deg(dx), rad_to_deg(dz)])
+		ok(rad_to_deg(dx) > 12.0,
+			"o corpo INCLINA no golpe (%.1f graus)" % rad_to_deg(dx))
+		ok(rad_to_deg(dz) > 10.0,
+			"e TOMBA de lado, dando peso ao corte (%.1f graus)" % rad_to_deg(dz))
+
+		# ------------------------------- 6. A TROCA DOS PES
+		# O pé direito passa à FRENTE cruzando, o esquerdo recua e vira pivô.
+		# Antes os dois terminavam do mesmo lado, o que lê como tropeço.
+		print("\n6. A TROCA DOS PES")
+		var r_frente := -9.0
+		var l_frente := 9.0
+		for v in _pe_r:
+			r_frente = maxf(r_frente, v.x)
+		for v in _pe_l:
+			l_frente = minf(l_frente, v.x)
+		print("   pe DIREITO avanca ate %+.2f m (comecou em %+.2f)" % [r_frente, _pe_r[0].x])
+		print("   pe ESQUERDO recua ate %+.2f m (comecou em %+.2f)" % [l_frente, _pe_l[0].x])
+		ok(r_frente - _pe_r[0].x > 0.15,
+			"o pe direito PASSA A FRENTE (%.2f m de avanco)" % (r_frente - _pe_r[0].x))
+		ok(_pe_l[0].x - l_frente > 0.10,
+			"e o esquerdo RECUA, virando pivo (%.2f m)" % (_pe_l[0].x - l_frente))
+		# e voltam para a base no fim
+		var voltou_r: float = absf(_pe_r[_pe_r.size() - 1].x - _pe_r[0].x)
+		ok(voltou_r < 0.08,
+			"os pes voltam a base no fim do golpe (%.2f m de resto)" % voltou_r)
 		_pronto = true

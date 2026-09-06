@@ -292,6 +292,40 @@ cabo), não de tentativa e erro.
 | pior instante do golpe | **0,38 m** |
 | melhor alcançável no auge (busca exaustiva) | 0,154 m |
 
+### O corpo no corte: lâmina, balanço, pés e braços
+
+Segunda passada de animação (2026-09-06), pedida pelo dono. Cada item foi
+**medido antes e depois**, com o personagem real:
+
+| | antes | agora |
+|---|---|---|
+| **direção da lâmina** no auge | 43,8° da vertical (empinada) | **77,8–89,6°** (deitada) |
+| **inclinação do tronco** | 4,6 → 13,5° (consequência) | **18,9°** à frente, **17,1°** de tombo |
+| **pé direito** | ia junto com o corpo | **avança 0,33 m** e cruza |
+| **pé esquerdo** | terminava do mesmo lado do direito | **recua 0,15 m**, vira pivô |
+| resto no fim | — | **0,00 m** (a base volta) |
+
+**A direção da lâmina é postura da ARMA, não dos ossos.** A espada era só
+*carregada* pelo braço, e no meio do corte empinava 46° para fora da horizontal
+— um corte horizontal com a lâmina empinada bate de chapa, não corta. A correção
+não podia vir do antebraço: girá-lo moveria a MÃO, e a mão é o que segura o
+cabo. Então a arma ganhou rotação própria (`WeaponPoses.postura_da_arma`),
+aplicada ao nó da espada em torno da origem dela — que é o `handle`, que é onde
+a mão está. Gira o fio, não move a pega.
+
+⚠️ **A postura anda no relógio do ANTEBRAÇO.** Quem carrega a lâmina é o
+`ForeArm_R`, e ele usa o frame atrasado em 0,06 (a cadeia cinética). Compensar
+com o frame do TRONCO deixava a correção adiantada em relação ao que a causava:
+ótima no auge (89,1°) e mergulhando a 55,9° na entrada da janela. Mesmo atraso,
+mesma fase.
+
+**A base era simétrica e sem direção.** `absf(frame)` abria as duas coxas igual,
+no preparo e no golpe — os dois pés terminavam do mesmo lado no auge, o que lê
+como tropeço. Agora o agachamento é comum aos três cortes e a **passada é do
+horizontal**: o corpo gira à esquerda, o pé direito passa à frente cruzando e o
+esquerdo vira pivô. É a passada que dá o giro; sem ela o tronco roda 90° sobre
+pernas paradas.
+
 ⚠️ **O limite é do RIG**, não da pose: braços de um osso só, ombro que não
 translada, e a espada rígida no antebraço direito. Baixar disto exige mudar o
 rig (ombro com translação, ou a espada presa a um ponto entre as duas mãos), não

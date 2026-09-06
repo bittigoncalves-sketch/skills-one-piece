@@ -7,6 +7,65 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-09-06 — a lâmina EMPINAVA no meio do corte horizontal
+
+**Sintoma:** achado ao medir, a pedido do dono ("a direção da lâmina da espada
+durante o movimento"). Rastreando o ângulo do fio com a vertical: 80° parado
+(quase deitada, correto) e **43,8° no auge do golpe** — no meio do corte a
+lâmina empinava 46° para fora da horizontal. Um corte horizontal com a lâmina
+empinada bate de chapa.
+
+**Causa raiz:** a espada nasce colada à mão com `rotation = ZERO` e daí em diante
+é apenas CARREGADA pelo braço. Ela não tinha direção própria: o que o ombro e o
+cotovelo fizessem com o antebraço, o fio herdava. Numa varredura horizontal a
+cadeia do braço naturalmente rola, e a lâmina rolava junto.
+
+**Por que a correção não podia vir dos ossos:** girar o antebraço para deitar a
+lâmina moveria a MÃO junto, e a mão é o que segura o cabo — desfaria a
+empunhadura de duas mãos que custou uma busca por cinemática direta.
+
+**Correção:** a arma ganhou postura PRÓPRIA (`WeaponPoses.postura_da_arma`),
+aplicada ao nó da espada em torno da origem dela, que é o `handle`, que é onde a
+mão está. Gira o fio sem mover o ponto de pega.
+
+**⚠️ E a primeira versão compensou na FASE ERRADA.** Usei o `frame` do tronco;
+quem carrega a lâmina é o `ForeArm_R`, que anda com o frame atrasado em 0,06 (a
+cadeia cinética). Resultado medido: ótimo no auge (89,1°) e mergulhando a 55,9°
+na ENTRADA da janela ativa. Com o mesmo atraso do antebraço, a janela inteira
+ficou entre 69,7° e 89,6°.
+
+**Como detectar de novo:** quando uma correção acompanha uma causa que tem
+atraso, ela precisa do MESMO atraso. Compensação certa no relógio errado
+conserta um instante e estraga os vizinhos.
+
+## 2026-09-06 — a base do corte era simétrica, e os dois pés terminavam do mesmo lado
+
+**Sintoma:** achado ao medir ("a troca da posição dos pés"). Rastreando os pés no
+eixo lateral do jogador durante o corte horizontal, os DOIS terminavam em −0,30
+no auge — juntos, do mesmo lado. Lê como tropeço, não como passada.
+
+**Causa raiz:** a pose das pernas era compartilhada pelos três cortes e usava
+`absf(frame_torso)`:
+
+```gdscript
+add.call(off, "Thigh_R", Vector3(0.2,  0.5,  0.3) * absf(frame_torso) * w)
+add.call(off, "Thigh_L", Vector3(0.2, -0.5, -0.3) * absf(frame_torso) * w)
+```
+
+O `absf` tira o SENTIDO: preparo e golpe abriam as coxas do mesmo jeito. E sendo
+igual para os três tipos, nenhum deles tinha passada própria — as pernas só
+seguiam o tronco por herança de transformada.
+
+**Correção:** o bloco compartilhado ficou só com o agachamento (comum aos três) e
+o corte horizontal ganhou passada própria, com `frame_torso` em vez de `absf`
+para ter sentido, e com Shin e Foot entrando na conta. Medido depois: pé direito
+avança 0,33 m cruzando, esquerdo recua 0,15 m virando pivô, e a base volta com
+0,00 m de resto.
+
+**Como detectar de novo:** `absf` num sinal de animação apaga a direção do
+movimento. Serve para "quanto", nunca para "para que lado".
+
+
 ## 2026-09-06 — a lâmina passava 0,102 s antes de a hitbox nascer
 
 **Sintoma:** pedido do dono — *"ajustar o tempo e fazer a animação horizontal

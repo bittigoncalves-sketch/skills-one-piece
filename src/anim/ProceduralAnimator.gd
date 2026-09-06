@@ -168,13 +168,18 @@ var _trail_tip: Node3D = null
 #  palpite antigo, que é reserva honesta e não caminho principal.
 var _trail_base_arma: Node3D = null
 var _trail_ponta_arma: Node3D = null
+# O nó da ARMA em si. Ele recebe uma rotação própria durante o golpe (ver
+# `WeaponPoses.postura_da_arma`): é o que controla a DIREÇÃO DO FIO sem tocar na
+# mão que o segura.
+var _arma: Node3D = null
 
 
 ## A arma assume o rastro. `base` é a guarda (onde o fio começa) e `ponta` é a
 ## ponta; os dois são nós DA ARMA, então acompanham a animação sem conta nenhuma.
-func usar_lamina_no_rastro(base: Node3D, ponta: Node3D) -> void:
+func usar_lamina_no_rastro(base: Node3D, ponta: Node3D, arma: Node3D = null) -> void:
 	_trail_base_arma = base
 	_trail_ponta_arma = ponta
+	_arma = arma
 	if _trail != null and is_instance_valid(base) and is_instance_valid(ponta):
 		_trail.target_base = base
 		_trail.target_tip = ponta
@@ -185,6 +190,9 @@ func usar_lamina_no_rastro(base: Node3D, ponta: Node3D) -> void:
 ## tela — sem o `clear` a última faixa fica congelada no ar apontando para uma
 ## espada que não existe mais.
 func soltar_lamina_do_rastro() -> void:
+	if is_instance_valid(_arma):
+		_arma.rotation = Vector3.ZERO     # devolve a espada à pose neutra
+	_arma = null
 	_trail_base_arma = null
 	_trail_ponta_arma = null
 	if _trail != null:
@@ -475,6 +483,17 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	if _sword_slash_type >= 0:
 		WeaponPoses.two_handed_sword_slash(_add, off, _sword_w, _sword_slash_t,
 			_sword_slash_type, _sword_golpe_ini, _sword_golpe_fim)
+		# ⚠️ A DIREÇÃO DO FIO ANDA NO RELÓGIO DO ANTEBRAÇO, não no do tronco.
+		# Quem carrega a lâmina é o `ForeArm_R`, e ele usa o frame atrasado em
+		# 0,06 (a cadeia cinética). Compensar com o frame do TRONCO deixava a
+		# correção adiantada em relação ao que a estava causando: medido, a
+		# lâmina ficava ótima no auge (89,1° da vertical) mas mergulhava a 55,9°
+		# na ENTRADA da janela ativa. Mesmo atraso, mesma fase.
+		if is_instance_valid(_arma):
+			var fr := WeaponPoses._get_slash_frame(
+				clampf(_sword_slash_t - 0.06, 0.0, 1.0),
+				_sword_golpe_ini, _sword_golpe_fim)
+			_arma.rotation = WeaponPoses.postura_da_arma(_sword_slash_type, fr) * _sword_w
 		_sword_slash_t += delta * _sword_slash_speed
 		
 		# Emite o rastro apenas na parte veloz do golpe (durante a fase de strike)
@@ -492,6 +511,8 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 		
 		if _sword_slash_t >= 1.0:
 			_sword_slash_type = -1
+			if is_instance_valid(_arma):
+				_arma.rotation = Vector3.ZERO
 			if _trail:
 				_trail.emit(false)
 			

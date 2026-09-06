@@ -82,6 +82,41 @@ static func _get_slash_frame(t: float, inicio: float = GOLPE_INICIO_PADRAO,
 		var recuo := clampf((t - f) / maxf(1.0 - f, 0.01), 0.0, 1.0)
 		return lerpf(1.0, 0.0, ease_out_elastic(recuo)) # volta pro repouso com bounce
 
+# ============================================================================
+#  A DIREÇÃO DA LÂMINA — postura da ARMA, não dos ossos
+# ============================================================================
+#  Pedido do dono (2026-09-06): "a direção da lâmina da espada durante o
+#  movimento".
+#
+#  A espada nasce colada à mão com `rotation = ZERO` e daí em diante só é
+#  CARREGADA pelo braço. Medido no corte horizontal, o ângulo do fio em relação
+#  à vertical: 80° parado (quase deitada, certo) e **43,8° no auge** — ou seja,
+#  no meio do corte a lâmina EMPINA quase 46° para fora da horizontal. Um corte
+#  horizontal com a lâmina empinada não corta: bate de chapa.
+#
+#  A correção não pode vir dos ossos. Girar o antebraço para deitar a lâmina
+#  moveria a MÃO junto, e a mão é o que segura o cabo — mexer nela desfaz a
+#  empunhadura de duas mãos que custou uma busca por cinemática direta.
+#
+#  Então a arma ganha postura PRÓPRIA: uma rotação aplicada ao nó da espada, em
+#  torno da origem dela — que é o `handle`, que é onde a mão está. Girar ali
+#  muda a direção do fio e NÃO move o ponto de pega um milímetro.
+#
+#  Devolve a rotação local que o nó da arma deve ter neste instante do golpe.
+static func postura_da_arma(tipo: int, frame: float) -> Vector3:
+	match tipo:
+		0:
+			# HORIZONTAL: a lâmina deita e o fio lidera o arco. O X negativo
+			# baixa a ponta (contra o empinar medido) e cresce com o golpe; o Z
+			# rola o fio para a frente da varredura.
+			return Vector3(-0.55 * frame, 0.0, 0.42 * frame)
+		2:
+			# VERTICAL: o oposto — a lâmina sobe no preparo e desce de fio, e o
+			# rolamento é quase nulo porque o corte já está no plano certo.
+			return Vector3(0.30 * frame, 0.0, 0.0)
+	return Vector3.ZERO
+
+
 static func two_handed_sword_slash(add: Callable, off: Dictionary, w: float, t: float,
 		type: int, golpe_inicio: float = GOLPE_INICIO_PADRAO,
 		golpe_fim: float = GOLPE_FIM_PADRAO) -> void:
@@ -100,9 +135,19 @@ static func two_handed_sword_slash(add: Callable, off: Dictionary, w: float, t: 
 	var frame_upper := _get_slash_frame(clampf(t - 0.03, 0.0, 1.0), golpe_inicio, golpe_fim)
 	var frame_fore  := _get_slash_frame(clampf(t - 0.06, 0.0, 1.0), golpe_inicio, golpe_fim)
 	
-	# Pernas flexionam e abrem mais durante o golpe para criar momento de base
-	add.call(off, "Thigh_R", Vector3(0.2, 0.5, 0.3) * absf(frame_torso) * w)
-	add.call(off, "Thigh_L", Vector3(0.2, -0.5, -0.3) * absf(frame_torso) * w)
+	# ⚠️ A BASE ERA SIMÉTRICA E SEM DIREÇÃO: `absf(frame)` abria as duas coxas
+	# do mesmo jeito, no preparo e no golpe, e as pernas só acompanhavam o
+	# tronco. Medido, os dois pés terminavam do MESMO lado (−0,30 no eixo
+	# lateral) no auge — lê como tropeço, não como passada.
+	#
+	# Agora cada corte tem a sua base, e o horizontal ganhou passada de verdade
+	# (ver o `match` abaixo). Este bloco fica só com o AGACHAMENTO, que é comum
+	# aos três: o corpo baixa para dar peso e volta.
+	var agacha: float = absf(frame_torso)
+	add.call(off, "Thigh_R", Vector3(0.16, 0.0, 0.0) * agacha * w)
+	add.call(off, "Thigh_L", Vector3(0.16, 0.0, 0.0) * agacha * w)
+	add.call(off, "Shin_R", Vector3(0.22, 0.0, 0.0) * agacha * w)
+	add.call(off, "Shin_L", Vector3(0.22, 0.0, 0.0) * agacha * w)
 
 	# Como as duas mãos seguram a mesma espada, o ForeArm_L e UpperArm_L seguem o direito
 	match type:
@@ -144,8 +189,19 @@ static func two_handed_sword_slash(add: Callable, off: Dictionary, w: float, t: 
 			#  A saída é anatômica: o TRONCO leva o giro e os dois ombros vão
 			#  juntos, que é como se corta com as duas mãos de verdade. O braço
 			#  vira acompanhamento, não motor.
-			add.call(off, "Torso", Vector3(0.16, 1.70, 0.12) * frame_torso * w)
-			add.call(off, "Head", Vector3(-0.10, 0.35, 0.0) * frame_torso * w)
+			#  ---------------------------------------------- BALANÇO DO CORPO
+			#  O tronco tinha só o giro (Y). Medido, o X e o Z que apareciam eram
+			#  consequência do braço, não intenção: 4,6° -> 13,5° em X sem nenhum
+			#  desenho por trás. Agora o balanço é declarado:
+			#
+			#    X (inclinar à frente) — o corpo AFUNDA no preparo e PROJETA no
+			#      corte. Por isso o coeficiente é negativo com `frame` negativo
+			#      no preparo: recolhe; e positivo no golpe: avança sobre o alvo.
+			#    Z (tombar de lado) — o ombro direito CAI enquanto a lâmina cruza,
+			#      que é o que dá peso ao corte horizontal. Sem ele o personagem
+			#      gira como uma torre, não como alguém carregando 1,38 m de aço.
+			add.call(off, "Torso", Vector3(0.34, 1.70, 0.30) * frame_torso * w)
+			add.call(off, "Head", Vector3(-0.16, 0.35, -0.12) * frame_torso * w)
 			# Direito CONDUZ (a mao principal, a do `handle`) — mas de leve.
 			add.call(off, "UpperArm_R", Vector3(0.75, 0.95, 0.24) * frame_upper * w)
 			add.call(off, "ForeArm_R", Vector3(0.24, 0.22, 0.0) * frame_fore * w)
@@ -153,6 +209,21 @@ static func two_handed_sword_slash(add: Callable, off: Dictionary, w: float, t: 
 			# e o que mantem a segunda mao no cabo em vez de abrir.
 			add.call(off, "UpperArm_L", Vector3(0.17, 1.16, 0.14) * frame_upper * w)
 			add.call(off, "ForeArm_L", Vector3(0.24, -0.80, 0.0) * frame_fore * w)
+
+			#  ------------------------------------------- TROCA DOS PÉS
+			#  Numa cortada de duas mãos da direita para a esquerda, o corpo gira
+			#  para a esquerda e o pé DIREITO passa à frente, cruzando; o
+			#  esquerdo vira de pivô e recua. É a passada que dá o giro — sem
+			#  ela o tronco roda 90° sobre pernas paradas.
+			#
+			#  `frame_torso` (e não `absf`) porque a passada tem SENTIDO: no
+			#  preparo o peso vai para trás, no corte vai para a frente.
+			add.call(off, "Thigh_R", Vector3(-0.55, 0.42, 0.20) * frame_torso * w)
+			add.call(off, "Shin_R", Vector3(0.30, 0.0, 0.0) * absf(frame_torso) * w)
+			add.call(off, "Foot_R", Vector3(0.20, 0.35, 0.0) * frame_torso * w)
+			add.call(off, "Thigh_L", Vector3(0.38, 0.30, -0.14) * frame_torso * w)
+			add.call(off, "Shin_L", Vector3(-0.22, 0.0, 0.0) * frame_torso * w)
+			add.call(off, "Foot_L", Vector3(-0.12, 0.30, 0.0) * frame_torso * w)
 		1: # Corte Esquerda para Direita
 			add.call(off, "Torso", Vector3(0.4, 1.0, -0.2) * frame_torso * w)
 			add.call(off, "Head", Vector3(-0.2, 0.5, 0.0) * frame_torso * w)

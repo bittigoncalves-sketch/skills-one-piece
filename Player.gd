@@ -4138,6 +4138,6 @@ func sacar_ou_guardar_espada() -> void:
 	# Sem isto ele sai do cotovelo até um ponto chutado, e em tela lê como uma
 	# chapa branca saindo do peito apontando para outro lado que não a espada.
 	if _proc_anim and _proc_anim.has_method("usar_lamina_no_rastro"):
-		_proc_anim.usar_lamina_no_rastro(_yoru.guarda, _yoru.ponta)
+		_proc_anim.usar_lamina_no_rastro(_yoru.guarda, _yoru.ponta, _yoru)
 	equipped_weapon = "sword"
 	print("[Yoru] sacada — handle sobre %s" % mao.name)
