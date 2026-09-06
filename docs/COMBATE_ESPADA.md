@@ -292,6 +292,68 @@ cabo), não de tentativa e erro.
 | pior instante do golpe | **0,38 m** |
 | melhor alcançável no auge (busca exaustiva) | 0,154 m |
 
+### A trajetória, validada em espaço LOCAL do personagem
+
+A especificação do dono (2026-09-06) exigiu validação matemática, não visual:
+
+```gdscript
+sword_tip_local = player.global_transform.affine_inverse() * sword_tip.global_position
+# preparação: x > 0    cruzamento: x -> 0    final: x < 0
+```
+
+É o que o teste faz. Resultado medido, com a janela de dano como referência:
+
+| | x local | z local |
+|---|---|---|
+| início da janela | **+1,64** (direita) | −0,34 |
+| cruzamento | **+0,27** (centro) | **−1,64** (à frente) |
+| fim da janela | **−0,64** (esquerda) | −1,46 |
+
+E a trajetória é um **arco**, não uma reta: a sagita (distância do meio da corda
+até a curva) é **0,74 m** para a frente.
+
+⚠️ **`root`, `SkinPivot` e `GLBModel` giram 0,00°** durante todo o ataque — o
+personagem não dá meia-volta nem fica de frente para a câmera. Quem gira são os
+bones.
+
+**Os 16 quadros de referência**, com os cinco críticos:
+
+| quadro | x local | leitura |
+|---|---|---|
+| **4** preparação máxima | +1,15 | direita |
+| **7** aceleração | +1,62 | direita, avançando |
+| **9** cruzamento | −0,80 (z = −1,27) | atravessou a frente |
+| **11** final do corte | −1,54 | esquerda |
+| **12** follow-through | −1,41 | inércia segura à esquerda |
+
+### ⚠️ A curva do corte fazia a lâmina TELEPORTAR
+
+`ease_out_expo` completava **50% do arco nos primeiros 10%** da janela e 87,5%
+aos 30%. Em espaço local a ponta saltava de +1,53 para −1,22 entre duas amostras
+— 2,75 m sem passar pela frente. Não havia arco.
+
+Um corte pesado acelera *entrando* no centro, é mais rápido *ao* cruzar e
+desacelera saindo — isso é uma curva em **S**, não um `ease_out`. `ease_corte`
+faz 0,4% aos 10%, 50% aos 50% e 99,6% aos 90%.
+
+### ⚠️ Não havia follow-through
+
+O `ease_out_elastic` começava no instante em que o corte terminava e freava a
+arma no ar. Medido nos 16 quadros: no **quadro 11** ("espada claramente à
+esquerda") ela já estava de volta em **x = +1,33**, do lado direito.
+
+Agora a inércia passa do ponto final (`EXCESSO_INERCIA`) e só depois a
+recuperação começa — que é mais lenta que o cruzamento, como uma lâmina de
+1,38 m exige.
+
+### ⚠️ A animação é adiantada em relação à hitbox
+
+`Melee.COMPENSACAO_CADEIA`. A lâmina é carregada pelo antebraço, que anda
+atrasado pela cadeia cinética, e a espada já parte da direita no repouso
+(ponta em x = +0,97). Com as fases coincidindo com a janela de dano, o fio
+cruzava a frente a **92% da janela** — o dano abria com a espada ainda armada.
+Adiantando só a animação, o cruzamento cai a **43% da janela**.
+
 ### ⚠️ Quem gira são os BRAÇOS — o `Torso` é pai de tudo
 
 Relato do dono depois da primeira passada de animação:

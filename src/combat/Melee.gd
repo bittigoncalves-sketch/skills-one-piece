@@ -395,13 +395,30 @@ static func tem_frame_data(i: int, weapon: String = "") -> bool:
 ## independentes da mesma coisa, e não batiam: no corte horizontal a lâmina
 ## passava 0,102 s antes de o dano nascer. Derivando as duas do mesmo lugar,
 ## divergir deixa de ser possível.
+## ⚠️ A ANIMAÇÃO COMEÇA ANTES DA HITBOX, e a diferença é a CADEIA CINÉTICA.
+##
+## A lâmina é carregada pelo `ForeArm_R`, que anda com o frame atrasado (a
+## cadeia: tronco -> ombro -> antebraço). Somado a isso, a espada já parte da
+## direita no repouso (ponta em x = +0,97 local), então o fio só cruza o centro
+## bem depois de o `frame` passar pelo neutro.
+##
+## Medido: com as fases coincidindo exatamente com a janela de dano, a lâmina
+## cruzava a frente do personagem a **92% da janela** — o dano abria com a espada
+## ainda armada à direita e fechava justamente quando ela cruzava. É o oposto do
+## que o golpe promete.
+##
+## Adiantar as fases da ANIMAÇÃO (e só delas) põe o cruzamento no meio da janela.
+## O `startup`/`ativo` continuam sendo os números de jogo; isto aqui é a ponte
+## entre "quando o dano vale" e "quando o fio passa".
+const COMPENSACAO_CADEIA := 0.077
+
 static func fracao_do_golpe(i: int, weapon: String = "") -> Vector2:
 	var dur := duracao_tocada(i, weapon)
 	if dur <= 0.0:
 		return Vector2(WeaponPoses.GOLPE_INICIO_PADRAO, WeaponPoses.GOLPE_FIM_PADRAO)
-	var ini: float = startup(i, weapon) / dur
-	var fim: float = (startup(i, weapon) + ativo(i, weapon)) / dur
-	return Vector2(ini, fim)
+	var ini: float = startup(i, weapon) / dur - COMPENSACAO_CADEIA
+	var fim: float = (startup(i, weapon) + ativo(i, weapon)) / dur - COMPENSACAO_CADEIA
+	return Vector2(maxf(ini, 0.02), fim)
 
 
 static func slash_type(i: int, weapon: String = "") -> int:

@@ -41,6 +41,38 @@ static func ease_in_cubic(x: float) -> float:
 static func ease_out_expo(x: float) -> float:
 	return 1.0 if x >= 1.0 else 1.0 - pow(2.0, -10.0 * x)
 
+## ⚠️ A CURVA DO CORTE. Era `ease_out_expo`, e ela DESTRUÍA o arco.
+##
+## Medido, quanto do arco já passou em cada fração da janela do golpe:
+##
+##      10% da janela -> 50,0% do arco
+##      30% da janela -> 87,5% do arco
+##      50% da janela -> 96,9% do arco
+##
+## Ou seja: metade do corte acontecia nos primeiros 10% e o resto rastejava. Em
+## espaço local do personagem a ponta SALTAVA de +1,53 para -1,22 entre duas
+## amostras — 2,75 m sem passar pela frente. Não havia arco: a lâmina teleportava
+## de um lado ao outro, que é o que o dono descreveu ao dizer que o movimento não
+## lia como corte.
+##
+## Um corte pesado acelera ENTRANDO no centro, é mais rápido AO cruzar e
+## desacelera saindo. Isso é uma curva em S, não um `ease_out`:
+##
+##      10% -> 0,4%      30% -> 10,9%      50% -> 50,0%
+##      70% -> 89,1%     90% -> 99,6%
+##
+## `forca` controla quão íngreme é o meio. 2,5 dá um corte nítido sem virar
+## degrau — degrau é justamente o defeito que esta função substitui.
+static func ease_corte(x: float, forca: float = 2.5) -> float:
+	var t := clampf(x, 0.0, 1.0)
+	if t <= 0.0:
+		return 0.0
+	if t >= 1.0:
+		return 1.0
+	var a := pow(t, forca)
+	var b := pow(1.0 - t, forca)
+	return a / (a + b)
+
 static func ease_out_elastic(x: float) -> float:
 	if x <= 0.0: return 0.0
 	if x >= 1.0: return 1.0
@@ -68,6 +100,13 @@ static func ease_out_elastic(x: float) -> float:
 const GOLPE_INICIO_PADRAO := 0.20
 const GOLPE_FIM_PADRAO := 0.26
 
+# Quanto do clipe a inércia leva depois do corte, e quanto ela passa do ponto
+# final. A especificação do dono pede follow-through entre 65% e 78% do clipe —
+# 0,13 é essa faixa. O excesso de 0,18 é o "alguns graus" que ela pede: o
+# bastante para ler como peso, pouco para não virar rodopio.
+const FOLLOW_THROUGH := 0.13
+const EXCESSO_INERCIA := 0.18
+
 static func _get_slash_frame(t: float, inicio: float = GOLPE_INICIO_PADRAO,
 		fim: float = GOLPE_FIM_PADRAO) -> float:
 	var i: float = clampf(inicio, 0.02, 0.95)
@@ -76,11 +115,31 @@ static func _get_slash_frame(t: float, inicio: float = GOLPE_INICIO_PADRAO,
 		var preparo := clampf(t / i, 0.0, 1.0)
 		return lerpf(0.0, -0.4, ease_in_cubic(preparo)) # puxa pra trás
 	elif t < f:
+		# ⚠️ `ease_corte`, NÃO `ease_out_expo`: a lâmina precisa ATRAVESSAR o
+		# arco, não teleportar. Ver o bloco em `ease_corte`.
 		var golpe := clampf((t - i) / (f - i), 0.0, 1.0)
-		return lerpf(-0.4, 1.0, ease_out_expo(golpe)) # joga pra frente rápido
+		return lerpf(-0.4, 1.0, ease_corte(golpe))
+	elif t < f + FOLLOW_THROUGH:
+		# ⚠️ FOLLOW-THROUGH: A INÉRCIA CONTINUA O MOVIMENTO (2026-09-06).
+		#
+		# Antes daqui o `ease_out_elastic` começava no instante em que o corte
+		# terminava e trazia a lâmina de volta num tranco. Medido nos 16 quadros
+		# de referência da especificação: aos 66,7% do clipe (quadro 11, "final
+		# do corte, espada claramente à ESQUERDA") a espada já estava de volta em
+		# x = +1,33 — do lado DIREITO. O golpe não tinha follow-through nenhum;
+		# a arma era freada no ar.
+		#
+		# "Não interromper artificialmente a espada. Permitir que a inércia
+		#  continue o movimento alguns graus." Uma Yoru de 1,38 m não para no fim
+		#  do arco: ela passa um pouco, e é esse excesso que comunica MASSA.
+		var extra := clampf((t - f) / FOLLOW_THROUGH, 0.0, 1.0)
+		return lerpf(1.0, 1.0 + EXCESSO_INERCIA, ease_out_expo(extra))
 	else:
-		var recuo := clampf((t - f) / maxf(1.0 - f, 0.01), 0.0, 1.0)
-		return lerpf(1.0, 0.0, ease_out_elastic(recuo)) # volta pro repouso com bounce
+		# RECUPERAÇÃO, e ela é mais lenta que o cruzamento — de propósito. Sai do
+		# ponto extremo (já com o excesso da inércia) e volta ao repouso.
+		var base := f + FOLLOW_THROUGH
+		var recuo := clampf((t - base) / maxf(1.0 - base, 0.01), 0.0, 1.0)
+		return lerpf(1.0 + EXCESSO_INERCIA, 0.0, ease_out_elastic(recuo))
 
 # ============================================================================
 #  A DIREÇÃO DA LÂMINA — postura da ARMA, não dos ossos

@@ -7,6 +7,72 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-09-06 — a lâmina TELEPORTAVA de um lado ao outro: `ease_out_expo` no corte
+
+**Sintoma:** o corte não lia como corte. Medida a trajetória da ponta em espaço
+LOCAL do personagem, ela saltava de x = +1,53 para x = −1,22 entre duas amostras
+— 2,75 m sem passar pela frente. Não havia arco.
+
+**Causa raiz:** a fase de golpe usava `ease_out_expo`, que completa
+
+    10% da janela -> 50,0% do arco
+    30% da janela -> 87,5% do arco
+    50% da janela -> 96,9% do arco
+
+Metade do corte acontecia nos primeiros 10% e o resto rastejava. `ease_out` é
+uma curva de CHEGADA (rápida no começo, lenta no fim); um golpe precisa de uma
+curva de PASSAGEM, rápida no meio.
+
+**Correção:** `ease_corte`, uma curva em S (`x^n/(x^n+(1-x)^n)`): 0,4% aos 10%,
+50% aos 50%, 99,6% aos 90%. A lâmina acelera entrando no centro, é mais rápida
+ao cruzar e desacelera saindo.
+
+**Como detectar de novo:** curva de easing errada não dá erro nem warning — dá
+uma animação que "não parece certa". O sinal objetivo é amostrar a trajetória e
+procurar SALTOS entre quadros consecutivos.
+
+## 2026-09-06 — o golpe não tinha follow-through: a arma era freada no ar
+
+**Sintoma:** achado ao conferir os 16 quadros de referência da especificação do
+dono. No **quadro 11** ("final do corte, espada claramente à ESQUERDA") a espada
+já estava em x = +1,33 — de volta ao lado DIREITO.
+
+**Causa raiz:** a recuperação (`ease_out_elastic`) começava no instante exato em
+que o corte terminava. Não havia inércia: a arma parava no fim do arco e voltava
+num tranco. Uma Yoru de 1,38 m não para no fim do arco — ela passa um pouco, e é
+esse excesso que comunica massa.
+
+**Correção:** uma fase própria de follow-through entre o corte e a recuperação
+(`FOLLOW_THROUGH` = 13% do clipe, `EXCESSO_INERCIA` = 0,18 além do ponto final),
+alinhada com a faixa 65–78% que a especificação pede. Medido depois: quadro 11 em
+x = −1,54, quadro 12 em x = −1,41.
+
+**Como detectar de novo:** três fases (preparo, golpe, recuperação) descrevem um
+soco, não um golpe com massa. Arma pesada precisa da quarta.
+
+## 2026-09-06 — a hitbox abria com a espada ainda armada à direita
+
+**Sintoma:** achado ao medir a trajetória contra a janela de dano. Com as fases
+da animação coincidindo exatamente com `startup`/`ativo`, o fio cruzava a frente
+do personagem a **92% da janela** — o dano nascia com a lâmina ainda no alto à
+direita e fechava justamente quando ela cruzava.
+
+**Causa raiz:** eu tinha derivado as fases da animação do frame data para elas
+"não poderem divergir" — o que resolveu um problema (a defasagem de 0,102 s) e
+criou outro. A lâmina é carregada pelo `ForeArm_R`, que anda com o frame
+atrasado pela cadeia cinética; e a espada já parte da direita no repouso (ponta
+em x = +0,97 local), então o fio só cruza o centro bem depois de o `frame` passar
+pelo neutro. Igualdade de fases não é igualdade de posições.
+
+**Correção:** `Melee.COMPENSACAO_CADEIA` adianta as fases da ANIMAÇÃO (e só
+delas) em 0,077 do clipe. `startup`/`ativo` continuam sendo os números de jogo.
+Medido depois: o cruzamento cai a 43% da janela.
+
+**Como detectar de novo:** derivar B de A garante que eles mudam juntos, não que
+significam a mesma coisa. Quando há atraso mecânico entre a causa e o efeito, a
+ponte precisa do atraso escrito nela.
+
+
 ## 2026-09-06 — pus a varredura no tronco, e o personagem passou a girar em bloco
 
 **Sintoma:** relato do dono — *"o personagem rotaciona correto, porém a animação
