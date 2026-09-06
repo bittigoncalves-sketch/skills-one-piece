@@ -7,6 +7,52 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-09-06 — pus a varredura no tronco, e o personagem passou a girar em bloco
+
+**Sintoma:** relato do dono — *"o personagem rotaciona correto, porém a animação
+está permanecendo a mesma como se ele estivesse estático [...] cabeça e torso
+ficam estáticos, pernas se dobram para manter o equilíbrio e os braços se movem
+ao redor do torso"*.
+
+**Causa raiz:** decisão minha, tomada para resolver OUTRO problema. A mão
+esquerda soltava do cabo durante o corte, e uma busca por cinemática direta
+provou que nenhum ângulo do braço esquerdo resolvia. Concluí que "quem gira num
+corte de duas mãos é o CORPO" e mudei a varredura para o tronco (Y = 1,70 rad).
+
+A empunhadura melhorou. E a animação morreu, porque neste rig:
+
+    Torso
+    ├── Neck / Head
+    ├── UpperArm_R|L / ForeArm_R|L
+    └── Thigh_R|L / Shin / Foot
+
+O `Torso` é **pai de tudo**. Yaw nele roda cabeça, braços e pernas juntos: o
+personagem girava numa bandeja. Eu tinha otimizado uma métrica (distância da mão
+ao cabo) sem olhar o que ela custava na leitura do movimento.
+
+**E contaminou uma medição.** Reportei "o pé direito avança 0,33 m" como passada;
+era a perna sendo CARREGADA pela rotação do tronco. Passada de verdade tem de
+sair da própria perna.
+
+**Correção:** o giro voltou para os braços (Y grande em `UpperArm_R/L`, ambos no
+mesmo sentido), o tronco ficou com 8,4° de yaw — só antecipação — e as pernas
+ganharam flexão própria (42,8° e 34,7° de joelho) para segurar o arremesso.
+
+**Custo declarado:** a mão esquerda se afasta 0,38 m do cabo contra 0,32 m na
+versão de tronco. O ombro deste rig não translada, então alcance de braço é o
+teto. O dono escolheu esta leitura sabendo do número.
+
+**Como detectar de novo:** antes de mover um movimento para um osso "mais alto"
+da cadeia, olhe QUEM SÃO OS FILHOS dele. Num rig com tronco-raiz, tudo que se
+resolve girando o tronco se paga girando o personagem inteiro.
+
+**A armadilha do teste:** a asserção que eu tinha escrito ("o pé esquerdo recua,
+virando pivô") PASSAVA na versão errada, porque o tronco levava a perna. Ela
+media o sintoma do defeito. Foi trocada por "as pernas dobram", que é o que o
+dono pediu, e ganhou companhia: "o tronco fica quase parado", que é a guarda do
+defeito em si.
+
+
 ## 2026-09-06 — a lâmina EMPINAVA no meio do corte horizontal
 
 **Sintoma:** achado ao medir, a pedido do dono ("a direção da lâmina da espada

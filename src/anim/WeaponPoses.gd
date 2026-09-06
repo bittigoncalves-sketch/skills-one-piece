@@ -155,75 +155,67 @@ static func two_handed_sword_slash(add: Callable, off: Dictionary, w: float, t: 
 			#  HORIZONTAL: as DUAS MAOS no cabo, a lamina sai da DIREITA e
 			#  varre para a ESQUERDA. Pedido do dono, 2026-09-06.
 			# ================================================================
-			#  ⚠️ OS BRACOS GIRAVAM PARA LADOS OPOSTOS: o direito tinha Y = -1,0
-			#  e o esquerdo Y = +0,5. Como o `frame` multiplica os dois, um ia
-			#  para a esquerda enquanto o outro ia para a direita — as maos se
-			#  afastavam uma da outra durante o golpe, e o que se via era um
-			#  braco conduzindo a espada e o outro abrindo para o lado contrario.
-			#  Duas maos no mesmo cabo tem de girar para o MESMO lado.
+			#  ⚠️ QUEM GIRA SAO OS BRACOS, NAO O TRONCO — e isto foi RELATADO
+			#  depois de eu ter feito o contrario:
 			#
-			#  ⚠️ O SINAL EM Y FOI MEDIDO, E CONTRARIA O QUE OS ROTULOS ANTIGOS
-			#  SUGERIAM. Deduzi primeiro pelos nomes ("tipo 0 = direita para
-			#  esquerda" usava Y negativo) e sai errado: rastreando a ponta da
-			#  lamina no eixo lateral do jogador, o preparo levava a espada para
-			#  a ESQUERDA (+1,07 -> -0,11 m) e o golpe a trazia de volta para a
-			#  direita. Invertido.
+			#    "o personagem rotaciona correto, porem a animacao esta
+			#     permanecendo a mesma como se ele estivesse estatico [...]
+			#     cabeca e torso ficam estaticos, pernas se dobram para manter o
+			#     equilibrio e os bracos se movem ao redor do torso"
 			#
-			#  O que a medicao diz: coeficiente Y POSITIVO. O `frame` sai de -0,4
-			#  no preparo (produto negativo -> lamina a DIREITA) e vai a +1,0 no
-			#  golpe (produto positivo -> lamina a ESQUERDA). Que e exatamente
-			#  "a lamina a direita do jogador parte para a esquerda".
+			#  Eu tinha posto a varredura no TRONCO (Y = 1,70 rad) para manter as
+			#  duas maos juntas no cabo. Funcionou para a empunhadura e destruiu
+			#  a animacao, porque neste rig o `Torso` e PAI DE TUDO — cabeca,
+			#  bracos e pernas. Girar o tronco roda o corpo inteiro em BLOCO: o
+			#  personagem parecia estatico girando numa bandeja.
 			#
-			#  O tronco carrega a maior parte do giro (-1,15): num corte de duas
-			#  maos quem gira e o CORPO, e os bracos so acompanham. Coeficiente
-			#  grande demais nos bracos e o que descolava a pose do cabo.
-			#  ⚠️ QUEM GIRA É O TRONCO, E ISSO FOI MEDIDO, NÃO ESCOLHIDO.
-			#  A primeira versão pôs o giro no BRAÇO (Torso -1,15 contra
-			#  UpperArm_R -1,30) e a mão esquerda soltava do cabo no auge: 0,25 m
-			#  no repouso, 0,55 m no golpe. Uma busca por cinemática direta com o
-			#  braço direito travado na pose do auge devolveu 0,362 m como o
-			#  MELHOR alcançável ali — ou seja, nenhum ângulo do braço esquerdo
-			#  resolvia. Com a espada presa ao antebraço direito varrendo forte,
-			#  o ombro esquerdo simplesmente não chega.
+			#  E pior: a "passada" que eu media (0,33 m de avanco do pe direito)
+			#  era a perna sendo CARREGADA pela rotacao do tronco, nao um passo.
 			#
-			#  A saída é anatômica: o TRONCO leva o giro e os dois ombros vão
-			#  juntos, que é como se corta com as duas mãos de verdade. O braço
-			#  vira acompanhamento, não motor.
-			#  ---------------------------------------------- BALANÇO DO CORPO
-			#  O tronco tinha só o giro (Y). Medido, o X e o Z que apareciam eram
-			#  consequência do braço, não intenção: 4,6° -> 13,5° em X sem nenhum
-			#  desenho por trás. Agora o balanço é declarado:
+			#  Agora cada parte tem movimento proprio:
+			#    tronco e cabeca  -> quase parados (so respiram no golpe)
+			#    bracos           -> ORBITAM o tronco, e sao eles que levam a espada
+			#    pernas           -> DOBRAM para segurar o equilibrio do arremesso
 			#
-			#    X (inclinar à frente) — o corpo AFUNDA no preparo e PROJETA no
-			#      corte. Por isso o coeficiente é negativo com `frame` negativo
-			#      no preparo: recolhe; e positivo no golpe: avança sobre o alvo.
-			#    Z (tombar de lado) — o ombro direito CAI enquanto a lâmina cruza,
-			#      que é o que dá peso ao corte horizontal. Sem ele o personagem
-			#      gira como uma torre, não como alguém carregando 1,38 m de aço.
-			add.call(off, "Torso", Vector3(0.34, 1.70, 0.30) * frame_torso * w)
-			add.call(off, "Head", Vector3(-0.16, 0.35, -0.12) * frame_torso * w)
-			# Direito CONDUZ (a mao principal, a do `handle`) — mas de leve.
-			add.call(off, "UpperArm_R", Vector3(0.75, 0.95, 0.24) * frame_upper * w)
-			add.call(off, "ForeArm_R", Vector3(0.24, 0.22, 0.0) * frame_fore * w)
-			# Esquerdo ACOMPANHA no mesmo sentido, com quase a mesma amplitude:
-			# e o que mantem a segunda mao no cabo em vez de abrir.
-			add.call(off, "UpperArm_L", Vector3(0.17, 1.16, 0.14) * frame_upper * w)
-			add.call(off, "ForeArm_L", Vector3(0.24, -0.80, 0.0) * frame_fore * w)
+			#  ⚠️ CUSTO DECLARADO: com os bracos girando sozinhos, a mao esquerda
+			#  se afasta mais do cabo que na versao de tronco (medido no fim
+			#  deste trabalho). O rig tem ombro que nao translada, entao alcance
+			#  de braco e o teto. O dono escolheu esta leitura sabendo disso.
 
-			#  ------------------------------------------- TROCA DOS PÉS
-			#  Numa cortada de duas mãos da direita para a esquerda, o corpo gira
-			#  para a esquerda e o pé DIREITO passa à frente, cruzando; o
-			#  esquerdo vira de pivô e recua. É a passada que dá o giro — sem
-			#  ela o tronco roda 90° sobre pernas paradas.
+			#  --------------------------------------------- TRONCO E CABECA
+			#  Quase nada, de proposito. O pouco que sobra e ANTECIPACAO: o
+			#  tronco recolhe no preparo e projeta no corte, sem girar.
+			add.call(off, "Torso", Vector3(0.30, 0.16, 0.22) * frame_torso * w)
+			add.call(off, "Head", Vector3(-0.12, 0.10, 0.0) * frame_torso * w)
+
+			#  ------------------------------------- OS BRACOS LEVAM A ESPADA
+			#  O Y grande mora aqui agora. O direito conduz (e a mao do `handle`)
+			#  e o esquerdo acompanha no MESMO sentido — dois bracos no mesmo
+			#  cabo tem de girar juntos, e girarem para lados opostos era o
+			#  defeito da primeira versao desta pose.
 			#
-			#  `frame_torso` (e não `absf`) porque a passada tem SENTIDO: no
-			#  preparo o peso vai para trás, no corte vai para a frente.
-			add.call(off, "Thigh_R", Vector3(-0.55, 0.42, 0.20) * frame_torso * w)
-			add.call(off, "Shin_R", Vector3(0.30, 0.0, 0.0) * absf(frame_torso) * w)
-			add.call(off, "Foot_R", Vector3(0.20, 0.35, 0.0) * frame_torso * w)
-			add.call(off, "Thigh_L", Vector3(0.38, 0.30, -0.14) * frame_torso * w)
-			add.call(off, "Shin_L", Vector3(-0.22, 0.0, 0.0) * frame_torso * w)
-			add.call(off, "Foot_L", Vector3(-0.12, 0.30, 0.0) * frame_torso * w)
+			#  O X e o Z sobem junto com o Y: o braco nao so gira, ele LEVANTA e
+			#  atravessa a frente do peito. E o que faz o gesto ler como orbita
+			#  em volta do tronco em vez de um limpador de para-brisa.
+			add.call(off, "UpperArm_R", Vector3(1.05, 1.95, 0.55) * frame_upper * w)
+			add.call(off, "ForeArm_R", Vector3(0.34, 0.55, 0.0) * frame_fore * w)
+			add.call(off, "UpperArm_L", Vector3(0.95, 1.80, -0.45) * frame_upper * w)
+			add.call(off, "ForeArm_L", Vector3(0.30, -0.30, 0.0) * frame_fore * w)
+
+			#  ------------------------------- AS PERNAS SEGURAM O EQUILIBRIO
+			#  Sem o tronco girando, as pernas param de ser levadas e passam a
+			#  ter trabalho proprio: DOBRAM para baixar o centro de massa e
+			#  segurar o arremesso dos bracos. A direita afunda mais (e o lado
+			#  de onde a espada sai) e a esquerda escora.
+			#
+			#  `frame_torso` e nao `absf`: a flexao tem sentido — recolhe no
+			#  preparo, empurra no golpe.
+			add.call(off, "Thigh_R", Vector3(-0.45, 0.30, 0.16) * frame_torso * w)
+			add.call(off, "Shin_R", Vector3(0.55, 0.0, 0.0) * absf(frame_torso) * w)
+			add.call(off, "Foot_R", Vector3(0.18, 0.22, 0.0) * frame_torso * w)
+			add.call(off, "Thigh_L", Vector3(0.30, 0.22, -0.12) * frame_torso * w)
+			add.call(off, "Shin_L", Vector3(0.40, 0.0, 0.0) * absf(frame_torso) * w)
+			add.call(off, "Foot_L", Vector3(-0.10, 0.18, 0.0) * frame_torso * w)
 		1: # Corte Esquerda para Direita
 			add.call(off, "Torso", Vector3(0.4, 1.0, -0.2) * frame_torso * w)
 			add.call(off, "Head", Vector3(-0.2, 0.5, 0.0) * frame_torso * w)

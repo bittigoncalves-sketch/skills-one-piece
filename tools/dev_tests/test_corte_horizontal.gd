@@ -44,6 +44,7 @@ var _lamina: Array[float] = []       # ângulo do fio com a vertical, em graus
 var _tronco: Array[Vector3] = []     # inclinação do tronco
 var _pe_r: Array[Vector2] = []       # pé direito (frente, lado)
 var _pe_l: Array[Vector2] = []
+var _joelhos: Array[Vector2] = []    # flexão dos joelhos (Shin_R.x, Shin_L.x)
 
 
 func preparar() -> void:
@@ -128,6 +129,9 @@ func test_step(f: int, _d: float) -> void:
 			var tr := player.find_child("Torso", true, false) as Node3D
 			_tronco.append(tr.rotation if tr else Vector3.ZERO)
 			var frente := -player.global_transform.basis.z
+			var jr := player.find_child("Shin_R", true, false) as Node3D
+			var jl := player.find_child("Shin_L", true, false) as Node3D
+			_joelhos.append(Vector2(jr.rotation.x if jr else 0.0, jl.rotation.x if jl else 0.0))
 			for par in [["Foot_R", _pe_r], ["Foot_L", _pe_l]]:
 				var pe := player.find_child(par[0] as String, true, false) as Node3D
 				var rel: Vector3 = (pe.global_position - player.global_position) if pe else Vector3.ZERO
@@ -217,6 +221,22 @@ func test_step(f: int, _d: float) -> void:
 		ok(rad_to_deg(dz) > 10.0,
 			"e TOMBA de lado, dando peso ao corte (%.1f graus)" % rad_to_deg(dz))
 
+		# ⚠️ O TRONCO NAO PODE CARREGAR O GIRO — e esta e a guarda do defeito
+		# relatado: "o personagem rotaciona correto, porem a animacao esta
+		# permanecendo a mesma como se ele estivesse estatico". Neste rig o
+		# `Torso` e pai da cabeca, dos bracos E das pernas, entao yaw nele roda o
+		# corpo em BLOCO. Chegou a 90,4 graus na versao anterior. Quem gira sao
+		# os bracos.
+		var dy := 0.0
+		var y0: float = _tronco[0].y
+		for t in _tronco:
+			dy = maxf(dy, absf(t.y - y0))
+		print("   tronco gira apenas %.1f graus em Y (os bracos e que levam a espada)"
+			% rad_to_deg(dy))
+		ok(rad_to_deg(dy) < 20.0,
+			"o TRONCO fica quase parado: %.1f graus de giro (o corpo nao roda em bloco)"
+				% rad_to_deg(dy))
+
 		# ------------------------------- 6. A TROCA DOS PES
 		# O pé direito passa à FRENTE cruzando, o esquerdo recua e vira pivô.
 		# Antes os dois terminavam do mesmo lado, o que lê como tropeço.
@@ -231,8 +251,25 @@ func test_step(f: int, _d: float) -> void:
 		print("   pe ESQUERDO recua ate %+.2f m (comecou em %+.2f)" % [l_frente, _pe_l[0].x])
 		ok(r_frente - _pe_r[0].x > 0.15,
 			"o pe direito PASSA A FRENTE (%.2f m de avanco)" % (r_frente - _pe_r[0].x))
-		ok(_pe_l[0].x - l_frente > 0.10,
-			"e o esquerdo RECUA, virando pivo (%.2f m)" % (_pe_l[0].x - l_frente))
+		# ⚠️ ESTA CHECAGEM MUDOU DE PERGUNTA, e o motivo importa. A versão
+		# anterior cobrava "o pé esquerdo RECUA, virando pivô" — e passava,
+		# porque o tronco girava 97° e LEVAVA a perna junto. Não era passada, era
+		# carona: neste rig o `Torso` é pai de tudo.
+		#
+		# Com o giro devolvido aos braços (a pedido do dono: "cabeça e torso
+		# ficam estáticos, pernas se dobram para manter o equilíbrio"), a perna
+		# esquerda deixou de viajar e passou a ESCORAR. Cobrar o recuo agora seria
+		# cobrar o sintoma do defeito que acabou de ser corrigido.
+		var flexao_r := 0.0
+		var flexao_l := 0.0
+		for j in _joelhos:
+			flexao_r = maxf(flexao_r, absf(j.x - _joelhos[0].x))
+			flexao_l = maxf(flexao_l, absf(j.y - _joelhos[0].y))
+		print("   joelhos dobram: direito %.1f graus, esquerdo %.1f graus"
+			% [rad_to_deg(flexao_r), rad_to_deg(flexao_l)])
+		ok(rad_to_deg(flexao_r) > 10.0 and rad_to_deg(flexao_l) > 8.0,
+			"as PERNAS DOBRAM para segurar o equilibrio (%.1f e %.1f graus)"
+				% [rad_to_deg(flexao_r), rad_to_deg(flexao_l)])
 		# e voltam para a base no fim
 		var voltou_r: float = absf(_pe_r[_pe_r.size() - 1].x - _pe_r[0].x)
 		ok(voltou_r < 0.08,

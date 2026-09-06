@@ -292,6 +292,44 @@ cabo), não de tentativa e erro.
 | pior instante do golpe | **0,38 m** |
 | melhor alcançável no auge (busca exaustiva) | 0,154 m |
 
+### ⚠️ Quem gira são os BRAÇOS — o `Torso` é pai de tudo
+
+Relato do dono depois da primeira passada de animação:
+
+> *"o personagem rotaciona correto, porém a animação está permanecendo a mesma
+> como se ele estivesse estático [...] cabeça e torso ficam estáticos, pernas se
+> dobram para manter o equilíbrio e os braços se movem ao redor do torso"*
+
+Eu tinha posto a varredura no **tronco** (Y = 1,70 rad) porque era o que mantinha
+as duas mãos no cabo. Resolveu a empunhadura e destruiu a animação, pela
+hierarquia do rig:
+
+```
+Torso
+├── Neck / Head
+├── UpperArm_R / ForeArm_R
+├── UpperArm_L / ForeArm_L
+└── Thigh_R|L / Shin / Foot
+```
+
+O `Torso` é **pai de tudo**. Yaw nele roda cabeça, braços e pernas em bloco — o
+personagem girava numa bandeja em vez de golpear.
+
+**E contaminou uma medição minha.** A "passada" que reportei (0,33 m de avanço do
+pé direito) era a perna sendo *carregada* pela rotação do tronco, não um passo.
+
+| | antes (tronco gira) | agora (braços giram) |
+|---|---|---|
+| giro do **tronco** em Y | 90,4° | **8,4°** |
+| joelhos dobram | — | **42,8° / 34,7°** |
+| varredura da lâmina | +1,72 → −1,44 m | +1,64 → −1,55 m |
+| mão esquerda ao cabo | 0,32 m | **0,38 m** |
+
+O custo está na última linha e é declarado: com os braços girando sozinhos a mão
+esquerda se afasta 6 cm a mais do cabo. O ombro deste rig não translada, então
+alcance de braço é o teto — e a leitura de animação vale mais que 6 cm de
+empunhadura.
+
 ### O corpo no corte: lâmina, balanço, pés e braços
 
 Segunda passada de animação (2026-09-06), pedida pelo dono. Cada item foi
