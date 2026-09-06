@@ -912,3 +912,76 @@ durante a auditoria de documentação de 2026-08-26.
 "baixar a tabela" é de balanceamento — pertence a quem joga a fruta. `test_balance.gd`
 não pega nenhum dos dois: ele valida a tabela contra a faixa do slot, não os
 arquivos de efeito contra a tabela.
+
+---
+
+## 🆕 Achados de 2026-09-06 — trabalho de colisão e som da Pika Pika
+
+Os defeitos de colisão que eu **corrigi** estão em [`erros.md`](erros.md) e na
+página da fruta. O que segue é o que achei e **não** mexi.
+
+### 51. 🔴 A Pika Pika é a fruta INICIAL e não tem árvore no mapa
+
+**Detectado em 2026-09-06**, cruzando `SkillSystem.gd` com
+`TreeAndFruitGenerator._todas_as_definicoes()`:
+
+```
+com skill mas SEM árvore: ['pika_pika']
+com árvore mas SEM skill: ['hito_hito_nika', 'tori_tori_phoenix']
+```
+
+O filtro do `get_tree_definitions()` planta o que tem skill **e** arte de árvore
+autorada. A Pika tem os quatro golpes, é `Player.FRUTA_INICIAL`, e não tem a
+arte — então **não existe pé de Pika Pika em lugar nenhum do mapa**.
+
+Consequência prática: quem trocar de fruta durante a partida **não consegue a
+Pika de volta**. É a única fruta jogável nessa situação.
+
+**Não foi corrigido** porque é decisão de design, não defeito: pode ser
+deliberado que a fruta de largada seja exclusiva do início. Se não for, a
+correção é uma entrada de árvore em `_todas_as_definicoes()` — o filtro a planta
+sozinho depois disso.
+
+### 52. 🔴 `traco_esperado.txt` está defasado desde a troca da fruta inicial
+
+**Detectado em 2026-09-06**: o `traco_locomocao` reprova no `validar.sh`, e a
+causa não é física.
+
+A caminhada em regime traça **5,25 m/s** contra os **4,41 m/s** gravados. A
+conta fecha exata:
+
+| | conta | resultado |
+|---|---|---|
+| esperado (gravado) | `SPEED 4,2 × 1,05` (passiva da `suke_suke`) | **4,41** |
+| atual | `SPEED 4,2 × 1,25` (passiva da `pika_pika`) | **5,25** |
+
+A linha de base foi gravada quando `Player.FRUTA_INICIAL` era `suke_suke`; ela
+virou `pika_pika` em 2026-09-04 ([Player.gd:94](../Player.gd#L94)) e o traço
+nunca foi regravado. As 113 linhas divergentes vêm todas daí: com o personagem
+mais rápido, a sequência de comandos roteirizada chega a outras posições nos
+mesmos quadros, então dash, salto e contato com o chão caem em quadros
+diferentes — divergência em cascata a partir de uma única causa.
+
+**Não foi regravado** porque regravar a linha de base é decidir o que a bateria
+considera correto. Se a Pika continua sendo a fruta inicial, o traço precisa ser
+refeito; se a fruta inicial ainda vai mudar, refazer agora é trabalho perdido.
+
+### 53. O Z da Pika alcança 98 de um teto de 200
+
+**Detectado em 2026-09-06** pelo `test_balance`, que reprova a tabela:
+
+```
+❌ pika_pika/Z: total alcançável 98, menos de 85% do teto 200
+```
+
+`Balance.FRUTAS.pika_pika.Z` é `MULTI 7 × 14 = 98`, e o teto canônico do slot Z
+é 200. O comentário na própria tabela diz que o 14 por raio foi decisão do dono
+por vizinhança (Mera Z tira 25 num acerto só, Buki Z faz 12 × 16), não leitura
+de vídeo — então a tabela pode estar certa e o **critério dos 85%** é que não se
+aplica a uma salva que raramente conecta inteira.
+
+**Não foi corrigido**: mexer aqui é mexer em equilíbrio, e o número é do dono.
+As duas saídas são subir o dano por raio para ~24 (7 × 24 = 168, dentro dos 85%)
+ou declarar a exceção no teste. Vale notar que a correção de colisão desta data
+faz a salva **conectar mais vezes do que antes** — o dano por acerto não mudou,
+mas o dano que realmente chega ao alvo subiu.

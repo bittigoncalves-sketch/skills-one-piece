@@ -7,6 +7,368 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-09-06 — guardar a espada com `queue_free` deixava ela na mão pelo resto do quadro
+
+**Sintoma:** o `test_modos_de_combate` acusou "sair do modo 3 não guardou a
+Yoru" — mas o log da mesma execução dizia `[Yoru] guardada`. As duas coisas
+eram verdade ao mesmo tempo.
+
+**Causa raiz:** `sacar_ou_guardar_espada` zerava `_yoru` na hora e chamava
+`queue_free()`, que só remove o nó no fim do quadro. Entre uma coisa e outra o
+estado ficava partido: a variável dizia "sem espada" e a ÁRVORE ainda tinha uma
+pendurada em `Hand_R`.
+
+**Por que não é só um teste chato:** sacar de novo antes da varredura penduraria
+uma SEGUNDA espada ao lado da que está morrendo — e o Godot a renomearia para
+`Yoru2`, então `get_node_or_null("Yoru")` continuaria achando a morta. Trocar
+1→3→1→3 rápido é exatamente o que se faz testando teclas novas.
+
+**Correção:** `remove_child` antes do `queue_free`. O estado da mão passa a ser
+verdadeiro no instante da troca.
+
+**Como detectar de novo:** `queue_free` não é remoção, é agendamento. Quando um
+nó representa ESTADO que outra coisa consulta no mesmo quadro (está na mão? está
+equipado?), tire-o da árvore explicitamente — a variável e a árvore não podem
+discordar nem por um quadro.
+
+
+## 2026-09-06 — a Yoru crescia PARA TRÁS: os dois rigs têm o antebraço em eixos opostos
+
+**Sintoma:** relato do dono — "yoru está no lado oposto ao qual deveria estar".
+
+**Causa raiz:** o nó da mão nasce na ponta do antebraço, mas para lados opostos
+do eixo Y local do osso conforme o tipo de personagem:
+
+```gdscript
+skinnado: item_handle.position = Vector3(0,  0.36, 0.0)   # fora da mão = +Y
+voxel:    item_handle.position = Vector3(0, -0.36, 0.02)  # fora da mão = -Y
+```
+
+Tudo que é segurado cresce no PRÓPRIO +Y (a Yoru, e antes dela o `SwordPickup`,
+cuja lâmina também subia em +Y a partir da mão). No personagem voxel — que é o
+padrão do jogo — a arma crescia de volta pelo braço.
+
+**Evidência:** medido no personagem real, o vetor mão→ponta da lâmina:
+
+    antes:   frente -1,15 m   lado -0,55 m   (a ponta 1,15 m ATRÁS do jogador)
+    depois:  frente +1,14 m   lado +0,63 m
+
+**Correção:** `Hand_R` do rig voxel passa a nascer com `rotation.x = PI`. O
+conserto mora no RIG, e não na espada, porque a diferença é do rig: resolvendo
+na mão, qualquer item futuro nasce certo sem saber que os dois tipos existem.
+
+**Como detectar de novo:** offset com sinal trocado entre dois ramos do mesmo
+`if` é aviso de que os referenciais são diferentes, não de que um deles está
+errado. Quem pendura coisa ali precisa da ORIENTAÇÃO, não só da posição.
+
+## 2026-09-06 — golpe procedural sem clipe tinha duração ZERO, e saía 10x mais rápido
+
+**Sintoma:** relato do dono — "o sistema de combate corpo a corpo por clique
+ainda está em ação mesmo com a espada equipada, sendo que quem deveria estar em
+efeito é a espada".
+
+**Causa raiz:** os cortes de espada são PROCEDURAIS
+(`WeaponPoses.two_handed_sword_slash`) e eu os declarei com `"anim": ""`. O
+`Melee.duracao_tocada` começava por `clipe()`, que devolve `null` sem clipe, e
+retornava **0.0** — antes mesmo de olhar o frame data. E o Player faz:
+
+```gdscript
+var speed = 1.0 / maxf(duracao, 0.1)     # 1.0 / 0.1 = 10x
+```
+
+O corte inteiro passava em 0,1 s: dois quadros. Em tela não aparecia espada
+nenhuma e o que sobrava era a pose de repouso — indistinguível de "o combo de
+punho continua no lugar da espada", que foi exatamente como o defeito chegou.
+
+**Evidência:** sonda no jogo real, antes e depois:
+
+    passo 0: duracao_tocada=0.000 s -> 10.0x     (frame data diz 0,490 s)
+    passo 0: duracao_tocada=0.490 s ->  2.0x
+
+**Correção:** quando não há clipe mas HÁ frame data, a duração é
+`startup + ativo + recuperação`. E `clipe()` deixou de avisar "clipe ausente"
+para `anim` vazio — golpe procedural não tem clipe, e isso é legítimo.
+
+**Como detectar de novo:** um caminho que retorna 0.0 para "não sei" vira
+divisão por um piso em algum lugar rio abaixo. O sintoma não é lentidão nem
+erro: é uma animação rápida demais para ser vista, que lê como "não aconteceu".
+
+## 2026-09-06 — o C da Pika travava o movimento por 3,7 s e soltar a tecla não devolvia o controle
+
+**Sintoma:** relato do dono — "o personagem para de exibir animações após usar
+o C".
+
+**Causa raiz:** `YasakaniController` chamava `lock_movement(C_TOTAL, "C")`, ou
+seja 3,7 s. E `Player.lock_movement` **não tem timer próprio** — o comentário
+dele diz "ignora o timer (FSM cuida)", e só grava a meta `active_skill`. Soltar
+o C encerrava a barragem mas não devolvia o movimento: o jogador largava a
+tecla, ficava parado o resto do tempo sem animação de caminhada, e ainda por
+cima caindo dos 7 m que o próprio C o teleportou para cima.
+
+**⚠️ NÃO REPRODUZI HEADLESS, e está registrado assim de propósito.** Três sondas
+(conclusão natural, segurar-e-soltar, e inspeção de estado) deram tudo limpo:
+`custom_pose` vazio, `_charging` falso, FSM em `Idle`, ossos animando a 94,9%
+do normal depois do golpe. A trava é a explicação mais provável do relato, não
+uma causa confirmada em medição.
+
+**Correção:** a trava passou a cobrir só o preparo (`C_RAJA_INICIO`, 1,0 s).
+Dali em diante o jogador anda e mira enquanto desfere — que era a mecânica
+pedida na mesma mensagem.
+
+**Como detectar de novo:** `lock_movement` neste projeto NÃO é um temporizador;
+é um rótulo. Quem tranca por N segundos precisa destrancar por conta própria, ou
+trancar só pelo tempo que sabe cobrir.
+
+
+## 2026-09-06 — o tipo do corte de espada era o ÍNDICE do passo, e funcionava por coincidência
+
+**Sintoma:** nenhum — até o combo da espada mudar. Ao trocar os três passos
+(corte D-E, corte E-D, vertical) pelo par pedido pelo dono (horizontal,
+vertical), o segundo clique passaria a tocar o segundo corte **horizontal** e o
+vertical nunca sairia.
+
+**Causa raiz:** o Player pedia a pose assim:
+
+```gdscript
+_proc_anim.play_procedural_slash(passo, speed)   # `passo` é o ÍNDICE do combo
+```
+
+`play_procedural_slash(type, ...)` espera o TIPO da pose
+(`WeaponPoses.two_handed_sword_slash`: 0 = horizontal D→E, 1 = horizontal E→D,
+2 = vertical). Índice e tipo eram grandezas diferentes que por acaso tinham os
+mesmos valores, porque o combo tinha três passos na mesma ordem dos três tipos.
+Nada no código dizia que eram coisas distintas, e o acoplamento sobreviveu
+justamente por nunca ter sido testado com outro tamanho de combo.
+
+**Correção:** campo `slash_type` na tabela e acessor `Melee.slash_type(i)`. O
+tipo passou a ser um dado do golpe; o índice voltou a ser só posição no combo.
+
+**Como detectar de novo:** quando duas grandezas diferentes são passadas pela
+mesma variável e "dá certo", o alinhamento é uma coincidência com prazo de
+validade. Sinal típico: uma função recebe `i` do laço e o parâmetro dela se
+chama outra coisa (`type`, `slot`, `id`).
+
+**Vale notar que isto NÃO era um bug ainda** — era um bug esperando um requisito.
+Só apareceu porque o combo mudou de tamanho.
+
+
+## 2026-09-06 — o `test_frutas` não enxerga subclasse de `DamageZone`
+
+**Sintoma:** depois de o C da Pika trocar 90 hitboxes de fragmento por um volume
+único, a auditoria `test_frutas` reportou a fruta em **3/4 golpes com hitbox** —
+num golpe que o `test_pika_c_area` prova, no mesmo dia, aplicar dano e paralisia
+pelo funil normal.
+
+**Causa raiz:** o reconhecimento de tipo do teste era por **caminho de arquivo**:
+
+```gdscript
+n.get_class() == tipo or n.get_script().resource_path.ends_with(tipo + ".gd")
+```
+
+O primeiro ramo nunca serve para script GDScript — `get_class()` devolve a
+classe do ENGINE (`"Area3D"`), não o `class_name`. Então tudo depende do
+segundo, que casa por ARQUIVO. Um nó de `ZonaBarragem extends DamageZone` tem o
+`resource_path` do arquivo DELE (`PikaFXGrande.gd`), e simplesmente some da
+conta. A hitbox existia; a sonda é que não alcançava.
+
+**Por que ficou escondido até hoje:** `ZonaBarragem` é a **primeira** subclasse
+de `DamageZone` do projeto (`grep -rn "extends DamageZone"` devolve uma linha
+só). Enquanto todo mundo instanciava a classe base, a heurística por caminho
+parecia correta.
+
+**Correção:** `tipo == "DamageZone"` passa a usar `n is DamageZone`, que cobre a
+hierarquia. Os outros tipos seguem no casamento por caminho — nenhum tem
+subclasse hoje.
+
+**Como detectar de novo:** em GDScript, `get_class()` NUNCA devolve o
+`class_name`; comparar com ele dá falso silencioso. E casar `resource_path` por
+arquivo é o mesmo bug esperando a primeira subclasse. Quando um teste pergunta
+"é um X?", o operador é `is`.
+
+**A tentação a evitar:** o atalho seria transformar a `ZonaBarragem` em
+`DamageZone` pura para o teste voltar a vê-la — ou seja, deixar de herdar por
+causa de uma sonda. Isso conserta o número e mantém o buraco armado para a
+próxima subclasse.
+
+
+## 2026-09-06 — nomear o nó ANTES do `add_child` sumiu com 90 fragmentos do teste
+
+**Sintoma:** ao trocar o fragmento do C da Pika por um nó puramente visual, o
+`test_pika_c_v` passou a acusar "1 fragmentos vivos" onde esperava pelo menos 3.
+Uma sonda mostrou o absurdo: **39 rastros vivos e 1 fragmento** — os rastros são
+criados um por fragmento, então os fragmentos existiam.
+
+**Causa raiz:** eu inverti a ordem de duas linhas sem perceber que ela importa.
+
+```gdscript
+# antes (funcionava)        # depois (quebrou)
+mundo.add_child(cabeca)     cabeca.name = "PikaFragmentoC"
+cabeca.name = "PikaFragmentoC"   mundo.add_child(cabeca)
+```
+
+O Godot resolve colisão de nome entre irmãos de **duas formas diferentes**:
+
+- nó que **já está na árvore** e recebe `name` colidindo → `PikaFragmentoC2`
+- nó nomeado **antes** de entrar, colidindo no `add_child` → `@PikaFragmentoC@2`
+
+O teste conta com `name.begins_with("PikaFragmentoC")`. O primeiro formato casa;
+o segundo começa com `@` e não casa com nada. Os 90 fragmentos estavam lá, com
+nome que ninguém procurava.
+
+**Evidência:** sonda imprimindo os dois contadores lado a lado por 1,8 s —
+`frag=1 rastro=39` em todos os quadros da barragem. Um fragmento (o primeiro,
+que não colide com ninguém) mantinha o nome legível; os 89 seguintes não.
+
+**Correção:** `add_child` primeiro, `name` depois — e um comentário na linha
+dizendo que a ordem não é estilo.
+
+**Como detectar de novo:** contagem por nome em Godot é frágil por natureza.
+Quando um teste conta nós por `begins_with`, o código que os cria precisa nomear
+DEPOIS de entrar na árvore. Sintoma típico: o contador trava em 1 (o único que
+não colidiu) enquanto tudo o mais indica que os nós existem.
+
+
+## 2026-09-06 — a varredura anti-túnel era um raio, e raio não tem espessura
+
+**Sintoma:** projétil rápido da Pika Pika passava por dentro do adversário sem
+acontecer nada. O jogador via a bola de luz atravessar o peito do outro e não
+tinha como saber por que não contou.
+
+**Causa raiz:** a `DamageZone` anda por teleporte (`global_position += vel *
+delta`) e já tinha, desde 2026-08-12, uma varredura do caminho para não tunelar
+— um `intersect_ray` do ponto anterior ao atual. O conserto de 2026-08-12
+resolveu o caso do alvo **no eixo** e ninguém percebeu que só esse tinha sido
+resolvido: raio é uma linha sem espessura, então entre dois quadros a hitbox
+deixava de ser a esfera anunciada em `radius` e virava a **linha do centro**
+dela. Quem passasse de raspão saía ileso. A hitbox de 0,32 m do Z valia 0,32 m
+apenas no quadro em que a `Area3D` conseguisse ver a sobreposição.
+
+**Evidência:** sonda em Godot 4.6.3, alvo-cápsula de raio 0,40 deslocado 0,45 m
+do eixo, passo de 1,30 m (o do Z a 78 m/s):
+
+    intersect_ray ....... PASSOU DIRETO
+    cast_motion ......... acertou na fração 0,340 do passo
+
+**Correção:** `src/effects/DamageZone.gd` — a varredura virou uma ESFERA
+VARRIDA (`cast_motion` acha o instante do primeiro contato, `intersect_shape`
+diz quem estava lá). Forma customizada continua no raio: a parede de tsunami da
+Gura tem 12 m de profundidade justamente para não tunelar.
+
+**A medição de custo quase levou à decisão errada.** A primeira medida deu
+`cast_motion` 48× mais caro que `intersect_ray` e por pouco isso não virou
+motivo para inventar uma aproximação com vários raios paralelos. O 48× era o
+caso de **acerto**, que acontece uma vez na vida de cada projétil. No caso que
+domina — voando no vazio — a diferença é 0,176 µs contra 0,105 µs, ou 21 µs por
+quadro com 120 projéteis. Medir o caso raro e decidir por ele é o erro.
+
+**Como detectar de novo:** hitbox de projétil só vale o raio anunciado se a
+varredura tiver a MESMA forma do colisor. Varredura por raio num colisor
+esférico é sempre uma hitbox menor do que a documentada.
+
+## 2026-09-06 — o peso do acerto estava ligado num sinal que quase nunca saía
+
+**Sintoma:** o Z da Pika acertava e o jogo não reagia — sem hitstop, sem tremor
+de câmera, sem soco de FOV. A auditoria multimodal pontuou "feedback de
+impacto" com **4/10**, o pior critério do golpe, e o código *tinha* os três.
+
+**Causa raiz:** `PikaFX` ligava o peso em `cabeca.body_entered`. Esse sinal é da
+`Area3D` e só nasce quando o motor de física vê a sobreposição naquele quadro.
+Mas a 78 m/s quem detecta o acerto é quase sempre a varredura da própria
+`DamageZone`, que chama `_on_body()` **direto** — e `_on_body()` não emite
+`body_entered` nenhum. Havia dois caminhos de detecção e o peso só estava
+pendurado em um deles, o menos usado.
+
+**Evidência:** `DamageZone._varrer_caminho` chama `_on_body(corpo)`
+diretamente; os sinais que `_on_body` emite são `collided_with_any`,
+`antes_do_acerto` e `hit_landed` — `body_entered` não está entre eles.
+
+**Correção:** passou para `hit_landed`, que sai nos dois caminhos e só para
+corpo que recebe dano de verdade.
+
+**Como detectar de novo:** quando uma classe tem detecção própria ALÉM do sinal
+nativo do nó, todo consumidor precisa ouvir o sinal da classe, não o do nó. A
+regra vale para qualquer coisa pendurada em `body_entered` de uma `DamageZone`.
+
+## 2026-09-06 — gente e mapa na mesma camada: o X travava em quem devia atravessar
+
+**Sintoma:** o Yata no Kagami (X) — a técnica de virar luz e cruzar o campo —
+parava no meio do caminho quando passava perto de outro jogador.
+
+**Causa raiz:** `_clampar` disparava um raio para achar parede à frente e
+excluía **apenas o próprio caster**, com máscara cheia. Neste projeto os
+personagens são `CharacterBody3D` na camada 1, a mesma do cenário — então
+qualquer jogador no trajeto era lido como parede e a perna travava 1 m antes
+dele. O golpe falhava exatamente na situação para a qual existe.
+
+**Correção:** `PikaFX._corpos_a_ignorar()` exclui por RID todo mundo dos grupos
+`player` e `enemy`. Gente não é parede.
+
+**Como detectar de novo:** neste projeto não dá para separar personagem de
+cenário por `collision_mask`. Quem precisa da distinção tem de excluir por RID,
+via grupo — máscara não resolve.
+
+## 2026-09-06 — o X podia largar o jogador em cima do buraco que mata
+
+**Sintoma:** nenhum ainda — achado lendo o código durante o trabalho de
+colisão, antes de alguém reclamar.
+
+**Causa raiz:** a perna do ziguezague viaja em altura fixa (`_para.y = _de.y`) e
+o único teste de colisão olhava para FRENTE (parede), nunca para BAIXO. A arena
+tem 16 buracos quadrados e cair num deles mata (`Scoreboard.VOID_Y = -40`).
+Dava para atravessar 21 m em linha reta e ser largado no ar sobre um buraco —
+um botão de suicídio disfarçado de técnica de mobilidade.
+
+**Correção:** `_com_chao()` recua o destino ao longo do próprio segmento até
+achar chão, em 9 amostras.
+
+**Como detectar de novo:** todo deslocamento que reposiciona o corpo por
+`global_position` (em vez de `move_and_slide`) escapa da física inteira, não só
+das paredes. Num mapa com vazio letal, "para onde vai" tem de incluir "tem chão
+lá".
+
+## 2026-09-06 — travar o golpe por falta de informação (erro meu, dentro da correção acima)
+
+**Sintoma:** a primeira versão do `_com_chao` fez o X virar **no-op**: o
+jogador apertava a tecla e não saía do lugar. O `test_pika_yasakani` acusou na
+hora — lateral 0,0 m, avanço 0,0 m.
+
+**Causa raiz:** quando nenhuma das 9 amostras achava chão, eu devolvia a origem
+("não sei se é seguro, então não vai"). Mas as duas situações — "há um buraco
+ali" e "não há colisor sob o segmento inteiro" — são informações diferentes, e
+eu tratei as duas como perigo. No jogo isso quebra o X usado no AR, e na árvore
+nua do teste (que não tem chão nenhum) quebrava tudo.
+
+**Correção:** sem chão em amostra alguma = segue viagem. Só recua quando ACHOU
+chão em algum ponto e o destino não tinha.
+
+**Como detectar de novo:** sonda que não encontra nada está dizendo "não sei",
+não "é perigoso". Interpretar ausência de dado como sinal negativo é o mesmo
+erro de `if not resultado: assumir_o_pior()`.
+
+## 2026-09-06 — o dublê do teste não sabia receber dano, e reprovou código certo
+
+**Sintoma:** ao trocar o peso do acerto de `body_entered` para `hit_landed`, o
+`test_pika_yasakani` passou a acusar "nenhum hitstop pedido ao acertar um corpo
+do grupo 'enemy'" — num código que funciona no jogo.
+
+**Causa raiz:** o alvo do teste era um `StaticBody3D` cru no grupo `enemy`, sem
+`take_damage`. `hit_landed` só sai para corpo que recebe dano — e **todo corpo
+atingível deste jogo tem `take_damage`**: Player, TrainingDummy, AutoDummy e
+Enemy, os quatro. O dublê modelava algo que não existe, e enquanto o peso vinha
+de `body_entered` (que não liga para isso) o defeito ficou escondido.
+
+**Evidência:** `grep "func take_damage"` devolve os quatro tipos reais; nenhum
+alvo do jogo é um corpo mudo.
+
+**Correção:** o dublê virou `_AlvoFalso extends StaticBody3D` com
+`take_damage`. Não foi "ajustar o teste para passar": foi tirar do teste uma
+suposição que o jogo não sustenta.
+
+**Perigo do atalho:** a saída fácil era voltar o sinal para `collided_with_any`,
+que sai para qualquer corpo — e aí o teste passaria com o dublê irreal
+**mantido**, deixando a mentira no lugar para a próxima pessoa.
+
+
 ## 2026-08-31 — quase apaguei 884 linhas do Codex com um `git checkout`
 
 **Sintoma:** para saber se uma regressão era minha, revertí `Player.gd` e
@@ -2859,3 +3221,187 @@ através de um buraco.
 
 **Como detectar de novo:** `tools/dev_tests/medir_blocos_sumindo.gd`.
 
+
+## 2026-09-01 — tirar a Mera de `CARREGAVEIS` apagou o Z inteiro, sem erro nenhum
+
+**Sintoma:** o dono pediu para "eliminar a necessidade de tempo para desferir ataques
+de frutas na Mera Mera no Mi". Removida a Mera da lista de carregáveis, o Z deixou de
+ter QUALQUER efeito: nenhuma pistola, nenhuma rajada, nenhuma mensagem no console.
+
+**Causa raiz:** o Z da Mera só existia pelo caminho da CARGA. O `MeraZChargeNode` não
+era só um relógio — era ele quem sacava as pistolas (`empunhar_pistolas_mera`) e quem
+chamava `iniciar_rajada()` ao completar. O ramo de disparo imediato em `comecar()`
+listava apenas `hie_hie`. Tirando a carga sem trazer o saque junto, sobrou um slot que
+passa por todas as guardas e não faz nada.
+
+**Por que passou despercebido:** o `test_mera_z_saque` acusou 7 falhas na hora, mas
+todas com cara de "teste velho para regra nova" — o texto delas falava em carga, que o
+dono acabara de mandar remover. A leitura preguiçosa é aposentar o teste; ele estava
+certo e a habilidade é que estava morta.
+
+**Correção:** `mera_mera` entrou na condição da rajada imediata em
+`src/player/cast_controller.gd:comecar()`, levando junto o saque (as armas pulam o
+coldre e nascem nas mãos) e o temporizador que as esconde ao fim do pente.
+
+**Como detectar de novo:** `tools/dev_tests/test_mera_z_saque.gd`, reescrito para o
+novo ciclo, com a asserção de controle `progresso_mera_z() == 0.0` — se a barra de
+carga voltar, ela acusa.
+
+**Lição:** quando um pedido remove uma ETAPA, procure o que mais morava dentro dela.
+E teste que falha logo após uma mudança pedida merece leitura antes de conserto.
+
+## 2026-09-01 — citar um `class_name` global num script `-s` zera os `preload` do Player
+
+**Sintoma:** `test_trava_pos_fruta` jurava que a trava de 5 s não andava, com o console
+cuspindo `Invalid call. Nonexistent function 'atualizar' in base 'Nil'` a cada quadro.
+Uma réplica do mesmo teste, linha por linha, passava sempre.
+
+**Causa raiz:** o teste citava `CastController.CARREGAVEIS` — o `class_name` GLOBAL —
+no corpo do script. Isso obriga o GDScript a resolver a classe durante a compilação do
+próprio teste, que roda antes de o projeto subir; nesse caminho as constantes `preload`
+do `Player.gd` saem NULAS. Todos os controladores (`_corpo_de_ferro`, `_dash`, `_cast`,
+`_melee`…) nascem nulos, `_etapa_estado_de_combate` aborta na PRIMEIRA linha e nenhum
+relógio do jogador anda. O jogo real nunca passa por essa ordem de carga.
+
+**Evidência:** mesmo nó, `is_inside_tree()=true`, `is_physics_processing()=true`,
+`_corpo_de_ferro=<null>`. Trocado por `load("res://src/player/cast_controller.gd")`,
+o mesmo teste foi de 8/10 para 10/10 sem tocar em uma linha de produção.
+
+**Descartado (e caro):** "class_name não registrado, use preload" — migrei 9
+controladores do `Player.gd` para `preload` antes de reparar que o `IronBodyController`
+JÁ era preload e mesmo assim nascia nulo. A hipótese estava morta e eu não tinha olhado.
+Revertido.
+
+**Como detectar de novo:** num teste `extends SceneTree`, `in base 'Nil'` em massa
+significa ordem de carga, não bug de produção. Prefira `load()` dentro da função a citar
+`class_name` global no corpo do script.
+
+**Lição:** hipótese que explica o sintoma não é hipótese confirmada. O contraexemplo
+(`IronBodyController` já era preload) estava a um `grep` de distância, antes da correção.
+
+## 2026-09-01 — `_char_model` não existe mais, e quem o procura falha calado
+
+**Sintoma:** os Iron Punches nasciam (o nó da sequência subia, o teste via o golpe
+acender) mas NENHUM braço era clonado. Zero erros no console.
+
+**Causa raiz:** o código seguiu o padrão que já existia no projeto —
+`_dono.get_node("_char_model")` seguido de `find_child`. Esse nó não existe: o modelo
+mora em `CharacterRoot_<personagem>/SkinPivot/GLBModel_<personagem>/Torso/UpperArm_R`.
+`has_node` devolve `false`, a função devolve `null` e o golpe segue em frente sem
+braço nenhum — o mesmo silêncio de sempre.
+
+**Achado lateral, ainda ABERTO:** `GuraChargeNode` (`src/player/cast_controller.gd`)
+usa exatamente esse caminho morto para pendurar a `SeismicOrb` na mão durante a carga
+do X da Gura. Lá também falha calado: a orb da carga simplesmente não aparece.
+
+**Correção:** buscar a partir do próprio jogador (`_caster.find_child("UpperArm_R",
+true, false)`), que funciona para qualquer personagem do elenco. E limpar do clone os
+filhos que não são braço (`BukiArma_*`, `MeraPistol_*`), senão a sequência de socos
+sairia atirando armas pelo mapa.
+
+**Lição:** copiar um padrão do próprio repositório não prova que ele funciona —
+prova que ele existe. `has_node` que dá `false` é a forma mais barata de um golpe
+inteiro sumir sem log.
+
+## 2026-09-01 — a régua errada: `mira_do_cast()["origem"]` já nasce 1,5 m à frente
+
+**Sintoma:** o teste dos Iron Punches dizia que um alvo "a 1,4 m" não apanhava, com o
+golpe medido percorrendo 1,92 m dos 2 m pedidos. Parecia alcance quebrado.
+
+**Causa raiz:** o alvo era posicionado em `mira_do_cast()["origem"] + aim * 1,4`, e
+aquela origem já é `global_position + UP + frente * 1,5`. O alvo "a 1,4 m" estava a
+quase 3 m do ombro de onde o braço parte. O golpe estava certo desde o começo.
+
+**Correção:** medir a distância a partir do CORPO (`p.global_position + UP * 1.0 + aim
+* d`). Com a régua certa, o alvo perto leva os 176 de dano e o alvo a 5 m continua sem
+levar nada — que é o controle do "até 2 metros".
+
+**Lição:** a terceira vez nesta mesma sessão em que o defeito estava na medição, não
+no jogo (as outras duas: o `class_name` global zerando os `preload`, e o relógio de
+parede contra o relógio de física). Antes de mexer no código medido, conferir de onde
+a régua parte.
+
+## 2026-09-01 — medir nível numa rampa: a água subiu debaixo da régua
+
+**Sintoma:** o teste da enchente acusava "água pela cintura mata" — o jogador
+morria com o nível supostamente na altura do peito.
+
+**Causa raiz:** o teste escrevia `flood_y` UMA vez e esperava 4 s. A água sobe
+1,5 m/s por conta própria: no fim da espera o nível estava 6 m acima, com o
+jogador submerso por completo. O jogo estava certo; a medida é que descrevia outro
+cenário. O log entregou de graça — `nível 7.20, cabeça em 1.60`.
+
+**Correção:** `_manter_nivel(y, segundos)`, que reescreve a linha d'água a cada
+quadro. Com ela: água pela cintura não mata nem em 4 s, aos 1,5 s submerso ainda
+está vivo, e passados os 3 s ele morre.
+
+**Lição:** medir um valor que o próprio sistema move exige SEGURAR o valor, não
+escrevê-lo uma vez. É a quarta medição errada da sessão — e, como nas outras três,
+o número que denunciava o erro já estava impresso no log.
+
+## 2026-09-01 — desempenho da enchente: V-Sync escondendo o custo, e a hipótese cara
+
+**Sintoma:** o dono pediu para "garantir o bom desempenho quando a água começar".
+A primeira medição deu **6,94 ms nos três casos** — arena seca, água subindo e
+câmera submersa, todos idênticos.
+
+**Causa raiz da medida inútil:** V-Sync. 6,94 ms é 144 Hz cravado, o teto do
+monitor. Um número que não se move quando a cena muda não está medindo a cena.
+Com `window_set_vsync_mode(VSYNC_DISABLED)` a diferença apareceu na hora: +13,5 %.
+
+**Segundo defeito da mesma medição:** o caso "pior" (câmera submersa) custava
+MENOS que o caso anterior — impossível se houvesse água na tela. Havia: o jogador
+se afogava em 3 s, a fase terminava, a água sumia e a medição do pior caso estava
+medindo a arena seca. Corrigido mantendo um segundo corpo vivo em cena, e
+imprimindo `alagando=true/false` **junto de cada número** — uma medida de "durante
+a enchente" feita com a enchente encerrada é pior que medida nenhuma, porque
+parece boa notícia.
+
+**Hipótese errada, e cara:** apostei que o custo era a `BoxMesh` sendo regerada a
+cada quadro (mexer em `size` reconstrói os vértices). Troquei por caixa unitária +
+escala e medi de novo: **+11,7 % → +12,3 %**, ou seja, nenhum ganho. O custo real
+era a ILUMINAÇÃO POR PIXEL de uma superfície de 200 × 200 m;
+`SHADING_MODE_UNSHADED` levou de +13,5 % para +2,1 %.
+
+**O controle que fechou o diagnóstico:** medir a mesma fase com a água
+ESCONDIDA. Sobrou +0,3 % — logo, a lógica (subida, varredura, afogamento) não
+custa nada e o problema era 100 % de desenho. Sem esse controle eu teria seguido
+otimizando a conta.
+
+**Lição:** eu havia deixado no código um comentário afirmando que a troca da malha
+custava +11,7 %, medido — e não custava nada. Comentário que declara medição tem
+de citar a medição que sobreviveu à correção, senão vira folclore com aparência de
+dado. Corrigido no arquivo.
+
+## 2026-09-01 — a água subia em degraus, e o teste que reprovava a solução certa
+
+**Sintoma:** o dono pediu para "garantir que a água suba gradualmente". A primeira
+medição dizia GRADUAL — sem recuos, sem saltos. Mas dois números na mesma tabela
+diziam o contrário: **menor passo 0,0000 m, maior 0,0250 m (2,4× a média)**.
+
+**Causa raiz:** `flood_y` só muda no `_physics_process` (60 Hz) e a tela desenha a
+~144 Hz. `AguaDaArena` copiava o valor cru, então metade dos quadros não subia
+nada e a outra subia o dobro — degraus de 2,5 cm. O veredito "GRADUAL" era do meu
+critério, que só olhava saltos grandes e recuos.
+
+**Correção:** o nó visual ganhou nível próprio, que sobe por quadro de RENDER e
+recebe o valor do servidor como correção amortecida. Passo máximo caiu de 2,4×
+para 1,1× a média, com a mesma velocidade total (3,12 m em 300 quadros nos dois).
+
+**Segundo erro, no teste:** o caso "com correção de rede" empurrava o nível a cada
+**30 quadros**, que a 144 Hz é uma correção a cada 0,2 s — deriva de 1,5 m/s, coisa
+que a rede não produz (`SYNC_INTERVAL` é 0,5 s). O teste estava mais duro que a
+realidade. Corrigido para medir em TEMPO, não em quadros. (O estresse ainda
+revelou algo real: com `AMORTECIMENTO` em 3/s sobrava resíduo entre pacotes e o
+erro acumulado estourava o limite — subido para 8/s.)
+
+**Terceiro erro, no critério:** o veredito exigia "passo máximo ≤ 2× a média" e
+reprovava o caso com correção de rede por 0,4 mm. Absorver deriva EXIGE, por
+definição, andar um pouco mais depressa por alguns quadros — o critério punia o
+comportamento desejado. Trocado por um limite absoluto em metros (10 cm num
+quadro), ancorado no que o olho vê: 2,8 cm não se enxerga, meio metro sim.
+
+**Lição:** três defeitos na mesma medição, e nenhum no jogo. Quando um teste
+reprova a solução que você acabou de justificar tecnicamente, reveja o critério
+antes de mexer no código — mas leia o que ele mediu, porque o estresse exagerado
+achou um resíduo verdadeiro no amortecimento.

@@ -64,6 +64,21 @@ Medido em código (2026-08-14). A coluna "hitbox" é o critério 5 do
 | Suna Suna | sim | 4/4 | — | [`suna_suna.md`](suna_suna.md) |
 | Bara Bara | sim | 4/4 | — | [`bara_bara.md`](bara_bara.md) |
 | Buki Buki | sim | 4/4 (arsenal) | — | [`buki_buki.md`](buki_buki.md) |
+| **Pika Pika** | **não — ver abaixo** | 4/4 | — | [`pika_pika.md`](pika_pika.md) |
+
+> ⚠️ **A Pika Pika é a única fruta com kit completo e SEM árvore no mapa.** Ela
+> é a fruta INICIAL (`Player.FRUTA_INICIAL`), e `TreeAndFruitGenerator` não tem
+> definição de árvore para o id `pika_pika` — o filtro planta o que tem skill
+> *e* arte de árvore autorada, e a arte dela nunca foi feita. Consequência
+> prática: quem trocar de fruta numa partida **não consegue a Pika de volta**.
+> Não está consertado: é decisão do dono se ela deve ser plantável ou continuar
+> exclusiva do início.
+
+> ⚠️ **A contagem abaixo está DEFASADA.** O `SkillSystem` já tem 13 entradas
+> (entraram `pika_pika`, `suke_suke` e `ope_ope` depois deste texto). Só a linha
+> da Pika foi auditada nesta passagem — as outras duas são trabalho em curso de
+> outra frente e não foram conferidas, então o número fica como estava em vez de
+> virar um chute novo.
 
 **9 frutas jogáveis, 9 árvores plantadas.** O placar medido em runtime que
 originou isso está em [`../AUDITORIA_FRUTAS.md`](../AUDITORIA_FRUTAS.md)
@@ -77,7 +92,7 @@ nenhuma entrada em `SkillSystem`. Não recebem arquivo próprio porque não há 
 que documentar além da linha de passiva — quando ganharem golpes, ganham
 arquivo.
 
-`pika_pika` · `magu_magu` · `ope_ope` · `hana_hana` · `ito_ito` ·
+`magu_magu` · `hana_hana` · `ito_ito` ·
 `zushi_zushi` · `moku_moku` · `tori_tori_phoenix` · `neko_neko_leopard` ·
 `hito_hito_nika` · `uo_uo_seiryu` — **11 ids**, mais o órfão
 `gura_gura_alt` (item 5 da lista de correções), que não é fruta nenhuma.

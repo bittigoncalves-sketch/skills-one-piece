@@ -128,6 +128,7 @@ antigas — nada ali é apagado).
 | [`docs/frutas/gura_gura.md`](docs/frutas/gura_gura.md) | tremor — investida do Z, captura do X, ultimate de 4 s, e a escala 2× |
 | [`docs/frutas/gomu_gomu.md`](docs/frutas/gomu_gomu.md) · [`bara_bara`](docs/frutas/bara_bara.md) · [`buki_buki`](docs/frutas/buki_buki.md) | Paramecias |
 | [`docs/frutas/mera_mera.md`](docs/frutas/mera_mera.md) · [`hie_hie`](docs/frutas/hie_hie.md) · [`goro_goro`](docs/frutas/goro_goro.md) · [`yami_yami`](docs/frutas/yami_yami.md) · [`suna_suna`](docs/frutas/suna_suna.md) | Logias |
+| [`docs/frutas/pika_pika.md`](docs/frutas/pika_pika.md) | **a fruta INICIAL** — luz: colisão, o som próprio e o que ficou em aberto |
 | [`docs/PLANO_FRUTAS.md`](docs/PLANO_FRUTAS.md) · [`docs/AUDITORIA_FRUTAS.md`](docs/AUDITORIA_FRUTAS.md) | critérios de fruta funcional e o placar medido em 2026-08-10 |
 
 ### Documentos vivos
@@ -135,6 +136,8 @@ antigas — nada ali é apagado).
 | Arquivo | Conteúdo |
 |---|---|
 | [`docs/ANIMACOES_MIXAMO.md`](docs/ANIMACOES_MIXAMO.md) | pipeline, catálogo de clipes, limitações |
+| [`docs/MODOS_DE_COMBATE.md`](docs/MODOS_DE_COMBATE.md) | **teclas 1/2/3**: fruta, estilo de luta e espada — e por que o terceiro valor exigiu um portão no cast |
+| [`docs/COMBATE_ESPADA.md`](docs/COMBATE_ESPADA.md) | **a Yoru**: pega `handle`/`Hand_R`, as bolinhas do fio, o choque de espadas e o combo horizontal→vertical |
 | [`docs/AGENTES.md`](docs/AGENTES.md) | como o trabalho é dividido entre agentes especializados |
 | [`docs/LIMITE_DE_TAMANHO.md`](docs/LIMITE_DE_TAMANHO.md) | limite de 900 linhas por script, o que já foi dividido e o plano do `Player.gd` |
 | [`docs/ARQUITETURA_PLAYER.md`](docs/ARQUITETURA_PLAYER.md) | **decisão de arquitetura**: componentes por domínio, 9 fases, e o princípio de posse de estado |
