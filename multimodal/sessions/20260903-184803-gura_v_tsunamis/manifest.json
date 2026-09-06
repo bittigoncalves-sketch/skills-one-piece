@@ -1,0 +1,32 @@
+{
+  "id": "20260903-184803-gura_v_tsunamis",
+  "nome": "gura V tsunamis",
+  "tipo": "skill",
+  "projeto": "/home/gabriel-bitti/dev/skills-one-piece",
+  "pipeline_version": "1.0.0",
+  "criada_em": "2026-09-03T18:48:03",
+  "entradas": [
+    {
+      "arquivo": "entrada/videos/gura_gura_V.mp4",
+      "origem": "multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/gura_gura_V.mp4",
+      "categoria": "videos",
+      "papel": "referencia",
+      "sha256": "37a40ea77f080664acae8f48735ab5bda6195e35e619f3c8be7dcb4456626f2c",
+      "bytes": 799712
+    }
+  ],
+  "etapas": {
+    "ingest": {
+      "em": "2026-09-03T18:48:05",
+      "videos": 1,
+      "imagens": 0,
+      "falhas": []
+    },
+    "plan": {
+      "em": "2026-09-04T08:26:46",
+      "pacotes": [
+        "avaliador_skill_gura_v_tsunamis"
+      ]
+    }
+  }
+}

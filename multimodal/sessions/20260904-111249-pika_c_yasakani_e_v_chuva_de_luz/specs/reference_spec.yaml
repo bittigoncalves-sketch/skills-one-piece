@@ -1,0 +1,349 @@
+# VISTA legível — o arquivo canônico é reference_spec.json.
+# Editar aqui não tem efeito: edite o .json.
+spec_version: 1.0
+session: 20260904-111249-pika_c_yasakani_e_v_chuva_de_luz
+gerado_em: "2026-09-04T11:12:49"
+reference:
+  type: skill
+  name: pika C Yasakani e V Chuva de Luz
+  descricao: ""
+  modulos: "[]"
+inputs:
+  videos: "[]"
+  images:
+    - arquivo: yasakani_c_storyboard.png
+      sha256: 1fca51b6f8dffb025e3dc2263bbd2db5ea45c52068a1fe196761228348f8ff14
+      resolution: 1672x941
+      format: PNG
+    - arquivo: chuva_de_luz_v_storyboard.png
+      sha256: fc9a017b32c6a653cd18ae9755debbf1f97c9a770001aa27d7c478394d340dec
+      resolution: 1672x941
+      format: PNG
+  specifications:
+    - entrada/especificacao/IMPLEMENTACAO.md
+  code: "[]"
+authority:
+  - user_spec
+  - project_rule
+  - video
+  - image
+  - agent
+timeline:
+  duration:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  phases: "[]"
+animation:
+  phases: "[]"
+  pose_inicial:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  silhueta:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  overshoot:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  follow_through:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+movement:
+  actor:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  trajectory:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  speed_profile:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  distance:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  height:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  direction:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+spatial:
+  posicao_relativa:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  escala:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  angulo:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  orientacao:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  ponto_de_impacto:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  relativo_ao_chao:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+combat:
+  damage:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  hitbox:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  hurtbox:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  knockback:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  stagger:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  stun:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  invulnerabilidade:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  cooldown:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  interrompivel:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  targeting:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  multiplayer:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+visual:
+  geometry:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  escala:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  materiais:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  transparencia:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  particulas:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  trails:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  iluminacao:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  shader:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  cores:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  deformacao:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+camera:
+  shake:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  zoom:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  fov:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  enquadramento:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+audio:
+  cues: "[]"
+engine_mapping:
+  states: "[]"
+  files: "[]"
+  notas: ""
+constraints: "[]"
+separation:
+  visual_only: "[]"
+  gameplay: "[]"
+open_questions: "[]"
+confidence:
+  visual: UNKNOWN
+  temporal: UNKNOWN
+  gameplay: UNKNOWN
+  spatial: UNKNOWN

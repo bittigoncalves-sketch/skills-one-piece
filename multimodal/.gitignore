@@ -1,0 +1,28 @@
+# Trabalho da skill multimodal-dev. A regra: o que é PESADO ou REGENERÁVEL a
+# partir de coisa não versionada fica fora do histórico; o que EXPLICA uma
+# decisão entra.
+#
+# Fora: vídeos, quadros extraídos, folhas de contato, capturas do jogo, cache,
+# e os metadados — que são derivados de vídeos que também não entram, então
+# versioná-los deixaria órfão no repositório.
+sessions/*/entrada/videos/
+sessions/*/extraido/quadros/
+sessions/*/extraido/contact_sheets/
+sessions/*/extraido/metadados/
+sessions/*/validacao/capturas/
+sessions/*/validacao/comparacoes/
+sessions/*/logs/gemini_cwd/
+cache/
+.captura.lock
+*.mp4
+*.mkv
+*.webm
+
+# Dentro: manifesto, spec canônica, task packages, análises dos agentes,
+# relatórios de comparação e o log de eventos.
+!sessions/*/manifest.json
+!sessions/*/specs/
+!sessions/*/tarefas/
+!sessions/*/analise/
+!sessions/*/validacao/relatorios/
+!sessions/*/logs/eventos.jsonl

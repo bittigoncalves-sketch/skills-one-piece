@@ -1,0 +1,637 @@
+# VISTA legível — o arquivo canônico é reference_spec.json.
+# Editar aqui não tem efeito: edite o .json.
+spec_version: 1.0
+session: 20260903-184131-baseline_frutas
+gerado_em: "2026-09-03T18:47:37"
+reference:
+  type: skill
+  name: baseline frutas
+  descricao: ""
+  modulos: "[]"
+inputs:
+  videos:
+    - arquivo: bomu_bomu_X.mp4
+      sha256: c64eaf806d60f25e0246b83381bb5ef28c9a319f2553c3ccd152881604fadfb4
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: bomu_bomu_Z.mp4
+      sha256: 71019ab4f5f0a48e8390835377a38d27a54d8eb6591e90a3f38c6509738a7cb0
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: buki_buki_C.mp4
+      sha256: 1bd7ce173ff1f8bbdda99ffb0f76af3904258a90922571c98b91dbb1bbd0947c
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: buki_buki_V.mp4
+      sha256: 10dc6764167a741ae5e4f43479694132edfd0561c7ffbc1706c53f65b78e8d65
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: buki_buki_X.mp4
+      sha256: b4b08277fc791bb9bb9858349256e262b308b6760fd0130933d65cdcb17c2ade
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: buki_buki_Z.mp4
+      sha256: 923aab2454e6ee152b3d4b5967ddcdb3b038b160a83ad87bcd9aa82a9d52bc8f
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: goro_goro_C.mp4
+      sha256: f0cd17d914ab96933aa1ce31939f50f5dc0a1cd230ecc9f868212dc4bc6e96ca
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: goro_goro_V.mp4
+      sha256: 7ae81dde708a1d41ed654f84d877c1e5189a7ef4415dd613ff15a125571d80bd
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: goro_goro_X.mp4
+      sha256: 14954c812a130f21a857a1613fc4bc92b148f1bc26d787f1408857a2a91ede3d
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: goro_goro_Z.mp4
+      sha256: fb382fc4d92605cea07dc53d0d7406ddbf2c8a2ce0577e940ab6671af6dafa86
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: gura_gura_C.mp4
+      sha256: 40e32fed423cbc1bbd2919a0e0a3f5cc417e2c45140995346702f43548557688
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: gura_gura_V.mp4
+      sha256: 37a40ea77f080664acae8f48735ab5bda6195e35e619f3c8be7dcb4456626f2c
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: gura_gura_X.mp4
+      sha256: 8e6a12f915d2d3f3c4736614961eb65525726240f30a68fb8c7c772366602cf8
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: gura_gura_Z.mp4
+      sha256: 122b9325ca94c771146fd248397fe2411b9edf68279f701a9ebed804b5361b35
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: hie_hie_C.mp4
+      sha256: f23b0711164d1a5826aae5ebe6849da6c872fb1ef21c002ce66f1b119897273c
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: hie_hie_V.mp4
+      sha256: 993a6754eb7e328237e0ede5d8d7b51ba25edb063e9e5d3a88f87154096b981d
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: hie_hie_X.mp4
+      sha256: 14874ea382992a476f98eb8d2736c901e76d7217317bb49de68b922b74f3573d
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: hie_hie_Z.mp4
+      sha256: 4a6f7dbd28844a247ea49e4fc2f763e7460dc485b061dae904adb9b4d1cdfebb
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: mera_mera_C.mp4
+      sha256: c3633e32a19e5a772a49b2b4ed339dcbcc5d217051a06d7f4239c5c4d37f3366
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: mera_mera_V.mp4
+      sha256: 2fc803126e0ca4049cdd20a9a04bf5a644f7be03c6001a481fab57c719d02405
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: mera_mera_X.mp4
+      sha256: 7f9c0b778614e7c6a31cc546a5a871217822bfe45af4a273f5fcf1813f49db7b
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: mera_mera_Z.mp4
+      sha256: 50a446be464307a82cd860de8f70f1d7a939951a2c8f1e3aed0811edb8955ab1
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: suke_suke_Z.mp4
+      sha256: 966725fe244c14afbbe1ef6364855f1471c23f019539f5414841ddc91b85ee7e
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: suna_suna_C.mp4
+      sha256: 75492dc58179f287467cc2b6b852cb45a1fe65584dbc159b1f2543fe87701cd0
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: suna_suna_V.mp4
+      sha256: 6468ce4aa3dee18a4350118a22c22787edd863c62063206d3be507b1a8dd713c
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: suna_suna_X.mp4
+      sha256: b1a1fd1395e1640b7261f68b032885a128984b996b3bb2c978b576f9cc71857b
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: suna_suna_Z.mp4
+      sha256: 01637dc7ce530d70ac9fd3b1140113db781446b0e7b0f5860afc5f9866216654
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: yami_yami_C.mp4
+      sha256: 6cdf29d5425555eb7620d03fc70c578cfb7ba1c566ebf646000d796941b304b0
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: yami_yami_V.mp4
+      sha256: 7605a36984e83becc20bea859b40db7d0833b362136728b2c63ad35e0c653c4e
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: yami_yami_X.mp4
+      sha256: 143c7e03cf8b692f937c1406a36744a5c9be6ebc15e9fc4737506587c028cd4d
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+    - arquivo: yami_yami_Z.mp4
+      sha256: 514b3c828ef5403761003365d074bbb34c1fd22fbbc475050468f8dc7480f620
+      duration: 3.2
+      fps: 30.0
+      resolution: 1280x720
+      frame_count: 96
+      codec: h264
+      aspect_ratio: "1280:720"
+  images: "[]"
+  specifications:
+    - entrada/especificacao/indice.json
+  code: "[]"
+authority:
+  - user_spec
+  - project_rule
+  - video
+  - image
+  - agent
+timeline:
+  duration:
+    value: 3.2
+    unit: s
+    source: "video:bomu_bomu_X.mp4"
+    method: OBSERVED
+    confidence: HIGH
+    note: medido por ffprobe
+  phases:
+    - time: 0.0
+      phase: start
+      evidence: "video:bomu_bomu_X.mp4@0.000"
+      origem: borda
+      method: OBSERVED
+      confidence: HIGH
+    - time: 0.1
+      phase: anticipation
+      evidence: "video:bomu_bomu_X.mp4@0.100"
+      origem: curva/joelho
+      method: INFERRED
+      confidence: MEDIUM
+    - time: 0.233
+      phase: release
+      evidence: "video:bomu_bomu_X.mp4@0.233"
+      origem: curva/pico_global
+      method: INFERRED
+      confidence: MEDIUM
+    - time: 0.567
+      phase: impact
+      evidence: "video:bomu_bomu_X.mp4@0.567"
+      origem: curva/pico_local
+      method: INFERRED
+      confidence: MEDIUM
+    - time: 1.067
+      phase: travel
+      evidence: "video:bomu_bomu_X.mp4@1.067"
+      origem: uniforme
+      method: INFERRED
+      confidence: MEDIUM
+    - time: 1.967
+      phase: recovery
+      evidence: "video:bomu_bomu_X.mp4@1.967"
+      origem: curva/vale_pos_pico
+      method: INFERRED
+      confidence: MEDIUM
+    - time: 2.133
+      phase: travel
+      evidence: "video:bomu_bomu_X.mp4@2.133"
+      origem: uniforme
+      method: INFERRED
+      confidence: MEDIUM
+    - time: 3.167
+      phase: end
+      evidence: "video:bomu_bomu_X.mp4@3.167"
+      origem: borda
+      method: OBSERVED
+      confidence: HIGH
+animation:
+  phases: "[]"
+  pose_inicial:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  silhueta:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  overshoot:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  follow_through:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+movement:
+  actor:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  trajectory:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  speed_profile:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  distance:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  height:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  direction:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+spatial:
+  posicao_relativa:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  escala:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  angulo:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  orientacao:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  ponto_de_impacto:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  relativo_ao_chao:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+combat:
+  damage:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  hitbox:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  hurtbox:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  knockback:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  stagger:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  stun:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  invulnerabilidade:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  cooldown:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  interrompivel:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  targeting:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  multiplayer:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+visual:
+  geometry:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  escala:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  materiais:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  transparencia:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  particulas:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  trails:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  iluminacao:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  shader:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  cores:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  deformacao:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+camera:
+  shake:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  zoom:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  fov:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+  enquadramento:
+    value: null
+    unit: null
+    source: null
+    method: UNKNOWN
+    confidence: UNKNOWN
+    note: null
+audio:
+  cues: "[]"
+engine_mapping:
+  states: "[]"
+  files: "[]"
+  notas: ""
+constraints: "[]"
+separation:
+  visual_only: "[]"
+  gameplay: "[]"
+open_questions: "[]"
+confidence:
+  visual: UNKNOWN
+  temporal: UNKNOWN
+  gameplay: UNKNOWN
+  spatial: UNKNOWN

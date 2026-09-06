@@ -1,0 +1,32 @@
+{
+  "id": "20260904-084346-pika_pika_z_yasakani",
+  "nome": "pika pika Z yasakani",
+  "tipo": "skill",
+  "projeto": "/home/gabriel-bitti/dev/skills-one-piece",
+  "pipeline_version": "1.0.0",
+  "criada_em": "2026-09-04T08:43:46",
+  "entradas": [
+    {
+      "arquivo": "entrada/videos/VIdeo para Skill Z.mp4",
+      "origem": "/home/gabriel-bitti/Downloads/VIdeo para Skill Z.mp4",
+      "categoria": "videos",
+      "papel": "referencia",
+      "sha256": "9af4cd91842c1271375d3fc2413bf5e063b1fb9f2030f68b39c420f41e3d541c",
+      "bytes": 4412526
+    }
+  ],
+  "etapas": {
+    "ingest": {
+      "em": "2026-09-04T08:43:49",
+      "videos": 1,
+      "imagens": 0,
+      "falhas": []
+    },
+    "plan": {
+      "em": "2026-09-04T09:31:01",
+      "pacotes": [
+        "avaliador_skill_pika_pika_z_yasakani"
+      ]
+    }
+  }
+}

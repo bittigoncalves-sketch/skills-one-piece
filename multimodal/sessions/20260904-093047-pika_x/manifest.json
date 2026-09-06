@@ -1,0 +1,42 @@
+{
+  "id": "20260904-093047-pika_x",
+  "nome": "pika X",
+  "tipo": "skill",
+  "projeto": "/home/gabriel-bitti/dev/skills-one-piece",
+  "pipeline_version": "1.0.0",
+  "criada_em": "2026-09-04T09:30:47",
+  "entradas": [
+    {
+      "arquivo": "entrada/videos/skill X pika pika.mp4",
+      "origem": "/home/gabriel-bitti/Downloads/skill X pika pika.mp4",
+      "categoria": "videos",
+      "papel": "referencia",
+      "sha256": "6c21fe52f662473e0e87dcb4bc69f1faea60588c3d8d4d6013e9eed0f6fae66b",
+      "bytes": 1358821
+    },
+    {
+      "arquivo": "entrada/especificacao/specification.md",
+      "origem": "multimodal/sessions/20260904-093047-pika_x/entrada/especificacao/specification.md",
+      "categoria": "especificacao",
+      "papel": "referencia",
+      "sha256": "b63019c7dd7a0339b8d0004b145dcb5a72e3e2e690a54c24773ae64dd73973e9",
+      "bytes": 1531
+    },
+    {
+      "arquivo": "entrada/imagens/direcionamento X skill.webp",
+      "origem": "/home/gabriel-bitti/Downloads/direcionamento X skill.webp",
+      "categoria": "imagens",
+      "papel": "referencia",
+      "sha256": "86433e0a0e6a8f54bc81907e9637c564514d4e92bbcfa5c1f8d7736ad7b9ada9",
+      "bytes": 22814
+    }
+  ],
+  "etapas": {
+    "ingest": {
+      "em": "2026-09-04T09:30:51",
+      "videos": 1,
+      "imagens": 0,
+      "falhas": []
+    }
+  }
+}

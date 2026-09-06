@@ -1,0 +1,439 @@
+{
+  "resultado": {
+    "modo": "estrutural",
+    "referencia": {
+      "arquivo": "VIdeo para Skill Z.mp4",
+      "duration": 5.042,
+      "fps": 24.0,
+      "resolution": "1920x1080"
+    },
+    "implementacao": {
+      "arquivo": "pika_pika_Z.mp4",
+      "duration": 3.2,
+      "fps": 30.0,
+      "resolution": "1280x720"
+    },
+    "duracao": {
+      "referencia_s": 5.042,
+      "implementacao_s": 3.2,
+      "delta_s": -1.842,
+      "method": "OBSERVED"
+    },
+    "pico_de_movimento": {
+      "referencia_s": 1.9,
+      "implementacao_s": 0.5,
+      "delta_s": -1.4,
+      "method": "OBSERVED"
+    },
+    "energia": {
+      "referencia_media": 0.00421,
+      "implementacao_media": 0.0015,
+      "razao": 0.356,
+      "method": "OBSERVED"
+    },
+    "perfil": {
+      "erro_medio": 0.1899,
+      "correlacao": -0.238,
+      "method": "OBSERVED",
+      "leitura": "erro_medio 0 = mesma forma de movimento; correlacao 1 = mesmo perfil de aceleração"
+    },
+    "fases": [
+      {
+        "fase": "start",
+        "referencia_s": 0.0,
+        "implementacao_s": 0.0,
+        "delta_s": 0.0,
+        "method": "OBSERVED"
+      },
+      {
+        "fase": "anticipation",
+        "referencia_s": 1.833,
+        "implementacao_s": 0.433,
+        "delta_s": -1.4,
+        "method": "ESTIMATED"
+      },
+      {
+        "fase": "release",
+        "referencia_s": 1.9,
+        "implementacao_s": 0.5,
+        "delta_s": -1.4,
+        "method": "ESTIMATED"
+      },
+      {
+        "fase": "recovery",
+        "referencia_s": 3.3,
+        "implementacao_s": 2.767,
+        "delta_s": -0.533,
+        "method": "ESTIMATED"
+      },
+      {
+        "fase": "end",
+        "referencia_s": 5.0,
+        "implementacao_s": 3.167,
+        "delta_s": -1.833,
+        "method": "OBSERVED"
+      }
+    ],
+    "keyframes": {
+      "referencia": [
+        {
+          "indice": 0,
+          "t": 0.0,
+          "fase_proposta": "start",
+          "origem": "borda",
+          "confidence": "HIGH",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 1,
+          "t": 0.504,
+          "fase_proposta": "travel",
+          "origem": "uniforme",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 2,
+          "t": 1.008,
+          "fase_proposta": "travel",
+          "origem": "uniforme",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 3,
+          "t": 1.513,
+          "fase_proposta": "travel",
+          "origem": "uniforme",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 4,
+          "t": 1.833,
+          "fase_proposta": "anticipation",
+          "origem": "curva/joelho",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 5,
+          "t": 1.9,
+          "fase_proposta": "release",
+          "origem": "curva/pico_global",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 6,
+          "t": 2.017,
+          "fase_proposta": "travel",
+          "origem": "uniforme",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 7,
+          "t": 2.521,
+          "fase_proposta": "travel",
+          "origem": "uniforme",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 8,
+          "t": 3.025,
+          "fase_proposta": "travel",
+          "origem": "uniforme",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 9,
+          "t": 3.3,
+          "fase_proposta": "recovery",
+          "origem": "curva/vale_pos_pico",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 10,
+          "t": 3.567,
+          "fase_proposta": "impact",
+          "origem": "curva/pico_local",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 11,
+          "t": 4.034,
+          "fase_proposta": "travel",
+          "origem": "uniforme",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 12,
+          "t": 4.538,
+          "fase_proposta": "travel",
+          "origem": "uniforme",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 13,
+          "t": 4.833,
+          "fase_proposta": "impact",
+          "origem": "curva/pico_local",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 14,
+          "t": 5.0,
+          "fase_proposta": "end",
+          "origem": "borda",
+          "confidence": "HIGH",
+          "method": "INFERRED/curva_de_movimento"
+        }
+      ],
+      "implementacao": [
+        {
+          "indice": 0,
+          "t": 0.0,
+          "fase_proposta": "start",
+          "origem": "borda",
+          "confidence": "HIGH",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 1,
+          "t": 0.356,
+          "fase_proposta": "travel",
+          "origem": "uniforme",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 2,
+          "t": 0.433,
+          "fase_proposta": "anticipation",
+          "origem": "curva/joelho",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 3,
+          "t": 0.5,
+          "fase_proposta": "release",
+          "origem": "curva/pico_global",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 4,
+          "t": 0.711,
+          "fase_proposta": "travel",
+          "origem": "uniforme",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 5,
+          "t": 1.067,
+          "fase_proposta": "travel",
+          "origem": "uniforme",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 6,
+          "t": 1.422,
+          "fase_proposta": "travel",
+          "origem": "uniforme",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 7,
+          "t": 1.778,
+          "fase_proposta": "travel",
+          "origem": "uniforme",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 8,
+          "t": 2.133,
+          "fase_proposta": "travel",
+          "origem": "uniforme",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 9,
+          "t": 2.489,
+          "fase_proposta": "travel",
+          "origem": "uniforme",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 10,
+          "t": 2.767,
+          "fase_proposta": "recovery",
+          "origem": "curva/vale_pos_pico",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 11,
+          "t": 2.844,
+          "fase_proposta": "travel",
+          "origem": "uniforme",
+          "confidence": "MEDIUM",
+          "method": "INFERRED/curva_de_movimento"
+        },
+        {
+          "indice": 12,
+          "t": 3.167,
+          "fase_proposta": "end",
+          "origem": "borda",
+          "confidence": "HIGH",
+          "method": "INFERRED/curva_de_movimento"
+        }
+      ]
+    },
+    "curvas": {
+      "referencia": [
+        0.010477039679001338,
+        0.02313751043131337,
+        0.01162591309715697,
+        0.007236187797935457,
+        0.00843078752129131,
+        0.007190461492735234,
+        0.006721766864432938,
+        0.00711044045863484,
+        0.007767756095888064,
+        0.008556534860591927,
+        0.0067617773814831325,
+        0.006138756473130079,
+        0.010014060838849068,
+        0.013226333779164816,
+        0.025709615098826025,
+        0.6220034980623491,
+        0.06999554168524305,
+        0.06817220526538408,
+        0.03842724373263829,
+        0.0356322233272746,
+        0.06756633172148108,
+        0.051990809012654765,
+        0.04360574779656368,
+        0.05716931307658012,
+        0.03976473815974482,
+        0.058735439029687794,
+        0.028533214444939888,
+        0.04038204327994792,
+        0.7328440618676886,
+        0.1576128582370222,
+        0.3266401454096498,
+        0.13600717902991635,
+        0.1349383266458614,
+        0.16934737130902985,
+        0.0954650936817677,
+        0.08871474787658463,
+        0.1327206008436504,
+        0.16449466716965613,
+        0.8189867050767634,
+        0.06130182790905038
+      ],
+      "implementacao": [
+        0.021479713603818618,
+        0.023641963976092854,
+        0.22191624339595706,
+        0.4401811394651491,
+        0.42157762682822353,
+        0.2674866899210574,
+        0.9357444464843035,
+        0.15427452420292512,
+        0.2836219733594436,
+        0.27073006547946893,
+        0.14503396364971546,
+        0.08673479795198172,
+        0.07937090753319871,
+        0.09016176080615222,
+        0.1213308039083696,
+        0.14068906431674927,
+        0.19511249821512355,
+        0.3088346286436979,
+        0.26803745180833516,
+        0.02125532913122413,
+        0.019847826530404105,
+        0.020255798298757725,
+        0.022907614793056322,
+        0.019195071701038287,
+        0.01915427452420293,
+        0.017114415682434776,
+        0.015115354017501985,
+        0.0149929624869959,
+        0.014319809069212411,
+        0.013830242947188057,
+        0.01162719539807845,
+        0.011137629276054096,
+        0.012320747404279627,
+        0.011260020806560193,
+        0.013197886706239932,
+        0.011239622218142512,
+        0.014258613303959364,
+        0.014605389307059954,
+        0.014319809069212411,
+        0.015910898965791568
+      ]
+    }
+  },
+  "recomendacoes": [
+    {
+      "achado": "duração curta em 1.84s",
+      "recomendacao": "ajustar a duração total do golpe em +1.84s",
+      "method": "ESTIMATED"
+    },
+    {
+      "achado": "o pico de movimento acontece -1.40s fora do lugar",
+      "recomendacao": "alongar o windup — o golpe sai cedo demais",
+      "method": "ESTIMATED"
+    },
+    {
+      "achado": "perfil de aceleração diferente (correlação -0.238)",
+      "recomendacao": "revisar as curvas de easing entre as fases; não é questão de duração, é de ritmo",
+      "method": "ESTIMATED"
+    },
+    {
+      "achado": "a implementação mexe menos pixel que a referência (razão 0.356)",
+      "recomendacao": "conferir amplitude do movimento e escala do VFX; pode ser câmera diferente, então confirme no lado a lado antes de mexer",
+      "method": "ESTIMATED"
+    },
+    {
+      "achado": "fase 'anticipation' desloca -1.40s",
+      "recomendacao": "ajustar o início de 'anticipation'",
+      "method": "ESTIMATED"
+    },
+    {
+      "achado": "fase 'release' desloca -1.40s",
+      "recomendacao": "ajustar o início de 'release'",
+      "method": "ESTIMATED"
+    },
+    {
+      "achado": "fase 'recovery' desloca -0.53s",
+      "recomendacao": "ajustar o início de 'recovery'",
+      "method": "ESTIMATED"
+    },
+    {
+      "achado": "fase 'end' desloca -1.83s",
+      "recomendacao": "ajustar o início de 'end'",
+      "method": "ESTIMATED"
+    }
+  ],
+  "pixel": null,
+  "folha": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260904-084346-pika_pika_z_yasakani/validacao/comparacoes/lado_a_lado_01.png",
+  "iteracao": 1
+}
