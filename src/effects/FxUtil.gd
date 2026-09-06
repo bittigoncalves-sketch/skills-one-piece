@@ -102,6 +102,29 @@ static func particle_material(base: Color, emission_energy: float, additive: boo
 	m.albedo_color = brilho(base, emission_energy) if emission_energy > 0.0 else base
 	return m
 
+
+# Material emissivo para MALHAS 3D orientadas no mundo (feixes, arcos e tubos).
+#
+# Nao reutilize `particle_material()` nesses casos: aquele material ativa
+# `BILLBOARD_PARTICLES`, portanto a GPU gira a malha para encarar a camera e
+# descarta visualmente a orientacao calculada pelo gameplay. Aqui o billboard e
+# desativado de forma explicita; assim um cilindro continua ligando exatamente
+# os dois pontos que o seu Transform3D declara.
+static func mesh_emissive_material(base: Color, emission_energy: float,
+		additive: bool = true) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_DISABLED
+	m.disable_receive_shadows = true
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	if additive:
+		m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	# Materiais unshaded deste projeto brilham pelo albedo acima de 1,0. A nota
+	# no inicio do arquivo explica por que o canal emission nao e usado aqui.
+	m.albedo_color = brilho(base, emission_energy) if emission_energy > 0.0 else base
+	return m
+
 # Cria um GPUParticles3D já configurado.
 static func particles(amount: int, lifetime: float, one_shot: bool,
 		proc: ParticleProcessMaterial, mesh: Mesh, explosiveness: float = 0.0,

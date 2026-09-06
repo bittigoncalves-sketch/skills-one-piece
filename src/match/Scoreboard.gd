@@ -25,7 +25,24 @@ extends Node
 # significa que a decisão sai por poucas kills, e é por isso que o desempate
 # importa: ver `ranking()`, que ordena por kills e desempata por MENOS MORTES.
 const ROUND_TIME := 300.0
-const PODIUM_TIME := 8.0       # painel de fim de rodada
+const PODIUM_TIME := 10.0      # painel de fim de rodada (pedido do dono, 2026-09-01)
+
+# ------------------------------------------------------------------ ENCHENTE
+# Pedido do dono (2026-09-01): quando o tempo zera, a plataforma ALAGA em vez de
+# a rodada simplesmente acabar. A água sobe, quem fica completamente coberto
+# morre em 3 s, e ela continua subindo até não sobrar ninguém de pé. Só então o
+# placar aparece, com 10 s para a próxima partida.
+#
+# ⚠️ QUEM MORRE NA ENCHENTE NÃO RESPAWNA. Essa é a regra que faz a fase existir:
+#   com respawn, o afogado voltaria ao centro, cairia na água de novo e a
+#   condição de fim ("todos mortos") nunca seria alcançada.
+const FLOOD_RISE := 0.5        # m/s — escolhido pelo dono em jogo (testou 1,5 e 3,0)
+const DROWN_TIME := 3.0        # segundos completamente submerso até morrer
+const FLOOD_START_Y := 0.0     # topo da plataforma
+# Teto de segurança. Não é o fim esperado da fase (o fim é todo mundo morto),
+# é o que impede a água de subir para sempre se alguém ficar inalcançável —
+# num bloco alto, num bug de colisão ou com o corpo preso fora da arena.
+const FLOOD_MAX_Y := 80.0
 const CREDIT_WINDOW := 10.0    # janela do crédito de kill por queda
 const VOID_Y := -40.0          # abaixo disto = caiu do mapa
 const RESPAWN := Vector3(0, 6, 0)
@@ -36,10 +53,14 @@ var time_left: float = ROUND_TIME
 var podium_left: float = 0.0
 var scores: Dictionary = {}          # peer:int -> {"k": int, "d": int}
 var podium_snapshot: Array = []      # [[peer, kills, mortes]] ordenado, só no pódio
+var flooding: bool = false           # a arena está alagando
+var flood_y: float = FLOOD_START_Y   # nível da água em coordenada de mundo
 
 # ---- só no servidor ----
 var _last_hit: Dictionary = {}       # peer da vítima -> {"by": peer, "t": seg}
 var _dead_until: Dictionary = {}     # peer -> instante até o qual ignoro a queda
+var _submerso: Dictionary = {}       # peer -> segundos com a cabeça sob a água
+var _eliminados: Dictionary = {}     # peer -> true (morreu na enchente, não volta)
 var _sync_t: float = 0.0
 var _clock: float = 0.0              # relógio local em segundos (não usa Time)
 
@@ -56,8 +77,14 @@ func _physics_process(delta: float) -> void:
 	# entre um sync e outro; o sync do servidor corrige a deriva.
 	if podium_left > 0.0:
 		podium_left = maxf(podium_left - delta, 0.0)
-	else:
+	elif not flooding:
 		time_left = maxf(time_left - delta, 0.0)
+
+	# A água sobe nos DOIS lados pelo mesmo motivo do cronômetro: entre um sync e
+	# outro passam 0,5 s, e uma parede de água que andasse aos saltos entregaria
+	# a rede. O sync do servidor corrige a deriva.
+	if flooding:
+		flood_y = minf(flood_y + FLOOD_RISE * delta, FLOOD_MAX_Y)
 
 	if not _is_server():
 		return
@@ -66,8 +93,10 @@ func _physics_process(delta: float) -> void:
 
 	if podium_left <= 0.0 and not podium_snapshot.is_empty():
 		_start_new_round()
+	elif flooding:
+		_tick_enchente(delta)
 	elif time_left <= 0.0 and podium_snapshot.is_empty():
-		_start_podium()
+		_start_flood()
 
 	_sync_t += delta
 	if _sync_t >= SYNC_INTERVAL:
@@ -156,7 +185,13 @@ func _register_death(victim: Node, peer: int, by_fall: bool) -> void:
 		print("💀 [Placar] peer %d morreu (%s) — sem kill (janela de %ds venceu)"
 			% [peer, motivo, int(CREDIT_WINDOW)])
 
-	_order_respawn(victim, peer)
+	# ⚠️ NA ENCHENTE NÃO HÁ RESPAWN. Vale para QUALQUER morte, não só o
+	# afogamento: quem levar o último golpe com a água na cintura também fica
+	# fora, senão ele volta inteiro no centro e a fase não termina nunca.
+	if not flooding:
+		_order_respawn(victim, peer)
+	else:
+		_eliminados[peer] = true
 	_broadcast()
 
 # O corpo é do CLIENTE dono: o servidor pede o respawn, não teleporta na marra
@@ -177,10 +212,71 @@ func _order_respawn(victim: Node, peer: int) -> void:
 	# árvore no _despawn_player_for. Sem esta guarda o rpc_id derruba um erro
 	# "unknown peer ID" a cada frame enquanto o corpo órfão afunda no vazio.
 
+# ------------------------------------------------------------------ enchente
+func _start_flood() -> void:
+	flooding = true
+	flood_y = FLOOD_START_Y
+	_submerso.clear()
+	_eliminados.clear()
+	print("🌊 [Placar] o tempo acabou — a plataforma começou a alagar")
+	_broadcast()
+
+
+## Um quadro de enchente: mede quem está submerso, afoga quem passou dos 3 s e
+## encerra quando não sobra ninguém de pé.
+func _tick_enchente(delta: float) -> void:
+	var vivos := 0
+	for p in get_tree().get_nodes_in_group("player"):
+		if not (p is Node3D):
+			continue
+		var peer := _peer_of(p)
+		if peer == 0 or _eliminados.has(peer):
+			continue
+		vivos += 1
+		# "Completamente coberto": o TOPO da cabeça abaixo da linha d'água. Medir
+		# pelos pés afogaria quem está com água pela cintura.
+		var coberto: bool = p.topo_da_cabeca() < flood_y if p.has_method("topo_da_cabeca") \
+			else (p as Node3D).global_position.y + 0.8 < flood_y
+		if coberto:
+			_submerso[peer] = float(_submerso.get(peer, 0.0)) + delta
+			if float(_submerso[peer]) >= DROWN_TIME:
+				_afogar(p, peer)
+				vivos -= 1
+		else:
+			# Sair da água zera a conta: o contador é de fôlego, não de castigo.
+			_submerso.erase(peer)
+
+	if vivos <= 0 or flood_y >= FLOOD_MAX_Y:
+		if flood_y >= FLOOD_MAX_Y and vivos > 0:
+			print("🌊 [Placar] a água chegou ao teto com %d de pé — encerrando mesmo assim" % vivos)
+		_start_podium()
+
+
+func _afogar(vitima: Node, peer: int) -> void:
+	_eliminados[peer] = true
+	_submerso.erase(peer)
+	print("🌊 [Placar] peer %d se afogou" % peer)
+	# Conta como morte no placar (com crédito de kill, se alguém bateu nele há
+	# pouco: empurrar alguém para a água no fim da rodada É uma kill).
+	_register_death(vitima, peer, false)
+	if not vitima.has_method("net_eliminar"):
+		return
+	if not multiplayer.has_multiplayer_peer() or peer == multiplayer.get_unique_id():
+		vitima.net_eliminar()
+	elif multiplayer.get_peers().has(peer):
+		vitima.net_eliminar.rpc_id(peer)
+
+
 # --------------------------------------------------------------- rodada
 func _start_podium() -> void:
 	podium_left = PODIUM_TIME
 	podium_snapshot = ranking()
+	# A água baixa junto com o fim da fase: o respawn logo abaixo devolve todo
+	# mundo ao centro, e o centro não pode estar submerso.
+	flooding = false
+	flood_y = FLOOD_START_Y
+	_submerso.clear()
+	_eliminados.clear()
 	print("🏁 [Placar] fim da rodada — pódio por %ds" % int(PODIUM_TIME))
 	for p in get_tree().get_nodes_in_group("player"):
 		var peer := _peer_of(p)
@@ -244,6 +340,8 @@ func _broadcast() -> void:
 		"p": podium_left,
 		"s": packed,
 		"r": podium_snapshot,
+		"fl": flooding,
+		"f": flood_y,
 	})
 
 @rpc("authority", "call_remote", "reliable")
@@ -251,6 +349,8 @@ func _net_state(state: Dictionary) -> void:
 	time_left = float(state.get("t", time_left))
 	podium_left = float(state.get("p", 0.0))
 	podium_snapshot = state.get("r", [])
+	flooding = bool(state.get("fl", false))
+	flood_y = float(state.get("f", FLOOD_START_Y))
 	scores.clear()
 	var packed: Dictionary = state.get("s", {})
 	for peer in packed:

@@ -54,10 +54,16 @@ func _process(_dt: float) -> void:
 		_podio.visible = false
 		return
 	_painel.visible = true
-	_relogio.text = "⏱  " + _mmss(sb.time_left)
-	# Últimos 30 s em vermelho: o fim da rodada tem que ser sentido, não lido.
-	_relogio.add_theme_color_override("font_color",
-		Color(1.0, 0.4, 0.35) if sb.time_left <= 30.0 else Color(1.0, 0.95, 0.7))
+	# Na enchente o cronômetro já está em 00:00 e não diz mais nada — quem manda
+	# na rodada passa a ser a água, então é a altura dela que aparece no lugar.
+	if bool(sb.get("flooding")):
+		_relogio.text = "🌊  ALAGANDO  %.0f m" % maxf(float(sb.get("flood_y")), 0.0)
+		_relogio.add_theme_color_override("font_color", Color(0.55, 0.85, 1.0))
+	else:
+		_relogio.text = "⏱  " + _mmss(sb.time_left)
+		# Últimos 30 s em vermelho: o fim da rodada tem que ser sentido, não lido.
+		_relogio.add_theme_color_override("font_color",
+			Color(1.0, 0.4, 0.35) if sb.time_left <= 30.0 else Color(1.0, 0.95, 0.7))
 
 	var meu := _meu_peer()
 	var nomes := ""
@@ -89,7 +95,7 @@ func _atualiza_podio(sb: Node, meu: int) -> void:
 	if txt == "":
 		txt = "ninguém pontuou nesta rodada\n"
 	_podio_lista.text = txt
-	_podio_rodape.text = "nova rodada em %d s" % int(ceil(sb.podium_left))
+	_podio_rodape.text = "próxima partida em %d s" % int(ceil(sb.podium_left))
 
 # ------------------------------------------------------------------ helpers
 func _meu_peer() -> int:

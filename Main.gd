@@ -76,6 +76,10 @@ func _ready() -> void:
 	placar.name = "Placar"
 	add_child(placar)
 
+	# A água da enchente do fim da rodada. É só desenho: quem manda no nível é o
+	# `Placar`, e este nó lê de lá (ver AguaDaArena).
+	add_child(AguaDaArena.new())
+
 	_hud = Hud.new()
 	add_child(_hud)
 
@@ -280,7 +284,8 @@ func _spawn_player_data(data: Dictionary) -> Node:
 
 func _make_player_sync() -> MultiplayerSynchronizer:
 	var cfg := SceneReplicationConfig.new()
-	for p in ["position", "net_velocity", "net_facing", "net_on_floor", "net_charge_pose", "net_charge_progress", "current_fruit_id"]:
+	for p in ["position", "net_velocity", "net_facing", "net_on_floor", "net_charge_pose",
+			"net_charge_progress", "current_fruit_id", "combat_mode", "current_style_idx"]:
 		cfg.add_property(NodePath(".:" + p))
 	var sync := MultiplayerSynchronizer.new()
 	sync.name = "Sync"
