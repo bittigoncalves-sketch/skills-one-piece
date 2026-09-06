@@ -307,6 +307,23 @@ func esconder_pistolas_mera() -> void:
 
 # Ponto de ancoragem para itens (como a espada). No voxel vai no braço,
 # no esqueleto usamos BoneAttachment3D para herdar posição E rotação.
+#
+# ⚠️ ESTE NÓ É A MÃO, E AGORA TEM NOME (2026-09-06). Pedido do dono: "nomeie o
+# cabo como handle e a mão do jogador também, depois os ligue — assim será
+# possível ter uma referência de onde será segurada".
+#
+# O rig do projeto tem 13 papéis e NENHUM deles é mão: a cadeia do braço termina
+# em `ForeArm`. Este nó sempre foi a mão de fato — é onde a arma encosta — só
+# que nascia anônimo (`@Node3D@N`) e vivia guardado numa variável. Nomeá-lo
+# `Hand_R` faz três coisas: aparece na árvore da cena com nome legível, dá para
+# achá-lo por `find_child` de qualquer lugar, e transforma "onde a espada é
+# segurada" numa relação entre dois nós nomeados (`handle` sobre `Hand_R`) em
+# vez de um offset escondido.
+#
+# `item_handle` continua apontando para ele: nada do que já usava a variável
+# precisa mudar.
+const NOME_DA_MAO := "Hand_R"
+
 func _attach_item_handle(model: Node3D) -> void:
 	if model == null:
 		return
@@ -317,13 +334,35 @@ func _attach_item_handle(model: Node3D) -> void:
 			ba.bone_name = "ForeArm_R"
 			skel.add_child(ba)
 			item_handle = Node3D.new()
+			item_handle.name = NOME_DA_MAO
 			item_handle.position = Vector3(0, 0.36, 0.0) # Ponta do osso
 			ba.add_child(item_handle)
 	else:
 		var arm := model.find_child("ForeArm_R", true, false)
 		if arm is Node3D:
 			item_handle = Node3D.new()
+			item_handle.name = NOME_DA_MAO
 			item_handle.position = Vector3(0, -0.36, 0.02)
+			# ⚠️ 180°, E É O CONSERTO DA ESPADA APONTANDO PARA TRÁS (2026-09-06).
+			#
+			# Repare no `y = -0.36` da linha acima e no `y = +0.36` do ramo
+			# skinnado: nos dois casos a mão está na PONTA do antebraço, mas para
+			# lados opostos do eixo Y local do osso. Ou seja, "para fora da mão"
+			# é +Y no esqueleto e **-Y** no voxel.
+			#
+			# Tudo que é segurado cresce no próprio +Y (a Yoru, e antes dela o
+			# `SwordPickup`, cuja lâmina também subia em +Y a partir da mão).
+			# Sem esta rotação, no personagem voxel — que é o padrão do jogo — a
+			# arma crescia de volta PELO BRAÇO.
+			#
+			# Medido no personagem real antes do conserto: a ponta da Yoru ficava
+			# 1,15 m ATRÁS do jogador e 0,55 m para o lado errado.
+			#
+			# O conserto mora aqui, e não na espada, porque a diferença é do RIG:
+			# é o antebraço que tem eixos opostos entre os dois tipos de
+			# personagem. Resolvendo na mão, qualquer item futuro nasce certo sem
+			# saber que os dois rigs existem.
+			item_handle.rotation = Vector3(PI, 0.0, 0.0)
 			arm.add_child(item_handle)
 
 # ---------------------------------------------------------------- BUKI BUKI ---

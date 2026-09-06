@@ -1,0 +1,222 @@
+# Combate de espada — a Yoru
+
+Preparação do corpo a corpo com arma, pedida pelo dono em **2026-09-06**. O
+combo de punho continua onde estava ([`COMBATE_CORPO_A_CORPO.md`](COMBATE_CORPO_A_CORPO.md));
+aqui é só o que muda quando há uma lâmina na mão.
+
+> 🔵 **As zonas da lâmina estão desenhadas em azul transparente na tela**
+> (`SwordBlade.MOSTRAR_ZONAS = true`), para conferência. Vire para `false`
+> quando não precisar mais ver. Não confundir com o **vermelho** da hitbox do
+> C da Pika Pika, que é outra conferência temporária.
+
+**Como equipar:** tecla **3**. Desde 2026-09-06 a espada é o **terceiro modo de
+combate**, ao lado da fruta (1) e do estilo de luta (2) — ver
+[`MODOS_DE_COMBATE.md`](MODOS_DE_COMBATE.md). Entrar no modo 3 saca a Yoru, sair
+dele a guarda, e **os slots Z/X/C/V ficam mudos**: quem está de espada na mão
+corta, não conjura.
+
+(Era a tecla Y, de debug, entre a montagem da espada e a chegada dos três modos.)
+
+---
+
+## Onde mora cada parte
+
+| arquivo | papel |
+|---|---|
+| `assets/models/weapons/yoru.glb` | o modelo (6,6 MB, 875 vértices, 3 texturas) |
+| `src/items/YoruSword.gd` | monta a espada: modelo, `handle`, lâmina |
+| `src/combat/SwordBlade.gd` | **as bolinhas do fio**: dano e choque |
+| `src/combat/Melee.gd` | `COMBO_SWORD` e o `golpear()` que arma o fio |
+| `src/anim/WeaponPoses.gd` | as poses de corte (já existiam) |
+| `src/player/player_rig.gd` | a mão nomeada `Hand_R` |
+| `Player.gd` | `sacar_ou_guardar_espada()`, `lamina_da_espada()`, tecla Y |
+
+---
+
+## O ponto de pega: `handle` sobre `Hand_R`
+
+Pedido: *"nomeie o cabo como handle e a mão do jogador também, depois os ligue —
+assim será possível ter uma referência de onde será segurada"*.
+
+Antes disso a pega era um número mágico: o `SwordPickup` empilhava um cilindro
+em `y = -0.15` *"para que a origem seja perto do centro da mão"*, e quem
+quisesse saber onde a arma era segurada tinha de refazer a conta de cabeça.
+
+Agora são **dois nós nomeados e um parentesco**:
+
+```
+ForeArm_R
+└── Hand_R          ← a mão (player_rig.NOME_DA_MAO)
+    └── Yoru
+        ├── handle  ← o cabo, na origem da espada
+        ├── modelo
+        └── Lamina
+            ├── zona_lamina_0 … zona_lamina_6
+```
+
+`handle` fica na **origem** da cena da espada, então pôr a espada como filha de
+`Hand_R` já encosta um no outro — não há offset escondido em lugar nenhum do
+caminho. Mover a pega é mover um dos dois nós.
+
+### ⚠️ Os dois rigs têm o antebraço em eixos OPOSTOS
+
+Bug relatado em 2026-09-06 ("a Yoru está no lado oposto"). A mão nasce na ponta
+do antebraço nos dois casos, mas para lados opostos do Y local do osso:
+
+```gdscript
+skinnado: item_handle.position = Vector3(0,  0.36, 0.0)   # fora da mão = +Y
+voxel:    item_handle.position = Vector3(0, -0.36, 0.02)  # fora da mão = -Y
+```
+
+Tudo que é segurado cresce no próprio **+Y**, então no personagem voxel — que é
+o padrão — a arma crescia **de volta pelo braço**. Medido antes do conserto: a
+ponta da lâmina ficava **1,15 m atrás** do jogador.
+
+`Hand_R` do rig voxel passou a nascer com `rotation.x = PI`. O conserto mora no
+**rig**, e não na espada, porque a diferença é do rig: qualquer item futuro
+nasce certo sem precisar saber que existem dois tipos de personagem.
+
+Depois: frente **+1,14 m**, lado **+0,63 m** (direito), inclinada ~10° para
+baixo — guarda baixa.
+
+> O rig do projeto tem 13 papéis e **nenhum deles é mão**: a cadeia do braço
+> termina em `ForeArm`. Este nó sempre foi a mão de fato — é onde a arma encosta
+> — só que nascia anônimo (`@Node3D@N`) e vivia guardado numa variável.
+
+## A geometria do modelo, medida
+
+O `.glb` chegou como **uma malha só** (875 vértices, um nó `mesh_node`, sem
+esqueleto e sem partes separadas). Não havia cabo para renomear: foi preciso
+descobrir onde ele está, desenhando a silhueta a partir das **arestas** da malha
+(varrer só os vértices engana numa malha esparsa como esta).
+
+| parte | Y no modelo cru | largura |
+|---|---|---|
+| pomo + cabo | +0,50 a +0,27 | ~0,05 |
+| **guarda** (a cruz) | +0,26 a +0,19 | **0,35** |
+| lâmina | +0,19 a −0,50 | ~0,046 |
+
+**No modelo a lâmina aponta para −Y** — a mesma convenção do `espadas_zoro.glb`
+e o **oposto** da espada empunhada anterior, cuja lâmina subia em +Y a partir da
+mão. Daí a rotação de 180° em X; sem ela a Yoru nasce apontando para o chão.
+
+Escala 2,0: a lâmina fica com **1,38 m**, na vizinhança da espada antiga (1,2 m)
+e ainda lendo como montante.
+
+---
+
+## As bolinhas do fio
+
+Pedido: *"na lâmina serão colocadas zonas no formato de bolinhas como área de
+recebimento de informação: quando uma dessas áreas toca em um inimigo durante
+uma animação o inimigo recebe o dano; ou quando uma dessas áreas na espada do
+inimigo toca a área da espada do jogador ocorre uma colisão de espadas anulando
+ambos os movimentos"*.
+
+Sete `Area3D` esféricas de raio 0,28, distribuídas da guarda (0,39 m acima da
+mão) até a ponta (1,77 m). Elas são presas à espada, que é presa à mão, que a
+animação gira — então **percorrem o arco de verdade**.
+
+### O que isso substituiu
+
+O corte criava **uma `BoxShape3D`** de `raio*2` por `alcance*1.5` — com os
+números da tabela, **4 m de largura por 3,75 m de fundo** — parada na frente do
+peito durante os quadros ativos. Ela não tinha relação nenhuma com onde a lâmina
+estava: era um volume que aparecia na direção do clique.
+
+⚠️ **O corte ficou mais exigente, e o número diz quanto.** A caixa cobria da
+ordem de 15 m³; as sete bolinhas cobrem ~1,1 m³ varridos ao longo do golpe. O
+raio de 0,28 é generoso de propósito — a lâmina tem 0,09 m de largura — para o
+corte não virar prova de agulha. É a mesma lição que o C da Pika deu: hitbox
+honesta não pode ser hitbox minúscula.
+
+O teste cobra que **não haja vão entre as bolinhas** (passo 0,23 m contra
+diâmetro 0,56 m): um vão no meio do fio deixaria o alvo passar sem levar nada, e
+o defeito seria invisível porque o golpe continuaria acertando às vezes.
+
+### A camada 8
+
+Neste projeto personagem e cenário vivem juntos na **camada 1**, e as consultas
+de combate usam `collision_mask = 15`. Bolinha precisa ser vista por **outra
+bolinha** e por mais ninguém — se entrasse nas camadas 1-4, toda varredura de
+projétil do jogo passaria a esbarrar em espada.
+
+Então a bolinha **mora na camada 8** (bit 128) e **olha** para 1-4 (corpos) mais
+a própria 8 (a espada do outro).
+
+### O choque
+
+Duas espadas só se anulam quando **as duas estão golpeando** (`esta_armada()`).
+Bater na espada parada de alguém que está de guarda não é um clash — é um acerto
+que a guarda resolve.
+
+Quando acontece: as duas lâminas desarmam, o `MeleeController.cancelar_golpe()`
+dos dois donos é chamado (ele já existia para dash-cancel e morte, e limpa
+`_passo_em_curso`, a trava de recuperação e o buffer de clique), e sai anel +
+fagulhas + hitstop.
+
+⚠️ `area_entered` dispara nos **dois** lados. O primeiro a chegar resolve e marca
+os dois — sem isso o cancelamento correria duas vezes e o efeito de tela sairia
+dobrado. O teste cobra exatamente isso (`1 e 1`, não `2 e 2`).
+
+---
+
+## O combo: horizontal, depois vertical
+
+| clique | golpe | pose | dano | startup | ativo | recuperação |
+|---|---|---|---|---|---|---|
+| 1º | Corte Horizontal | `slash_type` 0 | 64 | 0,20 s | 0,09 s | 0,20 s |
+| 2º | Corte Vertical | `slash_type` 2 | 96 | 0,25 s | 0,11 s | 0,32 s |
+
+Eram **três** passos (corte D-E, corte E-D, corte vertical), e essa era a última
+tabela do projeto ainda escrita no modelo antigo (`atraso`/`vida` em vez de
+startup/ativo/recuperação). O comentário registrava o porquê: *"a espada não
+está no mapa, o plano não a cobre, e escrever frame data para ela seria inventar
+números"*. Isso deixou de valer — a espada voltou, com dois golpes definidos
+pelo dono —, então **a espada entra no mesmo modelo de frame data do punho**.
+
+Os tempos vêm da **animação**, não do gosto: `WeaponPoses._get_slash_frame` já
+divide o corte em puxar para trás (0,00-0,20) → jogar para a frente (0,20-0,26)
+→ voltar ao repouso (0,26-1,00). O `ativo` é curto porque a janela em que a
+lâmina cruza o alvo é curta na animação que já existe.
+
+### ⚠️ Golpe procedural não tem clipe — e isso quebrou a duração
+
+Bug relatado em 2026-09-06 ("o combo de punho continua em ação com a espada
+equipada"). Os cortes são procedurais e nascem com `"anim": ""`;
+`Melee.duracao_tocada` começava por `clipe()`, que devolve `null`, e retornava
+**0,0** antes de olhar o frame data. O Player faz
+`speed = 1.0 / maxf(duracao, 0.1)` — ou seja **10×**:
+
+| | duração | velocidade |
+|---|---|---|
+| antes | 0,000 s | **10,0×** (o corte inteiro em 0,1 s) |
+| depois | 0,490 s | 2,0× |
+
+Em tela o corte passava em dois quadros: o jogador clicava, nenhuma espada
+aparecia, e o que sobrava era a pose de repouso — indistinguível de "o punho
+continua no lugar da espada". Agora, sem clipe mas com frame data, a duração é
+`startup + ativo + recuperação`.
+
+`Balance.MELEE.espada` acompanhou: de `[64, 72, 96]` para `[64, 96]`. O par vale
+160, ainda abaixo do combo de punho completo (278) — coerente com ter dois
+golpes em vez de quatro.
+
+**O `projetil: true` do corte vertical antigo não foi trazido.** A meia-lua dava
+alcance ao terceiro passo de um combo de três; num par de dois ela transforma o
+fechamento num golpe à distância, que é outro assunto. Fica como decisão do
+dono, não como herança silenciosa.
+
+---
+
+## O que ficou em aberto
+
+- A espada continua **fora do spawn do mapa**: só a tecla Y a coloca na mão.
+- As poses de corte são as que já existiam (`WeaponPoses`), afinadas para uma
+  espada de 1,2 m; com a Yoru em 1,38 m e mais pesada, o arco pode pedir ajuste.
+- **Sem guarda/parry de espada**: o choque só acontece entre dois golpes ativos.
+  Bloquear com a lâmina parada é mecânica que não existe.
+- O `SwordPickup` (a espada de cubos) continua no projeto e ainda funciona pelo
+  `equip_item`; ele não foi apagado para não quebrar quem o referencia.
+
+Guarda de regressão: `tools/dev_tests/test_espada_yoru.gd` (18 checagens).

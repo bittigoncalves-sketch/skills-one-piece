@@ -279,25 +279,65 @@ const COMBO := [
 	},
 ]
 
+# ============================================================================
+#  COMBO DA ESPADA — HORIZONTAL, DEPOIS VERTICAL (2026-09-06)
+# ============================================================================
+#  Pedido do dono: *"vamos começar com um corte horizontal e em seguida um
+#  vertical, especificamente um seguido do outro quando clicados"*.
+#
+#  A tabela anterior tinha TRÊS passos (corte D-E, corte E-D, corte vertical) e
+#  era a última do projeto ainda escrita no modelo antigo — `atraso`/`vida` em
+#  vez de startup/ativo/recuperação. O comentário do cabeçalho registrava o
+#  porquê: "a espada não está no mapa, o plano não a cobre, e escrever frame
+#  data para ela seria inventar números".
+#
+#  Isso deixou de valer: a espada volta ao jogo agora, com dois golpes definidos
+#  pelo dono, então os números passam a ser escolha declarada em vez de invenção
+#  sem dono. **A espada entra no mesmo modelo de frame data do combo de punho.**
+#
+#  ------------------------------------------------------- de onde vêm os tempos
+#  Da ANIMAÇÃO, não do gosto. `WeaponPoses._get_slash_frame` já divide o corte
+#  em três trechos, e são eles que mandam:
+#
+#      0,00 .. 0,20   puxa para trás      -> STARTUP
+#      0,20 .. 0,26   joga para a frente  -> ATIVO   (o fio passa aqui)
+#      0,26 .. 1,00   volta ao repouso    -> RECUPERAÇÃO
+#
+#  Com `vel` de 1,4 o ciclo inteiro dura 0,71 s. Os campos abaixo são esse
+#  desenho convertido para segundos — é por isso que o `ativo` é curto: a janela
+#  em que a lâmina realmente cruza o alvo é curta na animação que já existe.
+#
+#  ⚠️ O `alcance`/`raio` continuam na tabela mas NÃO valem mais para o dano da
+#  espada: quem machuca agora são as bolinhas da `SwordBlade`, presas ao fio.
+#  Eles seguem aqui porque o `_impacto` (fagulhas, tremor) e o auto-lunge ainda
+#  os leem para saber onde desenhar e quanto avançar.
 const COMBO_SWORD := [
 	{
-		"nome": "Corte Direita-Esquerda", "anim": "boxing_1", "espelhar": false,
-		"vel": 1.5, "inicio": 0.00,
-		"dano": 64.0, "kb": 15.0, "alcance": 2.5, "raio": 2.0,
-		"atraso": 0.35, "vida": 0.20, "shake": 0.35,
+		# 1º CLIQUE — HORIZONTAL. `slash_type` 0 é o corte direita→esquerda do
+		# `WeaponPoses`, que é o gesto que abre naturalmente para o vertical
+		# vir por cima em seguida.
+		"nome": "Corte Horizontal", "anim": "", "espelhar": false,
+		"slash_type": 0,
+		"vel": 1.4, "pico": 0.20,
+		"startup": 0.20, "ativo": 0.09, "recuperacao": 0.20,
+		"hitstun": 0.75,
+		"dano": 64.0, "kb": 15.0, "alcance": 2.5, "raio": 2.0, "shake": 0.35,
+		"melee_guarda": "R",
 	},
 	{
-		"nome": "Corte Esquerda-Direita", "anim": "boxing_1", "espelhar": true,
-		"vel": 1.4, "inicio": 0.00,
-		"dano": 72.0, "kb": 18.0, "alcance": 2.5, "raio": 2.0,
-		"atraso": 0.35, "vida": 0.20, "shake": 0.40,
-	},
-	{
-		"nome": "Corte Vertical", "anim": "boxing_2", "espelhar": false,
-		"vel": 1.2, "inicio": 0.10,
-		"dano": 96.0, "kb": 25.0, "alcance": 3.0, "raio": 2.5,
-		"atraso": 0.30, "vida": 0.25, "shake": 0.50,
-		"projetil": true
+		# 2º CLIQUE — VERTICAL, de cima para baixo (`slash_type` 2). Startup e
+		# recuperação maiores: é o fechamento do par, o golpe que se vê chegar.
+		#
+		# ⚠️ O `projetil: true` do antigo corte vertical NÃO foi trazido. A
+		# meia-lua era o que dava alcance ao terceiro passo de um combo de três;
+		# num par de dois ela transforma o fechamento num golpe à distância, que
+		# é outro assunto. Fica como decisão do dono, não como herança silenciosa.
+		"nome": "Corte Vertical", "anim": "", "espelhar": false,
+		"slash_type": 2,
+		"vel": 1.2, "pico": 0.25,
+		"startup": 0.25, "ativo": 0.11, "recuperacao": 0.32,
+		"hitstun": 0.80,
+		"dano": 96.0, "kb": 25.0, "alcance": 3.0, "raio": 2.5, "shake": 0.50,
 	},
 ]
 
@@ -325,6 +365,16 @@ static func passo(i: int, weapon: String = "") -> Dictionary:
 # Tem frame data novo? É o que decide qual dos dois caminhos vale.
 static func tem_frame_data(i: int, weapon: String = "") -> bool:
 	return passo(i, weapon).has("startup")
+
+## Qual pose de corte o passo usa (`WeaponPoses.two_handed_sword_slash`):
+## 0 = horizontal direita→esquerda, 1 = horizontal esquerda→direita,
+## 2 = vertical de cima para baixo.
+##
+## Existe para o tipo do corte não ser o ÍNDICE do passo. Eram a mesma coisa por
+## acidente enquanto o combo tinha três golpes na mesma ordem dos três tipos;
+## bastou o combo virar um par para o segundo clique pedir o corte errado.
+static func slash_type(i: int, weapon: String = "") -> int:
+	return int(passo(i, weapon).get("slash_type", i))
 
 # ------------------------------------------------------------- as três fases
 static func startup(i: int, weapon: String = "") -> float:
@@ -444,6 +494,25 @@ static func fim_da_janela(i: int, weapon: String = "") -> float:
 # Com frame data isto é a JANELA (= a trava); sem ele é o clipe inteiro, e aí
 # é ele quem define a trava (ver `recuo`).
 static func duracao_tocada(i: int, weapon: String = "") -> float:
+	# ⚠️ GOLPE SEM CLIPE NÃO TEM DURAÇÃO ZERO — TEM A DURAÇÃO DO FRAME DATA.
+	#
+	# Os cortes de espada são PROCEDURAIS (`WeaponPoses.two_handed_sword_slash`)
+	# e não têm `.tres` nenhum, então `clipe()` devolve `null` para eles. Com o
+	# `return 0.0` que morava aqui, o Player fazia
+	#
+	#     speed = 1.0 / maxf(duracao, 0.1)      -> 1.0 / 0.1 = 10x
+	#
+	# e o corte inteiro passava em 0,1 s. Em tela isso é um tranco de dois
+	# quadros: o jogador clicava, nada de espada aparecia, e o que sobrava era a
+	# pose de repouso — indistinguível de "o sistema de punho ainda está no
+	# lugar da espada", que foi exatamente como o defeito foi relatado.
+	#
+	# Quando há frame data, ele é a fonte: startup + ativo + recuperação É a
+	# duração do golpe, com ou sem clipe assado por trás.
+	var g_sem_clipe := passo(i, weapon)
+	if not g_sem_clipe.has("anim") or String(g_sem_clipe.get("anim", "")).is_empty():
+		if tem_frame_data(i, weapon):
+			return startup(i, weapon) + ativo(i, weapon) + recuperacao(i, weapon)
 	var a := clipe(i, weapon)
 	if a == null:
 		return 0.0
@@ -464,6 +533,11 @@ static func impacto_no_clipe(i: int, weapon: String = "") -> float:
 # percorre todas as faixas, não vale refazer a cada soco).
 static func clipe(i: int, weapon: String = "") -> Animation:
 	var g := passo(i, weapon)
+	# Golpe PROCEDURAL não tem clipe, e isso é legítimo — não é ausência de
+	# arquivo. Os cortes de espada são gerados por `WeaponPoses`; avisar
+	# "clipe ausente" a cada golpe encheria o log de ruído por um caso normal.
+	if String(g.get("anim", "")).is_empty():
+		return null
 	var chave: String = "%s|%s" % [g["anim"], g["espelhar"]]
 	if _cache.has(chave):
 		return _cache[chave]
@@ -514,6 +588,14 @@ static func espelhar(orig: Animation) -> Animation:
 # --------------------------------------------------------------------- golpe
 # Cria a hitbox do passo `i` à frente de `caster`. RODA NO SERVIDOR (é ele que
 # instancia a DamageZone; ver Player._do_server_melee).
+# O corte da espada confirma o acerto por aqui. `hit_confirmed` é lido pela
+# punição de whiff (errar alonga a recuperação) e pelo counter hit; sem esta
+# ponte o corte por lâmina contaria como errado mesmo acertando.
+static func _marcar_acerto(_alvo: Node, caster: Node) -> void:
+	if is_instance_valid(caster) and "hit_confirmed" in caster:
+		caster.hit_confirmed = true
+
+
 static func golpear(world: Node, caster: Node3D, i: int, origem: Vector3, dir: Vector3) -> void:
 	var weapon = caster.equipped_weapon if caster and "equipped_weapon" in caster else ""
 	var g := passo(i, weapon)
@@ -531,6 +613,50 @@ static func golpear(world: Node, caster: Node3D, i: int, origem: Vector3, dir: V
 	timer.timeout.connect(func():
 		if not is_instance_valid(caster) or not is_instance_valid(world):
 			return
+
+		# ================================================================
+		#  ESPADA: quem machuca são as BOLINHAS DO FIO, não uma caixa no ar
+		# ================================================================
+		#  Mudança pedida pelo dono em 2026-09-06. Até aqui o corte criava uma
+		#  `BoxShape3D` de `raio*2` por `alcance*1.5` — com os números da tabela,
+		#  4 m de largura por 3,75 m de fundo — parada na frente do peito
+		#  durante os quadros ativos. Ela não tinha relação com onde a lâmina
+		#  estava: era um volume que aparecia na direção do clique.
+		#
+		#  Agora a `SwordBlade` é armada pelos mesmos `ativo` segundos, e as
+		#  zonas percorrem o arco de verdade porque estão presas à espada, que
+		#  está presa à mão, que a animação gira. Acerta o que o fio encostou.
+		#
+		#  ⚠️ E é aqui que o CHOQUE DE ESPADAS passa a ser possível: duas caixas
+		#  no ar não têm como se encontrar de forma que signifique alguma coisa;
+		#  dois fios têm. O clash mora na `SwordBlade`, não neste arquivo.
+		if weapon == "sword" and caster.has_method("lamina_da_espada"):
+			var fio = caster.call("lamina_da_espada")
+			if fio != null and is_instance_valid(fio):
+				# `cast_id` 0 e `teto` 0 = golpe avulso, sem orçamento — o mesmo
+				# que a `DamageZone` do corpo a corpo sempre usou. Teto é coisa
+				# de conjuração de fruta, onde dezenas de hitboxes irmãs somam;
+				# aqui o "um acerto por corpo por golpe" é garantido pelo
+				# `_ja_acertou` da própria lâmina.
+				fio.armar(float(g["dano"]) * s, float(g["kb"]) * s,
+					hitstun(i, weapon), 0, 0.0)
+				# `hit_confirmed` alimenta a punição de whiff e o counter hit —
+				# o caminho da caixa o marcava por `hit_landed`, e o do fio
+				# marca pelo `acertou`. Mesma informação, outra fonte.
+				if not fio.acertou.is_connected(_marcar_acerto):
+					fio.acertou.connect(_marcar_acerto.bind(caster), CONNECT_ONE_SHOT)
+				var fim := world.get_tree().create_timer(ativo(i, weapon) * s)
+				fim.timeout.connect(func():
+					if is_instance_valid(fio):
+						fio.desarmar())
+				# O `_impacto` continua: é o tempero visual do golpe (fagulhas,
+				# tremor), independente de onde a hitbox mora.
+				var alto_fio: float = origem.y - caster.global_position.y
+				_impacto(world,
+					caster.global_position + Vector3.UP * alto_fio + fwd * (float(g["alcance"]) * s),
+					i, cor_do_impacto(caster), s, fwd)
+				return
+
 		var zone := DamageZone.new()
 		world.add_child(zone)
 		
