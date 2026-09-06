@@ -11,6 +11,9 @@ const SLOTS := ["Z", "X", "C", "V"]
 const PlayerScript := preload("res://Player.gd")
 
 var _skill_labels: Dictionary = {}
+var _ope_icons: Dictionary = {}
+var _ope_equipped := false
+const OPE_ICONS := {"Z": "room", "X": "shambles", "C": "takt", "V": "gamma"}
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -89,6 +92,15 @@ func _make_row(tecla: String) -> HBoxContainer:
 	ks.content_margin_bottom = 2.0
 	key_lbl.add_theme_stylebox_override("normal", ks)
 	row.add_child(key_lbl)
+	var icon := TextureRect.new()
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.custom_minimum_size = Vector2(26, 26)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.texture = load("res://assets/ui/ope_ope/%s.svg" % OPE_ICONS[tecla])
+	icon.visible = false
+	_ope_icons[tecla] = icon
+	row.add_child(icon)
 
 	var name_lbl := Label.new()
 	name_lbl.text = "—"
@@ -120,10 +132,19 @@ func _process(_delta: float) -> void:
 				if lbl.text != base:
 					lbl.text = base
 				lbl.modulate = Color(1.0, 1.0, 1.0, 1.0) # Disponível
+				if _ope_equipped and slot != "Z":
+					var room := player.get_meta("ope_room", null) as Node
+					var ready := is_instance_valid(room) and not room.is_queued_for_deletion()
+					if ready:
+						var center: Vector3 = room.get("center")
+						ready = player.global_position.distance_to(center) <= float(room.get("radius"))
+					if not ready:
+						lbl.modulate = Color(0.52, 0.65, 0.69, 0.85)
 
 func update_skills_for_fruit(fruit_id: String) -> void:
+	_set_ope_icons(fruit_id == "ope_ope")
 	if _title_lbl:
-		_title_lbl.text = "FRUTA: %s [R: Alternar]" % fruit_id.to_upper().replace("_", " ")
+		_title_lbl.text = "FRUTA: %s [1]" % fruit_id.to_upper().replace("_", " ")
 	var fruit_skills := SkillSystem.get_fruit_skills()
 	if fruit_skills.has(fruit_id):
 		var fskills: Dictionary = fruit_skills[fruit_id]
@@ -134,13 +155,35 @@ func update_skills_for_fruit(fruit_id: String) -> void:
 				_skill_labels[slot].text = nm
 
 func update_skills_for_style(style_id: String) -> void:
+	_set_ope_icons(false)
 	if FightingStyles.STYLES.has(style_id):
 		var sdata: Dictionary = FightingStyles.STYLES[style_id]
 		if _title_lbl:
-			_title_lbl.text = "ESTILO: %s [R: Alternar]" % sdata.get("nome", style_id).to_upper()
+			_title_lbl.text = "ESTILO: %s [2]" % sdata.get("nome", style_id).to_upper()
 		var skills: Dictionary = sdata.get("skills", {})
 		for slot in SLOTS:
 			if skills.has(slot) and _skill_labels.has(slot):
 				var nm: String = skills[slot].get("nome", "—")
 				_skill_labels[slot].set_meta("base_name", nm)
 				_skill_labels[slot].text = nm
+
+## Modo espada: os quatro slots ficam mudos (ver `Player.pode_conjurar`), então
+## a barra diz o que o clique faz em vez de mentir listando skills que não saem.
+func update_skills_for_sword() -> void:
+	_set_ope_icons(false)
+	if _title_lbl:
+		_title_lbl.text = "ESPADA: YORU [3]"
+	var passos := ["Corte Horizontal", "Corte Vertical"]
+	for i in SLOTS.size():
+		var slot: String = SLOTS[i]
+		if not _skill_labels.has(slot):
+			continue
+		var texto: String = ("Bt. Esq. — %s" % passos[i]) if i < passos.size() else "—"
+		_skill_labels[slot].set_meta("base_name", texto)
+		_skill_labels[slot].text = texto
+
+
+func _set_ope_icons(enabled: bool) -> void:
+	_ope_equipped = enabled
+	for icon in _ope_icons.values():
+		(icon as TextureRect).visible = enabled

@@ -137,7 +137,7 @@ func _build() -> void:
 	hb.add_child(col_style)
 
 	var titulo_s := Label.new()
-	titulo_s.text = "ESTILOS DE LUTA (Tecla R)"
+	titulo_s.text = "ESTILOS DE LUTA (Tecla 2)"
 	titulo_s.add_theme_font_size_override("font_size", 16)
 	titulo_s.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
 	col_style.add_child(titulo_s)
@@ -168,7 +168,7 @@ func _build() -> void:
 	main_vb.add_child(sep_bottom)
 
 	var dica := Label.new()
-	dica.text = "M para fechar  •  R alterna no jogo entre Akuma no Mi e o Estilo Selecionado"
+	dica.text = "M para fechar  •  no jogo: 1 = Akuma no Mi   2 = Estilo   3 = Espada"
 	dica.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	dica.add_theme_font_size_override("font_size", 12)
 	dica.add_theme_color_override("font_color", Color(0.7, 0.72, 0.76))

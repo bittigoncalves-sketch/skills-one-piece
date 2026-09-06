@@ -91,11 +91,26 @@ const MOUSE_SENS := 0.0035
 # disputar o fruto e perdê-lo ao morrer (ver `docs/frutas/README.md`). Se este
 # atalho chegar ao jogador final, essa economia deixa de existir.
 # GATILHO para apagar: quando houver escolha de fruta/personagem no menu.
-const FRUTA_INICIAL := "suke_suke"
+const FRUTA_INICIAL := "pika_pika"   # era "suke_suke" — trocado a pedido do dono (2026-09-04)
 
 var current_fruit_id: String = FRUTA_INICIAL
 var active_style: String = "basic"
-var combat_mode: String = "fruit" # "fruit" ou "style"
+# ⚠️ TRÊS MODOS desde 2026-09-06, escolhidos por TECLA (1, 2, 3). Era um par
+# ("fruit"/"style") alternado no R, e o dono pediu seleção direta:
+#
+#     1 -> fruit   Akuma no Mi (Z/X/C/V da fruta)
+#     2 -> style   estilo de luta (Z/X/C/V do estilo)
+#     3 -> sword   a Yoru na mão; quem golpeia é o clique, não os slots
+#
+# Quem escolhe QUAL fruta / QUAL estilo continua sendo o menu do M.
+#
+# ⚠️ NO MODO `sword` OS SLOTS FICAM MUDOS, de propósito. Todo consumidor de
+# `combat_mode` neste arquivo é um `if == "style" ... else` — com um terceiro
+# valor eles cairiam no ramo da fruta e o jogador conjuraria a Akuma no Mi de
+# espada na mão. Em vez de espalhar `elif == "sword"` por seis lugares, o cast
+# inteiro é barrado na porta de entrada (`pode_conjurar`), que é uma verdade só
+# e não precisa ser lembrada em cada ponto novo.
+var combat_mode: String = "fruit" # "fruit", "style" ou "sword"
 var speed_multiplier: float = 1.0
 var jump_multiplier: float = 1.0
 
@@ -323,6 +338,23 @@ var _fruit_cooldowns: Dictionary = {"Z": 0.0, "X": 0.0, "C": 0.0, "V": 0.0}
 var _style_cooldowns: Dictionary = {"Z": 0.0, "X": 0.0, "C": 0.0, "V": 0.0}
 var _skill_cooldowns: Dictionary:
 	get: return _fruit_cooldowns if combat_mode == "fruit" else _style_cooldowns
+## ============================================================================
+##  TRAVA PÓS-FRUTA (pedido do dono, 2026-09-01)
+##
+##  "adicionar, após o uso de qualquer ataque de fruta, um contador quadrado de
+##   5 segundos como o contador da estrelinha/Aú na tela; durante esse tempo o
+##   usuário não conseguirá usar os poderes de fruta, e o tempo de recarga das
+##   frutas é PAUSADO até os 5 segundos se passarem."
+##
+##  ⚠️ ELA PAUSA AS RECARGAS, NÃO CORRE JUNTO COM ELAS. É a diferença que dá
+##  sentido à mecânica: se as duas contassem ao mesmo tempo, a trava seria
+##  invisível em toda skill de recarga maior que 5 s — que é quase todas. Somando
+##  em série, cada golpe custa 5 s a mais, e o ritmo do combate de fruta muda de
+##  verdade.
+## ============================================================================
+const TRAVA_POS_FRUTA := 5.0
+var _trava_pos_fruta: float = 0.0
+
 var _combo_breaker_cooldown: float = 0.0
 var aim_assist: bool = false   # Haki da Observação (liga/desliga no E)
 var _gura_rush_active := false
@@ -461,6 +493,8 @@ func trigger_skill_cooldown(slot: String) -> void:
 			_fruit_cooldowns[slot] = 10.0
 		else:
 			_fruit_cooldowns[slot] = RECARGA_POR_SLOT[slot]
+		# Qualquer ataque de fruta arma a trava — inclusive os de recarga curta.
+		_trava_pos_fruta = TRAVA_POS_FRUTA
 var _mesh: MeshInstance3D
 var _crosshair: Control
 
@@ -695,8 +729,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			set_character(ELENCO_LIBERADO[(idx + 1) % ELENCO_LIBERADO.size()])
 		else:
 			print("[Personagem] elenco trancado em: ", ELENCO_LIBERADO[0])
-	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R:
-		toggle_combat_mode()
+	elif event is InputEventKey and event.pressed and not event.echo \
+			and event.keycode in [KEY_1, KEY_2, KEY_3]:
+		# 1/2/3 escolhem o modo de combate (2026-09-06, pedido do dono). Antes
+		# era o R alternando entre dois; a espada virou o terceiro e alternar
+		# deixou de servir. Escolher QUAL fruta/estilo continua no menu do M.
+		set_combat_mode({KEY_1: "fruit", KEY_2: "style", KEY_3: "sword"}[event.keycode])
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_T:
 		_cycle_fruit()   # DEBUG: cicla entre as frutas pra testar as skills
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E:
@@ -732,29 +770,59 @@ func _unhandled_input(event: InputEvent) -> void:
 		if not _yami_pistol_active and _buki_weapon == "":
 			_request_melee()
 
-func toggle_combat_mode() -> void:
-	_buki_guardar()          # sai do modo fruta com arma na mão -> a arma cai
+## Seleção DIRETA de modo, pelas teclas 1/2/3.
+##
+## Substituiu o `toggle_combat_mode` do R, que foi REMOVIDO junto (não sobrou
+## chamador: conferido em .gd e .tscn). Alternar só sabia ir e voltar entre dois
+## — com três modos exigiria saber em qual você está para prever onde vai parar,
+## e o dono pediu seleção direta justamente por isso.
+func set_combat_mode(modo: String) -> void:
+	if modo == combat_mode:
+		return
+	if not modo in ["fruit", "style", "sword"]:
+		return
+	# Sair do modo fruta com arma da Buki na mão faz a arma cair, como sempre.
+	_buki_guardar()
 	_buki_mostrar_arma("")
-	if combat_mode == "fruit":
-		combat_mode = "style"
-	else:
-		combat_mode = "fruit"
+
+	# A espada é a única que tem presença física: entrar no modo 3 a saca, sair
+	# a guarda. `_yoru` é a fonte da verdade, então basta pedir o estado certo.
+	var quer_espada := modo == "sword"
+	if quer_espada != (_yoru != null and is_instance_valid(_yoru)):
+		sacar_ou_guardar_espada()
+
+	combat_mode = modo
 	var active_style: String = STYLES_LIST[current_style_idx]
-	print("⚔️ Alternou Modo de Combate (R): ", combat_mode.to_upper(), " - Estilo: ", active_style)
+	print("⚔️ Modo de combate: %s%s" % [combat_mode.to_upper(),
+		(" - Estilo: " + active_style) if combat_mode == "style" else ""])
 	var hud := get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("update_combat_mode"):
 		hud.update_combat_mode(combat_mode, active_style, current_fruit_id)
+
+
+## Portão único do cast. No modo espada as quatro teclas de skill ficam mudas —
+## quem está de espada na mão corta, não conjura.
+func pode_conjurar() -> bool:
+	return combat_mode != "sword"
+
 
 func set_fighting_style(style_id: String) -> void:
 	var idx := STYLES_LIST.find(style_id)
 	if idx >= 0:
 		current_style_idx = idx
-		combat_mode = "style"
 		var active_style: String = STYLES_LIST[current_style_idx]
 		print("🥋 Novo Estilo de Luta Selecionado (Menu M): ", active_style)
-		var hud := get_tree().get_first_node_in_group("hud")
-		if hud and hud.has_method("update_combat_mode"):
-			hud.update_combat_mode(combat_mode, active_style, current_fruit_id)
+		# ⚠️ PASSA PELO CAMINHO ÚNICO. Isto atribuía `combat_mode = "style"` na
+		# mão, o que era inofensivo enquanto só existiam dois modos — agora
+		# deixaria a Yoru NA MÃO com a barra de estilo na tela, porque quem
+		# guarda a espada é o `set_combat_mode`. Escolher um estilo no menu do M
+		# passa a valer como apertar o 2.
+		if combat_mode != "style":
+			set_combat_mode("style")
+		else:
+			var hud := get_tree().get_first_node_in_group("hud")
+			if hud and hud.has_method("update_combat_mode"):
+				hud.update_combat_mode(combat_mode, active_style, current_fruit_id)
 
 # Toca um clipe de ESTILO retargetado (Mixamo -> rig por-nós) pelo ProceduralAnimator.
 # O clipe fica em res://assets/animations/<nome>.res (bakeado do FBX do Mixamo).
@@ -845,11 +913,17 @@ func mira_do_cast() -> Dictionary:
 
 # Host/SP JÁ é o servidor -> executa a autoridade DIRETO (`rpc_id` a si mesmo é
 # proibido pelo Godot). Cliente puro -> pede ao servidor (peer 1).
-func pedir_cast_no_servidor(slot: String, aim: Vector3, origem: Vector3, charge: float = 0.0) -> void:
+func pedir_cast_no_servidor(slot: String, aim: Vector3, origem: Vector3,
+		charge: float = 0.0, cast_token: int = 0) -> void:
+	# A fonte viaja como snapshot junto do golpe. Confiar no `combat_mode` da
+	# copia receptora criava uma corrida real: o RPC podia chegar antes da
+	# replicacao da troca para Pacifista e o servidor executava a fruta anterior.
+	var source_kind := combat_mode
+	var source_id := estilo_atual() if source_kind == "style" else current_fruit_id
 	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
-		_do_server_cast(slot, aim, origem, charge)
+		_do_server_cast(slot, aim, origem, charge, cast_token, source_kind, source_id)
 	else:
-		_net_cast.rpc_id(1, slot, aim, origem, charge)
+		_net_cast.rpc_id(1, slot, aim, origem, charge, cast_token, source_kind, source_id)
 
 func pedir_iniciar_hold(slot: String, fruit: String) -> void:
 	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
@@ -870,17 +944,81 @@ func _net_start_hold(slot: String, fruit: String) -> void:
 	elif fruit == "bara_bara":
 		if slot == "C":
 			set_meta("bara_cleave_active", true)
+	elif fruit == "pika_pika" and slot == "C":
+		set_meta("pika_c_active", true)
 
-func pedir_cancelar_hold(slot: String, fruit: String) -> void:
-	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
-		_net_cancel_hold(slot, fruit)
+func pedir_cancelar_hold(slot: String, fruit: String, cast_token: int = 0,
+		forcado: bool = false) -> void:
+	if not multiplayer.has_multiplayer_peer():
+		_net_cancel_hold(slot, fruit, cast_token, forcado)
+	elif multiplayer.is_server():
+		_retransmitir_cancel_hold(slot, fruit, cast_token, forcado)
 	else:
-		_net_cancel_hold.rpc(slot, fruit)
+		# O cliente fala APENAS com o servidor. Ele valida o remetente e vira a
+		# fonte unica que ordena START e CANCEL para todos os observadores.
+		_net_request_cancel_hold.rpc_id(1, slot, fruit, cast_token, forcado)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _net_request_cancel_hold(slot: String, fruit: String, cast_token: int,
+		forcado: bool) -> void:
+	if not multiplayer.is_server():
+		return
+	var cid := multiplayer.get_remote_sender_id()
+	if cid != get_multiplayer_authority():
+		return
+	_retransmitir_cancel_hold(slot, fruit, cast_token, forcado)
+
+
+func _retransmitir_cancel_hold(slot: String, fruit: String, cast_token: int,
+		forcado: bool) -> void:
+	if multiplayer.has_multiplayer_peer():
+		_net_apply_cancel_hold.rpc(slot, fruit, cast_token, forcado)
+	else:
+		_net_cancel_hold(slot, fruit, cast_token, forcado)
+
 
 @rpc("any_peer", "call_local", "reliable")
-func _net_cancel_hold(slot: String, fruit: String) -> void:
-	var cid = multiplayer.get_remote_sender_id()
-	if cid != 0 and cid != get_multiplayer_authority() and multiplayer.is_server():
+func _net_apply_cancel_hold(slot: String, fruit: String, cast_token: int,
+		forcado: bool) -> void:
+	if multiplayer.has_multiplayer_peer():
+		var cid := multiplayer.get_remote_sender_id()
+		if cid != 0 and cid != 1:
+			return
+	_net_cancel_hold(slot, fruit, cast_token, forcado)
+
+
+## Aplicacao local separada do transporte para ser testavel sem dois processos.
+## O token impede um key-up antigo de apagar uma nova sustentacao do mesmo slot.
+func _net_cancel_hold(slot: String, fruit: String, cast_token: int = 0,
+		forcado: bool = false) -> void:
+	# O campo se chama `fruit` por idade, mas o que ele carrega é a ORIGEM do
+	# hold: o Pacifista é um estilo e usa este mesmo canal para apagar o feixe.
+	if fruit == "pacifista":
+		var token_atual := int(get_meta("px_token_%s" % slot, 0))
+		if cast_token > 0 and token_atual > 0 and cast_token < token_atual:
+			return
+		if cast_token > 0:
+			set_meta("px_cancel_token_%s" % slot,
+				maxi(cast_token, int(get_meta("px_cancel_token_%s" % slot, 0))))
+		match slot:
+			"Z": set_meta("px_laser_ativo", false)
+			"X": set_meta("px_iron_rush_ativo", false)
+			"C": set_meta("px_lance_ativo", false)
+			"V": set_meta("px_tri_beam_ativo", false)
+		if forcado:
+			var cancel_meta: String = str({
+				"Z": "px_laser_cancelado",
+				"X": "px_iron_rush_cancelado",
+				"C": "px_lance_cancelado",
+				"V": "px_tri_beam_cancelado",
+			}.get(slot, ""))
+			if cancel_meta != "":
+				set_meta(cancel_meta, true)
+		# Z nao tem combo minimo: release encerra imediatamente. Cancelamento
+		# forcado (dano/morte) tambem limpa qualquer slot sem esperar o VFX.
+		if slot == "Z" or forcado:
+			finalizar_skill_pacifista(slot, cast_token)
 		return
 	if fruit == "yami_yami":
 		if slot == "C":
@@ -890,6 +1028,10 @@ func _net_cancel_hold(slot: String, fruit: String) -> void:
 	elif fruit == "bara_bara":
 		if slot == "C":
 			set_meta("bara_cleave_active", false)
+	elif fruit == "pika_pika" and slot == "C":
+		var atual := int(get_meta("pika_c_token", 0))
+		if cast_token <= 0 or atual <= 0 or cast_token >= atual:
+			set_meta("pika_c_active", false)
 
 # Carregar um golpe PRENDE o corpo no lugar. `velocity` é do domínio de
 # movimento — por isso é pedido, não escrita.
@@ -1072,6 +1214,16 @@ func _physics_process(delta: float) -> void:
 	if not _is_authority:
 		_remote_process(delta)   # player de outro cliente: só reproduz o estado replicado
 		return
+	# ELIMINADO PELA ENCHENTE: só a gravidade e a rede continuam. A rede continua
+	# de propósito — sem publicar, o corpo congelaria na tela dos outros no lugar
+	# onde estava quando afundou.
+	if _eliminado:
+		velocity.x = 0.0
+		velocity.z = 0.0
+		velocity.y -= GRAVITY * delta
+		move_and_slide()
+		_etapa_publicar_rede()
+		return
 	_etapa_estado_de_combate(delta)
 	# ⚠️ ANTES DO PORTÃO DE TRAVAMENTO, e isto NÃO é detalhe de ordem.
 	# O tranco de dano estava depois, e a paralisia (que ESTE contador desliga)
@@ -1112,8 +1264,15 @@ func _etapa_estado_de_combate(delta: float) -> void:
 	# correr — só a do próprio golpe em uso continua. Sem isso dava para segurar
 	# um golpe longo (Black Hole, 7 s de trava) e sair dele com a barra inteira
 	# recarregada de graça: o tempo de um golpe pagava o tempo de todos.
+	if _trava_pos_fruta > 0.0:
+		_trava_pos_fruta = maxf(_trava_pos_fruta - delta, 0.0)
+
 	var em_uso := _slot_em_uso()
+	# ⚠️ AS RECARGAS DE FRUTA PARAM enquanto a trava corre — ver a nota dela.
+	# O `style` continua andando: a trava é dos poderes de fruta.
 	for slot_k in _fruit_cooldowns.keys():
+		if _trava_pos_fruta > 0.0:
+			break
 		if _fruit_cooldowns[slot_k] <= 0.0:
 			continue
 		if em_uso != "" and slot_k != em_uso and combat_mode == "fruit":
@@ -1768,6 +1927,13 @@ var cor_idx: int = -1
 ## O colisor e o tamanho de referência dele. Guardados porque o Gigante os
 ## redimensiona — ver `_aplicar_escala_de_raca`.
 const COLISOR_BASE := Vector3(1.0, 1.6, 1.0)
+
+# ---------------------------------------------------------------- ENCHENTE
+# Eliminado pela água no fim da rodada: o corpo continua na arena (afundando),
+# mas não responde a mais nada até o pódio. Não é o mesmo que "morrer": morrer
+# respawna, e a enchente PRECISA que os mortos fiquem mortos, senão ela nunca
+# termina — a condição de fim é justamente não sobrar ninguém de pé.
+var _eliminado := false
 var _colisor: CollisionShape3D = null
 var _escala_base_do_modelo: Vector3 = Vector3.ONE
 
@@ -2037,7 +2203,13 @@ func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knock
 	# `interrupt_casting`, que cancelaria. Decisão do dono — ver
 	# docs/PEDIDO_2026-08-12.md.
 	_cast.liberar_por_dano()
-	SkillSystem.interrupt_casting(self)
+	var interrompeu_cast := SkillSystem.interrupt_casting(self)
+	# Z nao usa `_charging` porque permite movimento. Sem esta chamada sincrona,
+	# ele nunca passaria pelo portao que aborta cargas e continuaria causando dano
+	# depois de o usuario entrar em hitstun. X/V tambem precisam avisar o servidor
+	# antes que um key-up atrasado tente concluir a acao interrompida.
+	if interrompeu_cast and _cast.acao_pacifista_ativa():
+		_cast.abortar()
 
 	if _animator:
 		_animator.trigger_damage()
@@ -2222,6 +2394,40 @@ func die_and_respawn() -> void:
 	else:
 		net_force_respawn()
 
+## Topo da cabeça em coordenada de mundo. Sai do COLISOR, não do modelo: é o
+## colisor que a raça escala (`forma.size = COLISOR_BASE * e`), então um gigante
+## precisa de mais água para ficar coberto do que um humano — que é o que a
+## palavra "completamente coberto" quer dizer.
+func topo_da_cabeca() -> float:
+	var alt: float = COLISOR_BASE.y
+	if is_instance_valid(_colisor) and _colisor.shape is BoxShape3D:
+		alt = (_colisor.shape as BoxShape3D).size.y
+	return global_position.y + alt * 0.5
+
+
+## AFOGADO. Chamado pelo SERVIDOR no dono do corpo (mesmo motivo do respawn: o
+## estado de quem não é autoridade seria sobrescrito no quadro seguinte).
+@rpc("any_peer", "call_local", "reliable")
+func net_eliminar() -> void:
+	if multiplayer.has_multiplayer_peer():
+		var sender := multiplayer.get_remote_sender_id()
+		if sender != 0 and sender != 1:
+			return
+	if _eliminado:
+		return
+	_eliminado = true
+	health = 0.0
+	# Um cast preso trava o jogador para o resto da partida — a mesma armadilha
+	# documentada no `net_force_respawn`, e aqui não há respawn para desfazê-la.
+	_cast.abortar()
+	clear_spawned_skills()
+	set_meta("is_casting", false)
+	if _animator:
+		_animator.trigger_death()
+	elif _skel_anim:
+		_skel_anim.play_one_shot("death")
+
+
 # Respawn de verdade. Só o DONO do corpo pode se teleportar (quem não é
 # autoridade tem a posição sobrescrita pela replicação no frame seguinte), por
 # isso o servidor pede por RPC em vez de mover na marra.
@@ -2232,6 +2438,9 @@ func net_force_respawn() -> void:
 		var sender := multiplayer.get_remote_sender_id()
 		if sender != 0 and sender != 1:
 			return
+	# Sair da enchente é o único caminho de volta: quem foi eliminado só volta a
+	# responder no respawn do pódio.
+	_eliminado = false
 	print("💀 MORTE REGISTRADA! Respawnando na plataforma...")
 	if _animator:
 		_animator.trigger_death()
@@ -2264,8 +2473,16 @@ func net_force_respawn() -> void:
 	#
 	# O respawn devolvia vida, fruta e recarga, mas deixava o cast pendurado.
 	_cast.abortar()
+	# Efeitos de ESTILO tambem vivem neste contêiner. A limpeza antiga acontecia
+	# apenas dentro do `if current_fruit_id`, então morrer sem fruta deixava C/V e
+	# braços clonados ativos na vida seguinte.
+	clear_spawned_skills()
 	set_meta("is_casting", false)
 	set_meta("active_skill", "")
+	set_meta("px_skill_ativa", "")
+	for px_meta in ["px_laser_ativo", "px_iron_rush_ativo", "px_lance_ativo",
+			"px_tri_beam_ativo"]:
+		set_meta(px_meta, false)
 	set_meta("yami_black_hole_active", false)
 	set_meta("yami_kurouzu_active", false)
 	set_meta("is_frozen", false)
@@ -2293,6 +2510,8 @@ func net_force_respawn() -> void:
 		_fruit_cooldowns[slot_k] = 0.0
 	for slot_k in _style_cooldowns.keys():
 		_style_cooldowns[slot_k] = 0.0
+	_server_cast_next_ms.clear()
+	_server_last_cast_token.clear()
 
 	_vida.restaurar()
 	RecepcaoDeDano.limpar(self)
@@ -2314,18 +2533,39 @@ func lock_movement(duration: float, skill_id: String = "") -> void:
 # CAST — a decisão mora em src/player/cast_controller.gd (passo 6c). Aqui ficam
 # as cascas: a API pública que o input, a HUD e a rede já conhecem.
 func begin_charge(slot: String) -> void:
+	if not pode_conjurar():
+		return
 	_resetar_impulso_de_corrida()
 	_cast.comecar(slot)
 
 func release_charge(slot: String) -> void:
+	# ⚠️ SEM portão aqui. Soltar precisa passar SEMPRE: se o jogador trocar para
+	# o modo espada com uma carga em curso, é este `soltar` que a encerra. Barrar
+	# a soltura deixaria a carga presa para sempre.
 	_cast.soltar(slot)
+
+
+## Callback dos controladores Pacifista quando a janela mecanica acaba. O token
+## torna a chamada idempotente e impede um efeito velho de limpar um cast novo.
+func finalizar_skill_pacifista(slot: String, cast_token: int = 0) -> void:
+	_cast.finalizar_pacifista(slot, cast_token)
+
+
+## O controlador do Yasakani chama isto ao alcançar o fim máximo de 3,7 s.
+## O caminho é o mesmo de soltar a tecla: publica o cancelamento e destrava.
+func finalizar_skill_pika_c(cast_token: int = 0) -> void:
+	_cast.finalizar_pika_c(cast_token)
 
 # Compat: disparo imediato (sem segurar).
 func cast_skill_slot(slot_key: String) -> void:
+	if not pode_conjurar():
+		return
 	_resetar_impulso_de_corrida()
 	_cast.conjurar_direto(slot_key)
 
 func _request_cast(slot: String) -> void:
+	if not pode_conjurar():
+		return
 	_resetar_impulso_de_corrida()
 	_cast.pedir_cast(slot)
 
@@ -2333,12 +2573,67 @@ func _request_cast(slot: String) -> void:
 # Cliente PEDE o cast -> servidor valida e é dono da hitbox -> a PRESENTATION
 # (VFX/anim) roda em TODOS os clientes; o dano/knockback (DamageZone) só é ativo
 # no servidor. Sem peer (SP puro/harness) roda tudo local, idêntico.
+var _server_cast_next_ms: Dictionary = {}
+var _server_last_cast_token: Dictionary = {}
+
+
+func _vetor_de_cast_finito(v: Vector3) -> bool:
+	return is_finite(v.x) and is_finite(v.y) and is_finite(v.z)
+
+
+func _fonte_de_cast_valida(source_kind: String, source_id: String) -> bool:
+	if source_kind == "style":
+		return FightingStyles.STYLES.has(source_id)
+	if source_kind == "fruit":
+		return SkillSystem.get_fruit_skills().has(source_id)
+	return false
+
+
+## O servidor nao simula o input/cooldown da copia remota, então mantem um
+## relógio monotônico pequeno por fonte+slot. Ele nao substitui o HUD; apenas
+## impede RPC repetido de multiplicar hitboxes entre dois pacotes legítimos.
+func _autorizar_cast_remoto(slot: String, aim: Vector3, origin: Vector3,
+		cast_token: int, source_kind: String, source_id: String) -> bool:
+	if not slot in ["Z", "X", "C", "V"]:
+		return false
+	if not _vetor_de_cast_finito(aim) or not _vetor_de_cast_finito(origin):
+		return false
+	if aim.length_squared() < 0.0001 or global_position.distance_to(origin) > 4.5:
+		return false
+	if not _fonte_de_cast_valida(source_kind, source_id):
+		return false
+
+	var chave := "%s/%s/%s" % [source_kind, source_id, slot]
+	if cast_token > 0:
+		var anterior := int(_server_last_cast_token.get(chave, 0))
+		if cast_token <= anterior:
+			return false
+		_server_last_cast_token[chave] = cast_token
+
+	var agora := Time.get_ticks_msec()
+	if agora < int(_server_cast_next_ms.get(chave, 0)):
+		return false
+	var recarga := RECARGA_ESTILO if source_kind == "style" else float(
+		RECARGA_POR_SLOT.get(slot, 5.0))
+	if source_kind == "fruit" and source_id in ["bomu_bomu", "suke_suke"]:
+		recarga = 10.0
+	_server_cast_next_ms[chave] = agora + int(recarga * 1000.0)
+	return true
+
+
 @rpc("any_peer", "reliable")
-func _net_cast(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.0) -> void:
+func _net_cast(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.0,
+		cast_token: int = 0, source_kind: String = "", source_id: String = "") -> void:
 	if multiplayer.is_server():
 		var cid = multiplayer.get_remote_sender_id()
 		if cid != 0 and cid != get_multiplayer_authority(): return
-		_do_server_cast(slot, aim, origin, charge)
+		if source_kind == "":
+			source_kind = combat_mode
+			source_id = estilo_atual() if source_kind == "style" else current_fruit_id
+		if cid != 0 and not _autorizar_cast_remoto(slot, aim, origin, cast_token,
+				source_kind, source_id):
+			return
+		_do_server_cast(slot, aim, origin, charge, cast_token, source_kind, source_id)
 
 # ======================= CORPO A CORPO (botão esquerdo) =======================
 
@@ -3147,7 +3442,13 @@ func _net_play_melee(passo: int) -> void:
 		var g := Melee.passo(passo, equipped_weapon)
 		var duracao = Melee.duracao_tocada(passo, equipped_weapon)
 		var speed = 1.0 / maxf(duracao, 0.1) # Normalizado para 1.0s = fim da duração
-		_proc_anim.play_procedural_slash(passo, speed)
+		# ⚠️ O TIPO DO CORTE VEM DA TABELA, NÃO DO ÍNDICE DO PASSO (2026-09-06).
+		# Era `play_procedural_slash(passo, ...)`, e funcionava por coincidência:
+		# o combo tinha três passos e o `WeaponPoses` tem três tipos, então
+		# 0/1/2 batiam. Com o combo virando um PAR (horizontal, vertical) o
+		# passo 1 pediria o tipo 1 — que é o segundo corte HORIZONTAL — e o
+		# vertical nunca sairia. O campo `slash_type` desfaz o acoplamento.
+		_proc_anim.play_procedural_slash(Melee.slash_type(passo, equipped_weapon), speed)
 	else:
 		# Para normal, tocar clipe (.res) retargetado
 		var clipe := Melee.clipe(passo, equipped_weapon)
@@ -3281,8 +3582,14 @@ func _encerrar_bomu_rush() -> void:
 		remove_meta("custom_pose")
 
 # SERVIDOR = autoridade: (validaria cooldown/estado) e manda TODOS reproduzirem.
-func _do_server_cast(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.0) -> void:
-	if combat_mode == "fruit" and _fruit_damage_lock_timer > 0.0:
+func _do_server_cast(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.0,
+		cast_token: int = 0, source_kind: String = "", source_id: String = "") -> void:
+	if source_kind == "":
+		source_kind = combat_mode
+		source_id = estilo_atual() if source_kind == "style" else current_fruit_id
+	if not _fonte_de_cast_valida(source_kind, source_id):
+		return
+	if source_kind == "fruit" and _fruit_damage_lock_timer > 0.0:
 		return # validação autoritativa: cliente não pula a recuperação por RPC
 	# BUKI BUKI: o cast É o saque da arma. É AQUI, na cópia autoritativa, que a
 	# munição do servidor é carregada — o cliente não escolhe quantas balas tem.
@@ -3292,11 +3599,12 @@ func _do_server_cast(slot: String, aim: Vector3, origin: Vector3, charge: float 
 	# cast_skill_slot desviam para `_buki_empunhar` e RETORNAM), mas continua
 	# alcançável pelo RPC `_net_cast` vindo de um cliente. Some com ele e o
 	# servidor volta a recusar tiro por caminho que ninguém lembra de testar.
-	_buki.servidor_sacar(slot)
+	if source_kind == "fruit" and source_id == "buki_buki":
+		_buki.servidor_sacar(slot)
 	if multiplayer.has_multiplayer_peer():
-		_net_play_cast.rpc(slot, aim, origin, charge)            # broadcast + call_local
+		_net_play_cast.rpc(slot, aim, origin, charge, cast_token, source_kind, source_id)
 	else:
-		_net_play_cast(slot, aim, origin, charge)                # sem rede: local direto
+		_net_play_cast(slot, aim, origin, charge, cast_token, source_kind, source_id)
 
 # MIRA -> src/player/mira.gd (Fase 9). Estas três continuam aqui como cascas
 # porque são a API que testes e componentes já conhecem.
@@ -3386,11 +3694,12 @@ func encerrar_disparo() -> void:
 	_spec_disparo_chave = ""
 
 @rpc("any_peer", "call_local", "reliable")
-func _net_play_cast(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.0) -> void:
+func _net_play_cast(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.0,
+		cast_token: int = 0, source_kind: String = "", source_id: String = "") -> void:
 	if multiplayer.has_multiplayer_peer():
 		var sender = multiplayer.get_remote_sender_id()
 		if sender != 0 and sender != 1: return
-	_fire_skill(slot, aim, origin, charge)
+	_fire_skill(slot, aim, origin, charge, cast_token, source_kind, source_id)
 
 var _spawned_skills_container: Node3D
 
@@ -3439,7 +3748,8 @@ func clear_spawned_skills() -> void:
 
 # Presentation da skill (roda em todos): VFX pela fruta/estilo. A DamageZone criada
 # dentro só aplica dano no SERVIDOR (ver DamageZone).
-func _fire_skill(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.0) -> void:
+func _fire_skill(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.0,
+		cast_token: int = 0, source_kind: String = "", source_id: String = "") -> void:
 	var variant: int = ["Z", "X", "C", "V"].find(slot)
 	if variant < 0:
 		variant = 0
@@ -3449,14 +3759,24 @@ func _fire_skill(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.
 
 	var world := _get_skills_container()
 
-	if combat_mode == "style":
-		var active_style: String = STYLES_LIST[current_style_idx]
+	var cast_mode := source_kind if source_kind in ["fruit", "style"] else combat_mode
+	var cast_source := source_id
+	if cast_source == "":
+		cast_source = estilo_atual() if cast_mode == "style" else current_fruit_id
+	var cast_com_duracao_propria := false
+
+	if cast_mode == "style":
+		var active_style: String = cast_source
+		if not FightingStyles.STYLES.has(active_style):
+			return
 		var sdata: Dictionary = FightingStyles.STYLES[active_style]["skills"][slot]
 		# O dano vem do `Balance`, não da tabela do estilo — mesma fonte única das
 		# frutas, para o corpo a corpo não ficar numa escala própria.
 		var spec_e := Balance.spec_de_estilo(active_style, slot).para_cast()
 		print("🥊 ESTILO ", active_style.to_upper(), ": ", sdata.get("nome", slot))
-		FightingStyles.cast(world, active_style, variant, origin, aim, spec_e.dano, self, spec_e)
+		FightingStyles.cast(world, active_style, variant, origin, aim, spec_e.dano, self,
+			spec_e, cast_token)
+		cast_com_duracao_propria = active_style == "pacifista"
 	else:
 		var fruit_skills := SkillSystem.get_fruit_skills()
 		# ⚠️ Aqui existia `else "gomu_gomu"` — um fallback MUDO, e ele era a causa
@@ -3466,16 +3786,16 @@ func _fire_skill(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.
 		#   • depois de MORRER o jogador larga a fruta (`current_fruit_id = ""`) e
 		#     passava a sair Gomu Gomu do nada, como se tivesse ganhado uma fruta.
 		# Sem fruta não há poder de fruta. O golpe não sai, e diz por quê.
-		if not fruit_skills.has(current_fruit_id):
-			if current_fruit_id == "":
+		if not fruit_skills.has(cast_source):
+			if cast_source == "":
 				print("🚫 Sem Akuma no Mi — pegue uma fruta numa árvore para usar poderes.")
-			elif current_fruit_id == "sem_fruta":
+			elif cast_source == "sem_fruta":
 				print("🚫 Você comeu a Fruta da Normalidade. Suas skills não fazem nada.")
 			else:
-				push_warning("[Fruta] '%s' não tem skills no SkillSystem" % current_fruit_id)
-				print("🚫 A fruta '%s' ainda não tem poderes implementados." % current_fruit_id)
+				push_warning("[Fruta] '%s' não tem skills no SkillSystem" % cast_source)
+				print("🚫 A fruta '%s' ainda não tem poderes implementados." % cast_source)
 			return
-		var fid := current_fruit_id
+		var fid := cast_source
 		var sdata: Dictionary = fruit_skills[fid][slot]
 		var cor: Color = sdata.get("cor", Color.WHITE)
 
@@ -3513,6 +3833,12 @@ func _fire_skill(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.
 			"bara_bara": BaraFX.cast(world, origin, aim, variant, dano, self, spec)
 			"gura_gura": GuraFX.cast(world, origin, aim, variant, dano, self, charge, spec)
 			"bomu_bomu": BomuFX.cast(world, origin, aim, variant, dano, self, charge, spec)
+			"pika_pika":
+				PikaFX.cast(world, origin, aim, variant, dano, self, spec, cast_token)
+				# O C vive enquanto a tecla estiver pressionada (máximo 3,7 s).
+				# O timeout genérico de 0,3 s faria o próximo physics frame abortá-lo.
+				if slot == "C":
+					cast_com_duracao_propria = true
 			"buki_buki":
 				# SAQUE DA ARMA. Roda em TODOS os peers (este método é a
 				# presentation do cast), então o adversário vê a arma aparecer
@@ -3523,10 +3849,11 @@ func _fire_skill(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.
 
 	# Fim da janela de interrupção DESTE golpe. Só apaga se nenhum cast novo tiver
 	# começado nesse meio-tempo (senão engolia a skill seguinte — ver _cast_token).
-	var tok := _cast_token
-	get_tree().create_timer(0.3).timeout.connect(func():
-		if _cast_token == tok:
-			set_meta("is_casting", false))
+	if not cast_com_duracao_propria:
+		var tok := _cast_token
+		get_tree().create_timer(0.3).timeout.connect(func():
+			if _cast_token == tok:
+				set_meta("is_casting", false))
 
 # VFX genérico para frutas ainda sem efeito dedicado.
 func _generic_vfx(cor: Color, aim: Vector3, origin: Vector3) -> void:
@@ -3751,3 +4078,55 @@ func equip_item(item_node: Node3D) -> void:
 	if item_node is SwordPickup:
 		equipped_weapon = "sword"
 		print("[Player] Arma equipada: sword")
+
+
+# ============================================================================
+#  A YORU — sacar, guardar, e onde mora o fio
+# ============================================================================
+#  A espada saiu do spawn do mapa em 2026-08-23 e não voltou. Para o dono poder
+#  conferir as animações, o ponto de pega e o choque de espadas sem alterar a
+#  partida de todo mundo, ela é sacada por TECLA (Y), não catada no chão.
+#
+#  A ligação pedida ("nomeie o cabo como handle e a mão do jogador também,
+#  depois os ligue") acontece em uma linha, e é literal: `YoruSword.ligar_na_mao`
+#  põe o nó `handle` da espada como filho do nó `Hand_R` do rig. Não há offset
+#  em lugar nenhum do caminho — mover a pega é mover um dos dois nós.
+var _yoru: YoruSword = null
+
+## A lâmina em si, para quem precisa armar as zonas do fio. Quem chama é
+## `Melee.golpear`, no fim do startup de cada corte.
+func lamina_da_espada() -> SwordBlade:
+	if _yoru == null or not is_instance_valid(_yoru):
+		return null
+	return _yoru.lamina
+
+
+func sacar_ou_guardar_espada() -> void:
+	if _yoru != null and is_instance_valid(_yoru):
+		# ⚠️ SAI DA ÁRVORE AGORA, e só depois é liberada. `queue_free` sozinho
+		# deixa o nó pendurado na mão até o fim do quadro: quem olhasse a mão no
+		# mesmo quadro ainda veria uma espada, e sacar de novo antes da varredura
+		# criaria uma segunda ("Yoru2") ao lado da que está morrendo. O
+		# `remove_child` torna o estado da mão verdadeiro no instante da troca.
+		var mao_atual := _yoru.get_parent()
+		if mao_atual != null:
+			mao_atual.remove_child(_yoru)
+		_yoru.queue_free()
+		_yoru = null
+		equipped_weapon = ""
+		print("[Yoru] guardada")
+		return
+
+	var mao: Node3D = _rig.item_handle
+	if mao == null or not is_instance_valid(mao):
+		push_warning("[Yoru] o rig ainda não tem a mão (Hand_R) montada")
+		return
+	_yoru = YoruSword.ligar_na_mao(mao)
+	if _yoru == null:
+		return
+	# O dono da lâmina é quem empunha: é por ele que a `SwordBlade` sabe quem
+	# NÃO pode ser acertado e quem tem o golpe cancelado num choque.
+	if _yoru.lamina:
+		_yoru.lamina.dono = self
+	equipped_weapon = "sword"
+	print("[Yoru] sacada — handle sobre %s" % mao.name)
