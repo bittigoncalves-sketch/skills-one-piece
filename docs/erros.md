@@ -7,6 +7,63 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-09-06 — o corte de espada usava o efeito do SOCO, e o rastro saía do cotovelo
+
+**Sintoma:** relato do dono, com gravação de tela — *"o efeito do combate corpo a
+corpo está acontecendo ao invés do efeito da espada"*. No vídeo dá para ver a
+espada correta na mão, o HUD em `ESPADA: YORU [3]`, e mesmo assim os efeitos do
+punho em tela.
+
+**Eram DOIS defeitos independentes, com o mesmo sintoma.**
+
+**1. O anel de choque do soco.** No ramo da espada eu chamei `Melee._impacto` de
+propósito, com o comentário *"é o tempero visual do golpe, independente de onde
+a hitbox mora"*. Errado: `_impacto` desenha um `TorusMesh` — a onda de choque que
+o SOCO atravessa — nascendo a `alcance` metros à frente do peito. Com o punho
+funciona, porque o punho chega lá. Com a espada o anel aparecia solto no ar, sem
+relação nenhuma com onde a lâmina estava.
+
+**2. O rastro saía do COTOVELO.** `ProceduralAnimator` desenhava a faixa entre
+`ForeArm_R` e um ponto chutado a `(0, -1.8, 0)` dele — com o comentário honesto
+"ponta da espada PRESUMIDA". Com a Yoru na mão a lâmina só começa 0,75 m depois
+do cotovelo, então a faixa cobria o antebraço INTEIRO mais a lâmina: em tela,
+uma chapa branca saindo do peito, apontando para um lado enquanto a espada
+apontava para outro.
+
+**Causa raiz comum:** os dois efeitos eram calculados a partir do CORPO (um
+ponto à frente do peito; um osso do braço) em vez de virem da ARMA. Enquanto a
+arma não existia como geometria conhecida, adivinhar era a única opção — e as
+duas adivinhações ficaram no lugar depois que a Yoru passou a saber dizer onde
+seu fio começa e acaba.
+
+**Correção:** a arma diz. `YoruSword` expõe os nós `guarda` e `ponta`; o rastro
+se pendura neles (`usar_lamina_no_rastro`), e o impacto nasce na BOLINHA que
+encostou, não no nó da lâmina — que fica junto ao punho, e faria o clarão sair
+do cabo. A bolinha viaja junto com o sinal (`bind`), porque sem ela o receptor
+só sabe QUE encostou, não ONDE.
+
+**Como detectar de novo:** efeito de arma calculado a partir de osso ou de
+"tantos metros à frente" é palpite. Se a arma tem geometria, o efeito sai dela.
+
+## 2026-09-06 — `current_scene` é nulo em script `-s`, e o efeito some sem avisar
+
+**Sintoma:** o teste novo cobrou "o corte deixou um impacto na cena" e reprovou,
+num código que funciona no jogo.
+
+**Causa raiz:** `_faiscar` pendurava o efeito em `get_tree().current_scene`, que
+é NULO num script rodado com `-s`. O `BaseTest` do projeto já registra a
+armadilha com todas as letras: *"vários efeitos penduram nós em
+`get_tree().current_scene`. Num script -s isso é nulo e o efeito some sem
+avisar"*. Eu copiei o padrão de `_efeito_de_choque` sem lembrar do aviso.
+
+**"Some sem avisar" é a parte ruim:** não há erro, não há warning — o efeito
+simplesmente não acontece, e só um teste que o cobra revela.
+
+**Correção:** `_palco_de_efeitos()` usa `current_scene` quando existe e cai para
+a raiz da árvore quando não. Vale para o impacto do corte e para o choque de
+espadas.
+
+
 ## 2026-09-06 — guardar a espada com `queue_free` deixava ela na mão pelo resto do quadro
 
 **Sintoma:** o `test_modos_de_combate` acusou "sair do modo 3 não guardou a

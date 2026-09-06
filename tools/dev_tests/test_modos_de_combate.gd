@@ -58,6 +58,20 @@ func test_step(f: int, _d: float) -> void:
 	ok(player.combat_mode == "sword", "3 = espada (modo %s)" % player.combat_mode)
 	ok(_espada_na_mao(), "entrar no modo 3 SACOU a Yoru")
 
+	# ----------------------------- 2b. o RASTRO sai da lâmina, não do cotovelo
+	# Defeito relatado em 2026-09-06: a faixa branca do golpe era desenhada entre
+	# `ForeArm_R` (o COTOVELO) e um ponto chutado a 1,8 m dele. Com a Yoru na mão
+	# ela cobria o antebraço inteiro mais a lâmina, e em tela lia como uma chapa
+	# saindo do peito apontando para outro lado que não a espada.
+	var pa = player.get("_proc_anim")
+	var rastro = pa.get("_trail") if pa else null
+	var yoru = player.get("_yoru")
+	if rastro != null and yoru != null:
+		ok(rastro.target_base == yoru.guarda,
+			"o rastro começa na GUARDA da espada, não no cotovelo")
+		ok(rastro.target_tip == yoru.ponta,
+			"e termina na PONTA da lâmina, não num ponto chutado")
+
 	# ------------------------------------------ 3. os slots ficam mudos
 	ok(not player.pode_conjurar(), "no modo espada `pode_conjurar` é falso")
 	var antes_z: float = player._fruit_cooldowns["Z"]
@@ -79,6 +93,11 @@ func test_step(f: int, _d: float) -> void:
 	# ------------------------------------------ 2b. sair do 3 guarda
 	player.set_combat_mode("fruit")
 	ok(not _espada_na_mao(), "sair do modo 3 GUARDOU a Yoru")
+	var pa2 = player.get("_proc_anim")
+	var rastro2 = pa2.get("_trail") if pa2 else null
+	if rastro2 != null:
+		ok(rastro2.target_base == pa2.get("_n")["ForeArm_R"],
+			"e o rastro voltou ao braço — senão ficaria preso numa espada liberada")
 	ok(player.pode_conjurar(), "e os slots voltaram a responder")
 
 	# ------------------------- 5. o menu do M guarda a espada junto

@@ -4114,6 +4114,8 @@ func sacar_ou_guardar_espada() -> void:
 		_yoru.queue_free()
 		_yoru = null
 		equipped_weapon = ""
+		if _proc_anim and _proc_anim.has_method("soltar_lamina_do_rastro"):
+			_proc_anim.soltar_lamina_do_rastro()
 		print("[Yoru] guardada")
 		return
 
@@ -4128,5 +4130,10 @@ func sacar_ou_guardar_espada() -> void:
 	# NÃO pode ser acertado e quem tem o golpe cancelado num choque.
 	if _yoru.lamina:
 		_yoru.lamina.dono = self
+	# O rastro do golpe passa a ser desenhado ENTRE A GUARDA E A PONTA da Yoru.
+	# Sem isto ele sai do cotovelo até um ponto chutado, e em tela lê como uma
+	# chapa branca saindo do peito apontando para outro lado que não a espada.
+	if _proc_anim and _proc_anim.has_method("usar_lamina_no_rastro"):
+		_proc_anim.usar_lamina_no_rastro(_yoru.guarda, _yoru.ponta)
 	equipped_weapon = "sword"
 	print("[Yoru] sacada — handle sobre %s" % mao.name)

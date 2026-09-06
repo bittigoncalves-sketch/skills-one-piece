@@ -198,6 +198,36 @@ func _t5_dano(mundo: Node3D) -> void:
 	# e a primeira versão deste teste acusou "levou 0" numa espada que acertou.
 	await create_timer(0.15).timeout
 	_ok(alvo.levou > 0.0, "espada armada: o alvo levou %.0f" % alvo.levou)
+
+	# ⚠️ O CLARÃO SAI DA BOLINHA QUE CORTOU, NÃO DO PUNHO (defeito relatado
+	# 2026-09-06: "o efeito do combate corpo a corpo está acontecendo ao invés do
+	# efeito da espada"). O corte usava o `Melee._impacto` — um anel de choque a
+	# `alcance` metros à frente do PEITO, solto no ar. Aqui se cobra que o efeito
+	# nasça em cima da lâmina, longe da mão.
+	var impacto: Node3D = null
+	for n in get_root().get_children():
+		if n is Node3D and n.name.begins_with("CorteImpacto"):
+			impacto = n as Node3D
+	if impacto == null:
+		for n in mundo.get_children():
+			if n is Node3D and n.name.begins_with("CorteImpacto"):
+				impacto = n as Node3D
+	_ok(impacto != null, "o corte deixou um impacto na cena")
+	if impacto != null:
+		var da_mao: float = impacto.global_position.distance_to(espada.global_position)
+		_ok(da_mao > YoruSword.LAMINA_BASE * 0.8,
+			"o impacto nasceu na LÂMINA, a %.2f m do punho (a guarda fica a %.2f)"
+				% [da_mao, YoruSword.LAMINA_BASE])
+		# ⚠️ A TOLERÂNCIA É A DISTÂNCIA DE CONTATO, não um número redondo. A
+		# bolinha toca a cápsula quando os dois raios se encostam: 0,40 (alvo)
+		# + 0,28 (bolinha) = 0,68 m entre os CENTROS. A primeira versão deste
+		# teste cobrava `RAIO * 2` = 0,56 e reprovava um impacto que estava no
+		# lugar certo — o teste é que não sabia a geometria.
+		var contato: float = 0.4 + SwordBlade.RAIO + 0.05
+		var perto: float = impacto.global_position.distance_to(alvo.global_position)
+		_ok(perto <= contato,
+			"e no ponto de contato com o alvo (%.2f m, limite geométrico %.2f)"
+				% [perto, contato])
 	var primeiro := alvo.levou
 	await create_timer(0.2).timeout
 	_ok(alvo.levou == primeiro,

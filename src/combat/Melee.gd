@@ -649,12 +649,23 @@ static func golpear(world: Node, caster: Node3D, i: int, origem: Vector3, dir: V
 				fim.timeout.connect(func():
 					if is_instance_valid(fio):
 						fio.desarmar())
-				# O `_impacto` continua: é o tempero visual do golpe (fagulhas,
-				# tremor), independente de onde a hitbox mora.
-				var alto_fio: float = origem.y - caster.global_position.y
-				_impacto(world,
-					caster.global_position + Vector3.UP * alto_fio + fwd * (float(g["alcance"]) * s),
-					i, cor_do_impacto(caster), s, fwd)
+				# ⚠️ O `_impacto` NÃO É CHAMADO AQUI, e chamá-lo foi o erro
+				# relatado pelo dono: "o efeito do combate corpo a corpo está
+				# acontecendo ao invés do efeito da espada".
+				#
+				# `_impacto` desenha um ANEL DE CHOQUE (`TorusMesh`) — a onda que
+				# o SOCO atravessa — nascendo a `alcance` metros à frente do
+				# peito. Com o punho isso funciona, porque o punho de fato chega
+				# lá. Com a espada o anel aparecia solto no ar, sem relação
+				# nenhuma com onde a lâmina estava, e o que se via em tela era o
+				# efeito do murro em cima de um golpe de espada.
+				#
+				# O corte tem os efeitos DELE: o rastro sai da lâmina (ver
+				# `ProceduralAnimator.usar_lamina_no_rastro`) e o impacto nasce
+				# na bolinha que encostou (ver `SwordBlade._no_corpo`). Os dois
+				# vêm da arma, não de um ponto calculado à frente do corpo.
+				AudioFX.whoosh(world, caster.global_position + Vector3.UP * 1.2,
+					1.25 if i == 0 else 0.95)
 				return
 
 		var zone := DamageZone.new()

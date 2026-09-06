@@ -59,6 +59,11 @@ const LAMINA_PONTA := (CRU_PEGA_Y - CRU_PONTA_Y) * ESCALA     # 1,77 m
 
 var handle: Node3D = null
 var lamina: SwordBlade = null
+## Onde o fio começa e acaba, como NÓS. O rastro do golpe se pendura neles em
+## vez de chutar um ponto a partir do cotovelo — ver
+## `ProceduralAnimator.usar_lamina_no_rastro`.
+var guarda: Node3D = null
+var ponta: Node3D = null
 var _modelo: Node3D = null
 
 
@@ -77,6 +82,16 @@ func _ready() -> void:
 	lamina.base = LAMINA_BASE
 	lamina.ponta = LAMINA_PONTA
 	add_child(lamina)
+
+	guarda = Node3D.new()
+	guarda.name = "guarda"
+	add_child(guarda)
+	guarda.position = Vector3(0.0, LAMINA_BASE, 0.0)
+
+	ponta = Node3D.new()
+	ponta.name = "ponta"
+	add_child(ponta)
+	ponta.position = Vector3(0.0, LAMINA_PONTA, 0.0)
 
 
 func _montar_modelo() -> void:

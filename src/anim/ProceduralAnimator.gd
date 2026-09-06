@@ -152,6 +152,48 @@ var _driver: SkeletonDriver = null
 var _trail: WeaponTrail3D = null
 var _trail_tip: Node3D = null
 
+# ============================================================================
+#  O RASTRO SAI DA LÂMINA, NÃO DO COTOVELO (2026-09-06)
+# ============================================================================
+#  Relato do dono: "o efeito do combate corpo a corpo está acontecendo ao invés
+#  do efeito da espada". Uma das duas causas era esta.
+#
+#  O rastro era desenhado entre `ForeArm_R` (o COTOVELO) e um ponto chutado a
+#  1,8 m dele. Com a Yoru na mão, a lâmina só começa 0,75 m depois do cotovelo —
+#  então a faixa branca cobria o antebraço INTEIRO mais a lâmina, e em tela lia
+#  como uma chapa saindo do peito, apontando para um lado enquanto a espada
+#  apontava para outro.
+#
+#  Agora a arma DIZ onde ela começa e acaba. Quem não tem arma continua no
+#  palpite antigo, que é reserva honesta e não caminho principal.
+var _trail_base_arma: Node3D = null
+var _trail_ponta_arma: Node3D = null
+
+
+## A arma assume o rastro. `base` é a guarda (onde o fio começa) e `ponta` é a
+## ponta; os dois são nós DA ARMA, então acompanham a animação sem conta nenhuma.
+func usar_lamina_no_rastro(base: Node3D, ponta: Node3D) -> void:
+	_trail_base_arma = base
+	_trail_ponta_arma = ponta
+	if _trail != null and is_instance_valid(base) and is_instance_valid(ponta):
+		_trail.target_base = base
+		_trail.target_tip = ponta
+		_trail.clear()
+
+
+## Guardou a arma: o rastro volta ao palpite do braço e apaga o que estava em
+## tela — sem o `clear` a última faixa fica congelada no ar apontando para uma
+## espada que não existe mais.
+func soltar_lamina_do_rastro() -> void:
+	_trail_base_arma = null
+	_trail_ponta_arma = null
+	if _trail != null:
+		_trail.emit(false)
+		_trail.clear()
+		if _n.has("ForeArm_R"):
+			_trail.target_base = _n["ForeArm_R"]
+			_trail.target_tip = _trail_tip
+
 const REC_DUR := 0.35       # duração da recepção (recovery)
 
 # Toca um clipe retargetado (Animation com faixas <Role>:rotation) por cima do rig.
@@ -253,10 +295,18 @@ func setup(profile: Dictionary) -> void:
 		if _trail_tip == null:
 			_trail_tip = Node3D.new()
 			_n["ForeArm_R"].add_child(_trail_tip)
-			_trail_tip.position = Vector3(0, -1.8, 0) # Ponta da espada presumida em Y negativo a partir da mão
-		
-		_trail.target_base = _n["ForeArm_R"]
-		_trail.target_tip = _trail_tip
+			# ⚠️ PALPITE, e assumido como tal: "ponta da espada PRESUMIDA em Y
+			# negativo a partir da mão". Vale como reserva para quando não há uma
+			# arma de verdade dizendo onde ela começa e acaba — ver
+			# `usar_lamina_no_rastro`, que é o caminho preferido.
+			_trail_tip.position = Vector3(0, -1.8, 0)
+
+		if _trail_base_arma == null or not is_instance_valid(_trail_base_arma):
+			_trail.target_base = _n["ForeArm_R"]
+			_trail.target_tip = _trail_tip
+		else:
+			_trail.target_base = _trail_base_arma
+			_trail.target_tip = _trail_ponta_arma
 		_trail.life_time = 0.25
 		_trail.startColor = Color(1.0, 1.0, 1.0, 0.6)
 		_trail.endColor = Color(1.0, 1.0, 1.0, 0.0)

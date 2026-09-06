@@ -98,8 +98,13 @@ func _criar_bolinhas() -> void:
 		col.shape = esfera
 		bola.add_child(col)
 
-		bola.body_entered.connect(_no_corpo)
-		bola.area_entered.connect(_na_area)
+		# ⚠️ A BOLINHA VIAJA JUNTO COM O SINAL. Sem o `bind`, o receptor só sabe
+		# QUE encostou, não ONDE — e aí a única posição à mão é a do nó da
+		# lâmina, que fica junto ao punho. O clarão do corte sairia do cabo, e o
+		# empurrão seria calculado a partir dele. É a bolinha que tocou o alvo
+		# que diz onde o fio cortou.
+		bola.body_entered.connect(_no_corpo.bind(bola))
+		bola.area_entered.connect(_na_area.bind(bola))
 		add_child(bola)
 		_bolinhas.append(bola)
 
@@ -159,7 +164,7 @@ func _ligar_monitores(ligado: bool) -> void:
 
 
 # ------------------------------------------------------------- o que acerta
-func _no_corpo(corpo: Node3D) -> void:
+func _no_corpo(corpo: Node3D, bola: Area3D) -> void:
 	if not _armada or corpo == null or not is_instance_valid(corpo):
 		return
 	if corpo == dono or _ja_acertou.has(corpo):
@@ -172,10 +177,17 @@ func _no_corpo(corpo: Node3D) -> void:
 		return
 	_ja_acertou[corpo] = true
 
-	var empurrao := Knockback.calcular(global_position, corpo.global_position,
+	var onde := bola.global_position if is_instance_valid(bola) else global_position
+	var empurrao := Knockback.calcular(onde, corpo.global_position,
 		_kb, Knockback.PADRAO, Vector3.ZERO)
-	CombatResolver.aplicar(corpo, _dano, _cast_id, _teto, global_position,
+	CombatResolver.aplicar(corpo, _dano, _cast_id, _teto, onde,
 		empurrao, _hitstun)
+	# ⚠️ O IMPACTO NASCE NA BOLINHA QUE ENCOSTOU, e é isso que o separa do efeito
+	# do punho. O corte usava o `Melee._impacto`, um anel de choque a `alcance`
+	# metros à frente do peito — solto no ar, sem relação com a lâmina. Aqui a
+	# posição é a da própria zona que detectou o toque: o clarão sai de onde o
+	# fio cortou.
+	_faiscar(onde)
 	acertou.emit(corpo)
 
 	var placar := get_tree().get_first_node_in_group("scoreboard") if get_tree() else null
@@ -187,7 +199,7 @@ func _no_corpo(corpo: Node3D) -> void:
 ## O choque. `area_entered` dispara nos DOIS lados, então o primeiro a chegar
 ## resolve e marca os dois — sem isso o cancelamento correria duas vezes e o
 ## efeito de tela sairia dobrado.
-func _na_area(area: Area3D) -> void:
+func _na_area(area: Area3D, bola: Area3D) -> void:
 	if not _armada or area == null or not is_instance_valid(area):
 		return
 	var outra := area.get_parent() as SwordBlade
@@ -207,7 +219,11 @@ func _na_area(area: Area3D) -> void:
 	desarmar()
 	outra.desarmar()
 
-	var ponto := (global_position + outra.global_position) * 0.5
+	# O ponto do choque é entre as DUAS BOLINHAS que se encontraram, não entre os
+	# dois punhos: é ali que as lâminas se cruzam, e é de lá que as fagulhas saem.
+	var minha := bola.global_position if is_instance_valid(bola) else global_position
+	var dela := area.global_position if is_instance_valid(area) else outra.global_position
+	var ponto := (minha + dela) * 0.5
 	_cancelar_golpe_de(dono)
 	_cancelar_golpe_de(outra.dono)
 	_efeito_de_choque(ponto)
@@ -229,8 +245,37 @@ func _cancelar_golpe_de(quem: Node) -> void:
 		quem.lock_movement(0.0, "")
 
 
+## ⚠️ ONDE PENDURAR O EFEITO. `get_tree().current_scene` é NULO num script
+## rodado com `-s`, e o `BaseTest` do projeto já registra essa armadilha: "vários
+## efeitos penduram nós em `current_scene`; num script -s isso é nulo e o efeito
+## some sem avisar". Some sem avisar é a parte ruim — um teste que cobra o efeito
+## reprova sem que haja defeito no jogo. A raiz da árvore é a reserva.
+func _palco_de_efeitos() -> Node:
+	var arvore := get_tree()
+	if arvore == null:
+		return null
+	if arvore.current_scene != null and is_instance_valid(arvore.current_scene):
+		return arvore.current_scene
+	return arvore.root
+
+
+## Fagulhas do fio mordendo. Menor que o choque de espadas de propósito: acertar
+## é o caso comum e um clarão do tamanho do clash a cada corte vira sopa.
+func _faiscar(ponto: Vector3) -> void:
+	var mundo := _palco_de_efeitos()
+	if mundo == null or not is_instance_valid(mundo):
+		return
+	var palco := Node3D.new()
+	palco.name = "CorteImpacto"
+	mundo.add_child(palco)
+	palco.global_position = ponto
+	palco.add_child(GoroFX.sparks(18, 0.22, Vector3.UP, 85.0, 3.0, 8.0, 0.08))
+	FxUtil.autofree(palco, 0.40)
+	AudioFX.impact(mundo, ponto, 1.35)
+
+
 func _efeito_de_choque(ponto: Vector3) -> void:
-	var mundo := get_tree().current_scene if get_tree() else null
+	var mundo := _palco_de_efeitos()
 	if mundo == null or not is_instance_valid(mundo):
 		return
 	# Fagulhas de metal + anel: os dois helpers já existem e são estáticos.

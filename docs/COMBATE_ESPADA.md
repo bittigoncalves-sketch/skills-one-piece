@@ -161,6 +161,29 @@ dobrado. O teste cobra exatamente isso (`1 e 1`, não `2 e 2`).
 
 ---
 
+## Os efeitos vêm da ARMA, não do corpo
+
+Defeito relatado em 2026-09-06 com gravação de tela: *"o efeito do combate corpo
+a corpo está acontecendo ao invés do efeito da espada"*. Eram dois, com a mesma
+causa de fundo — o efeito era calculado a partir do CORPO em vez de vir da arma.
+
+| | antes | agora |
+|---|---|---|
+| impacto | `Melee._impacto`: anel de choque do SOCO, a `alcance` m à frente do peito, solto no ar | fagulhas na **bolinha que encostou** |
+| rastro | entre `ForeArm_R` (o **cotovelo**) e um ponto chutado a 1,8 m | entre os nós **`guarda`** e **`ponta`** da Yoru |
+
+O rastro cobria o antebraço inteiro mais a lâmina, e em tela lia como uma chapa
+branca saindo do peito apontando para outro lado que não a espada.
+
+A bolinha viaja junto com o sinal (`body_entered.connect(_no_corpo.bind(bola))`)
+porque sem ela o receptor só sabe QUE encostou, não ONDE — e a única posição à
+mão seria a do nó da lâmina, que fica junto ao punho: o clarão sairia do cabo.
+
+⚠️ Os efeitos são pendurados por `_palco_de_efeitos()`, que usa
+`get_tree().current_scene` quando existe e cai para a raiz quando não. Em script
+`-s` o `current_scene` é nulo e o efeito **some sem avisar** — armadilha que o
+`BaseTest` do projeto já registrava.
+
 ## O combo: horizontal, depois vertical
 
 | clique | golpe | pose | dano | startup | ativo | recuperação |
