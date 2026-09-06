@@ -9,7 +9,7 @@ extends Node
 # Árvores que o mapa REALMENTE planta.
 #
 # ⚠️ Só entram as frutas que têm poderes no `SkillSystem`. Antes o mapa plantava
-# as 11 definições abaixo, e 3 delas (`ope_ope`, `hito_hito_nika`,
+# as 11 definições abaixo, e algumas (`hito_hito_nika`,
 # `tori_tori_phoenix`) davam frutas sem skill nenhuma — pegar uma delas virava
 # Gomu Gomu **em silêncio**, por causa do fallback no `Player._fire_skill`. Era
 # impossível perceber jogando: a fruta entrava no inventário com o nome certo e
@@ -17,8 +17,7 @@ extends Node
 #
 # Filtrar aqui, e não remover as definições, é de propósito: a arte da árvore
 # (cores, formato da copa) já está autorada e serve na hora que a fruta ganhar
-# poderes. Dar skills a ela é o único passo que falta — e a regra do dono do
-# projeto é não criar fruta nova antes de terminar as que existem.
+# poderes. A Ope Ope agora tem kit próprio e volta ao mapa pelo mesmo filtro.
 static func get_tree_definitions() -> Array[Dictionary]:
 	var com_poder := SkillSystem.get_fruit_skills()
 	var out: Array[Dictionary] = []
@@ -377,6 +376,11 @@ static func pickup_fruit(body: Node, fruit_id: String) -> void:
 
 # Criar Modelo 3D da Fruta do Diabo (Akuma no Mi) — ESTRITAMENTE CÚBICO E DETALHADO VOXEL
 static func create_fruit_3d(def: Dictionary) -> Node3D:
+	if str(def.get("id", "")) == "ope_ope":
+		var ope := preload("res://src/world/OpeFruitPickup.gd").new()
+		ope.name = "Fruit3D_ope_ope"
+		register_fruit("ope_ope", ope)
+		return ope
 	var fruit_root := Node3D.new()
 	fruit_root.name = "Fruit3D_" + def["id"]
 

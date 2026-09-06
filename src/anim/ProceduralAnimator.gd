@@ -1,5 +1,7 @@
 class_name ProceduralAnimator
 extends Node
+const PikaPoses = preload("res://src/anim/PikaPoses.gd")
+const OpePoses = preload("res://src/anim/OpePoses.gd")
 # Animação PROCEDURAL em tempo real do rig articulado (nós, não skinado).
 # Lê o estado do Player (velocidade, corrida/shift, no chão, escalando, pitch da mira) e gera
 # idle / walk / sprint-run / jump-fall / climb em runtime.
@@ -115,6 +117,12 @@ var _black_hole_w := 0.0    # pose do Barba Negra no Black Hole (pernas abertas,
 var _gura_golpe_w := 0.0    # peso do golpe autoral da Gura (src/anim/GuraPoses.gd)
 var _gura_golpe_state := "" # QUAL golpe está tocando — nomes em GuraPoses.GOLPES
 var _gura_golpe_t := 0.0    # segundos desde a troca de estado = a FASE da animação
+var _pika_golpe_w := 0.0    # C/V autorais da luz (src/anim/PikaPoses.gd)
+var _pika_golpe_state := ""
+var _pika_golpe_t := 0.0
+var _ope_golpe_w := 0.0
+var _ope_golpe_state := ""
+var _ope_golpe_t := 0.0
 var _sword_w := 0.0         # peso da pose da espada de duas mãos
 var _melee_stance_w := 0.0  # peso da postura de combate (pernas em V + guarda) durante o combo desarmado
 var _melee_guarda: String = ""  # "" | "R" | "L" | "perna_R" | "perna_L" — ver play_baked()
@@ -264,7 +272,7 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	# A entrada do Player é a fonte do quadro atual. A leitura no pai permanece
 	# para chamadas antigas, mas um clipe de ataque não pode ocultar a preparação.
 	var custom_pose: String = custom_pose_override if not custom_pose_override.is_empty() else (get_parent().get_meta("custom_pose", "") if get_parent() else "")
-	if custom_pose == "mera_x_charge" or custom_pose == "mera_z_charge" or custom_pose.begins_with("bomu_"):
+	if custom_pose == "mera_x_charge" or custom_pose == "mera_z_charge" or custom_pose.begins_with("bomu_") or OpePoses.e_golpe(custom_pose):
 		_baked = null
 		_baked_fim = -1.0
 		_melee_guarda = ""
@@ -342,6 +350,23 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 		_gura_golpe_w = lerpf(_gura_golpe_w, 1.0, 1.0 - exp(-15.0 * delta))
 	else:
 		_gura_golpe_w = lerpf(_gura_golpe_w, 0.0, 1.0 - exp(-15.0 * delta))
+	if PikaPoses.e_golpe(custom_pose):
+		if custom_pose != _pika_golpe_state:
+			_pika_golpe_state = custom_pose
+			_pika_golpe_t = 0.0
+		_pika_golpe_t += delta
+		_pika_golpe_w = lerpf(_pika_golpe_w, 1.0, 1.0 - exp(-18.0 * delta))
+	else:
+		_pika_golpe_w = lerpf(_pika_golpe_w, 0.0, 1.0 - exp(-18.0 * delta))
+	if OpePoses.e_golpe(custom_pose):
+		if custom_pose != _ope_golpe_state:
+			_ope_golpe_state = custom_pose
+			_ope_golpe_t = 0.0
+		# O relógio do controller mantém estocada, gesto e VFX no mesmo instante.
+		_ope_golpe_t = float(get_parent().get_meta("ope_pose_t", _ope_golpe_t + delta)) if get_parent() else _ope_golpe_t + delta
+		_ope_golpe_w = lerpf(_ope_golpe_w, 1.0, 1.0 - exp(-30.0 * delta))
+	else:
+		_ope_golpe_w = lerpf(_ope_golpe_w, 0.0, 1.0 - exp(-18.0 * delta))
 	
 	var parent = get_parent()
 	var weapon = parent.equipped_weapon if parent and "equipped_weapon" in parent else ""
@@ -354,7 +379,7 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	var gura_corpo: float = _gura_golpe_w if GuraPoses.toma_o_corpo(_gura_golpe_state) else 0.0
 	# A mira de pistola domina também no ar. Sem retirar `_gun_w` daqui, a pose
 	# aérea ainda somava os braços abertos por baixo da mira.
-	var upper_free: float = (1.0 - parkour_w) * (1.0 - _gun_w) * (1.0 - _hibashira_w) * (1.0 - _kurouzu_w) * (1.0 - _black_hole_w) * (1.0 - _mera_z_charge_w) * (1.0 - _mera_x_charge_w) * (1.0 - _bomu_z_charge_w) * (1.0 - _bomu_x_charge_w) * (1.0 - _bomu_strike_w) * (1.0 - gura_corpo)
+	var upper_free: float = (1.0 - parkour_w) * (1.0 - _gun_w) * (1.0 - _hibashira_w) * (1.0 - _kurouzu_w) * (1.0 - _black_hole_w) * (1.0 - _mera_z_charge_w) * (1.0 - _mera_x_charge_w) * (1.0 - _bomu_z_charge_w) * (1.0 - _bomu_x_charge_w) * (1.0 - _bomu_strike_w) * (1.0 - gura_corpo) * (1.0 - _pika_golpe_w) * (1.0 - _ope_golpe_w)
 
 	var ground_w := (1.0 - _air_w) * (1.0 - _climb_w)
 	var loco_w: float = ground_w * smoothstep(0.05, 0.35, speed01) * upper_free
@@ -416,6 +441,8 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 	FruitPoses.gura_x_charge_pose(_add, off, _gura_x_charge_w, _t)
 	_mink_combat_pose(off, custom_pose)
 	GuraPoses.golpe(_add, off, _gura_golpe_w, _t, _gura_golpe_t, _gura_golpe_state)
+	PikaPoses.golpe(_add, off, _pika_golpe_w, _t, _pika_golpe_t, _pika_golpe_state)
+	OpePoses.golpe(_add, off, _ope_golpe_w, _t, _ope_golpe_t, _ope_golpe_state)
 	# POR ÚLTIMO entre as poses: o tranco de dano SOMA por cima do que o corpo já
 	# estava fazendo. É o que faz levar um tiro correndo continuar lendo como corrida.
 	RecepcaoDeDano.pose(_add, off, _dano_w, _t)
@@ -429,7 +456,7 @@ func update(velocity: Vector3, on_floor: bool, climbing: bool, delta: float, pit
 		_add(off, "Head", Vector3(0, 0, 0)) # estabiliza
 		
 	_recovery(off, delta)
-	_lookat(off, pitch, ground_w * (1.0 - _charge_w))
+	_lookat(off, pitch, ground_w * (1.0 - _charge_w) * (1.0 - _ope_golpe_w))
 
 	if _hitstop_timer > 0.0 and _hitstop_shake > 0.0:
 		_add(off, "Torso", Vector3(randf_range(-1,1), randf_range(-1,1), randf_range(-1,1)) * _hitstop_shake)

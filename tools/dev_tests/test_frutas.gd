@@ -210,9 +210,28 @@ func _contar_nos(n: Node) -> int:
 		t += _contar_nos(c)
 	return t
 
+# ⚠️ O RECONHECIMENTO POR CAMINHO DE SCRIPT NÃO ENXERGA SUBCLASSE (2026-09-06).
+#
+# `get_class()` devolve a classe do ENGINE ("Area3D"), nunca o `class_name` do
+# GDScript — por isso o teste caía no `resource_path.ends_with("DamageZone.gd")`.
+# Só que esse casamento é por ARQUIVO: um nó de uma subclasse tem o
+# `resource_path` do arquivo DELA, e some da conta.
+#
+# Foi o que aconteceu quando o C da Pika passou a usar `ZonaBarragem extends
+# DamageZone`: a auditoria reportou "3/4 golpes com hitbox" num golpe que o
+# `test_pika_c_area` prova aplicar dano e paralisia. A hitbox existia; a sonda é
+# que era estreita demais para vê-la.
+#
+# `is DamageZone` cobre a hierarquia inteira e é o que o teste sempre quis
+# perguntar. Os outros tipos seguem no casamento por caminho — nenhum deles tem
+# subclasse hoje, e generalizar sem necessidade seria trocar um teste legível
+# por um genérico.
 func _contar_tipo(n: Node, tipo: String) -> int:
 	var t := 0
-	if n.get_class() == tipo or (n.get_script() != null and str(n.get_script().resource_path).ends_with(tipo + ".gd")):
+	if tipo == "DamageZone":
+		if n is DamageZone:
+			t += 1
+	elif n.get_class() == tipo or (n.get_script() != null and str(n.get_script().resource_path).ends_with(tipo + ".gd")):
 		t += 1
 	for c in n.get_children():
 		t += _contar_tipo(c, tipo)

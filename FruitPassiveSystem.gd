@@ -101,11 +101,11 @@ static func get_all_passives() -> Dictionary:
 			"jump_mod": 1.0
 		},
 		"ope_ope": {
-			"nome": "Precisão Cirúrgica (Spatial Mastery)",
-			"descricao": "Dentro da 'Room', a chance de acerto crítico aumenta em +30% e habilidades consomem 50% menos estamina.",
+			"nome": "Domínio Cirúrgico",
+			"descricao": "Crie um ROOM para trocar posições, arremessar rochas e usar Gamma Knife. As técnicas exigem que você permaneça dentro do campo.",
 			"tipo": "Paramecia",
-			"speed_mod": 1.10,
-			"jump_mod": 1.10
+			"speed_mod": 1.0,
+			"jump_mod": 1.0
 		},
 		"bara_bara": {
 			"nome": "Esquiva Desmembrada (Split Reflex)",

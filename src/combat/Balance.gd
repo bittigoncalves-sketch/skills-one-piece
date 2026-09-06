@@ -223,6 +223,21 @@ const FRUTAS := {
 		"C": {"tipo": T.MULTI, "dano": 76.0, "hits": 5},    # sniper,    5 x 76 = 380
 		"V": {"tipo": T.MULTI, "dano": 7.0,  "hits": 100},  # minigun, 100 x  7 = 700
 	},
+	# PIKA PIKA — o Z é salva de 7 raios. O número por raio é DECISÃO DO DONO
+	# (2026-09-04), não leitura do vídeo: dano não se lê em gravação. Chegou por
+	# vizinhança — Mera Z tira 25 num acerto só, Gura Z tira 96, e a Buki Z faz
+	# 12 x 16. Sete x 14 = 98 no teto, e só se a salva inteira conectar.
+		"pika_pika": {
+			"Z": {"tipo": T.MULTI, "dano": 14.0, "hits": 7},    # yasakani, 7 x 14 = 98
+		# X — a explosão do mergulho. ESCOLHA MINHA, o dono ajusta: fica na
+		# vizinhança dos outros X (mera 160, hie 168), e só sai se o ziguezague
+		# realmente encontrar alguém.
+			"X": {"tipo": T.UNICO, "dano": 160.0},             # yata no kagami
+			# C/V: valores inferidos pela faixa canônica do slot. Muitos feixes são
+			# visuais; o cast_id/teto impede a densidade de multiplicar o dano.
+			"C": {"tipo": T.MULTI, "dano": 8.0, "hits": 48, "teto": 384.0},
+			"V": {"tipo": T.MULTI, "dano": 32.0, "hits": 24, "teto": 768.0},
+		},
 }
 
 # ------------------------------------------------------------- CORPO A CORPO
@@ -231,8 +246,15 @@ const FRUTAS := {
 # uma opção — os valores antigos (30/34/40/70) estavam na escala pré-0,12.
 const MELEE := {
 	"combo":  [48.0, 54.0, 64.0, 112.0],   # soco D, soco E, chute, finalizador
-	"espada": [64.0, 72.0, 96.0],          # corte D-E, corte E-D, corte vertical
-	"projetil_mult": 1.2,                  # a meia-lua do corte vertical
+	# ⚠️ ERAM TRÊS (64/72/96). O combo da espada virou um PAR — horizontal e
+	# vertical — a pedido do dono em 2026-09-06, e o corte D-E do meio saiu.
+	# Os dois que ficaram mantêm os valores que já tinham: o par vale 160, ainda
+	# abaixo do combo de punho completo (278), o que é coerente com ele ter dois
+	# golpes em vez de quatro.
+	"espada": [64.0, 96.0],                # corte horizontal, corte vertical
+	# Continua aqui porque a meia-lua ainda existe no código do projétil; hoje
+	# nenhum passo da espada a dispara (ver a nota em `Melee.COMBO_SWORD`).
+	"projetil_mult": 1.2,
 }
 
 # ------------------------------------------------ ESTILOS DE LUTA (modo style)

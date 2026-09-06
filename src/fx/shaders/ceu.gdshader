@@ -66,6 +66,10 @@ uniform vec3 cor_topo : source_color = vec3(0.13, 0.45, 0.90);
 uniform vec3 cor_horizonte : source_color = vec3(0.66, 0.86, 0.99);
 uniform vec3 cor_chao_horizonte : source_color = vec3(0.20, 0.28, 0.38);
 uniform vec3 cor_chao_fundo : source_color = vec3(0.03, 0.04, 0.07);
+// Chuva de Luz (Pika V): tinge o céu real, sem cúpula ou disco geométrico.
+// Zero mantém exatamente a direção de arte normal; um produz a atmosfera
+// dourada temporária controlada pelo efeito.
+uniform float pika_v_dourado : hint_range(0.0, 1.0) = 0.0;
 // Curva pequena = transição CURTA E DURA (o expoente é 1/curva). O chão em
 // 0.04 vira expoente 25: cinco graus abaixo do horizonte já é quase o fundo
 // escuro — que é exatamente a regra 1 lá de cima.
@@ -246,5 +250,17 @@ void sky() {
 		nuvem = mix(cor_horizonte, nuvem, perto);
 
 		COLOR = mix(fundo, nuvem, silhueta * perto);
+
+		// O dourado conserva a massa e o relevo das nuvens: muda a iluminação do
+		// céu, não cola uma cor chapada na tela. Mais luminoso no horizonte e
+		// âmbar profundo no zênite, como a progressão da referência do Pika V.
+		vec3 ouro_topo = vec3(0.52, 0.29, 0.055);
+		vec3 ouro_horizonte = vec3(1.10, 0.72, 0.20);
+		vec3 fundo_ouro = mix(ouro_horizonte, ouro_topo, rampa(elev, curva_ceu));
+		vec3 nuvem_ouro = mix(vec3(0.72, 0.40, 0.08),
+			vec3(1.28, 0.96, 0.46), degrau(relevo, faixas, suavidade));
+		vec3 cena_ouro = mix(fundo_ouro, nuvem_ouro, silhueta * perto);
+		cena_ouro += vec3(1.0, 0.72, 0.24) * (halo + disco * 1.20);
+		COLOR = mix(COLOR, cena_ouro, pika_v_dourado);
 	}
 }

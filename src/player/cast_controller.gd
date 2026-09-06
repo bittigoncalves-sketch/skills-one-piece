@@ -65,7 +65,18 @@ var _slot_carregado := ""
 
 # Quais golpes são carregáveis. Tabela em vez de `if` espalhado: quando a
 # segunda skill carregável existir, é uma linha.
-const CARREGAVEIS := {"goro_goro": ["V"], "gura_gura": ["X"], "mera_mera": ["V", "Z", "X", "C"], "bomu_bomu": ["Z", "X"]}
+## Quais frutas têm slots que CARREGAM enquanto a tecla fica segurada.
+##
+## ⚠️ A MERA MERA SAIU DAQUI (2026-09-01, pedido do dono: "elimina a necessidade
+## de tempo para desferir ataques de frutas na Mera Mera no Mi"). Ela tinha os
+## QUATRO slots carregáveis — era a única assim — e cada golpe exigia segurar
+## antes de sair. Agora os quatro disparam no toque.
+##
+## Tirar daqui basta: é esta lista que o `_e_carregavel` consulta, e é ela que
+## decide entre "nasce e cresce" e "sai agora". Zerar o `tempo_de_carga` na
+## tabela de dano NÃO serviria — lá o zero cai num fallback de 3 s e o efeito
+## seria o oposto do pedido.
+const CARREGAVEIS := {"goro_goro": ["V"], "gura_gura": ["X"], "bomu_bomu": ["Z", "X"]}
 
 func montar_em(dono: Node) -> void:
 	_dono = dono
@@ -129,8 +140,147 @@ func limpar_silencio() -> void:
 	_suprimido_t = 0.0
 	StatusFX.remover(_dono, StatusFX.SILENCIADO)
 
+
+## O Pacifista tem tres tipos de compromisso diferentes (canal, rajada e
+## disparo com recuperacao), mas todos compartilham uma regra: enquanto uma
+## tecnica esta resolvendo, nenhuma outra skill pode nascer. A meta e publica
+## porque os nos de presentation tambem precisam encerra-la em todos os peers.
+func acao_pacifista_ativa() -> bool:
+	return is_instance_valid(_dono) and str(_dono.get_meta("px_skill_ativa", "")) != ""
+
+
+func _pika_c_ativa() -> bool:
+	return is_instance_valid(_dono) and bool(_dono.get_meta("pika_c_active", false))
+
+
+func _e_pacifista() -> bool:
+	return _dono.combat_mode == "style" and _dono.estilo_atual() == "pacifista"
+
+
+func _meta_ativa_pacifista(slot_pedido: String) -> String:
+	match slot_pedido:
+		"Z": return "px_laser_ativo"
+		"X": return "px_iron_rush_ativo"
+		"C": return "px_lance_ativo"
+		"V": return "px_tri_beam_ativo"
+	return ""
+
+
+func _meta_cancelada_pacifista(slot_pedido: String) -> String:
+	match slot_pedido:
+		"Z": return "px_laser_cancelado"
+		"X": return "px_iron_rush_cancelado"
+		"C": return "px_lance_cancelado"
+		"V": return "px_tri_beam_cancelado"
+	return ""
+
+
+## Finaliza somente a geracao que ainda e dona do estado. Sem o token, um X
+## antigo terminando seus ultimos rastros poderia destravar um V iniciado logo
+## depois de uma interrupcao.
+func finalizar_pacifista(slot_pedido: String, cast_token: int = 0) -> void:
+	if not is_instance_valid(_dono):
+		return
+	# Copias remotas nao processam o press e, portanto, ficam com `_token == 0`;
+	# nelas o token autoritativo da presentation e a unica identidade disponivel.
+	if cast_token > 0 and _token > 0 and cast_token != _token:
+		return
+	if str(_dono.get_meta("px_skill_ativa", "")) != slot_pedido:
+		return
+	var meta_ativa := _meta_ativa_pacifista(slot_pedido)
+	if meta_ativa != "":
+		_dono.set_meta(meta_ativa, false)
+	_dono.set_meta("px_skill_ativa", "")
+	if str(_dono.get_meta("active_skill", "")) == slot_pedido:
+		_dono.set_meta("active_skill", "")
+	_dono.set_meta("is_casting", false)
+	_carregando = false
+	_slot = ""
+	_dono.pausar_animacao(false)
+
+
+## Fim natural do C sustentado. Só a geração atual pode destravar o jogador.
+func finalizar_pika_c(cast_token: int = 0) -> void:
+	if not is_instance_valid(_dono):
+		return
+	var atual := int(_dono.get_meta("pika_c_token", 0))
+	if cast_token > 0 and atual > 0 and cast_token != atual:
+		return
+	if not _pika_c_ativa():
+		return
+	_dono.set_meta("pika_c_active", false)
+	if _dono.has_method("pedir_cancelar_hold"):
+		_dono.pedir_cancelar_hold("C", "pika_pika", atual, false)
+	if str(_dono.get_meta("active_skill", "")) == "C":
+		_dono.set_meta("active_skill", "")
+	_dono.set_meta("is_casting", false)
+	_carregando = false
+	_slot = ""
+	_dono.pausar_animacao(false)
+
+
+## Entrada transacional das quatro skills: valida tudo, cobra uma unica vez e
+## so depois publica o cast. Z preserva mobilidade; X, C e V prendem o corpo
+## durante a janela de compromisso declarada por seus controladores.
+func _comecar_pacifista(slot_pedido: String) -> void:
+	if not bool(_dono.get("_is_authority")):
+		return
+	if _carregando or acao_pacifista_ativa() \
+			or bool(_dono.get_meta("is_casting", false)):
+		return
+	if float(_dono.energy) + 0.001 < float(_dono.ENERGY_SKILL):
+		print("⚡ Energia insuficiente para a tecnica Pacifista [%s]." % slot_pedido)
+		return
+
+	_token += 1
+	_slot = slot_pedido
+	_dono.set_meta("px_skill_ativa", slot_pedido)
+	_dono.set_meta("active_skill", slot_pedido)
+	_dono.set_meta("is_casting", true)
+	var meta_ativa := _meta_ativa_pacifista(slot_pedido)
+	var meta_cancelada := _meta_cancelada_pacifista(slot_pedido)
+	if meta_ativa != "":
+		_dono.set_meta(meta_ativa, true)
+	if meta_cancelada != "":
+		_dono.set_meta(meta_cancelada, false)
+	_dono.set_meta("px_token_%s" % slot_pedido, _token)
+
+	# O feixe Z e uma ferramenta de pressao movel. Os outros tres comprometem a
+	# locomocao por uma janela curta, o que deixa startup/recuperacao puniveis.
+	_carregando = slot_pedido != "Z"
+	if _carregando:
+		_dono.congelar_para_cast()
+
+	_dono.gastar_energia(_dono.ENERGY_SKILL)
+	pedir_cast(slot_pedido, _token)
+
 # Usado pelo respawn/troca de fruta: aborta sem disparar nada.
 func abortar() -> void:
+	var px_slot := str(_dono.get_meta("px_skill_ativa", "")) if is_instance_valid(_dono) else ""
+	if px_slot != "":
+		var meta_ativa := _meta_ativa_pacifista(px_slot)
+		var meta_cancelada := _meta_cancelada_pacifista(px_slot)
+		if meta_ativa != "":
+			_dono.set_meta(meta_ativa, false)
+		if meta_cancelada != "":
+			_dono.set_meta(meta_cancelada, true)
+		if _dono.has_method("pedir_cancelar_hold") and (bool(_dono.get("_is_authority")) \
+				or _dono.multiplayer.is_server()):
+			_dono.pedir_cancelar_hold(px_slot, "pacifista", _token, true)
+		_dono.set_meta("px_skill_ativa", "")
+		if str(_dono.get_meta("active_skill", "")) == px_slot:
+			_dono.set_meta("active_skill", "")
+			_dono.set_meta("is_casting", false)
+			_dono.pausar_animacao(false)
+	if _pika_c_ativa():
+		_dono.set_meta("pika_c_active", false)
+		if _dono.has_method("pedir_cancelar_hold") and (bool(_dono.get("_is_authority")) \
+				or _dono.multiplayer.is_server()):
+			_dono.pedir_cancelar_hold("C", "pika_pika",
+				int(_dono.get_meta("pika_c_token", 0)), true)
+		if str(_dono.get_meta("active_skill", "")) == "C":
+			_dono.set_meta("active_skill", "")
+		_dono.set_meta("is_casting", false)
 	_carregando = false
 	_slot = ""
 	# ⚠️ O NÓ DA CARGA FICAVA VIVO (corrigido em 2026-08-22). `abortar()` é o que o
@@ -163,6 +313,10 @@ func comecar(slot_pedido: String) -> void:
 	if _slot_desabilitado(slot_pedido):
 		print("🚫 Esta configuração não usa a tecla %s." % slot_pedido)
 		return
+	# ⚠️ A TRAVA PÓS-FRUTA vem ANTES da recarga do slot: ela vale para os quatro,
+	# e checá-la depois deixaria passar um slot que estivesse com recarga zerada.
+	if _dono.combat_mode == "fruit" and float(_dono.get("_trava_pos_fruta")) > 0.0:
+		return
 	if _dono._skill_cooldowns.get(slot_pedido, 0.0) > 0.0:
 		print("⏳ Habilidade [%s] em recarga! Aguarde %.1fs." % [
 			slot_pedido, _dono._skill_cooldowns[slot_pedido]])
@@ -177,6 +331,12 @@ func comecar(slot_pedido: String) -> void:
 
 	var fruta: String = _dono.current_fruit_id
 	var na_fruta: bool = _dono.combat_mode == "fruit"
+
+	# PACIFISTA: os quatro golpes comecam no PRESS. Z e X continuam respondendo
+	# ao RELEASE (canal/rajada); C e V ja foram emitidos e nao duplicam na solta.
+	if _e_pacifista():
+		_comecar_pacifista(slot_pedido)
+		return
 
 	if slot_pedido == "Z" and na_fruta and fruta == "yami_yami":
 		print("🌑 Yami Pistol: ", "EMPUNHADA (Bt Dir=Mirar / Bt Esq=Atirar)"
@@ -204,6 +364,25 @@ func comecar(slot_pedido: String) -> void:
 		_token += 1
 		_dono.set_meta("is_casting", true)
 		pedir_cast(slot_pedido)
+		return
+	# PIKA C: nasce no PRESS, teleporta/seleciona o alvo dentro do efeito e
+	# continua somente enquanto esta meta estiver ativa. O key-up a replica.
+	if slot_pedido == "C" and na_fruta and fruta == "pika_pika":
+		if float(_dono.energy) + 0.001 < float(_dono.ENERGY_SKILL):
+			print("⚡ Energia insuficiente para Yasakani no Magatama.")
+			return
+		_carregando = true
+		_slot = "C"
+		_token += 1
+		_dono.set_meta("pika_c_token", _token)
+		_dono.set_meta("pika_c_active", true)
+		_dono.set_meta("active_skill", "C")
+		_dono.set_meta("is_casting", true)
+		_dono.congelar_para_cast()
+		_dono.gastar_energia(_dono.ENERGY_SKILL)
+		if _dono.has_method("pedir_iniciar_hold"):
+			_dono.pedir_iniciar_hold("C", "pika_pika")
+		pedir_cast("C", _token)
 		return
 	# EL THOR (X da Goro): o raio que sobe do BRAÇO é o GATILHO da reação
 	if slot_pedido == "X" and na_fruta and fruta == "goro_goro":
@@ -297,8 +476,27 @@ func comecar(slot_pedido: String) -> void:
 
 	# Z RAJADA (Mera = balas de fogo; Hie = flechas de gelo) — começa ao
 	# PRESSIONAR, não congela o corpo; para ao soltar ou ao acabar o pente.
-	if slot_pedido == "Z" and na_fruta and (fruta == "hie_hie"):
+	#
+	# ⚠️ A MERA ENTROU NESTA CONDIÇÃO junto com o pedido de "eliminar a
+	#   necessidade de tempo para desferir ataques da Mera". Antes o Z dela só
+	#   existia pelo nó de CARGA (`MeraZChargeNode`), que além de esperar também
+	#   era quem SACAVA as pistolas. Tirá-la de `CARREGAVEIS` sem trazer o saque
+	#   para cá deixou o Z sem efeito nenhum — nem armas, nem rajada, nem erro.
+	if slot_pedido == "Z" and na_fruta and (fruta == "hie_hie" or fruta == "mera_mera"):
 		_dono.trigger_skill_cooldown("Z")
+		if fruta == "mera_mera" and _dono.has_node("PlayerRig"):
+			var rig := _dono.get_node("PlayerRig") as PlayerRig
+			if rig:
+				# Sem carga as armas não passam pelo coldre: vão direto para as
+				# mãos, para o primeiro tiro já sair de um cano visível.
+				rig.empunhar_pistolas_mera()
+				# Guarda só depois do último tiro; a duração acompanha a cadência
+				# declarada pela rajada, sem número mágico.
+				var holster_timer := _dono.get_tree().create_timer(
+					DisparoSustentado.MAX_BALAS * DisparoSustentado.INTERVALO + 0.15)
+				holster_timer.timeout.connect(func():
+					if is_instance_valid(rig):
+						rig.esconder_pistolas_mera())
 		# A rajada inteira é UMA conjuração: as 8 balas dividem o teto do slot Z
 		# (200). Encerrar aqui abre uma conjuração nova a cada aperto de tecla —
 		# sem isto, a segunda rajada nasceria com o orçamento da primeira gasto.
@@ -336,6 +534,24 @@ func comecar(slot_pedido: String) -> void:
 
 # ----------------------------------------------- soltar a tecla -> dispara
 func soltar(slot_pedido: String) -> void:
+	# O modo pode ter mudado entre press e release; a identidade da acao e mais
+	# confiavel do que consultar o estilo atual outra vez.
+	if str(_dono.get_meta("px_skill_ativa", "")) == slot_pedido:
+		if slot_pedido == "Z":
+			_dono.set_meta("px_laser_ativo", false)
+			if _dono.has_method("pedir_cancelar_hold"):
+				_dono.pedir_cancelar_hold("Z", "pacifista", _token, false)
+			finalizar_pacifista("Z", _token)
+		elif slot_pedido == "X":
+			# O controlador entrega MIN_SOCOS mesmo num toque. Ele proprio chama
+			# `finalizar_pacifista` depois dessa janela minima de compromisso.
+			_dono.set_meta("px_iron_rush_ativo", false)
+			if _dono.has_method("pedir_cancelar_hold"):
+				_dono.pedir_cancelar_hold("X", "pacifista", _token, false)
+		# C e V ja nasceram no pressionamento. Soltar nao cria uma segunda copia
+		# e tampouco pula a recuperacao/telegraph.
+		return
+
 	# CHARGE-UP: soltar dispara na mira DE AGORA, com a carga que houver.
 	if is_instance_valid(_carregado) and slot_pedido == _slot_carregado:
 		_liberar_carregado()
@@ -364,6 +580,9 @@ func soltar(slot_pedido: String) -> void:
 		_carregando = false
 		_slot = ""
 		_dono.set_meta("is_casting", false)
+		return
+	if slot_pedido == "C" and _pika_c_ativa():
+		finalizar_pika_c(int(_dono.get_meta("pika_c_token", 0)))
 		return
 	# MERA MERA Z: soltar a tecla ENCERRA a rajada.
 	if _dono._disparo.rajada_ativa() and slot_pedido == "Z":
@@ -419,7 +638,7 @@ func conjurar_direto(slot_pedido: String) -> void:
 
 # ------------------------------------------------------- pedido ao servidor
 # Calcula a mira e entrega ao Player, que fala com a rede.
-func pedir_cast(slot_pedido: String) -> void:
+func pedir_cast(slot_pedido: String, cast_token: int = 0) -> void:
 	if not _dono._is_authority or _suprimido:
 		_dono.set_meta("is_casting", false)
 		return
@@ -458,7 +677,8 @@ func pedir_cast(slot_pedido: String) -> void:
 		_dono.get_tree().root.get_node("GameFlow").slow_mo()
 		ScreenFX.flash(Color(1, 1, 1), 0.3)
 
-	_dono.pedir_cast_no_servidor(slot_pedido, mira["aim"], mira["origem"])
+	_dono.pedir_cast_no_servidor(slot_pedido, mira["aim"], mira["origem"], 0.0,
+		cast_token)
 
 class GuraChargeNode extends Node:
 	var _dono: Node

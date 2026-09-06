@@ -35,6 +35,12 @@ extends Node
 # quem já lia este dicionário. Quem for aplicar dano deve usar `spec`.
 static func get_fruit_skills() -> Dictionary:
 	var identidade := {
+		"ope_ope": {
+			"Z": {"nome": "ROOM · Campo Cirúrgico", "cor": Color(0.22, 0.91, 0.95)},
+			"X": {"nome": "Shambles · Troca Espacial", "cor": Color(0.55, 0.95, 1.0)},
+			"C": {"nome": "Takt · Telecinese", "cor": Color(0.32, 0.82, 0.90)},
+			"V": {"nome": "Gamma Knife", "cor": Color(0.55, 1.0, 0.38)}
+		},
 		"gomu_gomu": {
 			"Z": {"nome": "Gomu Gomu no Pistol", "cor": Color(0.85, 0.25, 0.2)},
 			"X": {"nome": "Gomu Gomu no Bazooka", "cor": Color(0.9, 0.35, 0.15)},
@@ -108,6 +114,14 @@ static func get_fruit_skills() -> Dictionary:
 			"X": {"nome": "Iceberg", "cor": Color(0.45, 0.75, 1.0)},
 			"C": {"nome": "Investida de Gelo", "cor": Color(0.6, 0.85, 1.0)},
 			"V": {"nome": "Ice Age (Era do Gelo)", "cor": Color(0.7, 0.9, 1.0)}
+		},
+		# PIKA PIKA — Z e X preservam as técnicas já implementadas; C é a barragem
+		# massiva que nasce no personagem e V é a chuva de luz que nasce no céu.
+		"pika_pika": {
+			"Z": {"nome": "Salva de Luz", "cor": Color(1.0, 0.92, 0.55)},
+			"X": {"nome": "Yata no Kagami", "cor": Color(1.0, 0.88, 0.42)},
+			"C": {"nome": "Yasakani no Magatama", "cor": Color(1.0, 0.84, 0.28)},
+			"V": {"nome": "Chuva de Luz", "cor": Color(1.0, 0.94, 0.62)}
 		}
 	}
 	# Casa a identidade com a tabela de dano e com a recarga padronizada do slot.
@@ -123,6 +137,8 @@ static func get_fruit_skills() -> Dictionary:
 	return identidade
 
 static func get_slot_cooldown(slot: String, fruit_id: String = "") -> float:
+	if fruit_id == "ope_ope":
+		return float({"Z": 8.0, "X": 6.0, "C": 10.0, "V": 22.0}.get(slot, 8.0))
 	if fruit_id == "bomu_bomu":
 		return 10.0
 	match slot:
