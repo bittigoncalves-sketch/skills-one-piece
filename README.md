@@ -138,7 +138,7 @@ antigas — nada ali é apagado).
 | [`docs/ANIMACOES_MIXAMO.md`](docs/ANIMACOES_MIXAMO.md) | pipeline, catálogo de clipes, limitações |
 | [`docs/MODOS_DE_COMBATE.md`](docs/MODOS_DE_COMBATE.md) | **teclas 1/2/3**: fruta, estilo de luta e espada — e por que o terceiro valor exigiu um portão no cast |
 | [`docs/COMBATE_ESPADA.md`](docs/COMBATE_ESPADA.md) | **a Yoru**: pega `handle`/`Hand_R`, as bolinhas do fio, o choque de espadas e o combo horizontal→vertical |
-| [`docs/AGENTES.md`](docs/AGENTES.md) | como o trabalho é dividido entre agentes especializados |
+| [`docs/AGENTES.md`](docs/AGENTES.md) | como o trabalho é dividido entre agentes especializados, e os dois agentes de **avaliação** (`.claude/agents/`) |
 | [`docs/LIMITE_DE_TAMANHO.md`](docs/LIMITE_DE_TAMANHO.md) | limite de 900 linhas por script, o que já foi dividido e o plano do `Player.gd` |
 | [`docs/ARQUITETURA_PLAYER.md`](docs/ARQUITETURA_PLAYER.md) | **decisão de arquitetura**: componentes por domínio, 9 fases, e o princípio de posse de estado |
 | [`docs/RELATORIO_PLAYER.md`](docs/RELATORIO_PLAYER.md) | mapa do `Player.gd` por domínio, estado compartilhado e a medição que embasou a decisão |

@@ -235,3 +235,48 @@ Teste de regressão que cobre o conjunto:
 ```bash
 godot --headless --path . --script tools/dev_tests/test_arena.gd
 ```
+
+---
+
+## Agentes de AVALIAÇÃO (2026-09-06)
+
+Dois agentes que **julgam** em vez de construir. Moram em
+`.claude/agents/*.md` e são invocáveis pelo nome.
+
+| agente | pergunta que ele responde |
+|---|---|
+| `critico-de-combate` | o golpe é **bom de jogar**? peso, leitura, risco/recompensa, lugar no kit |
+| `avaliador-de-animacao` | o movimento está **certo como movimento**? trajetória, arco, cadeia cinética, sincronia com a hitbox |
+
+### A regra que define os dois: eles NÃO consertam
+
+Está escrito com todas as letras no prompt de cada um, e é a razão de existirem
+separados de quem implementa. Um crítico que começa a consertar para de
+criticar — o valor dele é o julgamento de quem **não** está apaixonado pela
+própria solução. Fronteira: `src/`, `tools/`, `assets/`, `Player.gd` e `docs/`
+são proibidos; sonda temporária vai em `/tmp`.
+
+### O que os dois carregam no prompt
+
+Os nove itens que este documento exige, com destaque para:
+
+- **o rig**, porque ele não é óbvio: não há `Skeleton3D` (rig por NÓS), o
+  `Torso` é pai de tudo, os 13 papéis não incluem mão, e os dois tipos de rig
+  têm o antebraço em eixos **opostos**;
+- **a régua de medição em espaço LOCAL** —
+  `player.global_transform.affine_inverse() * ponta.global_position` — porque
+  câmera não pode entrar em julgamento de animação;
+- **a linha de base da bateria** (60 passou / 9 falhou, todas pré-existentes),
+  para nenhum dos dois reportar falha velha como achado novo;
+- **o que já foi descartado**, que é metade do valor de um diagnóstico;
+- **as portas** `SOP_PORTA=24740` e `24750`, para rodarem em paralelo sem
+  colidir na sala ENet.
+
+### ⚠️ Agente criado não aparece na sessão em curso
+
+O Claude Code carrega as definições de `.claude/agents/` no **início da
+sessão**. Criar o arquivo não o torna invocável por nome imediatamente — a
+tentativa devolve "Agent type not found". Ou se reinicia a sessão, ou se lança
+um agente genérico com o mesmo prompt embutido, que foi o que se fez na
+primeira rodada.
+
