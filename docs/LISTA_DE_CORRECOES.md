@@ -985,3 +985,46 @@ As duas saídas são subir o dano por raio para ~24 (7 × 24 = 168, dentro dos 8
 ou declarar a exceção no teste. Vale notar que a correção de colisão desta data
 faz a salva **conectar mais vezes do que antes** — o dano por acerto não mudou,
 mas o dano que realmente chega ao alvo subiu.
+
+### 54. 🔴 A espada é LOCAL: em multiplayer o servidor resolve SOCO
+
+**Detectado em 2026-09-06**, na revisão. Nada replica a espada:
+
+- as propriedades replicadas do Player são `net_velocity`, `net_facing`,
+  `net_on_floor`, `net_charge_pose` e `net_charge_progress` — **`equipped_weapon`
+  não está entre elas**;
+- `sacar_ou_guardar_espada()` e `set_combat_mode()` não têm RPC nenhum.
+
+Consequências em partida com mais de um jogador:
+
+1. **Os outros não veem a Yoru.** Você aparece golpeando de mãos vazias.
+2. **O servidor resolve o golpe errado.** `_do_server_melee` roda na cópia
+   remota, onde `equipped_weapon == ""` e `_yoru == null` — então
+   `Melee.golpear` cai em `COMBO` (punho) em vez de `COMBO_SWORD`. Dano 48 em
+   vez de 64, frame data de 0,40 s em vez de 0,76 s, e uma caixa na frente do
+   peito em vez das bolinhas do fio.
+3. **A animação também diverge**: `_net_play_melee` nos outros peers toca o
+   clipe de punho, não o corte procedural.
+
+**Como isso passou:** a espada nasceu como tecla de DEBUG (a pedido, para não
+mexer no spawn do mapa) e virou o **modo 3** de combate depois. A rede nunca foi
+revisitada quando o escopo mudou.
+
+**Não foi corrigido** porque é decisão de escopo: replicar arma é acrescentar
+estado à rede e mexer no caminho autoritativo do combate. As duas saídas são
+replicar `equipped_weapon` + o saque (e fazer o servidor montar a lâmina na
+cópia remota), ou declarar a espada como recurso de treino local até haver um
+plano de arma em rede.
+
+### 55. 🔵 Dois desenhos de conferência continuam LIGADOS
+
+**Detectado em 2026-09-06.** São temporários e pedidos pelo dono, mas ficam na
+tela de quem jogar:
+
+| constante | o que desenha |
+|---|---|
+| `PikaFXGrande.C_MOSTRAR_HITBOX` | a pirâmide de dano do C da Pika, em **vermelho** |
+| `SwordBlade.MOSTRAR_ZONAS` | as sete bolinhas do fio da Yoru, em **azul** |
+
+Virar as duas para `false` quando a conferência terminar.
+

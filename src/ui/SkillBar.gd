@@ -54,6 +54,21 @@ func _build() -> void:
 	vbox.add_theme_constant_override("separation", 6)
 	margin.add_child(vbox)
 
+	# ⚠️ LARGURA MÍNIMA, E ELA NÃO É COSMÉTICA (2026-09-06).
+	#
+	# O `ToqueHud` posiciona os botões de toque A PARTIR desta barra: a coluna
+	# Z/X/C/V fica à ESQUERDA dela (`r.position.x - FOLGA - RAIO`) e a fileira
+	# PULO/DASH/F é alinhada à DIREITA. Ou seja, a largura da barra — que depende
+	# do TEXTO dentro dela — decide se os botões de toque se encostam.
+	#
+	# Descobri pelo `test_toque`: ao encurtar os títulos de "[R: Alternar]" para
+	# "[1]" e "[2]", a barra estreitou, a borda esquerda andou para a direita, a
+	# coluna de skills foi junto e colidiu com o PULO — 77 px onde eram precisos
+	# 84. Um rótulo de HUD quebrou o alcance do dedo no celular.
+	#
+	# A largura mínima corta a dependência: mudar texto deixa de mover botão.
+	custom_minimum_size.x = 300.0
+
 	_title_lbl = Label.new()
 	_title_lbl.text = "TÉCNICAS [R: Estilo]"
 	_title_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE

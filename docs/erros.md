@@ -7,6 +7,34 @@ O objetivo aqui não é o conserto — é a **causa**. Erro sem causa documentad
 
 ---
 
+## 2026-09-06 — mudar um rótulo do HUD encostou dois botões de toque
+
+**Sintoma:** achado na revisão. A bateria fechou em **59 passou / 10 falhou**
+contra a linha de base de 55/9 — uma falha NOVA: `test_toque`, com
+"PULO×Z (77 px, precisa de 84)".
+
+**Causa raiz:** o `ToqueHud` posiciona os botões **a partir da `SkillBar`**: a
+coluna Z/X/C/V fica à ESQUERDA dela (`r.position.x - FOLGA - RAIO`) e a fileira
+PULO/DASH/F é alinhada à DIREITA. Ou seja, a **largura da barra decide o
+espaçamento dos botões** — e a largura da barra depende do TEXTO dentro dela.
+
+Ao trocar os títulos de `"FRUTA: %s [R: Alternar]"` para `"FRUTA: %s [1]"`, a
+barra estreitou, a borda esquerda andou para a direita, a coluna de skills foi
+junto e encostou no PULO. Um rótulo de HUD quebrou o alcance do dedo no celular.
+
+**Correção:** `custom_minimum_size.x = 300` na `SkillBar`. Não é cosmético: corta
+a dependência entre texto e layout, então mudar rótulo deixa de mover botão.
+
+**Como detectar de novo:** layout que se ancora em `get_global_rect()` de outro
+controle herda TODAS as variações daquele controle, inclusive as de conteúdo.
+Quem serve de âncora precisa de tamanho mínimo.
+
+**O que isto diz sobre a revisão:** a falha não apareceu em nenhum dos testes que
+eu rodava a cada mudança — só na bateria completa, e só porque `test_toque`
+exige TELA (roda sem `--headless`). Rodar a bateria inteira contra uma linha de
+base numérica é o que a pegou.
+
+
 ## 2026-09-06 — a lâmina TELEPORTAVA de um lado ao outro: `ease_out_expo` no corte
 
 **Sintoma:** o corte não lia como corte. Medida a trajetória da ponta em espaço
