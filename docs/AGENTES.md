@@ -272,11 +272,29 @@ Os nove itens que este documento exige, com destaque para:
 - **as portas** `SOP_PORTA=24740` e `24750`, para rodarem em paralelo sem
   colidir na sala ENet.
 
-### ⚠️ Agente criado não aparece na sessão em curso
+### ⚠️ Agente definido no PROJETO nunca é encontrado — a sessão abre em `~/dev`
 
-O Claude Code carrega as definições de `.claude/agents/` no **início da
-sessão**. Criar o arquivo não o torna invocável por nome imediatamente — a
-tentativa devolve "Agent type not found". Ou se reinicia a sessão, ou se lança
-um agente genérico com o mesmo prompt embutido, que foi o que se fez na
-primeira rodada.
+Duas armadilhas empilhadas, e a segunda é a que importa.
+
+**1. Agente criado não aparece na sessão em curso.** O Claude Code carrega as
+definições no **início da sessão**; criar o arquivo não o torna invocável na
+hora. A tentativa devolve `Agent type not found`.
+
+**2. E `.claude/agents/` do PROJETO não é lido nunca.** Numa sessão nova, com o
+arquivo já commitado, a invocação continuou falhando. A causa é a mesma da
+armadilha da worktree logo acima: **o Claude Code resolve `.claude/` a partir da
+pasta da SESSÃO, não da pasta do projeto** — e esta sessão abre em `~/dev`.
+`skills-one-piece/.claude/agents/` fica invisível.
+
+**Regra prática:** agente deste projeto vai em **`~/.claude/agents/`**, que é
+lido independentemente de onde a sessão abriu. Manter uma cópia em
+`.claude/agents/` do projeto continua valendo — é ela que versiona a definição e
+viaja no `git` —, mas a cópia que o Claude Code **usa** é a do `~`.
+
+```bash
+cp .claude/agents/*.md ~/.claude/agents/
+```
+
+**Enquanto a sessão em curso não reinicia**, lance um agente genérico com o
+mesmo prompt embutido. Foi o que se fez nas duas primeiras rodadas.
 
