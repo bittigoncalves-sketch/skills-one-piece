@@ -12,7 +12,7 @@ extends Node
 #
 #  MECÂNICAS DE COMBATE:
 #   - Desativação/Interrupção de skill sobre dano (Hit-Stun / Stagger).
-#   - Morte instantânea ao cair no Void (y < -40m).
+#   - Morte instantânea ao cair no Void (y < -40m; -150m no Modo História).
 #   - Knockback escalado inversamente pela Vida Atual (Quanto menor HP, maior a repulsão).
 #   - Passiva da Yami Yami: Desativação temporária dos poderes de usuários próximos.
 # ============================================================================
@@ -35,11 +35,42 @@ extends Node
 # quem já lia este dicionário. Quem for aplicar dano deve usar `spec`.
 static func get_fruit_skills() -> Dictionary:
 	var identidade := {
+		"tori_tori_phoenix": {
+			"Z": {"nome": "Forma Fênix", "cor": Color("23ceff"), "alternavel": true},
+			"X": {"nome": "Chama da Fênix", "cor": Color("16bfff")},
+			"C": {"nome": "Garras Celestes", "cor": Color("ffc452")},
+			"V": {"nome": "Renascimento", "cor": Color("59e9ff")},
+			"F": {"nome": "Voo da Fênix", "cor": Color("ffc452")},
+		},
+		"magu_magu": {
+			"Z": {"nome": "Punho de Lava", "cor": Color("ff581c")},
+			"X": {"nome": "Onda de Lava", "cor": Color("ed3812")},
+			"C": {"nome": "Cão de Lava", "cor": Color("ff8a25")},
+			"V": {"nome": "Erupção", "cor": Color("ffb33a")},
+		},
+		"rocket": {
+			"Z": {"nome": "Rocket Punch", "cor": Color(1.0, 0.38, 0.06)},
+			"X": {"nome": "Rocket Crash", "cor": Color(1.0, 0.5, 0.1)},
+			"C": {"nome": "Rocket Barrage", "cor": Color(1.0, 0.65, 0.18)},
+			"V": {"nome": "Rocket Overdrive", "cor": Color(1.0, 0.85, 0.4)}
+		},
+		"ope_ope": {
+			"Z": {"nome": "ROOM · Campo Cirúrgico", "cor": Color(0.22, 0.91, 0.95)},
+			"X": {"nome": "Shambles · Troca Espacial", "cor": Color(0.55, 0.95, 1.0)},
+			"C": {"nome": "Takt · Telecinese", "cor": Color(0.32, 0.82, 0.90)},
+			"V": {"nome": "Gamma Knife", "cor": Color(0.55, 1.0, 0.38)}
+		},
 		"gomu_gomu": {
 			"Z": {"nome": "Gomu Gomu no Pistol", "cor": Color(0.85, 0.25, 0.2)},
 			"X": {"nome": "Gomu Gomu no Bazooka", "cor": Color(0.9, 0.35, 0.15)},
 			"C": {"nome": "Gomu Gomu no Gatling", "cor": Color(0.95, 0.5, 0.1)},
-			"V": {"nome": "Gear 2 / Red Hawk", "cor": Color(1.0, 0.15, 0.15)}
+			"V": {"nome": "Gear 2 (Transformação)", "cor": Color(1.0, 0.15, 0.15)}
+		},
+		"gomu_gomu_gear2": {
+			"Z": {"nome": "Gomu Gomu no Jet Pistol", "cor": Color(1.0, 0.35, 0.3)},
+			"X": {"nome": "Gomu Gomu no Jet Bazooka", "cor": Color(1.0, 0.45, 0.2)},
+			"C": {"nome": "Gear 3 · Gigant Pistol", "cor": Color(1.0, 0.75, 0.15)},
+			"V": {"nome": "Desativar Gear 2", "cor": Color(0.7, 0.7, 0.75)}
 		},
 		"gura_gura": {
 			"Z": {"nome": "Gura Punch (Soco do Tremor)", "cor": Color(0.85, 0.94, 1.0)},
@@ -69,10 +100,10 @@ static func get_fruit_skills() -> Dictionary:
 			"V": {"nome": "— (sem técnica)", "cor": Color(0.2, 0.3, 0.4), "desabilitado": true}
 		},
 		"bara_bara": {
-			"Z": {"nome": "Corte Único (Dismantle)", "cor": Color(0.8, 0.1, 0.1)},
-			"X": {"nome": "Buggy Ball", "cor": Color(1.0, 0.0, 0.0)},
-			"C": {"nome": "Área Cortante (Cleave)", "cor": Color(0.6, 0.0, 0.0)},
-			"V": {"nome": "Expansão de Domínio (Shrine)", "cor": Color(0.3, 0.0, 0.0)}
+			"Z": {"nome": "Punho Destacado", "cor": Color("be65ae")},
+			"X": {"nome": "Pinça Bara", "cor": Color("e5bceb")},
+			"C": {"nome": "Canhão — Buggy Ball", "cor": Color("f3ad50")},
+			"V": {"nome": "Festival Bara", "cor": Color("d765ad")}
 		},
 		"goro_goro": {
 			"Z": {"nome": "Sango (Feixe Elétrico)", "cor": Color(0.95, 0.95, 0.3)},
@@ -108,6 +139,14 @@ static func get_fruit_skills() -> Dictionary:
 			"X": {"nome": "Iceberg", "cor": Color(0.45, 0.75, 1.0)},
 			"C": {"nome": "Investida de Gelo", "cor": Color(0.6, 0.85, 1.0)},
 			"V": {"nome": "Ice Age (Era do Gelo)", "cor": Color(0.7, 0.9, 1.0)}
+		},
+		# PIKA PIKA — Z e X preservam as técnicas já implementadas; C é a barragem
+		# massiva que nasce no personagem e V é a chuva de luz que nasce no céu.
+		"pika_pika": {
+			"Z": {"nome": "Salva de Luz", "cor": Color(1.0, 0.92, 0.55)},
+			"X": {"nome": "Yata no Kagami", "cor": Color(1.0, 0.88, 0.42)},
+			"C": {"nome": "Yasakani no Magatama", "cor": Color(1.0, 0.84, 0.28)},
+			"V": {"nome": "Chuva de Luz", "cor": Color(1.0, 0.94, 0.62)}
 		}
 	}
 	# Casa a identidade com a tabela de dano e com a recarga padronizada do slot.
@@ -122,7 +161,31 @@ static func get_fruit_skills() -> Dictionary:
 			linha["cooldown"] = get_slot_cooldown(slot, f_id)
 	return identidade
 
+## A recarga que a ARENA aplica de fato ao usar a técnica (`Player.trigger_skill_cooldown`):
+## Ope, Bara e Rocket usam a tabela abaixo; Bomu e Suke, 10 s; as outras, a recarga
+## fixa por tecla do Player. Existe para a ficha da história gerada da arena
+## (`PerfilDeFrutas.da_arena`) mostrar e aplicar o MESMO número.
+## GATILHO: mudou a regra no `Player.trigger_skill_cooldown`, mudar aqui — o
+## `test_frutas_na_historia` compara as duas para toda fruta e tecla.
+const RECARGA_POR_SLOT_DA_ARENA := {"Z": 5.0, "X": 7.0, "C": 10.0, "V": 25.0}
+
+static func recarga_da_arena(slot: String, fruit_id: String) -> float:
+	if fruit_id in ["ope_ope", "bara_bara", "rocket", "tori_tori_phoenix"]:
+		return get_slot_cooldown(slot, fruit_id)
+	if fruit_id in ["bomu_bomu", "suke_suke"]:
+		return 10.0
+	return float(RECARGA_POR_SLOT_DA_ARENA.get(slot, 0.0))
+
+
 static func get_slot_cooldown(slot: String, fruit_id: String = "") -> float:
+	if fruit_id == "tori_tori_phoenix":
+		return float({"Z": 1.0, "X": 7.0, "C": 10.0, "V": 25.0, "F": 1.0}.get(slot, 1.0))
+	if fruit_id == "rocket":
+		return float({"Z": 5.0, "X": 7.0, "C": 10.0, "V": 35.0}.get(slot, 5.0))
+	if fruit_id == "bara_bara":
+		return float({"Z": 5.0, "X": 7.0, "C": 10.0, "V": 25.0}.get(slot, 5.0))
+	if fruit_id == "ope_ope":
+		return float({"Z": 8.0, "X": 6.0, "C": 10.0, "V": 22.0}.get(slot, 8.0))
 	if fruit_id == "bomu_bomu":
 		return 10.0
 	match slot:
@@ -149,9 +212,9 @@ static func interrupt_casting(caster: CharacterBody3D) -> bool:
 	return false
 
 # ---------------------------------------------- SISTEMA DE VOID (MORTE AO CAIR)
-# Se a posicao Y do personagem for menor que -40m, aciona morte instantanea e respawn
+# Se a posicao Y do personagem for menor que Scoreboard.void_y_de (-40m; -150m na história), aciona morte instantanea e respawn
 static func process_void_check(actor: CharacterBody3D) -> bool:
-	if actor and actor.global_position.y < -40.0:
+	if actor and actor.global_position.y < Scoreboard.void_y_de(actor):
 		print("💀 CAIU NO VOID! Morte instantânea acionada.")
 		if actor.has_method("die_and_respawn"):
 			actor.die_and_respawn()

@@ -31,7 +31,7 @@ não dependem um do outro, então rodam juntos.
 | Especialidade | Território | Arquivos típicos |
 |---|---|---|
 | **Pipeline de animação** | FBX → glTF → `.res`; Blender headless; bake | `tools/fbx_to_glb.py`, `tools/bake_mixamo.gd`, `assets/animations*/` |
-| **Rig e anatomia** | 13 papéis, `Skeleton3D`, Z-up dos Meshy, escala | `src/anim/`, `CharacterBuilder.gd`, `data/characters.json` |
+| **Rig e anatomia** | 13 papéis, `Skeleton3D`, Z-up dos Meshy, escala | `src/anim/`, `CharacterBuilder.gd` |
 | **Animação procedural** | marcha, parkour, poses de golpe, blend | `src/anim/ProceduralAnimator.gd` |
 | **Combate e rede** | dano, knockback, autoridade servidor, RPC | `Player.gd`, `src/combat/`, `src/effects/DamageZone.gd`, `network/` |
 | **VFX e assets 3D** | partículas, luz, modelagem no Blender | `src/effects/`, `tools/blender/`, `assets/models/` |
@@ -235,3 +235,66 @@ Teste de regressão que cobre o conjunto:
 ```bash
 godot --headless --path . --script tools/dev_tests/test_arena.gd
 ```
+
+---
+
+## Agentes de AVALIAÇÃO (2026-09-06)
+
+Dois agentes que **julgam** em vez de construir. Moram em
+`.claude/agents/*.md` e são invocáveis pelo nome.
+
+| agente | pergunta que ele responde |
+|---|---|
+| `critico-de-combate` | o golpe é **bom de jogar**? peso, leitura, risco/recompensa, lugar no kit |
+| `avaliador-de-animacao` | o movimento está **certo como movimento**? trajetória, arco, cadeia cinética, sincronia com a hitbox |
+
+### A regra que define os dois: eles NÃO consertam
+
+Está escrito com todas as letras no prompt de cada um, e é a razão de existirem
+separados de quem implementa. Um crítico que começa a consertar para de
+criticar — o valor dele é o julgamento de quem **não** está apaixonado pela
+própria solução. Fronteira: `src/`, `tools/`, `assets/`, `Player.gd` e `docs/`
+são proibidos; sonda temporária vai em `/tmp`.
+
+### O que os dois carregam no prompt
+
+Os nove itens que este documento exige, com destaque para:
+
+- **o rig**, porque ele não é óbvio: não há `Skeleton3D` (rig por NÓS), o
+  `Torso` é pai de tudo, os 13 papéis não incluem mão, e os dois tipos de rig
+  têm o antebraço em eixos **opostos**;
+- **a régua de medição em espaço LOCAL** —
+  `player.global_transform.affine_inverse() * ponta.global_position` — porque
+  câmera não pode entrar em julgamento de animação;
+- **a linha de base da bateria** (60 passou / 9 falhou, todas pré-existentes),
+  para nenhum dos dois reportar falha velha como achado novo;
+- **o que já foi descartado**, que é metade do valor de um diagnóstico;
+- **as portas** `SOP_PORTA=24740` e `24750`, para rodarem em paralelo sem
+  colidir na sala ENet.
+
+### ⚠️ Agente definido no PROJETO nunca é encontrado — a sessão abre em `~/dev`
+
+Duas armadilhas empilhadas, e a segunda é a que importa.
+
+**1. Agente criado não aparece na sessão em curso.** O Claude Code carrega as
+definições no **início da sessão**; criar o arquivo não o torna invocável na
+hora. A tentativa devolve `Agent type not found`.
+
+**2. E `.claude/agents/` do PROJETO não é lido nunca.** Numa sessão nova, com o
+arquivo já commitado, a invocação continuou falhando. A causa é a mesma da
+armadilha da worktree logo acima: **o Claude Code resolve `.claude/` a partir da
+pasta da SESSÃO, não da pasta do projeto** — e esta sessão abre em `~/dev`.
+`skills-one-piece/.claude/agents/` fica invisível.
+
+**Regra prática:** agente deste projeto vai em **`~/.claude/agents/`**, que é
+lido independentemente de onde a sessão abriu. Manter uma cópia em
+`.claude/agents/` do projeto continua valendo — é ela que versiona a definição e
+viaja no `git` —, mas a cópia que o Claude Code **usa** é a do `~`.
+
+```bash
+cp .claude/agents/*.md ~/.claude/agents/
+```
+
+**Enquanto a sessão em curso não reinicia**, lance um agente genérico com o
+mesmo prompt embutido. Foi o que se fez nas duas primeiras rodadas.
+

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/bosses/BodyPartDefinition.gd" id="1"]
+[ext_resource type="ArrayMesh" path="res://assets/models/bosses/buggy/detached/right_arm.res" id="2"]
+[ext_resource type="ArrayMesh" path="res://assets/models/bosses/buggy/detached/right_hand_attached.res" id="3"]
+[ext_resource type="ArrayMesh" path="res://assets/models/bosses/buggy/detached/right_hand_rigid.res" id="4"]
+
+[resource]
+script = ExtResource("1")
+id = &"right_hand"
+source_mesh = &"tripo_part_8"
+bone_name = &"R_Hand"
+remaining_mesh = ExtResource("2")
+attached_mesh = ExtResource("3")
+detached_mesh = ExtResource("4")

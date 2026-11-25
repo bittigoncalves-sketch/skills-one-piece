@@ -69,15 +69,14 @@ const CATALOGO := {
 	},
 	"skypiean": {
 		"nome": "Skypiean",
-		"descricao": "asas nas costas",
+		"descricao": "asas brancas nas costas",
+		# ⚠️ AS MESMAS ASAS DO LUNARIANO, EM BRANCO (pedido do dono, 2026-09-01).
+		# Eram duas placas chapadas; agora é o mesmo desenho em camadas, com o
+		# mesmo batimento e as mesmas poses por estado de movimento — só a cor
+		# muda, e sem a chama nas costas, que é do Lunariano.
+		"asas": "lunar",
+		"asas_cor": Color(0.97, 0.97, 1.0),
 		"pecas": [
-			# LARGAS e chapadas. A primeira versão era estreita (x = 0,16 do
-			# tronco) e lia como duas lâminas, não como asas — asa se reconhece
-			# pela ENVERGADURA, então a largura é que tem de ser grande.
-			{"no": "Torso", "tam": Vector3(0.95, 1.15, 0.12), "ancora": Vector3(0.05, 0.80, 1.0),
-			 "rot": Vector3(0.0, 0.0, 0.38), "cor": Color(0.97, 0.97, 1.0)},
-			{"no": "Torso", "tam": Vector3(0.95, 1.15, 0.12), "ancora": Vector3(0.95, 0.80, 1.0),
-			 "rot": Vector3(0.0, 0.0, -0.38), "cor": Color(0.97, 0.97, 1.0)},
 		],
 	},
 	"oni": {
@@ -246,6 +245,9 @@ const CATALOGO := {
 		# `_process` para bater. Ver `AsaLunar` e `ChamaLunar`.
 		"fx": "chama_lunar",
 		"asas": "lunar",
+		# A cor que as asas do Lunariano sempre tiveram, agora declarada em vez
+		# de embutida no desenho — ver a nota do `tom` em `AsaLunar`.
+		"asas_cor": Color(0.34, 0.34, 0.38),
 		"pecas": [
 			# As MARCAS VERMELHAS dos ombros e braços, que a folha detalhada
 			# mostra. São o que sobra de peça de catálogo aqui — chapadas e
@@ -358,7 +360,8 @@ static func aplicar(modelo: Node3D, id: String) -> bool:
 		if tronco != null:
 			var cx2 := Acessorios.caixa_do_no(tronco)
 			for lado in [1, -1]:
-				var asa := AsaLunar.criar(lado)
+				var asa := AsaLunar.criar(lado, 1.0,
+					d.get("asas_cor", Color(1.0, 1.0, 1.0)))
 				asa.name = "%s%s_asa%d" % [MARCA, id, lado]
 				tronco.add_child(asa)
 				# ⚠️ NAS OMOPLATAS (y = 1.0), não no meio do tronco. Ancoradas em

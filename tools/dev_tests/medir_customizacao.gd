@@ -436,7 +436,11 @@ func _init() -> void:
 		absf(cor_oni.r - Racas.VERMELHO_ONI.r) < 0.02
 		and absf(cor_oni.g - Racas.VERMELHO_ONI.g) < 0.02)
 
-	print("\n%d conferem | %d divergem" % [_ok_n, _falhas])
+	if _pulados > 0:
+		print("\n%d conferem | %d divergem | %d PULADOS (Visual.PADRONIZADO: corpo cinza, raça Humano, sem acessório)" \
+			% [_ok_n, _falhas, _pulados])
+	else:
+		print("\n%d conferem | %d divergem" % [_ok_n, _falhas])
 	quit(1 if _falhas > 0 else 0)
 
 
@@ -604,7 +608,44 @@ func _cor_do_corpo(modelo: Node) -> Color:
 	return Color(0, 0, 0, 0)
 
 
+## Conferências que a PADRONIZAÇÃO TEMPORÁRIA suspende de propósito.
+##
+## ⚠️ Enquanto `Visual.PADRONIZADO` vale (modelo do personagem em atualização,
+## 2026-09-08), o corpo é sempre cinza, a raça é sempre Humano e nenhuma escolha
+## é aceita. Estas sete conferências afirmam justamente o contrário — elas não
+## quebraram, elas descrevem um comportamento que está desligado.
+##
+## Contá-las como FALHA é o erro caro deste projeto: a próxima sessão vê a
+## bateria vermelha e caça uma regressão que não existe. Elas são PULADAS, com o
+## motivo escrito, e voltam sozinhas quando `PADRONIZADO` virar `false`.
+##
+## Casadas por prefixo porque duas têm o número no rótulo (`"as %d cores..."`).
+const SUSPENSAS_PELA_PADRONIZACAO := [
+	"a cor pinta o CORPO",
+	"Palhaço monta o preset visual do Buggy",
+	"há um grupo TOM DE PELE",
+	"as ",                      # "as N cores de time aparecem"
+	"os ",                      # "os N tons de pele aparecem"
+	"escolher tom de pele pinta o corpo com ele",
+	"clicar em Oni deixa o corpo vermelho",
+]
+
+var _pulados: int = 0
+
+func _suspensa(rotulo: String) -> bool:
+	if not Visual.PADRONIZADO:
+		return false
+	for pre in SUSPENSAS_PELA_PADRONIZACAO:
+		if rotulo.begins_with(pre):
+			return true
+	return false
+
+
 func _ok(rotulo: String, cond: bool) -> void:
+	if not cond and _suspensa(rotulo):
+		_pulados += 1
+		print("   ⏭ %s  (pulado: Visual.PADRONIZADO)" % rotulo)
+		return
 	if cond: _ok_n += 1
 	else: _falhas += 1
 	print("   %s %s" % ["✓" if cond else "❌", rotulo])

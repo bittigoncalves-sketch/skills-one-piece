@@ -1,8 +1,14 @@
 class_name FireFXGrande
 extends RefCounted
 const FxQualityPolicy = preload("res://src/effects/FxQuality.gd")
+const VFX := preload("res://src/effects/MeraVfx.gd")
 # ============================================================================
-#  MERA MERA — OS GOLPES GRANDES (Hibashira legado, Inferno e a explosão).
+#  MERA MERA — OS GOLPES GRANDES.
+#
+#  ⚠️ O título anterior dizia "(Hibashira legado, Inferno e a explosão)". O
+#  **Inferno não existe mais** neste arquivo desde a reestruturação de
+#  2026-08-21; o que mora aqui hoje é o Hibashira legado (sem chamador), o
+#  `EnteiSunController` do V e a explosão compartilhada. Corrigido em 2026-09-08.
 #
 #  Saiu do `FireFX.gd` em 2026-08-11 porque ele tinha 916 linhas e o limite do
 #  projeto é 900 (regra do dono). O corte foi por TAMANHO de bloco, não por
@@ -278,11 +284,19 @@ static func _explosion(world: Node, pos: Vector3, damage: float, caster: Node,
 	var zone := DamageZone.new()
 	world.add_child(zone)
 	zone.global_position = pos + Vector3.UP * 1.0
+	# ONDA DE CHOQUE em malha + marca no chão (2026-09-08). As 700 partículas
+	# ficam: numa explosão de raio 6 elas dão a poeira, e é o único lugar da
+	# fruta onde volume de partícula compensa. O que faltava era ESCALA — um
+	# anel que abre dá a medida do estouro, e a queimadura no chão faz o golpe
+	# deixar rastro em vez de sumir sem deixar nada.
 	var pm := FireFX._flame_proc(Vector3.UP, 90.0, 6.0, 14.0, Vector3(0, 1.0, 0), 2.0, 5.0, 4.0, 1.5)
 	var fire := FxUtil.particles(700, 1.4, true, pm, FxUtil.grain(1.2), 0.85, "hero")
 	fire.material_override = FxUtil.particle_material(Color(1, 0.4, 0.1), 4.0, true)
 	zone.add_child(fire)
 	zone.add_child(FireFX._embers())
+	# ⚠️ FILHO DO MUNDO, NÃO DA ZONA: a hitbox vive 1,6 s e some; a queimadura
+	# precisa continuar no chão depois disso.
+	VFX.explosion(world, pos, 2.4 if e_climax else 1.6)
 	zone.setup(damage, 35.0, Vector3.ZERO, 1.6, caster, 6.0)
 	if spec != null:
 		spec.marcar(zone, e_climax)
@@ -290,6 +304,8 @@ static func _explosion(world: Node, pos: Vector3, damage: float, caster: Node,
 
 # ==================== CONTROLADOR DO SOL (DAI ENKAI: ENTEI) ====================
 class EnteiSunController extends Node3D:
+	## Até onde o retículo procura o ponto onde o sol desce (o sol voa 28 m/s por até 4,5 s).
+	const ALCANCE_DA_MIRA := 60.0
 	var caster: Node
 	var dir: Vector3
 	var damage: float
@@ -303,15 +319,19 @@ class EnteiSunController extends Node3D:
 	# Carga do instante do DISPARO. Guardada porque a explosão acontece segundos
 	# depois e precisa valer o que o jogador carregou — ver `_explode`.
 	var _carga := 0.0
+	# Origem da MIRA (linha da câmera de ombro): é dela que sai o retículo.
+	var _origem_da_mira := Vector3.INF
 
 	func _init(c: Node, orig: Vector3, d: Vector3, dmg: float, spec: DamageSpec = null) -> void:
 		_spec = spec if spec != null else DamageSpec.avulso(dmg)
 		caster = c
-		global_position = orig
+		_origem_da_mira = orig      # a posição inicial vale em `_ready`, já na árvore
 		dir = d.normalized()
 		damage = dmg
 
 	func _ready() -> void:
+		if _origem_da_mira.is_finite():
+			global_position = _origem_da_mira
 		if dir.length_squared() < 0.01:
 			dir = Vector3(0, 0, -1)
 		sun = FireFX._build_sun_model()
@@ -363,6 +383,13 @@ class EnteiSunController extends Node3D:
 		var ratio = clampf(charge_time / t_max, 0.0, 1.0)
 		var s = lerpf(0.1, max_s, ratio)
 		sun.scale = Vector3(s, s, s)
+
+		# O CALOR acompanha a carga (2026-09-08). Antes só a escala e a luz
+		# subiam: o sol crescia sem ficar mais quente, e a crosta lia igual do
+		# começo ao fim. `set_heat` acende as fendas e, no topo, a própria
+		# superfície — é o que faz a carga se ver, não só se medir.
+		if sun.has_method("set_heat"):
+			sun.set_heat(lerpf(0.55, 1.0, ratio))
 		
 		if is_instance_valid(light):
 			light.light_energy = lerpf(0.0, 40.0, ratio)
@@ -408,6 +435,7 @@ class EnteiSunController extends Node3D:
 		dir = aim.normalized()
 		if dir.length_squared() < 0.01:
 			dir = Vector3(0, 0, -1)
+		_rumo_ao_reticulo()
 		
 		zone = DamageZone.new()
 		if get_tree() and get_tree().current_scene:
@@ -425,6 +453,21 @@ class EnteiSunController extends Node3D:
 		zone.setup(_spec.valor_do_hit(charge_time), area, dir * 28.0, 3.5, caster, 3.5)
 		zone.collided_with_any.connect(_on_zone_collided)
 		_spec.marcar(zone)
+
+	## O sol nasce ~8 m ACIMA da cabeça: voando paralelo à mira, passava por cima de
+	## quem o retículo marcava e caía ~20 m adiante, fora do raio da explosão (o V da
+	## Mera não acertava um alvo a 4 m — medido em 05/10/2026). Ele desce no ponto
+	## que o retículo marca, a mesma regra da mão da Bara e do braço da Gomu.
+	func _rumo_ao_reticulo() -> void:
+		if not is_inside_tree() or not _origem_da_mira.is_finite():
+			return
+		var fora: Array[RID] = []
+		if caster is CollisionObject3D:
+			fora.append((caster as CollisionObject3D).get_rid())
+		var ponto := AlvosDeGolpe.ponto_mirado(get_world_3d(), _origem_da_mira, dir, ALCANCE_DA_MIRA, fora)
+		var rumo := ponto - global_position
+		if rumo.length_squared() > 1.0:
+			dir = rumo.normalized()
 
 	func _check_impact() -> bool:
 		if elapsed < 1.15: return false

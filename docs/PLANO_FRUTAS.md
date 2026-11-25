@@ -58,7 +58,7 @@ podem rodar em paralelo de verdade.
 |---|---|---|
 | **Logias** | `FireFX`, `IceFX`, `SandFX`, `GoroFX`, `YamiFX` | `Player.gd`, outras frutas |
 | **Paramecias** | `GomuFX`, `GomuArm`, `GomuRedHawk`, `GomuGatling`, `BaraFX`, `GuraFX`, `BukiFX` | `Player.gd`, outras frutas |
-| **Integração** | `SkillSystem.gd`, `FruitPassiveSystem.gd`, `TreeAndFruitGenerator.gd`, `data/akuma_no_mi.json` | `src/effects/` |
+| **Integração** | `SkillSystem.gd`, `FruitPassiveSystem.gd`, `TreeAndFruitGenerator.gd` | `src/effects/` |
 
 **`Player.gd` é território de ninguém nesta fase.** Se um agente precisar de
 mudança lá, ele **reporta o patch** e quem orquestra aplica — dois agentes

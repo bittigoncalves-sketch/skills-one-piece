@@ -1,0 +1,250 @@
+{
+	"animacao": {
+		"clipe": "sprint",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.2
+	},
+	"ativacao": {
+		"andar_segurando": false,
+		"carga": 0.0,
+		"empurrao_carga_max": 1.0,
+		"modo": "Pressionar",
+		"ponto_segurar": 0.5,
+		"repetir": false,
+		"segurar_max": 5.0,
+		"tecla": "Z"
+	},
+	"audio": {
+		"som": "Vento",
+		"tom": 1.1,
+		"volume": -8.0
+	},
+	"camera": {
+		"tremor": 0.25,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 30.0,
+		"exige_alvo": false,
+		"exige_chao": false,
+		"nivel_minimo": 1,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 14.0,
+		"custo": 10.0,
+		"custo_por_segundo": 0.0,
+		"duracao": 0.7,
+		"fim_sobre_alvo": 3.0,
+		"flutuar": true,
+		"inicio_do_fim": 0.45,
+		"intervalo_depois": 0.5,
+		"mirar_no_alvo": false,
+		"parar_no_vazio": true,
+		"recarga": 3.5
+	},
+	"dano": {
+		"atordoamento": 0.25,
+		"critico": 0.0,
+		"duracao_efeito": 1.5,
+		"empurrao": 5.5,
+		"lentidao": 20.0,
+		"multiplicador": 2.0,
+		"tipo": "Vento",
+		"valor": 85.0
+	},
+	"eventos": [
+		{
+			"duracao": 0.65,
+			"habilitado": true,
+			"id": "anim_arrancada",
+			"inicio": 0.0,
+			"parametros": {
+				"clipe": "sprint",
+				"intensidade": 1.0,
+				"velocidade": 1.2
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.4,
+			"habilitado": true,
+			"id": "vfx_partida",
+			"inicio": 0.0,
+			"parametros": {
+				"altura": 0.5,
+				"cor": "#dcdde1",
+				"escala": 1.5,
+				"estilo": "Vento",
+				"frente": 0.2
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.5,
+			"habilitado": true,
+			"id": "som_vento",
+			"inicio": 0.0,
+			"parametros": {
+				"som": "Vento",
+				"tom": 1.1,
+				"volume": -8.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.4,
+			"habilitado": true,
+			"id": "arrancada",
+			"inicio": 0.05,
+			"parametros": {
+				"angulo": 0.0,
+				"curva": "Suave",
+				"direcao": "Frente",
+				"distancia": 8.5,
+				"inclinacao": 0.0,
+				"so_do_chao": false,
+				"teleporte": false,
+				"velocidade": 22.0
+			},
+			"tipo": "movimento"
+		},
+		{
+			"duracao": 0.45,
+			"habilitado": true,
+			"id": "vfx_rastro",
+			"inicio": 0.05,
+			"parametros": {
+				"cor": "#dcdde1",
+				"cor_2": "#8395a7",
+				"escala": 1.3,
+				"estilo": "Cometa"
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.38,
+			"habilitado": true,
+			"id": "hitbox_colisao",
+			"inicio": 0.08,
+			"parametros": {
+				"altura": 2.0,
+				"forma": "Caixa",
+				"largura": 2.2,
+				"profundidade": 3.0,
+				"unicos": true,
+				"x": 0.0,
+				"y": 1.0,
+				"z": -1.5
+			},
+			"tipo": "hitbox"
+		},
+		{
+			"duracao": 0.25,
+			"habilitado": true,
+			"id": "vfx_impacto",
+			"inicio": 0.42,
+			"parametros": {
+				"altura": 1.0,
+				"cor": "#dcdde1",
+				"escala": 1.4,
+				"estilo": "Impacto",
+				"frente": 1.2
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.25,
+			"habilitado": true,
+			"id": "som_impacto",
+			"inicio": 0.42,
+			"parametros": {
+				"som": "Impacto",
+				"tom": 0.95,
+				"volume": -9.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.2,
+			"habilitado": true,
+			"id": "tremor_cam",
+			"inicio": 0.42,
+			"parametros": {
+				"tremor": 0.25,
+				"zoom": 40.0
+			},
+			"tipo": "camera"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 2.0,
+		"forma": "Caixa",
+		"largura": 2.2,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 1.5,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": -1.5
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "Converte a parte inferior do corpo em um jato de fuma\u00e7a densa e dispara velozmente \u00e0 frente, atravessando a \u00e1rea e colidindo com o oponente.",
+		"dono": "Jogador",
+		"fruta": "moku_moku",
+		"id": "moku_white_dash_z",
+		"modelo": "Base",
+		"nome": "Investida de Fuma\u00e7a"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 8.5,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 22.0
+	},
+	"poses": [],
+	"projeteis": {
+		"abertura": 20.0,
+		"area_chuva": 8.0,
+		"direcao_disparo": "Mira",
+		"explosao": 0.0,
+		"giro": 0.0,
+		"gravidade": 0.0,
+		"modelo": "",
+		"perfurar": false,
+		"quantidade": 1,
+		"raio": 0.4,
+		"rastro": "Nenhum",
+		"sem_dano": false,
+		"som_explosao": "Impacto",
+		"velocidade": 12.0,
+		"vida": 2.0,
+		"visual": "Energia"
+	},
+	"versao": 1,
+	"vfx": {
+		"altura": 1.0,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#dcdde1",
+		"cor_2": "#8395a7",
+		"escala": 1.3,
+		"estilo": "Cometa",
+		"frente": 1.0,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "M\u00e3o direita",
+		"projetil_de": ""
+	}
+}

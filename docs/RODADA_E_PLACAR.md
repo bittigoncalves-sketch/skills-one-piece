@@ -14,7 +14,11 @@ Arquivos: `src/match/Scoreboard.gd`, `src/ui/MatchHud.gd`,
 | constante | valor | |
 |---|---|---|
 | `ROUND_TIME` | **300 s (5 min)** | ⚠️ vários docs ainda dizem "10 min" — ver §6 |
-| `PODIUM_TIME` | 8 s | painel de fim de rodada |
+| `PODIUM_TIME` | **10 s** | painel de fim de rodada (era 8; mudou em 2026-09-01) |
+| `FLOOD_RISE` | **0,5 m/s** | velocidade da água — escolhida em jogo (testadas 3,0 e 1,5) |
+| `DROWN_TIME` | 3 s | tempo completamente submerso até morrer |
+| `FLOOD_START_Y` | 0 | topo da plataforma |
+| `FLOOD_MAX_Y` | 80 | teto de segurança da água (ver §8) |
 | `CREDIT_WINDOW` | 10 s | janela do crédito de kill por queda |
 | `VOID_Y` | **−40** | abaixo disto, morreu |
 | `RESPAWN` | `(0, 6, 0)` | centro do mapa, 6 m acima |
@@ -147,7 +151,7 @@ edita código).
   partida, só a rodada.
 - **`_last_hit` guarda um só atacante por vítima.** Não há assistência, nem
   crédito dividido, nem "quem deu mais dano".
-- **O pódio não trava o jogo.** Durante os 8 s todo mundo é respawnado e continua
+- **O pódio não trava o jogo.** Durante os 10 s todo mundo é respawnado e continua
   podendo se bater. `_watch_falls` continua rodando e uma morte depois dos 2 s de
   `_dead_until` **ainda incrementa `scores`** — mas o `podium_snapshot` já foi
   tirado, então o painel não muda, e `_start_new_round()` zera tudo em seguida.
@@ -155,3 +159,143 @@ edita código).
   acidente da ordem, não por uma guarda.
 - **`scores` nunca é limpo de quem saiu.** Um peer que desconecta continua no
   dicionário e no `ranking()` até a rodada virar.
+
+---
+
+## 8. A enchente do fim da rodada (2026-09-01)
+
+Pedido do dono: *"o que acontece quando o tempo zera? Ao invés de apenas zerar o
+tempo, a plataforma começa a alagar (não permitir que a água vaze da
+plataforma), a água vai subindo e qualquer jogador que caia na água e seja
+completamente coberto por ela morre em 3 segundos. A água sobe até todos estarem
+mortos e por fim exibe o placar e começa uma contagem de 10 segundos para a
+próxima partida."*
+
+O `time_left` chegar a zero **não abre mais o pódio**. Ele abre a enchente:
+
+```
+tempo zera ──► _start_flood() ──► água sobe 1,5 m/s
+                                     │
+                    cabeça coberta ──┴──► 3 s ──► _afogar()  (sem respawn)
+                                     │
+                       ninguém vivo ─┴──► _start_podium() ──► 10 s ──► rodada nova
+```
+
+### As três regras que sustentam a fase
+
+**1. Quem morre na enchente NÃO respawna.** É a regra que faz a fase existir:
+com respawn, o afogado voltaria ao centro, cairia na água outra vez e a condição
+de fim (*"até todos estarem mortos"*) nunca seria alcançada. Vale para
+**qualquer** morte durante a enchente, não só o afogamento — levar o último golpe
+com a água na cintura também tira o jogador da rodada.
+
+O corpo eliminado fica na arena, afundando: `Player._eliminado` corta o quadro
+logo depois do portão de autoridade, deixando passar só a gravidade e a
+publicação de rede. A rede continua de propósito — sem publicar, o corpo
+congelaria na tela dos outros no lugar onde afundou.
+
+**2. "Completamente coberto" é medido pelo TOPO DA CABEÇA**
+(`Player.topo_da_cabeca()`), que sai do **colisor**, não do modelo. É o colisor
+que a raça escala, então um gigante precisa de mais água que um humano para
+morrer — que é o que a palavra "completamente" quer dizer. Água pela cintura não
+mata, e sair da água **zera** a conta: o contador é de fôlego, não de castigo.
+
+**3. A água não vaza porque nunca é fluido.** `AguaDaArena` é uma caixa do lado
+exato da plataforma (200 × 200) que cresce para cima. Não vaza porque não passa
+da borda, e cobre os buracos do mapa porque a caixa é maciça e o piso furado fica
+dentro dela. Simular escoamento pelos buracos custaria um sistema inteiro para um
+efeito que dura ~20 s por rodada. **Sem colisão**: o jogador cai na água, não
+anda sobre ela.
+
+### O nível tem um dono só
+
+`flood_y` é do `Scoreboard` (servidor-autoridade, já replicado no mesmo pacote do
+cronômetro). `AguaDaArena` só lê e desenha; `MatchHud` só lê e escreve
+`🌊 ALAGANDO — N m` no lugar do relógio, que a essa altura está parado em 00:00.
+Dois donos para o mesmo número é como nasce a divergência entre o que se vê e o
+que mata.
+
+Como no cronômetro, o **cliente também sobe a água localmente** entre os syncs de
+0,5 s — uma parede de água andando aos saltos entregaria a rede.
+
+### Quanto dura a fase
+
+A 0,5 m/s a água leva **~3 s** para cobrir a cabeça de quem está no chão (topo em
+~1,6 m), mais os 3 s de fôlego: a primeira morte sai por volta dos **6 s**. Quem
+subir nos blocos ganha o tempo proporcional à altura deles.
+
+No pior caso — alguém inalcançável — a água leva **~2 min 40 s** para chegar aos 80
+m do teto de segurança. Com 1,5 m/s eram 53 s. É o preço de uma água lenta, e só
+aparece quando a condição normal de fim (todos mortos) falha.
+
+### `FLOOD_MAX_Y` não é o fim esperado
+
+O fim esperado é não sobrar ninguém de pé. O teto de 80 m existe só para a água
+não subir para sempre se alguém ficar inalcançável (num bloco alto, num bug de
+colisão, com o corpo preso fora da arena). Quando ele é atingido com gente viva,
+o log diz `a água chegou ao teto com N de pé — encerrando mesmo assim`: isso é
+sintoma, não comportamento normal.
+
+### A subida é gradual, e isso é código
+
+`flood_y` só muda no `_physics_process` (60 Hz), e a tela desenha bem mais
+rápido. `AguaDaArena` lendo o valor cru fazia a água andar em **degraus** —
+medido: metade dos quadros não subia nada e a outra subia o dobro (passo máximo
+2,4× a média). Por isso o nó visual tem **nível próprio**: sobe por quadro de
+render à velocidade da fase, e o valor do servidor entra como **correção**
+amortecida. É o mesmo arranjo do cronômetro, pelo mesmo motivo — e quem mata
+continua sendo o `flood_y` do placar; o nível visual é desenho.
+
+| caso | passo máximo por quadro | |
+|---|---|---|
+| subida normal | 0,0037 m (1,1× a média) | gradual |
+| com correção de rede a cada 0,5 s | 0,020 m | gradual |
+| divergência grande (> `AJUSTE_MAXIMO`) | 5,0 m | **salta de propósito** |
+
+A última linha é o controle ao contrário: divergência grande **não é deriva**, é
+troca de estado (entrou na partida agora, a fase começou ou acabou), e aí saltar é
+o certo. Se ela também fosse suavizada, o amortecimento estaria engolindo o nível
+de verdade.
+
+`AMORTECIMENTO` (8/s) precisa absorver uma correção inteira dentro do
+`SYNC_INTERVAL` de 0,5 s. Com 3/s sobrava resíduo, o erro se acumulava de pacote
+em pacote e estourava o `AJUSTE_MAXIMO` — aparecia um salto de 0,63 m.
+
+Medidor: `tools/dev_tests/medir_subida_agua.gd`.
+
+### Desempenho (medido em 2026-09-01)
+
+`tools/dev_tests/medir_fps_enchente.gd`. Ele **desliga o V-Sync** — com ele
+ligado os três casos davam 6,94 ms cravados, que é o teto de 144 Hz e não o custo
+de nada. E ele mantém um segundo corpo vivo em cena: sem isso o jogador se afoga,
+a fase termina, a água some e o "pior caso" acaba medindo a arena seca.
+
+| caso | tempo de quadro | vs. arena seca |
+|---|---|---|
+| arena seca (referência) | 3,80 ms | — |
+| água subindo | 3,88 ms | **+2,1 %** |
+| câmera submersa | 3,93 ms | **+3,4 %** |
+| mesma fase, água escondida | 3,74 ms | −1,7 % (ruído) |
+
+A última linha é o controle que separa desenho de conta: **a lógica da enchente
+não custa nada** — subida do nível, varredura de jogadores e afogamento somados
+ficam dentro do ruído. O custo é todo de renderização.
+
+E ele era 4× maior antes: iluminar por pixel uma superfície de 200 × 200 m
+custava **+13,5 %**. `SHADING_MODE_UNSHADED` derrubou para +2,1 % — e a água
+ficou visualmente melhor, porque iluminada o sol lavava o azul.
+
+> **Gatilho:** se a arena ganhar reflexo, névoa volumétrica ou água com shader
+> próprio, medir de novo com o mesmo script antes de aceitar. O número que
+> importa é a coluna "vs. arena seca", não o FPS absoluto da máquina de quem mede.
+
+### Teste
+
+```
+DISPLAY=:1 godot --path . -s tools/dev_tests/test_enchente.gd   # 20 checagens
+```
+
+Ele monta um **segundo corpo** em cena (um `Node3D` chamado `2`, que é tudo que o
+placar precisa: o nome do nó é o peer id). Sem ele, a morte do único jogador
+encerraria a fase no mesmo quadro e não daria para observar nem o afogamento nem
+o não-respawn.

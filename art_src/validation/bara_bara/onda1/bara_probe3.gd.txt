@@ -1,0 +1,109 @@
+extends SceneTree
+## Sonda 3: maos com a fisica do Player LIGADA (condicao real de jogo).
+## Identifica o que interrompe a ida da mao. Nao altera o projeto.
+const BARA := preload("res://src/combat/BaraController.gd")
+const SWEEP := preload("res://src/combat/SwordSweep.gd")
+var actor: Node3D
+var dummy: Node3D
+var token := 12000
+
+func out(s: String) -> void:
+	print("MEAS " + s)
+
+func f3(v: Vector3) -> String:
+	return "(%.3f,%.3f,%.3f)" % [v.x, v.y, v.z]
+
+func _init() -> void:
+	await process_frame
+	create_timer(300.0, true, false, true).timeout.connect(func():
+		print("MEAS TIMEOUT")
+		quit(3))
+	var flow := root.get_node("GameFlow")
+	flow.dummies["TrainingDummy"] = true
+	flow.dummies["AutoDummy"] = false
+	flow.start_singleplayer()
+	await create_timer(3).timeout
+	actor = get_first_node_in_group("player")
+	dummy = get_first_node_in_group("dummy")
+	dummy.set_physics_process(false)
+	actor.equip_fruit("bara_bara")
+	actor.combat_mode = "fruit"
+	await create_timer(1.0).timeout
+	out("arena spawn actor=%s on_floor=%s physics=%s" % [f3(actor.global_position), str(actor.is_on_floor()), str(actor.is_physics_processing())])
+	# Condicao 1: arena real, onde o Player nasceu, fisica ligada.
+	var base: Vector3 = actor.global_position
+	for slot in ["Z", "X", "V"]:
+		for cond in ["physics_on", "physics_off"]:
+			await reset(base)
+			actor.set_physics_process(cond == "physics_on")
+			await frames(15)
+			var fwd := Vector3.FORWARD
+			var dist := 4.0 if slot != "X" else 6.0
+			dummy.global_position = actor.global_position + fwd * dist
+			await trace(slot, fwd, "arena_%s_%s" % [slot, cond])
+	actor.set_physics_process(true)
+	print("MEAS DONE")
+	current_scene.queue_free()
+	await create_timer(0.2).timeout
+	quit(0)
+
+func trace(slot: String, aim: Vector3, label: String) -> void:
+	var hp0: float = dummy.health
+	token += 1
+	actor._do_server_cast(slot, aim, actor.global_position, 0.0, token, "fruit", "bara_bara")
+	await physics_frame
+	var e = BARA.action_for(actor)
+	if e == null:
+		out("%s no_action feedback=%s" % [label, str(actor.get_meta("bara_feedback", ""))])
+		return
+	var prev := ["attached", "attached"]
+	var last_origin := [Vector3.ZERO, Vector3.ZERO]
+	while is_instance_valid(e) and not e.is_queued_for_deletion():
+		for side in e.hands.size():
+			var h: Dictionary = e.hands[side]
+			var st := str(h.state)
+			var o: Vector3 = h.transform.origin
+			if st != prev[side]:
+				var extra := ""
+				if st == "returning":
+					extra = " travel_from_start=%.2f end_target=%s blockers_at_prev=%s" % [o.distance_to(h.start.origin), f3(h.end), blockers(e, last_origin[side])]
+				if st == "outbound":
+					extra = " start=%s blockers_at_start=%s" % [f3(o), blockers(e, o)]
+				out("%s t=%.3f hand=%d %s->%s pos=%s actor=%s%s" % [label, float(e.elapsed), side, prev[side], st, f3(o), f3(actor.global_position), extra])
+				prev[side] = st
+			last_origin[side] = o
+		await physics_frame
+	out("%s END dummy_damage=%.0f actor=%s" % [label, hp0 - dummy.health, f3(actor.global_position)])
+
+func blockers(e: Node, at: Vector3) -> String:
+	var exclusions: Array[RID] = [actor.get_rid()]
+	for group in ["player", "enemy"]:
+		for a in get_nodes_in_group(group):
+			if a is CollisionObject3D: exclusions.append(a.get_rid())
+	var hits := SWEEP.query_segment(e.get_world_3d().direct_space_state, at, at, 0.24, 15, exclusions)
+	var names := []
+	for hit in hits:
+		var c: Object = hit.collider
+		var n := str(c)
+		if c is Node: n = str((c as Node).get_path()) + " layer=" + str((c as CollisionObject3D).collision_layer if c is CollisionObject3D else -1)
+		names.append(n)
+	return str(names)
+
+func frames(n: int) -> void:
+	for i in n: await physics_frame
+
+func reset(at: Vector3) -> void:
+	actor.clear_spawned_skills()
+	await process_frame
+	actor.global_position = at
+	actor.velocity = Vector3.ZERO
+	actor.health = actor.max_health
+	actor.energy = actor.max_energy
+	actor._fruit_cooldowns.clear()
+	actor._server_cast_next_ms.clear()
+	actor._fruit_damage_lock_timer = 0.0
+	actor._trava_pos_fruta = 0.0
+	actor.set_meta("is_casting", false)
+	dummy.health = 2048.0
+	await physics_frame
+	await physics_frame

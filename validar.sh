@@ -34,9 +34,21 @@ TIMEOUT="${TIMEOUT:-120}"
 # tipo de falso positivo: some a confiança na bateria inteira.
 tempo_de() {
 	case "$1" in
-		test_frutas)    echo 480 ;;
+		test_navios_colisao) echo 240 ;; # seis contatos prolongados, frenagem e ré
+		test_frutas)    echo 1200 ;;   # 16 frutas da arena × 4 teclas × ~9 s (janela de vazamento de 8 s): ~11–17 min; 480 estourava desde que a arena passou de 9 para 16 frutas (15/11/2026)
 		test_gomu_leak) echo 240 ;;   # medido: ~131 s
+		test_frutas_na_historia) echo 300 ;;   # 13 frutas × 4 teclas em jogo; medido: 173 s (03/10/2026)
+		test_frutas_acertam_npcs) echo 1500 ;;  # 13 frutas × 4 teclas × 3 NPCs; medido: ~11–13 min (05/10/2026)
 		*)              echo "$TIMEOUT" ;;
+	esac
+}
+# Argumentos extras POR TESTE. `--fixed-fps` tira a física do relógio de parede: a
+# corrida de caranguejos simula ~5 min de pista (06/10/2026) e, em tempo real, levaria
+# isso tudo; com passo fixo ela roda o mais rápido que a máquina deixa.
+args_de() {
+	case "$1" in
+		test_corrida_de_caranguejos|test_rotina_oceano_bestas) echo "--fixed-fps 60" ;;
+		*) echo "" ;;
 	esac
 }
 TMP="$(mktemp -d)"
@@ -103,7 +115,13 @@ roda() {
 	local limite; limite="$(tempo_de "$nome")"
 	local t0=$SECONDS
 	printf '  %-24s ' "$nome"
-	timeout "$limite" "$@" >"$log" 2>&1
+	# O Skills Builder vem DESLIGADO por padrão ("SOP_BUILDER=1 liga"): os testes que o exercitam falhavam na bateria por isso e passam ligados
+	# (medido em 15/11/2026: fruta_moku 45/0, transformacao_historia 20/20). Só eles recebem a chave.
+	local ambiente=()
+	case "$nome" in
+		test_fruta_moku|test_transformacao_historia|test_fruta_reconstruida|test_kit_do_builder_historia|test_frutas_do_builder|test_*builder*) ambiente=(env SOP_BUILDER=1) ;;
+	esac
+	timeout "$limite" "${ambiente[@]}" "$@" >"$log" 2>&1
 	local cod=$?
 	local dt=$((SECONDS - t0))
 	if [ $cod -eq 124 ]; then
@@ -160,10 +178,15 @@ for arq in tools/dev_tests/test_*.gd; do
 	# para ser entregue ao `_input`. Headless, o dedo não chega ao HUD e o teste
 	# reprova um joystick que funciona — medido, três asserções de uma vez.
 	[ "$nome" = "test_toque" ] && continue
+	# Combate direcional do Modo História: o clique real e o gesto do mouse só
+	# chegam ao combate com o mouse CAPTURADO, e headless não captura (medido em
+	# 2026-09-16, item 64). Roda no bloco com tela.
+	[ "$nome" = "test_combate_historia_tela" ] && continue
 	if [ $RAPIDO -eq 1 ] && [[ " $LENTOS " == *" $nome "* ]]; then
 		printf '  %-24s %s\n' "$nome" "$(amarelo pulado)"; PULADO=$((PULADO+1)); continue
 	fi
-	roda "$nome" "$GODOT" --headless --path "$PROJ" --script "$arq"
+	# shellcheck disable=SC2046  # sem aspas de propósito: vazio = nenhum argumento
+	roda "$nome" "$GODOT" --headless $(args_de "$nome") --path "$PROJ" --script "$arq"
 done
 
 # --------------------------------------------- 1b. testes de cena (src/tests)
@@ -273,6 +296,95 @@ if quer "mp"; then
 	fi
 fi
 
+# ----------------------- 3c. Kit do Builder em rede: dois processos (06/10/2026)
+# O cliente pede o kit pelo caminho do botão do M, usa o Z no host; o host confere
+# que equipou pelo servidor, que a hitbox nasceu nele e que a vida caiu o dano do
+# Builder; o cliente confere o mesmo do lado dele. Depois troca para a Noro Noro no Mi
+# (a do projeto): segura a Z, solta, e o host fica 5× lento nos dois processos sem ferir.
+if quer "mp"; then
+	echo
+	echo "-- kit do builder em rede (dois processos: host juiz + cliente ator) --"
+	printf '  %-24s ' "net_kit_probe"
+	timeout 120 "$GODOT" --headless --path "$PROJ" \
+		--script tools/dev_tests/net_kit_host_probe.gd >"$TMP/kit_host.log" 2>&1 &
+	KIT_PID=$!
+	sleep 5                                    # o host precisa estar no ar antes
+	t0=$SECONDS
+	timeout 120 "$GODOT" --headless --path "$PROJ" \
+		--script tools/dev_tests/net_kit_client_probe.gd >"$TMP/kit_cli.log" 2>&1
+	cod=$?
+	wait "$KIT_PID" 2>/dev/null; cod_host=$?
+	dt=$((SECONDS - t0))
+	if _falhou "$cod" "$TMP/kit_cli.log" || _falhou "$cod_host" "$TMP/kit_host.log"; then
+		echo "$(vermelho FALHOU) (${dt}s)"
+		grep -E '✗|❌' "$TMP/kit_host.log" "$TMP/kit_cli.log" | head -4 | sed 's/^/        /'
+		cp "$TMP/kit_host.log" /tmp/validar_kit_host.log
+		cp "$TMP/kit_cli.log" /tmp/validar_kit_cli.log
+		FALHOU=$((FALHOU+1)); FALHAS+=("net_kit_probe")
+	else
+		echo "$(verde ok) (${dt}s)"
+		PASSOU=$((PASSOU+1))
+	fi
+fi
+
+# ----------------------- 3d. Pika refeita no Builder em rede: dois processos (06/10/2026)
+# O host entrega a Pika (Z/X/C do Builder, V do código) e é o alvo; o cliente usa Z, X
+# e C de verdade e confere a vida do host cair 98 / 160 / ≥ 2 × 48 (dano do servidor).
+if quer "mp"; then
+	echo
+	echo "-- Pika refeita no Builder em rede (host juiz + cliente ator) --"
+	printf '  %-24s ' "net_pika_probe"
+	timeout 120 "$GODOT" --headless --path "$PROJ" \
+		--script tools/dev_tests/net_pika_host_probe.gd >"$TMP/pika_host.log" 2>&1 &
+	PIKA_PID=$!
+	sleep 5                                    # o host precisa estar no ar antes
+	t0=$SECONDS
+	timeout 120 "$GODOT" --headless --path "$PROJ" \
+		--script tools/dev_tests/net_pika_client_probe.gd >"$TMP/pika_cli.log" 2>&1
+	cod=$?
+	wait "$PIKA_PID" 2>/dev/null; cod_host=$?
+	dt=$((SECONDS - t0))
+	if _falhou "$cod" "$TMP/pika_cli.log" || _falhou "$cod_host" "$TMP/pika_host.log"; then
+		echo "$(vermelho FALHOU) (${dt}s)"
+		grep -E '✗|❌' "$TMP/pika_host.log" "$TMP/pika_cli.log" | head -4 | sed 's/^/        /'
+		cp "$TMP/pika_host.log" /tmp/validar_pika_host.log
+		cp "$TMP/pika_cli.log" /tmp/validar_pika_cli.log
+		FALHOU=$((FALHOU+1)); FALHAS+=("net_pika_probe")
+	else
+		echo "$(verde ok) (${dt}s)"
+		PASSOU=$((PASSOU+1))
+	fi
+fi
+
+# ----------------------- 3e. Hie refeita (Z do Builder; gelo 0,7 s) em rede: dois processos (07/10/2026)
+# O host congela pelo servidor a cópia do cliente e o acerta com o Z novo; o CLIENTE mede no
+# próprio corpo: o gelo chega (~0,7 s), ele não anda congelado, e o Z o congela de novo.
+if quer "mp"; then
+	echo
+	echo "-- Hie refeita em rede (host atacante + cliente alvo) --"
+	printf '  %-24s ' "net_hie_probe"
+	timeout 90 "$GODOT" --headless --path "$PROJ" \
+		--script tools/dev_tests/net_hie_host_probe.gd >"$TMP/hie_host.log" 2>&1 &
+	HIE_PID=$!
+	sleep 5
+	t0=$SECONDS
+	timeout 80 "$GODOT" --headless --path "$PROJ" \
+		--script tools/dev_tests/net_hie_client_probe.gd >"$TMP/hie_cli.log" 2>&1
+	cod=$?
+	wait "$HIE_PID" 2>/dev/null; cod_host=$?
+	dt=$((SECONDS - t0))
+	if _falhou "$cod" "$TMP/hie_cli.log" || _falhou "$cod_host" "$TMP/hie_host.log"; then
+		echo "$(vermelho FALHOU) (${dt}s)"
+		grep -E '✗|❌' "$TMP/hie_host.log" "$TMP/hie_cli.log" | head -4 | sed 's/^/        /'
+		cp "$TMP/hie_host.log" /tmp/validar_hie_host.log
+		cp "$TMP/hie_cli.log" /tmp/validar_hie_cli.log
+		FALHOU=$((FALHOU+1)); FALHAS+=("net_hie_probe")
+	else
+		echo "$(verde ok) (${dt}s)"
+		PASSOU=$((PASSOU+1))
+	fi
+fi
+
 # ------------------------------------------ 4. regressão de locomoção (golden)
 # Este é diferente dos outros: compara a trajetória com um arquivo de
 # referência commitado. É o que pega "o personagem não anda" / "atravessa
@@ -313,6 +425,17 @@ if quer "toque" || quer "mobile"; then
 	else
 		roda "test_toque" "$GODOT" --path "$PROJ" \
 			--script tools/dev_tests/test_toque.gd
+	fi
+fi
+
+# COMBATE DIRECIONAL COM TELA — direção pelo gesto do mouse e clique real.
+if quer "combate_historia_tela" || quer "tela"; then
+	if [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ]; then
+		printf '  %-24s %s\n' "test_combate_historia_tela" "$(amarelo 'pulado — sem tela')"
+		PULADO=$((PULADO+1))
+	else
+		roda "test_combate_historia_tela" "$GODOT" --path "$PROJ" \
+			--script tools/dev_tests/test_combate_historia_tela.gd
 	fi
 fi
 

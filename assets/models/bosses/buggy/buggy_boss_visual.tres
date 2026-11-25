@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="CharacterVisualDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/characters/CharacterVisualDefinition.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/bosses/buggy/buggyBoss.glb" id="2"]
+
+[resource]
+script = ExtResource("1")
+model_scene = ExtResource("2")
+target_height = 1.5
+rotation_degrees = Vector3(0, 180, 0)
+bone_map = {
+"Torso": "Waist", "Neck": "NeckTwist01", "Head": "Head",
+"UpperArm_L": "L_Upperarm", "ForeArm_L": "L_Forearm",
+"UpperArm_R": "R_Upperarm", "ForeArm_R": "R_Forearm",
+"Thigh_L": "L_Thigh", "Shin_L": "L_Calf", "Foot_L": "L_Foot",
+"Thigh_R": "R_Thigh", "Shin_R": "R_Calf", "Foot_R": "R_Foot"
+}
+hand_bones = {"L": "L_Hand", "R": "R_Hand"}

@@ -1,0 +1,214 @@
+{
+	"animacao": {
+		"clipe": "boxing_1",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.0
+	},
+	"ativacao": {
+		"andar_segurando": false,
+		"carga": 0.5,
+		"empurrao_carga_max": 1.0,
+		"modo": "Pressionar",
+		"ponto_segurar": 0.5,
+		"repetir": false,
+		"segurar_max": 5.0,
+		"tecla": "Z"
+	},
+	"audio": {
+		"som": "Vento",
+		"tom": 1.0,
+		"volume": -12.0
+	},
+	"camera": {
+		"tremor": 0.2,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 30.0,
+		"exige_alvo": false,
+		"exige_chao": false,
+		"nivel_minimo": 1.0,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 8.0,
+		"custo": 10.0,
+		"custo_por_segundo": 0.0,
+		"duracao": 1.5,
+		"fim_sobre_alvo": 0.0,
+		"flutuar": false,
+		"inicio_do_fim": -1.0,
+		"intervalo_depois": 0.5,
+		"mirar_no_alvo": false,
+		"parar_no_vazio": false,
+		"recarga": 2.0
+	},
+	"dano": {
+		"atordoamento": 0.1,
+		"critico": 0.0,
+		"duracao_efeito": 1.0,
+		"empurrao": 1.5,
+		"lentidao": 0.0,
+		"multiplicador": 2.0,
+		"tipo": "Gelo",
+		"valor": 15.0
+	},
+	"eventos": [
+		{
+			"duracao": 1.35,
+			"habilitado": true,
+			"id": "movimento_1",
+			"inicio": 0.0,
+			"parametros": {
+				"direcao": "Trás",
+				"distancia": 8.0,
+				"velocidade": 5.0
+			},
+			"tipo": "movimento"
+		},
+		{
+			"duracao": 0.05,
+			"habilitado": true,
+			"id": "projetil_2",
+			"inicio": 0.4,
+			"parametros": {
+
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.1,
+			"habilitado": true,
+			"id": "projetil_3",
+			"inicio": 0.8,
+			"parametros": {
+
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.2,
+			"habilitado": true,
+			"id": "projetil_4",
+			"inicio": 1.15,
+			"parametros": {
+				"explosao": 0.0
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 1.35,
+			"habilitado": true,
+			"id": "animacao_6",
+			"inicio": 0.0,
+			"parametros": {
+				"pose": "pose_1"
+			},
+			"tipo": "animacao"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 3.0,
+		"forma": "Esfera",
+		"largura": 3.0,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 1.5,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": -2.0
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "um novo movimento para a fruta do gelo, remake da atual",
+		"dono": "Jogador",
+		"fruta": "fruta_do_gelo",
+		"id": "Z_ice",
+		"modelo": "Base",
+		"nome": "Z espinhos de gelo"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 2.0,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 6.0
+	},
+	"poses": [
+		{
+			"id": "pose_1",
+			"nome": "recuo",
+			"ossos": {
+				"Thigh_L": [
+					45.0,
+					0.0,
+					0.0
+				],
+				"Thigh_R": [
+					15.0,
+					0.0,
+					0.0
+				],
+				"UpperArm_L": [
+					90.0,
+					0.0,
+					0.0
+				],
+				"UpperArm_R": [
+					90.0,
+					0.0,
+					0.0
+				]
+			}
+		},
+		{
+			"id": "pose_2",
+			"nome": "Pose 2",
+			"ossos": {
+
+			}
+		}
+	],
+	"projeteis": {
+		"abertura": 20.0,
+		"area_chuva": 8.0,
+		"direcao_disparo": "Mira",
+		"explosao": 0.0,
+		"giro": 0.0,
+		"gravidade": 0.0,
+		"modelo": "",
+		"perfurar": false,
+		"quantidade": 8.0,
+		"raio": 0.25,
+		"rastro": "Nenhum",
+		"sem_dano": false,
+		"som_explosao": "Impacto",
+		"velocidade": 24.0,
+		"vida": 2.0,
+		"visual": "Estaca de gelo"
+	},
+	"versao": 1.0,
+	"vfx": {
+		"altura": 1.0,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#66e6ff",
+		"cor_2": "",
+		"escala": 1.0,
+		"estilo": "Impacto",
+		"frente": 1.0,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "Mão direita",
+		"projetil_de": ""
+	}
+}

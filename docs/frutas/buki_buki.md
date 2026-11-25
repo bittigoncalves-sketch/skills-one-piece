@@ -7,7 +7,7 @@ modificadores — `speed_mod` e `jump_mod` = 1,0).
 > transformação instantânea no golpe (a arma nascia, disparava e sumia). Essa
 > regra **morreu**. Se você achar documento que ainda a descreva, ele é velho —
 > e a substituta da Gasu Gasu está registrada em
-> [`../MUDANCAS_2026-08-06.md`](../MUDANCAS_2026-08-06.md), item 8.
+> [`../historico/MUDANCAS_2026-08-06.md`](../historico/MUDANCAS_2026-08-06.md), item 8.
 
 **Hoje a fruta é um jogo de FPS dentro do jogo:**
 

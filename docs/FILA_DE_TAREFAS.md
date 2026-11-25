@@ -11,6 +11,8 @@ concluída.
 
 ## 1. Pesquisa dos golpes do Luffy → skills da Gomu Gomu
 
+> ✅ **PESQUISA FEITA em 15/11/2026** — resultado e decisão em [`PESQUISA_ANIME_GOMU_GOMU.md`](PESQUISA_ANIME_GOMU_GOMU.md). Resta a decisão do dono sobre o V (Elephant Gun).
+
 **Pedido em 2026-08-25.** Levantar os golpes do Luffy em One Piece — **nome, como
 o golpe acontece, e que efeito produz** — para virar skill no jogo.
 

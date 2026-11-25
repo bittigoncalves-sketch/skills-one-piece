@@ -1,12 +1,12 @@
 extends SceneTree
 
 ## Verifica que os três componentes novos carregam isoladamente, sem precisar
-## subir a cena inteira nem seus autoloads de rede.
+## subir a cena inteira nem seus autoloads de rede. (O controlador do embalo da
+## corrida saiu em 03/10/2026: correr passou a ser só 1,5× andar, pedido do dono.)
 func _init() -> void:
 	var queda := preload("res://src/player/fall_impact_controller.gd").new()
 	var ecos := preload("res://src/player/afterimage_trail.gd").new()
 	var ferro := preload("res://src/player/iron_body_controller.gd").new()
-	var corrida := preload("res://src/player/run_acceleration_controller.gd").new()
 	assert(queda != null)
 	assert(ecos != null)
 	# A chama 2D do Lunariano é um quad cuja silhueta vem do shader. Eco troca
@@ -23,9 +23,6 @@ func _init() -> void:
 	assert(asa.get_parent() == modelo)
 	modelo.queue_free()
 	assert(ferro.pronto())
-	assert(is_equal_approx(corrida.atualizar(1.5, true), 1.5))
-	assert(is_equal_approx(corrida.atualizar(1.5, true), 2.0))
-	assert(is_equal_approx(corrida.atualizar(0.0, false), 1.0))
 	var alvo := Node.new()
 	root.add_child(alvo)
 	ferro.montar_em(alvo)

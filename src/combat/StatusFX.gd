@@ -31,6 +31,7 @@ const SUGADO := "sugado"
 const BURACO_NEGRO := "buraco_negro"
 const SILENCIADO := "silenciado"
 const INVULNERAVEL := "invulneravel"
+const PRESO := "preso"   # Lentidão X + sem técnica/golpe/voo (Mine Piece: White Out…)
 
 # Nome, cor e desenho de cada um. O `icone` é o nome da figura que o
 # `src/ui/StatusEffectsHud.gd` sabe desenhar — não é arquivo de imagem, é
@@ -43,6 +44,7 @@ const CATALOGO := {
 	BURACO_NEGRO: {"nome": "Buraco Negro", "cor": Color(0.62, 0.35, 0.90), "icone": "buraco"},
 	SILENCIADO:   {"nome": "Sem Poderes",  "cor": Color(0.75, 0.30, 0.85), "icone": "proibido"},
 	INVULNERAVEL: {"nome": "Invulnerável", "cor": Color(1.00, 0.88, 0.35), "icone": "escudo"},
+	PRESO:        {"nome": "Preso",        "cor": Color(0.85, 0.86, 0.90), "icone": "vortice"},
 }
 
 # ------------------------------------------------------------------- escrita

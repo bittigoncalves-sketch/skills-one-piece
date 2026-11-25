@@ -250,6 +250,24 @@ func _racas(p: Node3D) -> void:
 	_ok("o skypiean continua obedecendo à paleta",
 		_perto(_cor_do_corpo(p._char_model), verde))
 
+	# SKYPEAN: as MESMAS asas do Lunariano, em branco e SEM a chama (2026-09-01).
+	Visual.raca = "skypiean"
+	Visual.aplicar(p._char_model, true)
+	await _quadros(8)
+	var asas_sky := _acha_asas(p._char_model)
+	_ok("o skypean tem as asas em camadas (as mesmas do lunariano)",
+		asas_sky.size() == 2)
+	_ok("e NÃO tem a chama, que é do lunariano",
+		_acha_chama(p._char_model) == null)
+	# ⚠️ A COR MEDIDA, não o parâmetro. O `tom` de cada camada era absoluto e
+	# escuro: a cor base branca chegava certa ao nó e a pena saía em (0,17,
+	# 0,17, 0,20) mesmo assim. Só medir a pena pega isso.
+	if asas_sky.size() > 0:
+		var pena := (asas_sky[0] as Node3D).get_child(0) as MeshInstance3D
+		var c := _cor_do_material(pena.material_override)
+		print("   asa do skypean: %s" % str(c))
+		_ok("a asa do skypean é BRANCA", c.r > 0.8 and c.g > 0.8 and c.b > 0.8)
+
 	# SHARKMAN: cabeça, dorsal e as duas dos braços.
 	Visual.raca = "sharkman"
 	Visual.aplicar(p._char_model, true)

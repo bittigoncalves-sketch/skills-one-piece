@@ -8,6 +8,7 @@ const MinkBiteHudClass := preload("res://src/ui/MinkBiteHud.gd")
 const AirSlamHudClass := preload("res://src/ui/AirSlamHud.gd")
 const FruitRecoveryHudClass := preload("res://src/ui/FruitRecoveryHud.gd")
 const SpinKickHudClass := preload("res://src/ui/SpinKickHud.gd")
+const OpeRoomHudClass := preload("res://src/ui/OpeRoomHud.gd")
 # `Player.local_player(tree)` = o corpo DESTE peer. Ver o comentário lá: no
 # cliente, `get_first_node_in_group("player")` devolve o corpo do HOST.
 const PlayerScript := preload("res://Player.gd")
@@ -28,12 +29,16 @@ var _scope: SniperScope
 var _dummies: DummyToggleHud
 
 var _toque: ToqueHud = null
+var _trava_fruta: TravaFrutaHud = null
 
 func _ready() -> void:
 	add_to_group("hud")   # o Player encontra a HUD por este grupo ao equipar fruta
 	_skill_bar = SkillBar.new()
 	_skill_bar.name = "SkillBar"
 	add_child(_skill_bar)
+	var ope_room_hud := OpeRoomHudClass.new()
+	ope_room_hud.name = "OpeRoomHud"
+	add_child(ope_room_hud)
 
 	_char_menu = CharacterMenu.new()
 	_char_menu.name = "CharacterMenu"
@@ -63,6 +68,10 @@ func _ready() -> void:
 	# qualquer painel que esteja embaixo; adicionado no meio da lista, um HUD
 	# desenhado depois cobriria os botões e o jogador não entenderia por que a
 	# skill não sai. Ele se esconde sozinho fora de celular (`ToqueHud.ativo()`).
+	_trava_fruta = TravaFrutaHud.new()
+	_trava_fruta.name = "TravaFrutaHud"
+	add_child(_trava_fruta)
+
 	_toque = ToqueHud.new()
 	_toque.name = "ToqueHud"
 	add_child(_toque)
@@ -156,15 +165,32 @@ func update_skills_for_fruit(fruit_id: String) -> void:
 
 func update_combat_mode(mode: String, style_id: String, fruit_id: String) -> void:
 	if _skill_bar:
-		if mode == "fruit":
-			_skill_bar.update_skills_for_fruit(fruit_id)
-		else:
-			_skill_bar.update_skills_for_style(style_id)
+		# ⚠️ `match`, e não `if/else` (2026-09-06). Com o terceiro modo, o `else`
+		# de antes mandaria a espada desenhar a barra do ESTILO — o mesmo tipo de
+		# ramo cego que fez o `combat_mode` precisar de um portão no Player.
+		match mode:
+			"fruit": _skill_bar.update_skills_for_fruit(fruit_id)
+			"sword": _skill_bar.update_skills_for_sword()
+			_:       _skill_bar.update_skills_for_style(style_id)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey) or event.echo:
 		return
 	var key: int = event.keycode
+	var slot := ""
+	match key:
+		KEY_Z: slot = "Z"
+		KEY_X: slot = "X"
+		KEY_C: slot = "C"
+		KEY_V: slot = "V"
+
+	# Key-up precisa atravessar menus. Abrir ESC/M enquanto segurava Z ou X
+	# fazia o menu consumir a soltura e deixava canal, pose e estado presos.
+	if not event.pressed and slot != "":
+		var dono := PlayerScript.local_player(get_tree())
+		if dono != null and dono.has_method("release_charge"):
+			dono.release_charge(slot)
+		return
 
 	if event.pressed and key == KEY_ESCAPE:
 		if _inv and _inv.is_open():
@@ -195,21 +221,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	if is_menu_open():
 		return
 
-	var slot := ""
-	match key:
-		KEY_Z: slot = "Z"
-		KEY_X: slot = "X"
-		KEY_C: slot = "C"
-		KEY_V: slot = "V"
 	if slot == "":
 		return
 
 	var player := PlayerScript.local_player(get_tree())   # o MEU corpo, não o 1º da árvore
 	if player == null:
 		return
-	# Segura = carrega/mira; solta = dispara (hold-to-cast).
-	if event.pressed:
-		if player.has_method("begin_charge"):
-			player.begin_charge(slot)
-	elif player.has_method("release_charge"):
-		player.release_charge(slot)
+	# O significado do press/release e decidido pelo controlador de cada tecnica.
+	if player.has_method("begin_charge"):
+		player.begin_charge(slot)

@@ -1,0 +1,266 @@
+{
+  "hang_idle": {
+    "duracao_s": 2.0,
+    "quadros": 61,
+    "qps": 30,
+    "deslocamento_quadril_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "deslocamento_quadril_jogo_m": [
+      -0.0,
+      0.0,
+      0.0
+    ],
+    "quadril_inicio_m": [
+      0.0125,
+      0.023,
+      1.185
+    ],
+    "quadril_fim_m": [
+      0.0125,
+      0.023,
+      1.185
+    ],
+    "giro_quadril_graus": 0.0,
+    "escorregamento_contato": {
+      "mao_L": {
+        "max_cm": 0.0,
+        "quadros_apoiado": 61
+      },
+      "pe_L": {
+        "max_cm": 0.001,
+        "quadros_apoiado": 61
+      },
+      "mao_R": {
+        "max_cm": 0.0,
+        "quadros_apoiado": 61
+      },
+      "pe_R": {
+        "max_cm": 0.001,
+        "quadros_apoiado": 61
+      }
+    },
+    "folga_parede_cm": {
+      "maos": [
+        0.0,
+        0
+      ],
+      "pes": [
+        0.51,
+        38
+      ],
+      "tronco": [
+        14.11,
+        21
+      ],
+      "cabeca": [
+        11.47,
+        50
+      ],
+      "membros": [
+        4.28,
+        38
+      ]
+    },
+    "juntas_graus": {
+      "cotovelo_interno_min": 144.9,
+      "cotovelo_interno_max": 168.95,
+      "cotovelo_hiperext_max": 0.0,
+      "cotovelo_fora_do_eixo_max": 0.0,
+      "joelho_interno_min": 113.41,
+      "joelho_interno_max": 117.33,
+      "joelho_hiperext_max": 0.0,
+      "joelho_torcao_max": 0.0,
+      "joelho_fora_do_eixo_max": 0.0,
+      "punho_max": 27.99
+    },
+    "ciclo": {
+      "dif_max_osso_graus": 0.0,
+      "erro_deslocamento_ciclo_cm": 0.0,
+      "passo_esperado_m": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "folha": "art_src/validation/parkour_keyframe/hang_idle.png"
+  },
+  "climb_up_loop": {
+    "duracao_s": 0.9,
+    "quadros": 28,
+    "qps": 30,
+    "deslocamento_quadril_m": [
+      -0.0,
+      0.0,
+      0.6
+    ],
+    "deslocamento_quadril_jogo_m": [
+      0.0,
+      0.6,
+      0.0
+    ],
+    "quadril_inicio_m": [
+      0.0,
+      0.02,
+      1.185
+    ],
+    "quadril_fim_m": [
+      -0.0,
+      0.02,
+      1.785
+    ],
+    "giro_quadril_graus": -0.0,
+    "escorregamento_contato": {
+      "mao_L": {
+        "max_cm": 0.005,
+        "quadros_apoiado": 19
+      },
+      "pe_L": {
+        "max_cm": 0.007,
+        "quadros_apoiado": 20
+      },
+      "mao_R": {
+        "max_cm": 0.006,
+        "quadros_apoiado": 19
+      },
+      "pe_R": {
+        "max_cm": 0.007,
+        "quadros_apoiado": 20
+      }
+    },
+    "folga_parede_cm": {
+      "maos": [
+        0.0,
+        0
+      ],
+      "pes": [
+        0.51,
+        23
+      ],
+      "tronco": [
+        15.01,
+        7
+      ],
+      "cabeca": [
+        12.7,
+        0
+      ],
+      "membros": [
+        2.85,
+        20
+      ]
+    },
+    "juntas_graus": {
+      "cotovelo_interno_min": 50.36,
+      "cotovelo_interno_max": 143.61,
+      "cotovelo_hiperext_max": 0.0,
+      "cotovelo_fora_do_eixo_max": 0.0,
+      "joelho_interno_min": 52.24,
+      "joelho_interno_max": 122.95,
+      "joelho_hiperext_max": 0.0,
+      "joelho_torcao_max": 0.0,
+      "joelho_fora_do_eixo_max": 0.0,
+      "punho_max": 63.99
+    },
+    "ciclo": {
+      "dif_max_osso_graus": 0.0,
+      "erro_deslocamento_ciclo_cm": 0.0,
+      "passo_esperado_m": [
+        0.0,
+        0.0,
+        0.6000000238418579
+      ]
+    },
+    "folha": "art_src/validation/parkour_keyframe/climb_up_loop.png"
+  },
+  "climb_down_loop": {
+    "duracao_s": 0.9,
+    "quadros": 28,
+    "qps": 30,
+    "deslocamento_quadril_m": [
+      0.0,
+      0.0,
+      -0.6
+    ],
+    "deslocamento_quadril_jogo_m": [
+      -0.0,
+      -0.6,
+      0.0
+    ],
+    "quadril_inicio_m": [
+      -0.0,
+      0.02,
+      1.785
+    ],
+    "quadril_fim_m": [
+      0.0,
+      0.02,
+      1.185
+    ],
+    "giro_quadril_graus": -0.0,
+    "escorregamento_contato": {
+      "mao_L": {
+        "max_cm": 0.004,
+        "quadros_apoiado": 20
+      },
+      "pe_L": {
+        "max_cm": 0.006,
+        "quadros_apoiado": 18
+      },
+      "mao_R": {
+        "max_cm": 0.005,
+        "quadros_apoiado": 19
+      },
+      "pe_R": {
+        "max_cm": 0.006,
+        "quadros_apoiado": 19
+      }
+    },
+    "folga_parede_cm": {
+      "maos": [
+        0.0,
+        0
+      ],
+      "pes": [
+        0.51,
+        7
+      ],
+      "tronco": [
+        15.3,
+        27
+      ],
+      "cabeca": [
+        12.25,
+        25
+      ],
+      "membros": [
+        2.93,
+        26
+      ]
+    },
+    "juntas_graus": {
+      "cotovelo_interno_min": 51.54,
+      "cotovelo_interno_max": 159.61,
+      "cotovelo_hiperext_max": 0.0,
+      "cotovelo_fora_do_eixo_max": 0.0,
+      "joelho_interno_min": 59.64,
+      "joelho_interno_max": 132.71,
+      "joelho_hiperext_max": 0.0,
+      "joelho_torcao_max": 0.0,
+      "joelho_fora_do_eixo_max": 0.0,
+      "punho_max": 68.4
+    },
+    "ciclo": {
+      "dif_max_osso_graus": 0.0,
+      "erro_deslocamento_ciclo_cm": 0.0,
+      "passo_esperado_m": [
+        0.0,
+        0.0,
+        -0.6000000238418579
+      ]
+    },
+    "folha": "art_src/validation/parkour_keyframe/climb_down_loop.png"
+  }
+}

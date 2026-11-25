@@ -1,0 +1,1162 @@
+{
+ "WeakAttack": {
+  "linhas": 124,
+  "dano": [],
+  "alcance": [],
+  "empurrao": [],
+  "efeito": [],
+  "bloco": [],
+  "fim_ticks": null,
+  "limiares": [],
+  "entidades": [],
+  "investida": false,
+  "teleporte": false,
+  "chama": [
+   "LogicRifle"
+  ],
+  "sons": []
+ },
+ "AttackStrong": {
+  "linhas": 172,
+  "dano": [
+   "Math.max(Damage,entity.getPersistentData().m_128459_(\"Damage\"))"
+  ],
+  "alcance": [],
+  "empurrao": [],
+  "efeito": [],
+  "bloco": [],
+  "fim_ticks": 7.0,
+  "limiares": [
+   5.0,
+   6.0,
+   7.0
+  ],
+  "entidades": [],
+  "investida": false,
+  "teleporte": false,
+  "chama": [
+   "AttackRifle",
+   "AttackStrongPunch",
+   "AttackStrongSword",
+   "CanUseArmamentHakiWear",
+   "GuardEffectStartedapplied",
+   "LogicCanUseHaoshokuHakiWear",
+   "LogicCanUseRyuo",
+   "LogicRifle",
+   "LogicSword"
+  ],
+  "sons": []
+ },
+ "AttackJump": {
+  "linhas": 162,
+  "dano": [],
+  "alcance": [],
+  "empurrao": [],
+  "efeito": [],
+  "bloco": [],
+  "fim_ticks": 10.0,
+  "limiares": [
+   1.0,
+   10.0
+  ],
+  "entidades": [],
+  "investida": false,
+  "teleporte": false,
+  "chama": [
+   "AttackOverhead"
+  ],
+  "sons": []
+ },
+ "AttackTackle": {
+  "linhas": 539,
+  "dano": [
+   "8.0"
+  ],
+  "alcance": [
+   "5.0*range"
+  ],
+  "empurrao": [
+   "0.2"
+  ],
+  "efeito": [
+   "5.0"
+  ],
+  "bloco": [],
+  "fim_ticks": 60.0,
+  "limiares": [
+   0.0,
+   1.0,
+   2.0,
+   3.0,
+   30.0,
+   60.0,
+   120.0
+  ],
+  "entidades": [],
+  "investida": true,
+  "teleporte": true,
+  "chama": [
+   "AttackContinue",
+   "AttackStrong",
+   "GetPowerFix",
+   "InsideSolid",
+   "InsideSolidCalculate",
+   "OnGround",
+   "RangeAttack",
+   "ReturnCharactorDevilFruti",
+   "StepBlock"
+  ],
+  "sons": [
+   "minepiece:devil_fruit"
+  ]
+ },
+ "AttackOverhead": {
+  "linhas": 394,
+  "dano": [
+   "10.0*CNT6",
+   "15.0*CNT6",
+   "4.0"
+  ],
+  "alcance": [
+   "12.0*range",
+   "3.0*range",
+   "Math.max(8.0*range,Math.max(d*1.0,1.0))"
+  ],
+  "empurrao": [
+   "0.6",
+   "1.0*CNT6"
+  ],
+  "efeito": [
+   "5.0"
+  ],
+  "bloco": [
+   "Math.max(8.0*range,Math.max(d*1.0,2.0))"
+  ],
+  "fim_ticks": 5.0,
+  "limiares": [
+   0.0,
+   1.0,
+   2.0,
+   5.0
+  ],
+  "entidades": [],
+  "investida": true,
+  "teleporte": false,
+  "chama": [
+   "BlockDestroyAllDirection",
+   "EntityVector",
+   "GetPowerFix",
+   "Knockback",
+   "ParticleGeneratorCircle",
+   "RangeAttack"
+  ],
+  "sons": [
+   "entity.generic.explode",
+   "entity.zombie.break_wooden_door"
+  ]
+ },
+ "AttackSpeed": {
+  "linhas": 369,
+  "dano": [],
+  "alcance": [
+   "4.0*range"
+  ],
+  "empurrao": [],
+  "efeito": [],
+  "bloco": [],
+  "fim_ticks": 120.0,
+  "limiares": [
+   0.0,
+   1.0,
+   5.0,
+   6.0,
+   9.0,
+   10.0,
+   15.0,
+   120.0
+  ],
+  "entidades": [],
+  "investida": true,
+  "teleporte": true,
+  "chama": [
+   "AttackStrongPunch",
+   "AttackStrongSword",
+   "EntityVector",
+   "GetDistanceIterator",
+   "InsideSolidCalculate",
+   "LogicSword",
+   "OnGround",
+   "StepBlock"
+  ],
+  "sons": []
+ },
+ "AttackSwim": {
+  "linhas": 390,
+  "dano": [
+   "speed*4.0"
+  ],
+  "alcance": [
+   "4.0*ReturnEntitySizeProcedure.execute(entity)"
+  ],
+  "empurrao": [
+   "0.5"
+  ],
+  "efeito": [],
+  "bloco": [],
+  "fim_ticks": 80.0,
+  "limiares": [
+   30.0,
+   40.0,
+   80.0
+  ],
+  "entidades": [],
+  "investida": true,
+  "teleporte": false,
+  "chama": [
+   "GetPowerFix",
+   "RangeAttack"
+  ],
+  "sons": []
+ },
+ "AttackRifle": {
+  "linhas": 554,
+  "dano": [
+   "(logic_strong?11:9)*CNT6",
+   "1.5",
+   "1.8",
+   "2.2",
+   "logic_strong?5:4"
+  ],
+  "alcance": [],
+  "empurrao": [],
+  "efeito": [],
+  "bloco": [],
+  "fim_ticks": 2.5,
+  "limiares": [
+   1.0,
+   2.5
+  ],
+  "entidades": [
+   "BOOGER",
+   "BULLET",
+   "MISSILE",
+   "PROJECTILE_WATER_BULLET"
+  ],
+  "investida": false,
+  "teleporte": false,
+  "chama": [
+   "GetReach",
+   "GetWeaponSize",
+   "ReturnCharactorDevilFruti"
+  ],
+  "sons": [
+   "entity.arrow.shoot",
+   "entity.generic.explode",
+   "minepiece:gun_shot1",
+   "minepiece:rocket_launcher"
+  ]
+ },
+ "Rankyaku": {
+  "linhas": 384,
+  "dano": [],
+  "alcance": [],
+  "empurrao": [],
+  "efeito": [],
+  "bloco": [],
+  "fim_ticks": 5.0,
+  "limiares": [
+   1.0,
+   5.0,
+   6.0,
+   8.0
+  ],
+  "entidades": [
+   "ENTITY_WOLF_PROJECTILE",
+   "PROJECTILE_SLASH"
+  ],
+  "investida": false,
+  "teleporte": false,
+  "chama": [
+   "AttackStrongPunch",
+   "PlayAnimationEntity2",
+   "ReturnCharactorDevilFruti"
+  ],
+  "sons": [
+   "entity.player.attack.sweep"
+  ]
+ },
+ "GalaxyDivide": {
+  "linhas": 722,
+  "dano": [
+   "(26.0+entity.getPersistentData().m_128459_(\"cnt1\")*0.01)*CNT6",
+   "15.0",
+   "9.0"
+  ],
+  "alcance": [
+   "20.0*range",
+   "8.0*range"
+  ],
+  "empurrao": [
+   "2.0"
+  ],
+  "efeito": [
+   "5.0"
+  ],
+  "bloco": [
+   "10.0*range"
+  ],
+  "fim_ticks": 40.0,
+  "limiares": [
+   0.0,
+   1.0,
+   5.0,
+   10.0,
+   16.0,
+   20.0,
+   35.0,
+   40.0
+  ],
+  "entidades": [],
+  "investida": true,
+  "teleporte": true,
+  "chama": [
+   "BlockDestroyAllDirection",
+   "EntityVector",
+   "GetDistanceIterator",
+   "InsideSolidCalculate",
+   "Knockback",
+   "OnGround",
+   "ParticleGeneratorCircle",
+   "RangeAttack",
+   "StepBlock"
+  ],
+  "sons": [
+   "entity.generic.explode",
+   "entity.wither.shoot"
+  ]
+ },
+ "FreshFire": {
+  "linhas": 357,
+  "dano": [
+   "15.0*CNT6"
+  ],
+  "alcance": [
+   "Math.min(Math.max(2.0*range,2.0),10.0)"
+  ],
+  "empurrao": [
+   "0.75"
+  ],
+  "efeito": [
+   "0.0",
+   "3.0"
+  ],
+  "bloco": [
+   "Math.min(Math.max(2.0*range,2.0),6.0)"
+  ],
+  "fim_ticks": 30.0,
+  "limiares": [
+   5.0,
+   9.0,
+   10.0,
+   30.0
+  ],
+  "entidades": [],
+  "investida": false,
+  "teleporte": false,
+  "chama": [
+   "BlockDestroyAllDirection",
+   "RangeAttack"
+  ],
+  "sons": [
+   "block.fire.ambient",
+   "entity.player.breath",
+   "minepiece:flame_explode"
+  ]
+ },
+ "Shakushi": {
+  "linhas": 135,
+  "dano": [
+   "12.0+0.01*entity.getPersistentData().m_128459_(\"cnt1\")"
+  ],
+  "alcance": [
+   "6.0"
+  ],
+  "empurrao": [
+   "0.1"
+  ],
+  "efeito": [
+   "5.0"
+  ],
+  "bloco": [],
+  "fim_ticks": 120.0,
+  "limiares": [
+   20.0,
+   120.0
+  ],
+  "entidades": [],
+  "investida": false,
+  "teleporte": false,
+  "chama": [
+   "RangeAttack"
+  ],
+  "sons": []
+ },
+ "CatTheFunjatta": {
+  "linhas": 25,
+  "dano": [],
+  "alcance": [],
+  "empurrao": [],
+  "efeito": [],
+  "bloco": [],
+  "fim_ticks": 15.0,
+  "limiares": [
+   1.0,
+   15.0
+  ],
+  "entidades": [],
+  "investida": true,
+  "teleporte": false,
+  "chama": [
+   "AttackOverhead"
+  ],
+  "sons": []
+ },
+ "SkillKriegBullet": {
+  "linhas": 99,
+  "dano": [
+   "2.0"
+  ],
+  "alcance": [],
+  "empurrao": [],
+  "efeito": [],
+  "bloco": [],
+  "fim_ticks": 25.0,
+  "limiares": [
+   10.0,
+   20.0,
+   25.0
+  ],
+  "entidades": [
+   "BULLET"
+  ],
+  "investida": false,
+  "teleporte": false,
+  "chama": [],
+  "sons": []
+ },
+ "Karate7000BrickRoundhouseKick": {
+  "linhas": 316,
+  "dano": [],
+  "alcance": [],
+  "empurrao": [],
+  "efeito": [],
+  "bloco": [],
+  "fim_ticks": 1.0,
+  "limiares": [
+   0.0,
+   1.0,
+   2.0,
+   3.0,
+   4.0,
+   5.0
+  ],
+  "entidades": [],
+  "investida": false,
+  "teleporte": false,
+  "chama": [
+   "AttackStrongPunch",
+   "CanUseArmamentHakiWear",
+   "LogicCanUseHaoshokuHakiWear",
+   "LogicCanUseRyuo"
+  ],
+  "sons": [
+   "entity.player.attack.sweep",
+   "entity.wither.shoot"
+  ]
+ },
+ "MoutonShoot": {
+  "linhas": 392,
+  "dano": [],
+  "alcance": [
+   "4.0*range"
+  ],
+  "empurrao": [],
+  "efeito": [],
+  "bloco": [],
+  "fim_ticks": 120.0,
+  "limiares": [
+   0.0,
+   1.0,
+   5.0,
+   9.0,
+   10.0,
+   12.0,
+   120.0
+  ],
+  "entidades": [],
+  "investida": true,
+  "teleporte": false,
+  "chama": [
+   "AttackStrongPunch",
+   "OnGround",
+   "StepBlock"
+  ],
+  "sons": [
+   "entity.blaze.shoot",
+   "entity.player.attack.sweep",
+   "entity.wither.shoot"
+  ]
+ },
+ "RotateKick": {
+  "linhas": 497,
+  "dano": [],
+  "alcance": [
+   "distance*2.0"
+  ],
+  "empurrao": [
+   "entity.getPersistentData().m_128459_(\"cnt3\")>0.0?2.5:0.01"
+  ],
+  "efeito": [],
+  "bloco": [
+   "2.0"
+  ],
+  "fim_ticks": 15.0,
+  "limiares": [
+   1.0,
+   10.0,
+   15.0,
+   40.0
+  ],
+  "entidades": [
+   "ENTITY_SWEEP"
+  ],
+  "investida": false,
+  "teleporte": false,
+  "chama": [
+   "BlockDestroyAllDirection",
+   "PlayAnimationEntity2",
+   "RangeAttack",
+   "SetSummonedEntity"
+  ],
+  "sons": [
+   "entity.blaze.shoot",
+   "entity.player.attack.sweep",
+   "entity.wither.shoot"
+  ]
+ },
+ "Concasse": {
+  "linhas": 403,
+  "dano": [
+   "25.0*CNT6",
+   "30.0"
+  ],
+  "alcance": [
+   "3.0*range",
+   "5.0*range"
+  ],
+  "empurrao": [
+   "0.6",
+   "1.0"
+  ],
+  "efeito": [],
+  "bloco": [
+   "2.0*range"
+  ],
+  "fim_ticks": 10.0,
+  "limiares": [
+   0.0,
+   3.0,
+   5.0,
+   10.0,
+   20.0,
+   40.0
+  ],
+  "entidades": [],
+  "investida": true,
+  "teleporte": false,
+  "chama": [
+   "BlockDestroyAllDirection",
+   "GetPowerFix",
+   "Knockback",
+   "RangeAttack"
+  ],
+  "sons": [
+   "entity.generic.explode",
+   "entity.player.attack.sweep",
+   "entity.zombie.break_wooden_door"
+  ]
+ },
+ "Uchimizu": {
+  "linhas": 275,
+  "dano": [
+   "2.2"
+  ],
+  "alcance": [],
+  "empurrao": [],
+  "efeito": [],
+  "bloco": [],
+  "fim_ticks": 8.0,
+  "limiares": [
+   1.0,
+   5.0,
+   6.0,
+   7.0,
+   8.0
+  ],
+  "entidades": [
+   "PROJECTILE_WATER_BULLET"
+  ],
+  "investida": false,
+  "teleporte": false,
+  "chama": [
+   "GetReach",
+   "GetWeaponSize"
+  ],
+  "sons": []
+ },
+ "HaoshokuHaki": {
+  "linhas": 333,
+  "dano": [
+   "3.0"
+  ],
+  "alcance": [
+   "32.0*range"
+  ],
+  "empurrao": [
+   "0.0"
+  ],
+  "efeito": [
+   "7.0"
+  ],
+  "bloco": [
+   "8.0*range"
+  ],
+  "fim_ticks": 100.0,
+  "limiares": [
+   1.0,
+   10.0,
+   20.0,
+   100.0
+  ],
+  "entidades": [
+   "ENTITY_HAOSHOKU_HAKI_2"
+  ],
+  "investida": false,
+  "teleporte": false,
+  "chama": [
+   "BlockDestroyAllDirection",
+   "ParticleGeneratorCircle",
+   "RangeAttack"
+  ],
+  "sons": [
+   "minepiece:frame_set",
+   "minepiece:haki_haoshoku"
+  ]
+ },
+ "SkillProjectileSlash": {
+  "linhas": 309,
+  "dano": [],
+  "alcance": [],
+  "empurrao": [],
+  "efeito": [],
+  "bloco": [],
+  "fim_ticks": 5.0,
+  "limiares": [
+   1.0,
+   5.0,
+   7.0,
+   8.0
+  ],
+  "entidades": [
+   "PROJECTILE_SLASH"
+  ],
+  "investida": false,
+  "teleporte": false,
+  "chama": [
+   "AttackStrongSword",
+   "PlayAnimationEntity2"
+  ],
+  "sons": [
+   "minepiece:sword_sweep"
+  ]
+ },
+ "SkillAssault": {
+  "linhas": 487,
+  "dano": [
+   "11.0*CNT6",
+   "15.0*CNT6"
+  ],
+  "alcance": [
+   "(assault_mode==1.0?8:4)*range"
+  ],
+  "empurrao": [
+   "0.5"
+  ],
+  "efeito": [
+   "5.0"
+  ],
+  "bloco": [],
+  "fim_ticks": 20.0,
+  "limiares": [
+   0.0,
+   1.0,
+   5.0,
+   6.0,
+   8.0,
+   10.0,
+   12.0,
+   13.0,
+   20.0
+  ],
+  "entidades": [],
+  "investida": true,
+  "teleporte": true,
+  "chama": [
+   "AttackStrongSword",
+   "GetDistanceIterator",
+   "InsideSolidCalculate",
+   "OnGround",
+   "ParticleGeneratorCircle",
+   "RangeAttack",
+   "StepBlock"
+  ],
+  "sons": []
+ },
+ "SkillGriffonThrust": {
+  "linhas": 296,
+  "dano": [],
+  "alcance": [],
+  "empurrao": [],
+  "efeito": [],
+  "bloco": [],
+  "fim_ticks": 15.0,
+  "limiares": [
+   1.0,
+   5.0,
+   14.0,
+   15.0
+  ],
+  "entidades": [
+   "ENTITY_GRYPHON"
+  ],
+  "investida": true,
+  "teleporte": false,
+  "chama": [
+   "AttackStrongPunch"
+  ],
+  "sons": [
+   "minepiece:frame_set"
+  ]
+ },
+ "Kamusari": {
+  "linhas": 641,
+  "dano": [
+   "35.0",
+   "6.0",
+   "9.0"
+  ],
+  "alcance": [
+   "10.0*range",
+   "32.0*range"
+  ],
+  "empurrao": [
+   "0.5",
+   "2.0"
+  ],
+  "efeito": [
+   "5.0",
+   "7.0"
+  ],
+  "bloco": [
+   "16.0*range",
+   "3.0*range"
+  ],
+  "fim_ticks": 45.0,
+  "limiares": [
+   1.0,
+   2.0,
+   15.0,
+   20.0,
+   21.0,
+   30.0,
+   31.0,
+   35.0,
+   45.0,
+   60.0,
+   200.0
+  ],
+  "entidades": [
+   "ENTITY_GRYPHON",
+   "PROJECTILE_SLASH"
+  ],
+  "investida": true,
+  "teleporte": true,
+  "chama": [
+   "BlockDestroyAllDirection",
+   "GetPowerFix",
+   "Knockback",
+   "LogicIsEntityAttacking",
+   "OnGround",
+   "ParticleGeneratorCircle",
+   "ParticleGeneratorSweepingEffect",
+   "RangeAttack",
+   "SetSummonedEntity",
+   "StepBlock"
+  ],
+  "sons": [
+   "entity.bat.takeoff",
+   "entity.lightning_bolt.impact",
+   "entity.lightning_bolt.thunder",
+   "minepiece:electric_shock",
+   "minepiece:sword_sweep"
+  ]
+ },
+ "RifleStrong": {
+  "linhas": 681,
+  "dano": [
+   "15.0",
+   "16.0*CNT6",
+   "5.0"
+  ],
+  "alcance": [
+   "2.0",
+   "Math.max(6.0*range,Math.max(d*1.0,1.0))"
+  ],
+  "empurrao": [
+   "0.25*(1.0+entity.getPersistentData().m_128459_(\"cnt6\")*0.4)"
+  ],
+  "efeito": [],
+  "bloco": [
+   "Math.max(1.0*range,Math.max(d*0.5,1.0))"
+  ],
+  "fim_ticks": 13.0,
+  "limiares": [
+   1.0,
+   5.0,
+   6.0,
+   7.0,
+   8.0,
+   13.0,
+   18.0
+  ],
+  "entidades": [],
+  "investida": false,
+  "teleporte": false,
+  "chama": [
+   "BlockDestroyAllDirection",
+   "GetReach",
+   "GetWeaponSize",
+   "Knockback",
+   "ParticleGeneratorCircle",
+   "RangeAttack"
+  ],
+  "sons": [
+   "block.end_gateway.spawn",
+   "entity.generic.explode",
+   "entity.wither.shoot",
+   "minepiece:gun_shot1",
+   "minepiece:motor"
+  ]
+ },
+ "SkillLuckyRouxMeteor": {
+  "linhas": 397,
+  "dano": [
+   "25.0*CNT6",
+   "30.0"
+  ],
+  "alcance": [
+   "3.0*range",
+   "8.0*range"
+  ],
+  "empurrao": [
+   "0.6",
+   "1.0"
+  ],
+  "efeito": [],
+  "bloco": [
+   "8.0*range"
+  ],
+  "fim_ticks": 20.0,
+  "limiares": [
+   0.0,
+   2.0,
+   5.0,
+   15.0,
+   20.0,
+   120.0
+  ],
+  "entidades": [],
+  "investida": true,
+  "teleporte": false,
+  "chama": [
+   "BlockDestroyAllDirection",
+   "GetPowerFix",
+   "Knockback",
+   "ParticleGeneratorCircle",
+   "RangeAttack"
+  ],
+  "sons": [
+   "entity.generic.explode",
+   "entity.player.attack.sweep",
+   "entity.zombie.break_wooden_door"
+  ]
+ },
+ "SkillLuckyRouxTackle": {
+  "linhas": 341,
+  "dano": [
+   "18.0*CNT6"
+  ],
+  "alcance": [
+   "3.0*strength"
+  ],
+  "empurrao": [
+   "0.6"
+  ],
+  "efeito": [
+   "5.0"
+  ],
+  "bloco": [],
+  "fim_ticks": 120.0,
+  "limiares": [
+   0.0,
+   1.0,
+   2.5,
+   5.0,
+   10.0,
+   17.0,
+   120.0
+  ],
+  "entidades": [],
+  "investida": true,
+  "teleporte": false,
+  "chama": [
+   "GetPowerFix",
+   "OnGround",
+   "RangeAttack",
+   "StepBlock"
+  ],
+  "sons": [
+   "block.end_gateway.spawn",
+   "entity.player.attack.sweep"
+  ]
+ },
+ "NarikaburaLike": {
+  "linhas": 349,
+  "dano": [],
+  "alcance": [],
+  "empurrao": [],
+  "efeito": [],
+  "bloco": [],
+  "fim_ticks": 6.0,
+  "limiares": [
+   1.0,
+   5.0,
+   6.0,
+   8.0
+  ],
+  "entidades": [
+   "ENTITY_ENERGY"
+  ],
+  "investida": false,
+  "teleporte": false,
+  "chama": [
+   "AttackStrongPunch",
+   "ParticleGeneratorCircle"
+  ],
+  "sons": [
+   "entity.wither.shoot"
+  ]
+ },
+ "GomuGomuRocket": {
+  "linhas": 386,
+  "dano": [
+   "14.0*CNT6"
+  ],
+  "alcance": [
+   "3.0*strength"
+  ],
+  "empurrao": [
+   "1.0"
+  ],
+  "efeito": [
+   "5.0"
+  ],
+  "bloco": [],
+  "fim_ticks": 10.0,
+  "limiares": [
+   0.0,
+   1.0,
+   5.0,
+   10.0
+  ],
+  "entidades": [
+   "ENTITY_GOMU_ARM"
+  ],
+  "investida": true,
+  "teleporte": false,
+  "chama": [
+   "GetPowerFix",
+   "PlayAnimationEntity2",
+   "RangeAttack"
+  ],
+  "sons": [
+   "entity.wither.shoot"
+  ]
+ },
+ "TatsuMaki": {
+  "linhas": 260,
+  "dano": [],
+  "alcance": [],
+  "empurrao": [],
+  "efeito": [],
+  "bloco": [],
+  "fim_ticks": 16.0,
+  "limiares": [
+   5.0,
+   7.0,
+   8.0,
+   9.0,
+   12.0,
+   16.0
+  ],
+  "entidades": [
+   "TORNADO"
+  ],
+  "investida": false,
+  "teleporte": false,
+  "chama": [],
+  "sons": [
+   "entity.player.attack.sweep",
+   "entity.wither.shoot"
+  ]
+ },
+ "SanzenSekai": {
+  "linhas": 415,
+  "dano": [
+   "24.0*CNT6",
+   "9.0"
+  ],
+  "alcance": [],
+  "empurrao": [
+   "1.0"
+  ],
+  "efeito": [
+   "1.0"
+  ],
+  "bloco": [],
+  "fim_ticks": 27.0,
+  "limiares": [
+   0.0,
+   5.0,
+   9.0,
+   10.0,
+   11.0,
+   14.0,
+   17.0,
+   27.0
+  ],
+  "entidades": [],
+  "investida": true,
+  "teleporte": false,
+  "chama": [
+   "GetPowerFix",
+   "OnGround",
+   "ParticleGeneratorSweepingEffect",
+   "RangeAttack",
+   "StepBlock"
+  ],
+  "sons": [
+   "entity.player.attack.sweep",
+   "minepiece:sword_sweep"
+  ]
+ },
+ "Iai": {
+  "linhas": 452,
+  "dano": [
+   "20.0*CNT6",
+   "entity.getPersistentData().m_128459_(\"Damage\")*1.2"
+  ],
+  "alcance": [
+   "5.0*range"
+  ],
+  "empurrao": [
+   "0.01",
+   "entity.getPersistentData().m_128459_(\"knockback\")*1.2"
+  ],
+  "efeito": [
+   "1.0"
+  ],
+  "bloco": [],
+  "fim_ticks": 18.0,
+  "limiares": [
+   5.0,
+   7.0,
+   8.0,
+   9.0,
+   11.0,
+   12.0,
+   18.0
+  ],
+  "entidades": [],
+  "investida": true,
+  "teleporte": false,
+  "chama": [
+   "GetSwordNum",
+   "OnGround",
+   "ParticleGeneratorSweepingEffect",
+   "RangeAttack",
+   "StepBlock"
+  ],
+  "sons": [
+   "entity.wither.shoot",
+   "minepiece:sword_sweep"
+  ]
+ },
+ "AshuraBakkei": {
+  "linhas": 659,
+  "dano": [
+   "(44.0+entity.getPersistentData().m_128459_(\"cnt1\")*0.05)*CNT6",
+   "12.0"
+  ],
+  "alcance": [
+   "12.0*range"
+  ],
+  "empurrao": [
+   "0.2"
+  ],
+  "efeito": [
+   "5.0"
+  ],
+  "bloco": [],
+  "fim_ticks": 50.0,
+  "limiares": [
+   1.0,
+   5.0,
+   9.0,
+   20.0,
+   21.0,
+   28.0,
+   29.0,
+   50.0
+  ],
+  "entidades": [
+   "ASHURA",
+   "ENTITY_SLASH"
+  ],
+  "investida": true,
+  "teleporte": false,
+  "chama": [
+   "GetPowerFix",
+   "OnGround",
+   "PlayAnimationEntity2",
+   "RangeAttack",
+   "SetSummonedEntity",
+   "StepBlock"
+  ],
+  "sons": [
+   "entity.player.attack.sweep",
+   "minepiece:electric_shock",
+   "minepiece:sword_sweep"
+  ]
+ }
+}

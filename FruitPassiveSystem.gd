@@ -18,6 +18,11 @@ var volt_meter: float = 0.0
 
 static func get_all_passives() -> Dictionary:
 	return {
+		"rocket": {
+			"nome": "Propulsão corporal",
+			"descricao": "Overdrive amplifica mobilidade e ritmo por seis segundos.",
+			"tipo": "Paramecia", "speed_mod": 1.0, "jump_mod": 1.0
+		},
 		"gomu_gomu": {
 			"nome": "Corpo Elástico (Kinetic Bounce)",
 			"descricao": "Pulos ganham +20% de impulso mecânico. Reduz repulsão (knockback) recebida em 40%.",
@@ -67,7 +72,7 @@ static func get_all_passives() -> Dictionary:
 		},
 		"magu_magu": {
 			"nome": "Núcleo Vulcânico (Volcanic Core)",
-			"descricao": "Logia Ativa: Quanto menor a vida atual, maior o dano das habilidades (até +50%). Golpes normais aplicam queimadura contínua.",
+			"descricao": "Lava de alto dano e ataques lentos. Cão de Lava dobra a corrida e concede imunidade temporária. Água solidifica a lava.",
 			"tipo": "Logia",
 			"speed_mod": 1.0,
 			"jump_mod": 1.0
@@ -101,15 +106,15 @@ static func get_all_passives() -> Dictionary:
 			"jump_mod": 1.0
 		},
 		"ope_ope": {
-			"nome": "Precisão Cirúrgica (Spatial Mastery)",
-			"descricao": "Dentro da 'Room', a chance de acerto crítico aumenta em +30% e habilidades consomem 50% menos estamina.",
+			"nome": "Domínio Cirúrgico",
+			"descricao": "Crie um ROOM para trocar posições, arremessar rochas e usar Gamma Knife. As técnicas exigem que você permaneça dentro do campo.",
 			"tipo": "Paramecia",
-			"speed_mod": 1.10,
-			"jump_mod": 1.10
+			"speed_mod": 1.0,
+			"jump_mod": 1.0
 		},
 		"bara_bara": {
-			"nome": "Esquiva Desmembrada (Split Reflex)",
-			"descricao": "Ao receber dano físico cortante ou frontal, possui 35% de chance de desmembrar o corpo automaticamente e esquivar sem tomar dano.",
+			"nome": "Corpo Divisível",
+			"descricao": "Velocidade de movimento +5%. As mãos lançadas retornam ao corpo; a separação não concede imunidade a dano.",
 			"tipo": "Paramecia",
 			"speed_mod": 1.05,
 			"jump_mod": 1.0
@@ -144,7 +149,7 @@ static func get_all_passives() -> Dictionary:
 		},
 		"tori_tori_phoenix": {
 			"nome": "Chamas da Renascença (Phoenix Healing)",
-			"descricao": "Regenera 2.5% da vida máxima por segundo continuamente e concede pulo duplo no ar.",
+			"descricao": "Z transforma em fênix; F voa por até 12 s. Renascimento (V) restaura 25% da vida máxima.",
 			"tipo": "Zoan Mítica",
 			"speed_mod": 1.10,
 			"jump_mod": 1.30

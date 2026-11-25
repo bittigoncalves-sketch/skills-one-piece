@@ -1,0 +1,353 @@
+{
+ "formato": "skills-one-piece/efeitos-mine-piece",
+ "versao": 1,
+ "origem": {
+  "mod": "MinePiece-ver14-forge-1.20.1.jar",
+  "sha256": "349b36cdc4dacfe066e385f9ba05205eeb90551a743cf742cf95bfc7a3fbd765",
+  "extraido_por": "tools/mine_piece/extrair_efeitos.py"
+ },
+ "efeitos": {
+  "minepiece:armament_haki": {
+   "classe": "ArmamentHakiMobEffect",
+   "tick": [],
+   "periodo": 1,
+   "ao_comecar": [],
+   "ao_acabar": []
+  },
+  "minepiece:attack_queue": {
+   "classe": "AttackQueueMobEffect",
+   "tick": [],
+   "periodo": 1,
+   "ao_comecar": [],
+   "ao_acabar": []
+  },
+  "minepiece:attacking": {
+   "classe": "AttackingMobEffect",
+   "tick": [],
+   "periodo": 1,
+   "ao_comecar": [],
+   "ao_acabar": []
+  },
+  "minepiece:collided": {
+   "classe": "CollidedMobEffect",
+   "tick": [
+    "CollidedOnEffectActiveTickProcedure"
+   ],
+   "periodo": 1,
+   "ao_comecar": [
+    "CollidedOnEffectActiveTickProcedure"
+   ],
+   "ao_acabar": [
+    "CollidedOnEffectActiveTickProcedure"
+   ]
+  },
+  "minepiece:color": {
+   "classe": "ColorMobEffect",
+   "tick": [],
+   "periodo": 1,
+   "ao_comecar": [],
+   "ao_acabar": []
+  },
+  "minepiece:combo": {
+   "classe": "ComboMobEffect",
+   "tick": [],
+   "periodo": 1,
+   "ao_comecar": [
+    "UpdateSelectTechniqueProcedure"
+   ],
+   "ao_acabar": [
+    "UpdateSelectTechniqueProcedure"
+   ]
+  },
+  "minepiece:cooldown_time_back_step": {
+   "classe": "CooldownTimeBackStepMobEffect",
+   "tick": [],
+   "periodo": 1,
+   "ao_comecar": [],
+   "ao_acabar": []
+  },
+  "minepiece:cooldown_time_combat": {
+   "classe": "CooldownTimeCombatMobEffect",
+   "tick": [],
+   "periodo": 1,
+   "ao_comecar": [
+    "CooldownTimeCombatEffectStartedappliedProcedure"
+   ],
+   "ao_acabar": [
+    "CooldownTimeCombatEffectStartedappliedProcedure"
+   ]
+  },
+  "minepiece:cooldown_time_fly": {
+   "classe": "CooldownTimeFlyMobEffect",
+   "tick": [],
+   "periodo": 1,
+   "ao_comecar": [],
+   "ao_acabar": []
+  },
+  "minepiece:cooldown_time_guard": {
+   "classe": "CooldownTimeGuardMobEffect",
+   "tick": [],
+   "periodo": 1,
+   "ao_comecar": [],
+   "ao_acabar": []
+  },
+  "minepiece:cooldown_time": {
+   "classe": "CooldownTimeMobEffect",
+   "tick": [],
+   "periodo": 1,
+   "ao_comecar": [
+    "CooldownTimeEffectStartedappliedProcedure"
+   ],
+   "ao_acabar": [
+    "CooldownTimeEffectStartedappliedProcedure"
+   ]
+  },
+  "minepiece:cooldown_time_second": {
+   "classe": "CooldownTimeSecondMobEffect",
+   "tick": [],
+   "periodo": 1,
+   "ao_comecar": [
+    "CooldownTimeSecondEffectStartedappliedProcedure"
+   ],
+   "ao_acabar": [
+    "CooldownTimeSecondEffectStartedappliedProcedure"
+   ]
+  },
+  "minepiece:damage_effect": {
+   "classe": "DamageEffectMobEffect",
+   "tick": [],
+   "periodo": 1,
+   "ao_comecar": [],
+   "ao_acabar": []
+  },
+  "minepiece:devil_fruit_user": {
+   "classe": "DevilFruitUserMobEffect",
+   "tick": [
+    "DevilFruitUserOnEffectActiveTickProcedure"
+   ],
+   "periodo": 1,
+   "ao_comecar": [
+    "DevilFruitUserEffectStartedappliedProcedure"
+   ],
+   "ao_acabar": [
+    "DevilFruitUserEffectExpiresProcedure"
+   ]
+  },
+  "minepiece:diable_jambe_effect": {
+   "classe": "DiableJambeEffectMobEffect",
+   "tick": [],
+   "periodo": 1,
+   "ao_comecar": [
+    "DiableJambeEffectEffectStartedappliedProcedure"
+   ],
+   "ao_acabar": [
+    "DiableJambeEffectEffectExpiresProcedure"
+   ]
+  },
+  "minepiece:double_jump_effect": {
+   "classe": "DoubleJumpEffectMobEffect",
+   "tick": [
+    "DoubleJumpEffectOnEffectActiveTickProcedure"
+   ],
+   "periodo": 1,
+   "ao_comecar": [
+    "DoubleJumpEffectEffectStartedappliedProcedure"
+   ],
+   "ao_acabar": [
+    "DoubleJumpEffectEffectExpiresProcedure"
+   ]
+  },
+  "minepiece:earthquake": {
+   "classe": "EarthquakeMobEffect",
+   "tick": [
+    "EarthquakeOnEffectActiveTickProcedure"
+   ],
+   "periodo": 1,
+   "ao_comecar": [],
+   "ao_acabar": []
+  },
+  "minepiece:effect_shadows_asgard": {
+   "classe": "EffectShadowsAsgardMobEffect",
+   "tick": [
+    "EffectShadowsAsgardOnEffectActiveTickProcedure"
+   ],
+   "periodo": 1,
+   "ao_comecar": [
+    "EffectShadowsAsgardEffectStartedappliedProcedure"
+   ],
+   "ao_acabar": [
+    "EffectShadowsAsgardEffectExpiresProcedure"
+   ]
+  },
+  "minepiece:effect_weight": {
+   "classe": "EffectWeightMobEffect",
+   "tick": [
+    "EffectWeightOnEffectActiveTickProcedure"
+   ],
+   "periodo": 1,
+   "ao_comecar": [
+    "PassiveDamageGainProcedure"
+   ],
+   "ao_acabar": [
+    "PassiveDamageGainProcedure"
+   ]
+  },
+  "minepiece:fly_effect": {
+   "classe": "FlyEffectMobEffect",
+   "tick": [
+    "FlyEffectOnEffectActiveTickProcedure"
+   ],
+   "periodo": 1,
+   "ao_comecar": [
+    "FlyEffectEffectStartedappliedProcedure"
+   ],
+   "ao_acabar": [
+    "FlyEffectEffectExpiresProcedure"
+   ]
+  },
+  "minepiece:friendly_mode": {
+   "classe": "FriendlyModeMobEffect",
+   "tick": [],
+   "periodo": 1,
+   "ao_comecar": [
+    "FriendlyModeEffectStartedappliedProcedure"
+   ],
+   "ao_acabar": [
+    "FriendlyModeEffectExpiresProcedure"
+   ]
+  },
+  "minepiece:frozen": {
+   "classe": "FrozenMobEffect",
+   "tick": [],
+   "periodo": 1,
+   "ao_comecar": [],
+   "ao_acabar": []
+  },
+  "minepiece:gear": {
+   "classe": "GearMobEffect",
+   "tick": [
+    "GearOnEffectActiveTickProcedure"
+   ],
+   "periodo": 1,
+   "ao_comecar": [
+    "GearEffectStartedappliedProcedure"
+   ],
+   "ao_acabar": [
+    "GearEffectExpiresProcedure"
+   ]
+  },
+  "minepiece:guard": {
+   "classe": "GuardMobEffect",
+   "tick": [
+    "GuardEffectStartedappliedProcedure"
+   ],
+   "periodo": 1,
+   "ao_comecar": [
+    "GuardEffectStartedappliedProcedure"
+   ],
+   "ao_acabar": [
+    "GuardEffectExpiresProcedure"
+   ]
+  },
+  "minepiece:high_speed": {
+   "classe": "HighSpeedMobEffect",
+   "tick": [
+    "HighSpeedOnEffectActiveTickProcedure"
+   ],
+   "periodo": 1,
+   "ao_comecar": [],
+   "ao_acabar": []
+  },
+  "minepiece:ignore_guard": {
+   "classe": "IgnoreGuardMobEffect",
+   "tick": [],
+   "periodo": 1,
+   "ao_comecar": [],
+   "ao_acabar": []
+  },
+  "minepiece:king_of_hell": {
+   "classe": "KingOfHellMobEffect",
+   "tick": [
+    "KingOfHellOnEffectActiveTickProcedure"
+   ],
+   "periodo": 1,
+   "ao_comecar": [
+    "KingOfHellEffectStartedappliedProcedure"
+   ],
+   "ao_acabar": [
+    "KingOfHellEffectExpiresProcedure"
+   ]
+  },
+  "minepiece:mamaragan": {
+   "classe": "MamaraganMobEffect",
+   "tick": [
+    "MamaraganOnEffectActiveTickProcedure"
+   ],
+   "periodo": 1,
+   "ao_comecar": [
+    "MamaraganEffectStartedappliedProcedure"
+   ],
+   "ao_acabar": []
+  },
+  "minepiece:negative": {
+   "classe": "NegativeMobEffect",
+   "tick": [
+    "NegativeOnEffectActiveTickProcedure"
+   ],
+   "periodo": 1,
+   "ao_comecar": [],
+   "ao_acabar": [
+    "NegativeEffectExpiresProcedure"
+   ]
+  },
+  "minepiece:observation_haki": {
+   "classe": "ObservationHAKIMobEffect",
+   "tick": [],
+   "periodo": 1,
+   "ao_comecar": [],
+   "ao_acabar": []
+  },
+  "minepiece:sea_power": {
+   "classe": "SeaPowerMobEffect",
+   "tick": [],
+   "periodo": 1,
+   "ao_comecar": [],
+   "ao_acabar": []
+  },
+  "minepiece:skill": {
+   "classe": "SkillMobEffect",
+   "tick": [
+    "CursedTechniqueOnPotionActiveTickProcedure"
+   ],
+   "periodo": 1,
+   "ao_comecar": [],
+   "ao_acabar": [
+    "CursedTechniquePotionExpiresProcedure"
+   ]
+  },
+  "minepiece:sovereign_haki": {
+   "classe": "SovereignHAKIMobEffect",
+   "tick": [],
+   "periodo": 1,
+   "ao_comecar": [
+    "SovereignHAKIEffectStartedappliedProcedure"
+   ],
+   "ao_acabar": [
+    "SovereignHAKIEffectExpiresProcedure"
+   ]
+  },
+  "minepiece:stun": {
+   "classe": "StunMobEffect",
+   "tick": [
+    "StunOnEffectActiveTickProcedure"
+   ],
+   "periodo": 1,
+   "ao_comecar": [
+    "StunEffectStartedappliedProcedure"
+   ],
+   "ao_acabar": [
+    "StunEffectExpiresProcedure"
+   ]
+  }
+ }
+}

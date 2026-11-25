@@ -1,0 +1,344 @@
+{
+	"animacao": {
+		"clipe": "Ataque",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.0
+	},
+	"ativacao": {
+		"andar_segurando": false,
+		"carga": 0.5,
+		"empurrao_carga_max": 1.0,
+		"modo": "Pressionar",
+		"paralisar_segurando": true,
+		"ponto_segurar": 0.5,
+		"repetir": false,
+		"segurar_max": 5.0,
+		"tecla": "C"
+	},
+	"audio": {
+		"som": "Impacto",
+		"tom": 1.0,
+		"volume": -12.0
+	},
+	"camera": {
+		"tremor": 0.2,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 60.0,
+		"exige_alvo": false,
+		"exige_chao": false,
+		"nivel_minimo": 1,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 28.0,
+		"custo": 22.0,
+		"custo_por_segundo": 0.0,
+		"duracao": 1.5,
+		"fim_sobre_alvo": 0.0,
+		"flutuar": false,
+		"inicio_do_fim": -1.0,
+		"intervalo_depois": 0.5,
+		"mirar_no_alvo": false,
+		"parar_no_vazio": false,
+		"recarga": 12.0
+	},
+	"dano": {
+		"atordoamento": 0.15,
+		"congelar": 0.7,
+		"critico": 0.0,
+		"cura_do_dano": 0.0,
+		"duracao_efeito": 1.0,
+		"empurrao": 1.5,
+		"lentidao": 0.0,
+		"multiplicador": 2.0,
+		"tipo": "Gelo",
+		"valor": 30.0
+	},
+	"eventos": [
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "erguer",
+			"inicio": 0.0,
+			"parametros": {
+				"pose": "pose_1",
+				"transicao": 0.12
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.9,
+			"habilitado": true,
+			"id": "bater",
+			"inicio": 0.3,
+			"parametros": {
+				"pose": "pose_2",
+				"transicao": 0.06
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 1.0,
+			"habilitado": true,
+			"id": "rachadura",
+			"inicio": 0.32,
+			"parametros": {
+				"ancora": "Ponto mirado",
+				"escala": 4.0,
+				"estilo": "Rachadura"
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_bater",
+			"inicio": 0.3,
+			"parametros": {
+				"som": "Impacto",
+				"tom": 0.6,
+				"volume": -5.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "tremor",
+			"inicio": 0.3,
+			"parametros": {
+				"tremor": 0.2
+			},
+			"tipo": "camera"
+		},
+		{
+			"duracao": 0.05,
+			"habilitado": true,
+			"id": "estacas_1",
+			"inicio": 0.4,
+			"parametros": {
+
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.05,
+			"habilitado": true,
+			"id": "estacas_2",
+			"inicio": 0.65,
+			"parametros": {
+
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_estacas",
+			"inicio": 0.4,
+			"parametros": {
+				"som": "Gelo: disparo",
+				"tom": 0.7,
+				"volume": -6.0
+			},
+			"tipo": "audio"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 3.0,
+		"forma": "Esfera",
+		"largura": 3.0,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 1.5,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": -2.0
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "Bate as mãos no chão: o solo racha no ponto mirado e uma chuva de estacas de gelo cai num círculo de 6 m em volta dele, congelando.",
+		"dono": "Jogador",
+		"fruta": "hie_hie_no_mi_mine_piece",
+		"id": "mp_hie_campo_de_estacas",
+		"modelo": "Base",
+		"nome": "Campo de Estacas"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 2.0,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 6.0
+	},
+	"poses": [
+		{
+			"id": "pose_1",
+			"nome": "Erguer",
+			"ossos": {
+				"ForeArm_L": [
+					20.0,
+					0.0,
+					0.0
+				],
+				"ForeArm_R": [
+					20.0,
+					0.0,
+					0.0
+				],
+				"Head": [
+					-14.0,
+					0.0,
+					0.0
+				],
+				"Shin_L": [
+					-30.0,
+					0.0,
+					0.0
+				],
+				"Shin_R": [
+					-30.0,
+					0.0,
+					0.0
+				],
+				"Thigh_L": [
+					18.0,
+					0.0,
+					-14.0
+				],
+				"Thigh_R": [
+					18.0,
+					0.0,
+					14.0
+				],
+				"Torso": [
+					-12.0,
+					0.0,
+					0.0
+				],
+				"UpperArm_L": [
+					-10.0,
+					0.0,
+					-150.0
+				],
+				"UpperArm_R": [
+					-10.0,
+					0.0,
+					150.0
+				]
+			}
+		},
+		{
+			"id": "pose_2",
+			"nome": "Bater no chão",
+			"ossos": {
+				"ForeArm_L": [
+					10.0,
+					0.0,
+					0.0
+				],
+				"ForeArm_R": [
+					10.0,
+					0.0,
+					0.0
+				],
+				"Head": [
+					10.0,
+					0.0,
+					0.0
+				],
+				"Shin_L": [
+					-100.0,
+					0.0,
+					0.0
+				],
+				"Shin_R": [
+					-60.0,
+					0.0,
+					0.0
+				],
+				"Thigh_L": [
+					70.0,
+					0.0,
+					-10.0
+				],
+				"Thigh_R": [
+					-10.0,
+					0.0,
+					10.0
+				],
+				"Torso": [
+					42.0,
+					0.0,
+					0.0
+				],
+				"UpperArm_L": [
+					70.0,
+					0.0,
+					-20.0
+				],
+				"UpperArm_R": [
+					70.0,
+					0.0,
+					20.0
+				]
+			}
+		}
+	],
+	"projeteis": {
+		"abertura": 0.0,
+		"area_chuva": 6.0,
+		"direcao_disparo": "Chuva",
+		"explosao": 1.0,
+		"giro": 0.0,
+		"gravidade": 20.0,
+		"imunidade_gelo": false,
+		"modelo": "",
+		"perfurar": false,
+		"quantidade": 8,
+		"raio": 0.4,
+		"raio_de_acerto": 0.0,
+		"raio_do_anel": 2.5,
+		"rastro": "Gelo",
+		"sai_de": "Corpo",
+		"sem_dano": false,
+		"som_explosao": "Gelo: rajada",
+		"velocidade": 26.0,
+		"vida": 2.0,
+		"visual": "Estaca de gelo"
+	},
+	"transformacao": {
+		"alvo": "Usuário",
+		"cor": "#dce9ff",
+		"escala": 1.0,
+		"modelo": "",
+		"raio": 8.0,
+		"visual": "Fumaça"
+	},
+	"versao": 1,
+	"vfx": {
+		"altura": 1.0,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#9fe8ff",
+		"cor_2": "#e8fbff",
+		"escala": 1.0,
+		"estilo": "Impacto",
+		"frente": 1.0,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "Mão direita",
+		"projetil_de": ""
+	}
+}

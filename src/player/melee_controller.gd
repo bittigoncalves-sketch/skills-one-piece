@@ -62,13 +62,13 @@ var _buffer: float = 0.0   # clique que chegou na recuperação, esperando a vez
 var _t_golpe: float = 0.0
 var _passo_em_curso: int = -1   # índice do golpe em voo; -1 = nenhum
 var _whiff_resolvido: bool = false
-# ID da variação W/A/S/D em voo. Não usa índice do COMBO: as duas famílias têm
+# ID da variação contextual em voo (Lançamento, chute aéreo, chute de parede). Não usa índice do COMBO: as duas famílias têm
 # frame data diferente, mas compartilham exatamente o mesmo relógio e a mesma
 # FSM. Isso evita uma segunda máquina de estados para os contextuais.
 var _context_id := ""
 # Sequência do Player para a variação em voo. IDs se repetem (W pode virar W
 # de novo), logo confirmação e cancelamento remotos nunca podem se apoiar só no
-# texto `context_elbow`.
+# texto `context_launcher`.
 var _context_seq := -1
 var _context_whiff_extra := 0.0
 const CONTEXT_CONFIRM_GRACE := 0.14
@@ -136,7 +136,14 @@ func cancelar_golpe(avisar_cancelamento: bool = true) -> void:
 # --------------------------------------------------------------------- clique
 # `yaw` entra por parâmetro: a mira é do Player desde a Fase 2.
 func pedir(yaw: float) -> void:
+	if _dono.has_meta("combate_mine_piece"):
+		return
 	if not _dono._is_authority or _dono._charging:
+		return
+	# ASAS DE ANJO (Skypean) vem ANTES da Aú: é mais específica que ela — exige
+	# a raça, o segundo pulo já gasto E alguém por perto. Sem alvo ela devolve
+	# false e o clique segue para a Aú, como antes.
+	if _dono.has_method("tentar_asas_de_anjo") and _dono.call("tentar_asas_de_anjo", yaw):
 		return
 	# Espaço + clique é a variação aérea/girante. Vem antes da queda e da
 	# mordida porque a combinação explícita do jogador tem prioridade.
@@ -160,9 +167,9 @@ func pedir(yaw: float) -> void:
 			_buffer = BUFFER
 		return
 
-	# W/A/S/D no chão: o resolvedor só escolhe o ID. O Player valida geometria
-	# (por exemplo parede atrás do chute recuando), fixa a attack_basis, prevê a
-	# apresentação e pede a hitbox ao servidor.
+	# Variação contextual (Lançamento no 4º golpe com W, chute aéreo, chute de
+	# parede): o resolvedor só escolhe o ID. O Player fixa a attack_basis, prevê a
+	# apresentação e pede a hitbox ao servidor. Andar + clique no chão é o combo M1.
 	var contexto := ContextualMeleeData.contexto_do_player(_dono, yaw)
 	var id_contextual := ContextualMeleeData.resolver(contexto)
 	if not id_contextual.is_empty() and _iniciar_contextual(id_contextual, yaw):
@@ -233,8 +240,23 @@ func _iniciar_contextual(id: String, yaw: float) -> bool:
 	_context_id = id
 	_context_seq = int(_dono.call("sequencia_contextual_atual")) \
 		if _dono.has_method("sequencia_contextual_atual") else -1
-	_passo = 0
-	_janela = 0.0
+	# ⚠️ A VARIAÇÃO É O PRIMEIRO GOLPE DA SEQUÊNCIA, não um golpe isolado.
+	#
+	# Aqui estava `_passo = 0` e `_janela = 0.0`: o combo voltava ao início e a
+	# janela de encadeamento FECHAVA. Com W ainda segurado, o clique seguinte
+	# resolvia cotovelada de novo — e de novo, para sempre. Medido: quatro
+	# cliques, quatro cotoveladas idênticas (relato do dono, 2026-09-01).
+	#
+	# Agora ela OCUPA o passo 0 e deixa a janela aberta, então o clique seguinte
+	# cai no passo 1 e o combo continua normalmente:
+	#
+	#     cotovelada → Soco Esquerdo → Chute Lateral → Finalizador
+	#     (ou lançamento, se W estiver segurado no quarto)
+	#
+	# Quem impede a variação de sair de novo no meio da sequência é o
+	# `ContextualMelee.resolver`, que só a oferece com o combo no começo.
+	_passo = 1
+	_janela = Melee.JANELA
 	_passo_em_curso = -1
 	_t_golpe = 0.0
 	_trava = ContextualMeleeData.duracao(id)

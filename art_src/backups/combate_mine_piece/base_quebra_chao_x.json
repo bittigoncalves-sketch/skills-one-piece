@@ -1,0 +1,450 @@
+{
+	"animacao": {
+		"clipe": "Ataque",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.0
+	},
+	"ativacao": {
+		"andar_segurando": false,
+		"carga": 0.5,
+		"empurrao_carga_max": 1.0,
+		"modo": "Pressionar",
+		"paralisar_segurando": true,
+		"ponto_segurar": 0.5,
+		"repetir": false,
+		"segurar_max": 5.0,
+		"tecla": "X"
+	},
+	"audio": {
+		"som": "Impacto",
+		"tom": 1.0,
+		"volume": -12.0
+	},
+	"camera": {
+		"tremor": 0.2,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 60.0,
+		"exige_alvo": false,
+		"exige_chao": false,
+		"nivel_minimo": 1,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 8.0,
+		"custo": 20.0,
+		"custo_por_segundo": 0.0,
+		"duracao": 1.5,
+		"fim_sobre_alvo": 0.0,
+		"flutuar": false,
+		"inicio_do_fim": -1.0,
+		"intervalo_depois": 0.5,
+		"mirar_no_alvo": false,
+		"parar_no_vazio": false,
+		"recarga": 9.0
+	},
+	"dano": {
+		"atordoamento": 0.7,
+		"congelar": 0.0,
+		"critico": 0.0,
+		"cura_do_dano": 0.0,
+		"duracao_efeito": 1.0,
+		"empurrao": 26.0,
+		"lentidao": 0.0,
+		"multiplicador": 2.0,
+		"tipo": "Físico",
+		"valor": 70.0
+	},
+	"eventos": [
+		{
+			"duracao": 0.55,
+			"habilitado": true,
+			"id": "agachar",
+			"inicio": 0.0,
+			"parametros": {
+				"pose": "pose_1",
+				"transicao": 0.22
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.5,
+			"habilitado": true,
+			"id": "ar_no_punho",
+			"inicio": 0.05,
+			"parametros": {
+				"ancora": "Osso do jogador",
+				"escala": 1.2,
+				"estilo": "Carga",
+				"osso": "Mão direita"
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_carga",
+			"inicio": 0.0,
+			"parametros": {
+				"som": "Vento",
+				"tom": 0.6,
+				"volume": -10.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.4,
+			"habilitado": true,
+			"id": "soco",
+			"inicio": 0.55,
+			"parametros": {
+				"pose": "pose_2",
+				"transicao": 0.05
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.9,
+			"habilitado": true,
+			"id": "rachadura",
+			"inicio": 0.58,
+			"parametros": {
+				"altura": 0.03,
+				"ancora": "Mundo",
+				"escala": 3.6,
+				"estilo": "Rachadura",
+				"frente": 0.0
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.4,
+			"habilitado": true,
+			"id": "clarao",
+			"inicio": 0.58,
+			"parametros": {
+				"altura": 0.3,
+				"ancora": "Mundo",
+				"escala": 1.6,
+				"estilo": "Explosão",
+				"frente": 0.9
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.6,
+			"habilitado": true,
+			"id": "onda_de_vento",
+			"inicio": 0.6,
+			"parametros": {
+				"altura": 0.15,
+				"ancora": "Mundo",
+				"escala": 5.0,
+				"estilo": "Anel",
+				"frente": 0.0
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.6,
+			"habilitado": true,
+			"id": "onda_de_vento_2",
+			"inicio": 0.7,
+			"parametros": {
+				"altura": 0.4,
+				"ancora": "Mundo",
+				"escala": 5.5,
+				"estilo": "Vento",
+				"frente": 0.0
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.15,
+			"habilitado": true,
+			"id": "explosao_de_vento",
+			"inicio": 0.6,
+			"parametros": {
+				"forma": "Esfera",
+				"raio": 6.0,
+				"unicos": true,
+				"x": 0.0,
+				"y": 1.0,
+				"z": 0.0
+			},
+			"tipo": "hitbox"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_impacto",
+			"inicio": 0.58,
+			"parametros": {
+				"som": "Impacto",
+				"tom": 0.6,
+				"volume": -2.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_vento",
+			"inicio": 0.6,
+			"parametros": {
+				"som": "Vento",
+				"tom": 0.5,
+				"volume": -4.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.5,
+			"habilitado": true,
+			"id": "tremor",
+			"inicio": 0.58,
+			"parametros": {
+				"tremor": 0.4
+			},
+			"tipo": "camera"
+		},
+		{
+			"duracao": 0.4,
+			"habilitado": true,
+			"id": "levantar",
+			"inicio": 1.05,
+			"parametros": {
+				"pose": "pose_3",
+				"transicao": 0.25
+			},
+			"tipo": "animacao"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 3.0,
+		"forma": "Esfera",
+		"largura": 3.0,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 1.5,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": -2.0
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "Soca o chão: abre uma rachadura e explode em vento ao redor, empurrando todos os inimigos para longe.",
+		"dono": "Jogador",
+		"fruta": "estilo_de_combate_base",
+		"id": "base_quebra_chao_x",
+		"modelo": "Base",
+		"nome": "Quebra-Chão"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 2.0,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 6.0
+	},
+	"poses": [
+		{
+			"id": "pose_1",
+			"nome": "Agachar",
+			"ossos": {
+				"ForeArm_L": [
+					50.0,
+					0.0,
+					0.0
+				],
+				"ForeArm_R": [
+					120.0,
+					0.0,
+					0.0
+				],
+				"Shin_L": [
+					-70.0,
+					0.0,
+					0.0
+				],
+				"Shin_R": [
+					-70.0,
+					0.0,
+					0.0
+				],
+				"Thigh_L": [
+					40.0,
+					0.0,
+					-14.0
+				],
+				"Thigh_R": [
+					40.0,
+					0.0,
+					14.0
+				],
+				"Torso": [
+					10.0,
+					0.0,
+					0.0
+				],
+				"UpperArm_L": [
+					30.0,
+					0.0,
+					-30.0
+				],
+				"UpperArm_R": [
+					-80.0,
+					0.0,
+					16.0
+				]
+			}
+		},
+		{
+			"id": "pose_2",
+			"nome": "Soco no chão",
+			"ossos": {
+				"ForeArm_L": [
+					60.0,
+					0.0,
+					0.0
+				],
+				"ForeArm_R": [
+					4.0,
+					0.0,
+					0.0
+				],
+				"Shin_L": [
+					-90.0,
+					0.0,
+					0.0
+				],
+				"Shin_R": [
+					-90.0,
+					0.0,
+					0.0
+				],
+				"Thigh_L": [
+					58.0,
+					0.0,
+					-16.0
+				],
+				"Thigh_R": [
+					58.0,
+					0.0,
+					16.0
+				],
+				"Torso": [
+					48.0,
+					8.0,
+					0.0
+				],
+				"UpperArm_L": [
+					-20.0,
+					0.0,
+					-34.0
+				],
+				"UpperArm_R": [
+					150.0,
+					0.0,
+					4.0
+				]
+			}
+		},
+		{
+			"id": "pose_3",
+			"nome": "Levantar",
+			"ossos": {
+				"ForeArm_R": [
+					30.0,
+					0.0,
+					0.0
+				],
+				"Shin_L": [
+					-18.0,
+					0.0,
+					0.0
+				],
+				"Shin_R": [
+					-18.0,
+					0.0,
+					0.0
+				],
+				"Thigh_L": [
+					16.0,
+					0.0,
+					-4.0
+				],
+				"Thigh_R": [
+					16.0,
+					0.0,
+					4.0
+				],
+				"Torso": [
+					8.0,
+					0.0,
+					0.0
+				],
+				"UpperArm_R": [
+					30.0,
+					0.0,
+					10.0
+				]
+			}
+		}
+	],
+	"projeteis": {
+		"abertura": 20.0,
+		"area_chuva": 8.0,
+		"direcao_disparo": "Mira",
+		"explosao": 0.0,
+		"giro": 0.0,
+		"gravidade": 0.0,
+		"imunidade_gelo": true,
+		"modelo": "",
+		"perfurar": false,
+		"quantidade": 1,
+		"raio": 0.4,
+		"raio_de_acerto": 0.0,
+		"raio_do_anel": 2.5,
+		"rastro": "Nenhum",
+		"sai_de": "Corpo",
+		"sem_dano": false,
+		"som_explosao": "Impacto",
+		"velocidade": 12.0,
+		"vida": 2.0,
+		"visual": "Energia"
+	},
+	"transformacao": {
+		"alvo": "Usuário",
+		"cor": "#dce9ff",
+		"escala": 1.0,
+		"modelo": "",
+		"raio": 8.0,
+		"visual": "Fumaça"
+	},
+	"versao": 1,
+	"vfx": {
+		"altura": 1.0,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#bfe6ff",
+		"cor_2": "#ffffff",
+		"escala": 1.0,
+		"estilo": "Impacto",
+		"frente": 1.0,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "Mão direita",
+		"projetil_de": ""
+	}
+}

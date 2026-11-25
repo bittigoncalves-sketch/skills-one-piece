@@ -1,0 +1,34 @@
+{
+  "id": "20260909-193916-yoru_corte_vertical",
+  "nome": "yoru corte vertical",
+  "tipo": "skill",
+  "projeto": "/home/gabriel-bitti/dev/skills-one-piece",
+  "pipeline_version": "1.0.0",
+  "criada_em": "2026-09-09T19:39:16",
+  "entradas": [
+    {
+      "arquivo": "entrada/videos/Use_o_vídeo_enviado_como_REFER.mp4",
+      "origem": "/home/gabriel-bitti/Downloads/Use_o_vídeo_enviado_como_REFER.mp4",
+      "categoria": "videos",
+      "papel": "referencia",
+      "sha256": "fa60fb8cf1e00e661c2e7d7f2ee5cee20f7ecfdeabfdca13f0c8b05be2552e1a",
+      "bytes": 2194934
+    },
+    {
+      "arquivo": "entrada/especificacao/specification.md",
+      "origem": "/tmp/claude-1000/-home-gabriel-bitti-dev/0cfad5da-cdee-4e79-a98d-90411334045a/scratchpad/specification.md",
+      "categoria": "especificacao",
+      "papel": "referencia",
+      "sha256": "4b49f44c0c951443a00ded883945eb1ca01583668442e44c3853c2b7d5f637c6",
+      "bytes": 1219
+    }
+  ],
+  "etapas": {
+    "ingest": {
+      "em": "2026-09-09T19:39:46",
+      "videos": 1,
+      "imagens": 0,
+      "falhas": []
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "pao": {
+    "forma": "Pão rústico oval e baixo; três cortes claros na crosta, preso à mão.",
+    "cores": ["#b9803c", "#d9a65a", "#f0d9a0"],
+    "padrao": "Crosta tostada levemente irregular e cortes claros; detalhe ligado à posição tridimensional."
+  },
+  "maca": {
+    "forma": "Maçã arredondada vermelha com caule e folha pequena.",
+    "cores": ["#c8312b", "#5a3a1e", "#3f8f3a"],
+    "padrao": "Casca vermelha com pontos de variação e realce discreto."
+  },
+  "peixe_assado": {
+    "forma": "Peixe dourado inteiro em palito, com cauda e olhos escuros.",
+    "cores": ["#c98a45", "#e6c58a", "#8a5a2a", "#1a1a1a"],
+    "padrao": "Faixas tostadas discretas e barriga mais clara; verificar que o palito não entra na boca no gesto."
+  },
+  "sopa_de_peixe": {
+    "forma": "Tigela com caldo alaranjado e pedaços claros de peixe, visíveis por cima.",
+    "cores": ["#b8a07a", "#d9822b", "#8a6b3d", "#e6c58a"],
+    "padrao": "Caldo com pequenas variações; a geometria atual não inclui colher."
+  },
+  "refeicao": {
+    "forma": "Prato claro baixo com carne, legume verde e arroz; a vista superior distingue as partes.",
+    "cores": ["#e8e0c8", "#8a4a2a", "#4f9a3a", "#f2efe2"],
+    "padrao": "Áreas de ingredientes separadas, sem adicionar talheres à geometria."
+  },
+  "carne_assada": {
+    "forma": "Carne arredondada e tostada com osso claro em uma extremidade.",
+    "cores": ["#9a4a2a", "#6e2f1a", "#f0e6c8"],
+    "padrao": "Marcas tostadas e leve variação da carne; segurar pelo osso e verificar o contato da carne com a boca."
+  },
+  "agua_potavel": {
+    "forma": "Garrafa pequena com tampa clara e rótulo, tonalidade azul de água.",
+    "cores": ["#a8d8f0", "#72b9dc", "#d8d8e0", "#ffffff"],
+    "padrao": "Vidro sugerido por cor clara e reflexo; a malha e o atlas atuais são opacos, sem transparência física."
+  },
+  "leite": {
+    "forma": "Caixa clara com topo dobrado, bico e marca azul.",
+    "cores": ["#f4f4f4", "#d8e4f0", "#3a7ad8"],
+    "padrao": "Caixa predominantemente clara com faixa azul legível."
+  },
+  "suco_de_laranja": {
+    "forma": "Copo com suco alaranjado, canudo e rodela de laranja na borda.",
+    "cores": ["#e8f0f4", "#ef9a35", "#d9701a", "#e8e0c8"],
+    "padrao": "Cor do líquido simulada na parede opaca; verificar a direção do canudo no momento de beber."
+  }
+}

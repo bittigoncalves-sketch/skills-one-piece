@@ -18,6 +18,12 @@ static func impact(world: Node, pos: Vector3, pitch := 1.0) -> void:
 static func hurt(world: Node, pos: Vector3, pitch := 1.0) -> void:
 	_play(world, pos, _hurt_stream(), pitch, 0.85)
 
+## Recepção de dano do JOGADOR (23/10/2026, pedido do dono): impacto + grunhido curto,
+## tom sorteado a cada golpe como no Minecraft (0,9–1,1). Fonte editável:
+## `art_src/audio/gerar_dano_do_jogador.py`. O `hurt` sintetizado fica para o boneco.
+static func dano_do_jogador(world: Node, pos: Vector3) -> void:
+	_play(world, pos, preload("res://assets/audio/dano_do_jogador.wav"), randf_range(0.9, 1.1), 1.0)
+
 static func gunshot(world: Node, pos: Vector3, pitch := 1.0) -> void:
 	_play(world, pos, _gunshot_stream(), pitch, 0.95)
 
@@ -50,6 +56,13 @@ static func minigun(world: Node, pos: Vector3, pitch := 1.0) -> void:
 # jogado fora, e as 3 variantes evitam que a repetição vire metrônomo.
 static func dash(world: Node, pos: Vector3, pitch := 1.0) -> void:
 	_play(world, pos, _pool("dash"), pitch, 0.6)
+
+# ---- PESCA (03/10/2026) --------------------------------------------------
+# "Ploc" da boia: a isca cai na água e o peixe morde. Na pesca o jogador reage ao
+# SOM da mordida antes de achar a boia na tela. Bolha estourando: tom curto que
+# SOBE (260 → 900 Hz) com um chiado de água por baixo.
+static func plop(world: Node, pos: Vector3, pitch := 1.0) -> void:
+	_play(world, pos, _pool("plop"), pitch, 0.6)
 
 # ---- infra ----
 static func _play(world: Node, pos: Vector3, stream: AudioStream, pitch: float, vol_lin: float) -> void:
@@ -87,10 +100,29 @@ static func _pool(nome: String) -> AudioStreamWAV:
 static func _gerar(nome: String) -> AudioStreamWAV:
 	match nome:
 		"pistol": return _pistol_stream()
+		# Sons de gelo do Skills Builder (07/10/2026): o estalo cristalino do Z antigo da
+		# Hie (`snap`, tocado a 1,5) e o sopro.
+		"snap": return _snap_stream()
+		"whoosh": return _whoosh_stream()
 		"sniper": return _sniper_stream()
 		"minigun": return _minigun_stream()
 		"dash": return _dash_stream()
+		"plop": return _plop_stream()
 	return _gunshot_stream()
+
+
+static func _plop_stream() -> AudioStreamWAV:
+	var n := int(RATE * 0.14)
+	var s := PackedFloat32Array()
+	s.resize(n)
+	var fase := 0.0
+	var prev := 0.0
+	for i in n:
+		var t := float(i) / n
+		fase += TAU * lerpf(260.0, 900.0, t * t) / RATE
+		prev = lerpf(prev, randf() * 2.0 - 1.0, 0.2)
+		s[i] = (sin(fase) * 0.8 + prev * 0.25) * pow(1.0 - t, 2.0) * minf(t * 40.0, 1.0)
+	return _wav(s)
 
 static func _wav(samples: PackedFloat32Array) -> AudioStreamWAV:
 	var bytes := PackedByteArray()

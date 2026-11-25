@@ -1,0 +1,49 @@
+{
+  "id": "visual_skill_gura_v_tsunamis",
+  "agente": "visual",
+  "modelo": "gemini",
+  "objetivo": "Descrever a construção visual de 'gura V tsunamis' em termos implementáveis (geometria, partícula, cor, shader).",
+  "references": {
+    "spec": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184803-gura_v_tsunamis/specs/reference_spec.yaml",
+    "contact_sheets": [
+      "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184803-gura_v_tsunamis/extraido/contact_sheets/gura_gura_V.png"
+    ],
+    "frames": [],
+    "images": [],
+    "docs": [
+      "/home/gabriel-bitti/dev/skills-one-piece/docs/ESTADO_ATUAL.md",
+      "/home/gabriel-bitti/dev/skills-one-piece/docs/AGENTES.md"
+    ]
+  },
+  "relevant_files": [
+    "src/combat/",
+    "Player.gd",
+    "src/effects/DamageZone.gd",
+    "network/",
+    "src/effects/",
+    "src/fx/",
+    "VFX/",
+    "src/items/",
+    "SkillSystem.gd",
+    "src/combat/Balance.gd"
+  ],
+  "allowed_changes": [],
+  "forbidden_changes": [
+    "nada — este agente não escreve"
+  ],
+  "constraints": [
+    "FRENTE = -Z. Mira, movimento e VFX direcional usam o `fwd` recebido; nunca hardcodar Vector3(0,0,±1) de mundo.",
+    "Escala direcional com Node3D.scale (LOCAL) + look_at. NUNCA Basis.scaled() — ela escala no eixo do MUNDO e distorce fora do Z.",
+    "Servidor-autoridade: VFX roda em todos os clientes, mas dano, knockback e física em outros corpos SÓ no servidor.",
+    "class_name novo não entra sozinho no cache: depois de criar, rodar `./checar_cache.sh` — senão o jogo abre em TELA CINZA.",
+    "A porta 24565 não paraleliza: nada de subir duas instâncias do jogo ao mesmo tempo.",
+    "Tudo é código/procedural — sem asset externo importado à mão."
+  ],
+  "acceptance": [
+    "toda afirmação carrega OBSERVED/ESTIMATED/INFERRED/UNKNOWN",
+    "nenhum valor de gameplay inventado a partir de aparência"
+  ],
+  "output_schema": null,
+  "sandbox": "read-only",
+  "timeout_s": 900
+}

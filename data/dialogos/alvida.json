@@ -1,0 +1,28 @@
+{
+  "id": "alvida",
+  "estados": {
+    "abertura": [
+      {
+        "falante": "Alvida",
+        "texto": "O que vocês pescaram? Abram esse barril!"
+      },
+      {
+        "falante": "Alvida",
+        "texto": "Um invasor? Vamos resolver isso de uma vez."
+      }
+    ],
+    "duelo": [],
+    "vitoria": [
+      {
+        "falante": "Alvida",
+        "texto": "Você venceu! Saia do meu navio!"
+      }
+    ],
+    "derrota": [
+      {
+        "falante": "Alvida",
+        "texto": "Acabou! Joguem esse invasor de volta à ilha!"
+      }
+    ]
+  }
+}

@@ -42,6 +42,12 @@ extends Node3D
 
 ## Quantas penas ao longo do arco.
 const PENAS := 9
+## O `tom` da camada da FRENTE, usado para normalizar as demais — ver a nota da
+## cor em `_montar`. Se uma camada nova entrar mais clara que esta, é este
+## número que muda.
+const TOM_MAX := 0.20
+## Quanto a camada de trás escurece em relação à cor base.
+const PISO_DO_TOM := 0.60
 ## Duas camadas: a de trás é mais longa e mais escura, a da frente cobre a raiz.
 const CAMADAS := [
 	{"recuo": 0.00, "comp": 1.00, "tom": 0.20, "larg": 0.085},
@@ -129,11 +135,23 @@ var _procurou_dono := false
 var _abertura := 0.0
 var _inclinacao := 0.0
 var _pitch := 0.0
+## Multiplica o tom de cada fileira. Branco = asa clara; escuro = a do Lunariano.
+var _cor_base := Color(1.0, 1.0, 1.0)
 
 
-static func criar(lado: int, escala: float = 1.0) -> AsaLunar:
+## ⚠️ A COR É PARÂMETRO desde 2026-09-01, e não uma constante escondida no
+## desenho. O dono pediu que o Skypean use ESTAS asas em branco — a mesma
+## silhueta em camadas, o mesmo batimento, as mesmas poses por estado. Duplicar
+## o arquivo para trocar uma cor significaria manter dois desenhos em sincronia
+## para sempre, e o segundo pararia de acompanhar na primeira mudança.
+##
+## `base` é a cor da pena mais CLARA; as fileiras de trás escurecem a partir
+## dela, que é o que dá profundidade à asa.
+static func criar(lado: int, escala: float = 1.0,
+		base: Color = Color(1.0, 1.0, 1.0)) -> AsaLunar:
 	var a := AsaLunar.new()
 	a._lado = float(lado)
+	a._cor_base = base
 	a._montar(escala)
 	return a
 
@@ -171,7 +189,19 @@ func _montar(escala: float) -> void:
 			# ⚠️ CEL SHADING, como todo o resto. Um `StandardMaterial3D` avulso
 			# deixaria a asa lisa e brilhante ao lado de um corpo chapado.
 			var tom: float = float(camada["tom"])
-			m.material_override = Materiais.superficie(Color(tom * 0.9, tom * 0.9, tom))
+			# O `tom` da fileira escurece da frente para trás; a cor base decide
+			# se a asa é negra (Lunariano) ou branca (Skypean).
+			# ⚠️ O `tom` É FRAÇÃO DA COR BASE, não um valor absoluto.
+			#
+			# Ele nasceu como a luminância da pena do Lunariano (0,11 e 0,20 —
+			# tudo escuro), e multiplicar isso por branco continua dando escuro:
+			# medido, as asas do Skypean saíam em (0,17, 0,17, 0,20) com a cor
+			# base branca chegando corretamente ao nó. Normalizando pelo tom da
+			# camada da frente, ela fica na cor base cheia e a de trás escurece
+			# a partir dela — profundidade sem apagar a cor.
+			var f: float = lerpf(PISO_DO_TOM, 1.0, tom / TOM_MAX)
+			m.material_override = Materiais.superficie(Color(
+				_cor_base.r * f, _cor_base.g * f, _cor_base.b * f))
 			add_child(m)
 
 

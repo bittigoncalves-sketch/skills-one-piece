@@ -30,6 +30,30 @@ const SKINNED_WALKS := {
 }
 
 static func build_character(char_id: String) -> Dictionary:
+	if char_id == "base":
+		# The runtime export shares the Blender skeleton's pivots and rigid
+		# weights, with axis-aligned nodes for the existing procedural clips.
+		var base_scene := load("res://assets/models/base_v2/base_v2_runtime.glb") as PackedScene
+		if base_scene:
+			var base_model := Node3D.new()
+			base_model.name = "CharacterRoot_base"
+			base_model.set_meta("reference_proportions", true)
+			base_model.set_meta("base_rig_version", 2)
+			var base_pivot := Node3D.new()
+			base_pivot.name = "SkinPivot"
+			base_model.add_child(base_pivot)
+			var base_mesh := base_scene.instantiate() as Node3D
+			base_mesh.name = "GLBModel_base"
+			base_pivot.add_child(base_mesh)
+			var base_ap := AnimationPlayer.new()
+			base_ap.name = "AnimationPlayer"
+			base_model.add_child(base_ap)
+			# Training dummies still use AnimationPlayer instead of ProceduralAnimator.
+			var base_library := AnimationLibrary.new()
+			_build_buggy_animations(base_library, base_model, true)
+			base_ap.add_animation_library("", base_library)
+			return {"node": base_model, "anim_player": base_ap, "skinned": false}
+
 	# --- caminho SKINNADO (tem prioridade) ---
 	if SKINNED_MODELS.has(char_id) and ResourceLoader.exists(SKINNED_MODELS[char_id]):
 		var packed = load(SKINNED_MODELS[char_id])

@@ -91,6 +91,9 @@ func _auditar(fid: String, com_arvore: Array) -> void:
 	print("   obtível numa árvore ....... %s" % ("SIM" if r["obtivel"] else "NÃO (sem árvore no mapa)"))
 	print("   equipa corretamente ....... %s" % ("SIM" if r["equipa"] else "NÃO (ficou '%s')" % _player.current_fruit_id))
 
+	# O contêiner é infraestrutura persistente, não um efeito do primeiro golpe.
+	_player._get_skills_container()
+	await process_frame
 	# --- 3/4. os quatro golpes ---
 	for slot in SLOTS:
 		var identidade: Dictionary = SkillSystem.get_fruit_skills().get(fid, {})
@@ -100,6 +103,11 @@ func _auditar(fid: String, com_arvore: Array) -> void:
 			r["vaza"][slot] = 0
 			print("   %s: desabilitada por projeto" % slot)
 			continue
+		# O Rocket Crash (X) leva o jogador para fora do mapa: a morte devolve a fruta à árvore e C/V
+		# saíam vazios ("Sem Akuma no Mi"). A auditoria é de golpes, não de morte: reequipa.
+		if str(_player.current_fruit_id) != fid:
+			_player.equip_fruit(fid)
+			await process_frame
 		var antes := _contar_nos(_main)
 		var zonas_antes := _contar_tipo(_main, "DamageZone")
 		_player._skill_cooldowns[slot] = 0.0
@@ -127,18 +135,24 @@ func _auditar(fid: String, com_arvore: Array) -> void:
 			pico = maxi(pico, _contar_nos(_main))
 			zonas = maxi(zonas, _contar_tipo(_main, "DamageZone"))
 			await process_frame
+		# Uma transformação alternável dura até a segunda ativação. A auditoria
+		# mede a criação primeiro e a limpeza pela saída real do mesmo estado.
+		var alternavel := bool(declarada.get("alternavel", false))
+		if alternavel:
+			_player._fire_skill(slot, Vector3.FORWARD, origem)
+			await _esperar(0.4)
 		var depois := _contar_nos(_main)
 
 		var criou := pico - antes
 		var sobrou := depois - antes
 		var fez_hitbox := (zonas - zonas_antes) > 0
-		r["slots"][slot] = {"criou": criou, "hitbox": fez_hitbox}
+		r["slots"][slot] = {"criou": criou, "hitbox": fez_hitbox, "utilitaria": alternavel and criou > 0 and sobrou <= 0}
 		r["vaza"][slot] = sobrou
 
 		var veredito := "OK"
 		if criou <= 0:
 			veredito = "❌ NÃO PRODUZIU NADA"
-		elif not fez_hitbox:
+		elif not fez_hitbox and not alternavel:
 			veredito = "⚠ sem hitbox (só visual)"
 		if sobrou > 0:
 			veredito += "  🔴 VAZOU %d nó(s)" % sobrou
@@ -152,7 +166,7 @@ func _resumo() -> void:
 	print("\n╔══════════════════════════════════════════════════════════════╗")
 	print("║  RESUMO                                                      ║")
 	print("╚══════════════════════════════════════════════════════════════╝")
-	print("%-16s %-8s %-7s %-22s %s" % ["fruta", "obtível", "equipa", "golpes com hitbox", "vazamento"])
+	print("%-16s %-8s %-7s %-22s %s" % ["fruta", "obtível", "equipa", "técnicas válidas", "vazamento"])
 	var sem_arvore: Array = []
 	var quebradas: Array = []
 	var vazando: Array = []
@@ -165,7 +179,7 @@ func _resumo() -> void:
 			if bool(r["slots"][s].get("desabilitada", false)):
 				continue
 			ativas += 1
-			if bool(r["slots"][s]["hitbox"]):
+			if bool(r["slots"][s]["hitbox"]) or bool(r["slots"][s].get("utilitaria", false)):
 				ok += 1
 			elif int(r["slots"][s]["criou"]) <= 0:
 				mudos.append(s)
@@ -210,9 +224,28 @@ func _contar_nos(n: Node) -> int:
 		t += _contar_nos(c)
 	return t
 
+# ⚠️ O RECONHECIMENTO POR CAMINHO DE SCRIPT NÃO ENXERGA SUBCLASSE (2026-09-06).
+#
+# `get_class()` devolve a classe do ENGINE ("Area3D"), nunca o `class_name` do
+# GDScript — por isso o teste caía no `resource_path.ends_with("DamageZone.gd")`.
+# Só que esse casamento é por ARQUIVO: um nó de uma subclasse tem o
+# `resource_path` do arquivo DELA, e some da conta.
+#
+# Foi o que aconteceu quando o C da Pika passou a usar `ZonaBarragem extends
+# DamageZone`: a auditoria reportou "3/4 golpes com hitbox" num golpe que o
+# `test_pika_c_area` prova aplicar dano e paralisia. A hitbox existia; a sonda é
+# que era estreita demais para vê-la.
+#
+# `is DamageZone` cobre a hierarquia inteira e é o que o teste sempre quis
+# perguntar. Os outros tipos seguem no casamento por caminho — nenhum deles tem
+# subclasse hoje, e generalizar sem necessidade seria trocar um teste legível
+# por um genérico.
 func _contar_tipo(n: Node, tipo: String) -> int:
 	var t := 0
-	if n.get_class() == tipo or (n.get_script() != null and str(n.get_script().resource_path).ends_with(tipo + ".gd")):
+	if tipo == "DamageZone":
+		if n is DamageZone:
+			t += 1
+	elif n.get_class() == tipo or (n.get_script() != null and str(n.get_script().resource_path).ends_with(tipo + ".gd")):
 		t += 1
 	for c in n.get_children():
 		t += _contar_tipo(c, tipo)

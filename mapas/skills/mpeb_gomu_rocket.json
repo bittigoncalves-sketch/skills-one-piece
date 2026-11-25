@@ -1,0 +1,199 @@
+{
+	"animacao": {
+		"clipe": "Ataque",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.0
+	},
+	"ativacao": {
+		"andar_segurando": false,
+		"carga": 0.5,
+		"empurrao_carga_max": 1.0,
+		"modo": "Pressionar",
+		"paralisar_segurando": false,
+		"ponto_segurar": 0.5,
+		"repetir": false,
+		"segurar_max": 5.0,
+		"tecla": "Z"
+	},
+	"audio": {
+		"som": "Impacto",
+		"tom": 1.0,
+		"volume": -12.0
+	},
+	"camera": {
+		"tremor": 0.2,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 64.0,
+		"exige_alvo": false,
+		"exige_chao": false,
+		"nivel_minimo": 1,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 64.0,
+		"custo": 0.0,
+		"custo_por_segundo": 0.0,
+		"duracao": 0.8,
+		"fim_sobre_alvo": 0.0,
+		"flutuar": false,
+		"inicio_do_fim": -1.0,
+		"intervalo_depois": 0.0,
+		"mirar_no_alvo": true,
+		"parar_no_vazio": false,
+		"recarga": 0.0
+	},
+	"dano": {
+		"atordoamento": 0.4,
+		"congelar": 0.0,
+		"critico": 0.0,
+		"cura_do_dano": 0.0,
+		"duracao_efeito": 1.0,
+		"empurrao": 10.0,
+		"lentidao": 0.0,
+		"multiplicador": 2.0,
+		"tipo": "Físico",
+		"valor": 14.0
+	},
+	"eventos": [
+		{
+			"duracao": 0.35,
+			"habilitado": true,
+			"id": "foguete",
+			"inicio": 0.15,
+			"parametros": {
+				"curva": "Suave",
+				"direcao": "Frente",
+				"distancia": 24.0,
+				"velocidade": 60.0
+			},
+			"tipo": "movimento"
+		},
+		{
+			"duracao": 0.35,
+			"habilitado": true,
+			"id": "impacto",
+			"inicio": 0.2,
+			"parametros": {
+				"altura": 2.6,
+				"forma": "Esfera",
+				"largura": 2.6,
+				"mirar": false,
+				"na_mao": false,
+				"profundidade": 2.6,
+				"raio": 1.3,
+				"unicos": true,
+				"x": 0.0,
+				"y": 1.0,
+				"z": -0.8
+			},
+			"tipo": "hitbox"
+		},
+		{
+			"duracao": 0.35,
+			"habilitado": true,
+			"id": "vento",
+			"inicio": 0.15,
+			"parametros": {
+				"escala": 1.0,
+				"estilo": "Vento"
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som",
+			"inicio": 0.45,
+			"parametros": {
+				"som": "Impacto",
+				"tom": 0.9,
+				"volume": -4.0
+			},
+			"tipo": "audio"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 3.0,
+		"forma": "Esfera",
+		"largura": 3.0,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 1.5,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": -2.0
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "[East Blue · Mine Piece] Estica os braços e se lança como um foguete até o alvo.",
+		"dono": "Chefe",
+		"fruta": "",
+		"id": "mpeb_gomu_rocket",
+		"modelo": "Base",
+		"nome": "Gomu Gomu no Rocket"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 2.0,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 6.0
+	},
+	"poses": [],
+	"projeteis": {
+		"abertura": 20.0,
+		"area_chuva": 8.0,
+		"direcao_disparo": "Mira",
+		"explosao": 0.0,
+		"giro": 0.0,
+		"gravidade": 0.0,
+		"imunidade_gelo": true,
+		"modelo": "",
+		"perfurar": false,
+		"quantidade": 1,
+		"raio": 0.4,
+		"raio_de_acerto": 0.0,
+		"raio_do_anel": 2.5,
+		"rastro": "Nenhum",
+		"sai_de": "Corpo",
+		"sem_dano": false,
+		"som_explosao": "Impacto",
+		"velocidade": 12.0,
+		"vida": 2.0,
+		"visual": "Energia"
+	},
+	"transformacao": {
+		"alvo": "Usuário",
+		"cor": "#dce9ff",
+		"escala": 1.0,
+		"modelo": "",
+		"raio": 8.0,
+		"visual": "Fumaça"
+	},
+	"versao": 1,
+	"vfx": {
+		"altura": 1.0,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#ffffff",
+		"cor_2": "#ffffff",
+		"escala": 1.0,
+		"estilo": "Impacto",
+		"frente": 1.0,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "Mão direita",
+		"projetil_de": ""
+	}
+}

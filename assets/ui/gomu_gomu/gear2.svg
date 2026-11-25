@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <!-- Steam rising trails -->
+  <path d="M16 28c-4-8 2-16-2-22M32 20c-3-6 3-12 0-16M48 28c4-8-2-16 2-22" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="3 3"/>
+  <!-- Gear 2 Crouch silhouette & blood flush -->
+  <circle cx="32" cy="26" r="7" fill="#ef5350" stroke="#ffebee" stroke-width="1.5"/>
+  <!-- Straw hat on head -->
+  <ellipse cx="32" cy="22" rx="10" ry="3" fill="#ffd54f" stroke="#ff8f00" stroke-width="1.5"/>
+  <rect x="29" y="18" width="6" height="3" rx="1.5" fill="#ffd54f"/>
+  <path d="M28 22h8" stroke="#d32f2f" stroke-width="1"/>
+  <!-- Torso & crouching limbs -->
+  <path d="M32 33v10m0 0l-12 11m12-11l12 11m-14-16l-8 16m12-16l8 16" stroke="#ef5350" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Red pulse / steam aura ring -->
+  <circle cx="32" cy="36" r="22" stroke="#ff8a80" stroke-width="1.8" stroke-dasharray="4 4"/>
+</svg>

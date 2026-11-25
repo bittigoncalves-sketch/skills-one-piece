@@ -1,0 +1,774 @@
+{
+	"formato": "skills-one-piece/equipamento_padrao",
+	"versao": 1,
+	"origem": "entity/*Entity.java (construtor) + init/MinepieceModItems.java",
+	"entidades": {
+		"ace_1": {
+			"HEAD": "clothes_ace_helmet",
+			"CHEST": "clothes_ace_chestplate",
+			"LEGS": "clothes_ace_leggings",
+			"FEET": "clothes_ace_boots"
+		},
+		"akainu": {
+			"HEAD": "uniform_marine_1_helmet",
+			"CHEST": "uniform_akainu_chestplate",
+			"LEGS": "uniform_akainu_leggings",
+			"FEET": "uniform_akainu_boots"
+		},
+		"akainu_fleet_admira": {
+			"HEAD": "uniform_marine_1_helmet",
+			"CHEST": "uniform_akainu_2_chestplate",
+			"LEGS": "clothes_cp_0_leggings",
+			"FEET": "clothes_cp_0_boots"
+		},
+		"alvida_2": {
+			"MAINHAND": "metal_rod"
+		},
+		"alvida": {
+			"MAINHAND": "metal_rod"
+		},
+		"aokiji": {
+			"HEAD": "uniform_aokiji_helmet",
+			"CHEST": "uniform_aokiji_chestplate",
+			"LEGS": "uniform_aokiji_leggings",
+			"FEET": "uniform_aokiji_boots"
+		},
+		"ashura_doji": {
+			"MAINHAND": "saber",
+			"OFFHAND": "saber"
+		},
+		"atmos": {
+			"MAINHAND": "cutlass",
+			"OFFHAND": "cutlass"
+		},
+		"bandit": {
+			"MAINHAND": "cutlass"
+		},
+		"benn_beckman_2": {
+			"MAINHAND": "rifle"
+		},
+		"benn_beckman": {
+			"MAINHAND": "rifle"
+		},
+		"biscuit_warrrior": {
+			"MAINHAND": "pretzel",
+			"OFFHAND": "shield_biscuit",
+			"HEAD": "biscuit_armor_helmet",
+			"CHEST": "biscuit_armor_chestplate",
+			"LEGS": "biscuit_armor_leggings",
+			"FEET": "biscuit_armor_boots"
+		},
+		"blenheim": {
+			"MAINHAND": "cutlass"
+		},
+		"bluegrass": {
+			"CHEST": "uniform_marine_seigi_chestplate"
+		},
+		"blueno_cp_9": {
+			"FEET": "clothes_cp_9_boots"
+		},
+		"boa_hancock": {
+			"HEAD": "clothes_hancock_helmet",
+			"CHEST": "clothes_hancock_chestplate",
+			"LEGS": "clothes_hancock_leggings",
+			"FEET": "clothes_hancock_boots"
+		},
+		"bon_clay": {
+			"HEAD": "clothes_bon_clay_helmet",
+			"CHEST": "clothes_bon_clay_chestplate",
+			"FEET": "clothes_bon_clay_boots"
+		},
+		"bramenko": {
+			"MAINHAND": "bramenko_hammer"
+		},
+		"brogy": {
+			"MAINHAND": "big_axe"
+		},
+		"brook": {
+			"MAINHAND": "brook_sword"
+		},
+		"building_snake_2": {
+			"MAINHAND": "saber",
+			"OFFHAND": "saber"
+		},
+		"building_snake": {
+			"MAINHAND": "saber",
+			"OFFHAND": "saber"
+		},
+		"cabaji": {
+			"MAINHAND": "saber"
+		},
+		"charlos": {
+			"MAINHAND": "pistol_gold",
+			"HEAD": "clothes_charlos_helmet",
+			"CHEST": "clothes_charlos_chestplate",
+			"LEGS": "clothes_charlos_leggings",
+			"FEET": "clothes_charlos_boots"
+		},
+		"charlotte_cracker": {
+			"MAINHAND": "pretzel",
+			"HEAD": "clothes_cracker_helmet",
+			"CHEST": "clothes_cracker_chestplate",
+			"LEGS": "clothes_cracker_leggings",
+			"FEET": "clothes_ace_boots"
+		},
+		"charlotte_katakuri": {
+			"HEAD": "clothes_charlotte_katakuri_helmet",
+			"CHEST": "clothes_charlotte_katakuri_chestplate",
+			"LEGS": "clothes_charlotte_katakuri_leggings",
+			"FEET": "clothes_charlotte_katakuri_boots"
+		},
+		"charlotte_linlin": {
+			"HEAD": "clothes_bigmom_helmet"
+		},
+		"charlotte_linlin_wano_country": {
+			"MAINHAND": "napoleon"
+		},
+		"charlotte_perospero": {
+			"MAINHAND": "perospero_staff"
+		},
+		"charlotte_snack": {
+			"MAINHAND": "big_sword"
+		},
+		"coby_2": {
+			"HEAD": "clothes_coby_2_helmet",
+			"CHEST": "clothes_coby_2_chestplate",
+			"LEGS": "clothes_coby_leggings",
+			"FEET": "uniform_marine_1_boots"
+		},
+		"coby": {
+			"HEAD": "clothes_coby_helmet",
+			"CHEST": "clothes_coby_chestplate",
+			"LEGS": "clothes_coby_leggings",
+			"FEET": "uniform_marine_1_boots"
+		},
+		"crocodile_cross_guild": {
+			"OFFHAND": "hook",
+			"CHEST": "clothes_crocodile_2_chestplate",
+			"LEGS": "uniform_marine_1_leggings",
+			"FEET": "clothes_mihawk_boots"
+		},
+		"crocodile": {
+			"OFFHAND": "hook",
+			"CHEST": "clothes_crocodile_2_chestplate",
+			"LEGS": "uniform_marine_1_leggings",
+			"FEET": "clothes_mihawk_boots"
+		},
+		"curiel": {
+			"MAINHAND": "rocket_launcher",
+			"OFFHAND": "rocket_launcher"
+		},
+		"denjiro": {
+			"MAINHAND": "saber"
+		},
+		"doberman": {
+			"MAINHAND": "saber",
+			"HEAD": "uniform_marine_1_helmet",
+			"CHEST": "uniform_marine_seigi_chestplate"
+		},
+		"doll": {
+			"CHEST": "uniform_marine_seigi_chestplate"
+		},
+		"dorry": {
+			"MAINHAND": "big_sword"
+		},
+		"edward_newgate": {
+			"MAINHAND": "murakumogiri"
+		},
+		"edward_newgate_heyday": {
+			"MAINHAND": "murakumogiri"
+		},
+		"enel": {
+			"MAINHAND": "golden_stick",
+			"CHEST": "clothes_enel_chestplate",
+			"LEGS": "clothes_enel_leggings"
+		},
+		"ethanbaron_v_nusjuro": {
+			"MAINHAND": "kitetsu_shodai",
+			"HEAD": "clothes_v_nasujuro_helmet",
+			"CHEST": "clothes_v_nasujuro_chestplate",
+			"LEGS": "clothes_v_nasujuro_leggings",
+			"FEET": "clothes_v_nasujuro_boots"
+		},
+		"fossa": {
+			"MAINHAND": "sword_king"
+		},
+		"franky_2_years_later": {
+			"CHEST": "clothes_franky_chestplate"
+		},
+		"franky": {
+			"HEAD": "clothes_franky_helmet",
+			"CHEST": "clothes_franky_chestplate",
+			"LEGS": "clothes_franky_leggings"
+		},
+		"fujitora": {
+			"OFFHAND": "yakuza_kasen",
+			"CHEST": "clothes_fujitora_chestplate",
+			"LEGS": "clothes_fujitora_leggings",
+			"FEET": "clothes_luffy_wano_country_boots"
+		},
+		"fullbody": {
+			"HEAD": "uniform_marine_1_helmet"
+		},
+		"gin": {
+			"MAINHAND": "tonfa",
+			"OFFHAND": "tonfa"
+		},
+		"girl_icecream": {
+			"MAINHAND": "ice_cream_3"
+		},
+		"gol_d_roger": {
+			"MAINHAND": "ace",
+			"HEAD": "clothes_roger_helmet",
+			"CHEST": "clothes_roger_chestplate",
+			"LEGS": "clothes_roger_leggings",
+			"FEET": "clothes_roger_boots"
+		},
+		"gunko": {
+			"HEAD": "clothes_gunko_helmet",
+			"CHEST": "clothes_gunko_chestplate",
+			"FEET": "clothes_gunko_boots"
+		},
+		"haruta": {
+			"MAINHAND": "saber"
+		},
+		"hatchan": {
+			"MAINHAND": "saber",
+			"OFFHAND": "saber"
+		},
+		"helmeppo_2": {
+			"MAINHAND": "kukuri_knife",
+			"OFFHAND": "kukuri_knife"
+		},
+		"helmeppo": {
+			"MAINHAND": "pistol"
+		},
+		"higuma": {
+			"MAINHAND": "cutlass"
+		},
+		"hongo_2": {
+			"MAINHAND": "long_stick"
+		},
+		"hongo": {
+			"MAINHAND": "long_stick"
+		},
+		"inuarashi": {
+			"MAINHAND": "saber"
+		},
+		"izo": {
+			"MAINHAND": "pistol",
+			"OFFHAND": "pistol",
+			"FEET": "clothes_yamato_boots"
+		},
+		"jabra_cp_9": {
+			"HEAD": "clothes_jabra_helmet",
+			"CHEST": "clothes_cp_9_chestplate",
+			"LEGS": "clothes_cp_9_leggings",
+			"FEET": "clothes_cp_9_boots"
+		},
+		"jack": {
+			"MAINHAND": "scythe_jack",
+			"OFFHAND": "scythe_jack"
+		},
+		"jango": {
+			"MAINHAND": "chakram",
+			"OFFHAND": "chakram",
+			"HEAD": "clothes_world_govt_helmet",
+			"FEET": "clothes_world_govt_boots"
+		},
+		"jango_marine": {
+			"MAINHAND": "chakram",
+			"OFFHAND": "chakram",
+			"HEAD": "uniform_marine_1_helmet",
+			"FEET": "uniform_marine_1_boots"
+		},
+		"jonny": {
+			"MAINHAND": "saber"
+		},
+		"kaidou": {
+			"MAINHAND": "hassaikai",
+			"CHEST": "clothes_kaidou_chestplate",
+			"LEGS": "clothes_kaidou_leggings",
+			"FEET": "clothes_kaidou_boots"
+		},
+		"kaku_cp_0": {
+			"FEET": "clothes_cp_0_boots"
+		},
+		"kaku_cp_9": {
+			"MAINHAND": "sword_kaku",
+			"OFFHAND": "sword_kaku",
+			"CHEST": "clothes_cp_9_chestplate",
+			"LEGS": "clothes_cp_9_leggings",
+			"FEET": "clothes_cp_9_boots"
+		},
+		"kalgara": {
+			"MAINHAND": "spear_2",
+			"HEAD": "clothes_kalgara_helmet",
+			"CHEST": "clothes_kalgara_chestplate",
+			"LEGS": "clothes_kalgara_leggings"
+		},
+		"kalifa_cp_9": {
+			"FEET": "clothes_cp_9_boots"
+		},
+		"kawamatsu": {
+			"MAINHAND": "sword_kaku"
+		},
+		"kikunojo": {
+			"MAINHAND": "saber"
+		},
+		"killer": {
+			"MAINHAND": "saber",
+			"OFFHAND": "saber"
+		},
+		"killer_whale": {
+			"MAINHAND": "saber",
+			"HEAD": "clothes_killer_whale_helmet",
+			"CHEST": "clothes_heart_pirates_chestplate",
+			"LEGS": "clothes_heart_pirates_leggings",
+			"FEET": "clothes_heart_pirates_boots"
+		},
+		"kinemon": {
+			"MAINHAND": "sword_king"
+		},
+		"king": {
+			"MAINHAND": "sword_king",
+			"HEAD": "clothes_king_helmet",
+			"CHEST": "clothes_king_chestplate",
+			"LEGS": "clothes_alber_leggings",
+			"FEET": "clothes_alber_boots"
+		},
+		"kizaru": {
+			"HEAD": "uniform_kizaru_helmet",
+			"CHEST": "uniform_kizaru_chestplate",
+			"LEGS": "uniform_kizaru_leggings",
+			"FEET": "uniform_kizaru_boots"
+		},
+		"kouzuki_oden": {
+			"MAINHAND": "ameno_habakiri",
+			"OFFHAND": "enma",
+			"HEAD": "clothes_oden_helmet",
+			"CHEST": "clothes_oden_chestplate",
+			"FEET": "clothes_oden_boots"
+		},
+		"krieg": {
+			"MAINHAND": "daisenso",
+			"CHEST": "clothes_krieg_chestplate",
+			"LEGS": "clothes_krieg_leggings",
+			"FEET": "clothes_krieg_boots"
+		},
+		"kuma": {
+			"HEAD": "clothes_kuma_helmet",
+			"CHEST": "clothes_kuma_chestplate",
+			"LEGS": "clothes_kuma_leggings",
+			"FEET": "clothes_kuma_boots"
+		},
+		"kuro": {
+			"MAINHAND": "cat_claws",
+			"OFFHAND": "cat_claws"
+		},
+		"kuzan": {
+			"HEAD": "clothes_kuzan_helmet",
+			"CHEST": "clothes_kuzan_chestplate",
+			"LEGS": "clothes_kuzan_leggings",
+			"FEET": "clothes_kuzan_boots"
+		},
+		"kyros": {
+			"MAINHAND": "big_sword"
+		},
+		"lime_juice_2": {
+			"MAINHAND": "thunder_stick"
+		},
+		"lime_juice": {
+			"MAINHAND": "thunder_stick"
+		},
+		"lucci_cp_0": {
+			"HEAD": "clothes_cp_0_helmet",
+			"CHEST": "clothes_cp_0_chestplate",
+			"LEGS": "clothes_cp_0_leggings",
+			"FEET": "clothes_cp_0_boots"
+		},
+		"lucci_cp_9": {
+			"HEAD": "clothes_cp_9_helmet",
+			"CHEST": "clothes_cp_9_chestplate",
+			"LEGS": "clothes_cp_9_leggings",
+			"FEET": "clothes_cp_9_boots"
+		},
+		"lucky_roux_2": {
+			"OFFHAND": "meat_on_the_bone"
+		},
+		"lucky_roux": {
+			"OFFHAND": "meat_on_the_bone"
+		},
+		"luffy_1": {
+			"HEAD": "clothes_luffy_helmet",
+			"CHEST": "clothes_luffy_chestplate",
+			"LEGS": "clothes_luffy_leggings",
+			"FEET": "clothes_luffy_boots"
+		},
+		"luffy_2_years_later": {
+			"HEAD": "clothes_luffy_helmet",
+			"CHEST": "clothes_luffy_chestplate",
+			"LEGS": "clothes_luffy_leggings",
+			"FEET": "clothes_luffy_boots"
+		},
+		"luffy_east_blue": {
+			"HEAD": "clothes_luffy_helmet",
+			"CHEST": "clothes_luffy_chestplate",
+			"LEGS": "clothes_luffy_leggings",
+			"FEET": "clothes_luffy_boots"
+		},
+		"luffy_wano_country": {
+			"HEAD": "clothes_luffy_wano_country_helmet",
+			"CHEST": "clothes_luffy_wano_country_chestplate",
+			"LEGS": "clothes_luffy_wano_country_leggings",
+			"FEET": "clothes_luffy_wano_country_boots"
+		},
+		"marine": {
+			"MAINHAND": "saber",
+			"HEAD": "uniform_marine_1_helmet",
+			"CHEST": "uniform_marine_1_chestplate",
+			"LEGS": "uniform_marine_1_leggings",
+			"FEET": "uniform_marine_1_boots"
+		},
+		"marshall_d_teach": {
+			"HEAD": "clothes_kurohige_1_helmet",
+			"CHEST": "clothes_kurohige_1_chestplate",
+			"LEGS": "clothes_kurohige_1_leggings",
+			"FEET": "clothes_kurohige_boots"
+		},
+		"marshall_d_teach_four_emperors": {
+			"HEAD": "clothes_kurohige_helmet",
+			"CHEST": "clothes_kurohige_chestplate",
+			"LEGS": "clothes_kurohige_leggings",
+			"FEET": "clothes_kurohige_boots"
+		},
+		"mihawk_cross_guild": {
+			"MAINHAND": "yoru",
+			"HEAD": "clothes_mihawk_helmet",
+			"CHEST": "clothes_mihawk_yellow_chestplate",
+			"LEGS": "clothes_mihawk_leggings",
+			"FEET": "clothes_mihawk_boots"
+		},
+		"mihawk": {
+			"MAINHAND": "yoru",
+			"HEAD": "clothes_mihawk_helmet",
+			"CHEST": "clothes_mihawk_chestplate",
+			"LEGS": "clothes_mihawk_leggings",
+			"FEET": "clothes_mihawk_boots"
+		},
+		"momonga": {
+			"MAINHAND": "saber",
+			"CHEST": "uniform_marine_seigi_chestplate"
+		},
+		"monkey_d_garp_2": {
+			"CHEST": "uniform_marine_seigi_chestplate",
+			"FEET": "uniform_akainu_boots"
+		},
+		"monkey_d_garp": {
+			"CHEST": "uniform_marine_seigi_chestplate",
+			"FEET": "uniform_kizaru_boots"
+		},
+		"mont_blanc_noland": {
+			"MAINHAND": "saber",
+			"HEAD": "clothes_noland_helmet"
+		},
+		"morgan": {
+			"MAINHAND": "arm_axe"
+		},
+		"mr_9": {
+			"MAINHAND": "bat",
+			"OFFHAND": "bat",
+			"HEAD": "clothes_elizabello_helmet"
+		},
+		"nero": {
+			"MAINHAND": "pistol",
+			"OFFHAND": "pistol",
+			"FEET": "clothes_cp_9_boots"
+		},
+		"note_warrior_1": {
+			"MAINHAND": "lance",
+			"OFFHAND": "shield_note"
+		},
+		"note_warrior_2": {
+			"MAINHAND": "lance",
+			"OFFHAND": "shield_note"
+		},
+		"pacifista": {
+			"HEAD": "clothes_kuma_helmet",
+			"CHEST": "clothes_kuma_chestplate",
+			"LEGS": "clothes_kuma_leggings",
+			"FEET": "clothes_kuma_boots"
+		},
+		"penguin": {
+			"MAINHAND": "spear",
+			"HEAD": "clothes_penguin_helmet",
+			"CHEST": "clothes_heart_pirates_chestplate",
+			"LEGS": "clothes_heart_pirates_leggings",
+			"FEET": "clothes_heart_pirates_boots"
+		},
+		"perona": {
+			"MAINHAND": "item_mogcy",
+			"OFFHAND": "perona_umbrella",
+			"HEAD": "clothes_perona_2years_helmet",
+			"LEGS": "clothes_perona_2years_leggings",
+			"FEET": "clothes_perona_2years_boots"
+		},
+		"pirate": {
+			"MAINHAND": "cutlass"
+		},
+		"rakuyo": {
+			"MAINHAND": "morning_star"
+		},
+		"red_king": {
+			"CHEST": "uniform_marine_seigi_chestplate"
+		},
+		"rockstar": {
+			"MAINHAND": "saber"
+		},
+		"ryokugyu": {
+			"HEAD": "uniform_ryokugyu_helmet",
+			"CHEST": "uniform_ryokugyu_chestplate",
+			"LEGS": "uniform_ryokugyu_leggings",
+			"FEET": "uniform_ryokugyu_boots"
+		},
+		"ryuma": {
+			"MAINHAND": "shusui",
+			"FEET": "clothes_luffy_boots"
+		},
+		"ryuma_human": {
+			"MAINHAND": "shusui"
+		},
+		"s_hawk": {
+			"MAINHAND": "sword_s_hawk"
+		},
+		"s_snake": {
+			"HEAD": "clothes_hancock_helmet"
+		},
+		"sabo": {
+			"MAINHAND": "pipe",
+			"HEAD": "clothes_sabo_helmet",
+			"CHEST": "clothes_sabo_chestplate",
+			"LEGS": "clothes_sabo_leggings",
+			"FEET": "clothes_sabo_boots"
+		},
+		"sabo_flame_emperor": {
+			"MAINHAND": "pipe",
+			"HEAD": "clothes_sabo_helmet",
+			"CHEST": "mant_white_chestplate",
+			"LEGS": "clothes_sabo_leggings",
+			"FEET": "clothes_sabo_boots"
+		},
+		"scopper_gaban": {
+			"MAINHAND": "big_axe",
+			"OFFHAND": "big_axe"
+		},
+		"scopper_gaban_old": {
+			"MAINHAND": "big_axe",
+			"OFFHAND": "big_axe"
+		},
+		"sengoku": {
+			"CHEST": "uniform_marine_seigi_chestplate"
+		},
+		"sentomaru": {
+			"MAINHAND": "masakari"
+		},
+		"shamrock": {
+			"MAINHAND": "griffon",
+			"CHEST": "figarland_shamrock_chestplate",
+			"LEGS": "figarland_shamrock_leggings",
+			"FEET": "figarland_shamrock_boots"
+		},
+		"shanks": {
+			"MAINHAND": "griffon",
+			"HEAD": "clothes_luffy_helmet",
+			"CHEST": "clothes_shanks_chestplate",
+			"LEGS": "clothes_shanks_leggings",
+			"FEET": "clothes_shanks_boots"
+		},
+		"shanks_four_emperors": {
+			"MAINHAND": "griffon",
+			"HEAD": "clothes_shanks_helmet",
+			"CHEST": "clothes_shanks_chestplate",
+			"LEGS": "clothes_shanks_leggings",
+			"FEET": "clothes_shanks_boots"
+		},
+		"shanks_knightsof_god": {
+			"MAINHAND": "griffon",
+			"HEAD": "clothes_shanks_helmet",
+			"CHEST": "figarland_shamrock_chestplate",
+			"LEGS": "figarland_shamrock_leggings",
+			"FEET": "figarland_shamrock_boots"
+		},
+		"shiryu_2": {
+			"MAINHAND": "raiu",
+			"HEAD": "clothes_shiryu_2_helmet",
+			"CHEST": "clothes_shiryu_2_chestplate",
+			"LEGS": "clothes_shiryu_leggings",
+			"FEET": "clothes_shiryu_boots"
+		},
+		"shiryu": {
+			"MAINHAND": "raiu",
+			"HEAD": "clothes_shiryu_helmet",
+			"CHEST": "clothes_shiryu_chestplate",
+			"LEGS": "clothes_shiryu_leggings",
+			"FEET": "clothes_ace_boots"
+		},
+		"silvers_rayleigh": {
+			"MAINHAND": "saber",
+			"HEAD": "clothes_rayleigh_helmet",
+			"CHEST": "clothes_rayleigh_chestplate",
+			"LEGS": "clothes_rayleigh_leggings",
+			"FEET": "clothes_rayleigh_old_boots"
+		},
+		"silvers_rayleigh_old": {
+			"MAINHAND": "saber",
+			"HEAD": "clothes_rayleigh_old_helmet",
+			"CHEST": "clothes_rayleigh_old_chestplate",
+			"LEGS": "clothes_rayleigh_old_leggings",
+			"FEET": "clothes_rayleigh_old_boots"
+		},
+		"smoker_2_years": {
+			"MAINHAND": "jitte",
+			"CHEST": "uniform_marine_seigi_chestplate",
+			"LEGS": "uniform_marine_1_leggings",
+			"FEET": "uniform_marine_1_boots"
+		},
+		"smoker": {
+			"MAINHAND": "jitte"
+		},
+		"speed_jil": {
+			"MAINHAND": "lance"
+		},
+		"stainless": {
+			"MAINHAND": "saber",
+			"CHEST": "uniform_marine_seigi_chestplate"
+		},
+		"stussy": {
+			"FEET": "clothes_cp_0_boots"
+		},
+		"tashigi_2_years": {
+			"MAINHAND": "saber"
+		},
+		"tashigi": {
+			"MAINHAND": "saber"
+		},
+		"thatch": {
+			"MAINHAND": "saber",
+			"OFFHAND": "saber"
+		},
+		"trafalgar_d_water_law_grand_line": {
+			"OFFHAND": "kikoku",
+			"HEAD": "clothes_law_sabaody_archipelago_helmet",
+			"CHEST": "clothes_law_sabaody_archipelago_chestplate",
+			"LEGS": "clothes_law_wano_country_leggings",
+			"FEET": "clothes_sabo_boots"
+		},
+		"trafalgar_d_water_law_seven_warlordsofthe_sea": {
+			"OFFHAND": "kikoku",
+			"HEAD": "clothes_law_1_helmet",
+			"CHEST": "clothes_law_1_chestplate",
+			"LEGS": "clothes_law_1_leggings",
+			"FEET": "clothes_sabo_boots"
+		},
+		"trafalgar_d_water_law_wano_country": {
+			"OFFHAND": "kikoku",
+			"HEAD": "clothes_law_1_helmet",
+			"CHEST": "clothes_law_wano_country_chestplate",
+			"LEGS": "clothes_law_wano_country_leggings",
+			"FEET": "clothes_sabo_boots"
+		},
+		"ulti": {
+			"MAINHAND": "weapon_ulti"
+		},
+		"urouge_san": {
+			"MAINHAND": "pencil"
+		},
+		"uta": {
+			"HEAD": "clothes_uta_1_helmet",
+			"CHEST": "clothes_uta_1_chestplate",
+			"FEET": "clothes_uta_1_boots"
+		},
+		"van_augur_2": {
+			"MAINHAND": "senriku",
+			"HEAD": "clothes_van_augur_helmet",
+			"CHEST": "clothes_van_augur_chestplate",
+			"LEGS": "clothes_van_augur_leggings",
+			"FEET": "clothes_van_augur_boots"
+		},
+		"van_augur": {
+			"MAINHAND": "senriku",
+			"HEAD": "clothes_van_augur_helmet",
+			"CHEST": "clothes_van_augur_chestplate",
+			"LEGS": "clothes_van_augur_leggings",
+			"FEET": "clothes_van_augur_boots"
+		},
+		"vergo": {
+			"MAINHAND": "onitake"
+		},
+		"vista": {
+			"MAINHAND": "saber",
+			"OFFHAND": "saber"
+		},
+		"x_drake": {
+			"OFFHAND": "saber"
+		},
+		"yamakaji": {
+			"MAINHAND": "saber",
+			"HEAD": "uniform_marine_1_helmet",
+			"CHEST": "uniform_marine_seigi_chestplate"
+		},
+		"yamato": {
+			"MAINHAND": "takeru",
+			"HEAD": "clothes_yamato_helmet",
+			"CHEST": "clothes_yamato_chestplate",
+			"LEGS": "clothes_yamato_leggings",
+			"FEET": "clothes_yamato_boots"
+		},
+		"yasopp_2": {
+			"MAINHAND": "rifle"
+		},
+		"yasopp": {
+			"MAINHAND": "rifle"
+		},
+		"yosaku": {
+			"MAINHAND": "saber"
+		},
+		"zephyr": {
+			"MAINHAND": "battle_smasher",
+			"HEAD": "uniform_zephyr_helmet",
+			"CHEST": "uniform_zephyr_chestplate"
+		},
+		"zoro_1": {
+			"MAINHAND": "saber",
+			"OFFHAND": "saber",
+			"HEAD": "wado_ichimonji",
+			"CHEST": "clothes_zoro_chestplate",
+			"LEGS": "clothes_zoro_leggings",
+			"FEET": "clothes_zoro_boots"
+		},
+		"zoro_2_years_later": {
+			"MAINHAND": "kitetsu_sandai",
+			"OFFHAND": "shusui",
+			"HEAD": "wado_ichimonji",
+			"CHEST": "clothes_zoro_2_chestplate",
+			"LEGS": "clothes_zoro_2_leggings",
+			"FEET": "clothes_zoro_boots"
+		},
+		"zoro_east_blue": {
+			"MAINHAND": "saber",
+			"OFFHAND": "saber",
+			"HEAD": "wado_ichimonji",
+			"CHEST": "clothes_zoro_chestplate",
+			"LEGS": "clothes_zoro_leggings",
+			"FEET": "clothes_zoro_boots"
+		},
+		"zoro_onigashima": {
+			"MAINHAND": "enma",
+			"OFFHAND": "kitetsu_sandai",
+			"HEAD": "wado_ichimonji",
+			"CHEST": "clothes_zoro_onigashima_chestplate",
+			"LEGS": "clothes_zoro_onigashima_leggings",
+			"FEET": "clothes_zoro_boots"
+		}
+	}
+}

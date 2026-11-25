@@ -1,0 +1,150 @@
+extends SceneTree
+# ============================================================================
+#  ESTILO DE COMBATE BASE — Z e X feitas com o Skills Builder (14/10/2026). Fonte reproduzível.
+#
+#    "$(./find_godot.sh)" --headless --path . --script tools/criar_estilo_base.gd [-- <pasta>]
+#
+#  Pedido do dono: o antigo estilo "corpo a corpo" (item "Luta" da barra) vira o Estilo de
+#  Combate Base. Z = soco poderoso que lança uma rajada de vento com knockback. X = soco no
+#  chão que abre uma rachadura e explode em vento em volta do jogador, empurrando os inimigos.
+#
+#  Mesmo caminho da Nikyu (`criar_nikyu_nikyu.gd`): Dados.novo + blocos + poses, publicado
+#  pela API do editor. O catálogo guarda a entrada com `estilo: true` (não é fruta à venda); o
+#  item "Luta" a equipa (`ProgressaoDoPersonagem.fruta_a_equipar`). Rodar de novo republica.
+#  Modelos: `tools/blender/rajada_vento.py` e `rachadura_chao.py`.
+#  Números em escala da ARENA (a história multiplica por ESCALA_DA_ARENA = 250/2048).
+# ============================================================================
+
+const Dados := preload("res://src/skills_builder/dados_skill.gd")
+const NOME := "Estilo de Combate Base"
+const COR := "#bfe6ff"
+
+var _falhas := 0
+
+
+func _init() -> void:
+	_ir.call_deferred()
+
+
+func _ir() -> void:
+	await process_frame
+	var args := OS.get_cmdline_user_args()
+	if args.size() > 0:
+		SkillsPublicadas.pasta_forcada = args[0]
+		SkillsPublicadas.recarregar()
+	var fid := SkillsPublicadas.id_de_nome(NOME)
+	if fid != KitDoBuilder.ID_ESTILO_BASE:
+		push_error("id do estilo mudou: %s" % fid)
+		quit(1)
+		return
+	if SkillsPublicadas.fruta(fid).is_empty():
+		var r := SkillsPublicadas.criar_fruta(NOME, COR, true)
+		if not r.ok:
+			push_error("criar estilo: %s" % str(r.erros))
+			quit(1)
+			return
+	for s in [_z(fid), _x(fid)]:
+		var p := SkillsPublicadas.publicar(s)
+		print("%s %s %s" % ["OK  " if p.ok else "ERRO", s.identificacao.id, str(p.get("erros", []))])
+		if not p.ok:
+			_falhas += 1
+	quit(1 if _falhas > 0 else 0)
+
+
+func _base(fid: String, id: String, nome: String, desc: String, tecla: String) -> Dictionary:
+	var s := Dados.novo()
+	s.eventos = []
+	s.identificacao.merge({"id": id, "nome": nome, "descricao": desc, "dono": "Jogador", "fruta": fid}, true)
+	# Segurar a tecla trava o corpo ONDE ESTÁ, gravidade incluída (regra do dono, 14/10/2026).
+	s.ativacao.merge({"modo": "Pressionar", "tecla": tecla, "paralisar_segurando": true}, true)
+	s.condicoes.merge({"exige_alvo": false, "distancia_maxima": 60.0}, true)
+	s.vfx.merge({"cor": COR, "cor_2": "#ffffff"}, true)
+	s.animacao.merge({"clipe": "Ataque", "pose": ""}, true)
+	return s
+
+
+func _pose(id: String, nome: String, ossos: Dictionary) -> Dictionary:
+	return {"id": id, "nome": nome, "ossos": ossos}
+
+
+func _ev(tipo: String, id: String, inicio: float, duracao: float, parametros: Dictionary) -> Dictionary:
+	return {"id": id, "tipo": tipo, "inicio": inicio, "duracao": duracao, "habilitado": true, "parametros": parametros}
+
+
+func _pose_ev(id: String, inicio: float, duracao: float, pose: String, transicao := 0.1) -> Dictionary:
+	return _ev("animacao", id, inicio, duracao, {"pose": pose, "transicao": transicao})
+
+
+func _som(id: String, inicio: float, som: String, tom: float, volume := -6.0) -> Dictionary:
+	return _ev("audio", id, inicio, 0.3, {"som": som, "tom": tom, "volume": volume})
+
+
+## Z — soco de direita, braço recuado ao máximo; a rajada nasce no punho e atravessa quem estiver
+## na linha (acerto de 0,65 m: maior que isso raspa o piso e o projétil morre; o desenho é 3 m de largura) (empurrão forte para frente, dano moderado: o foco do jogo é o knockback).
+func _z(fid: String) -> Dictionary:
+	var s := _base(fid, "base_soco_vendaval_z", "Soco do Vendaval",
+		"Recua o punho e solta um soco tão forte que lança uma rajada de vento à frente, empurrando quem atravessar.", "Z")
+	s.configuracoes.merge({"duracao": 1.0, "recarga": 5.0, "custo": 12.0, "alcance": 22.0}, true)
+	s.dano.merge({"valor": 90.0, "tipo": "Físico", "empurrao": 24.0, "atordoamento": 0.5}, true)
+	s.projeteis.merge({"visual": "Rajada", "raio": 1.5, "raio_de_acerto": 0.65, "velocidade": 32.0, "vida": 0.6,
+		"quantidade": 1, "abertura": 0.0, "gravidade": 0.0, "rastro": "Vento", "perfurar": true,
+		"sai_de": "Mão direita"}, true)
+	s.poses = [
+		_pose("pose_1", "Recuo", {"UpperArm_R": [-70.0, 0.0, 14.0], "ForeArm_R": [110.0, 0.0, 0.0],
+			"Torso": [4.0, -42.0, 0.0], "UpperArm_L": [40.0, 0.0, -20.0], "ForeArm_L": [75.0, 0.0, 0.0],
+			"Thigh_L": [34.0, 0.0, -5.0], "Shin_L": [-44.0, 0.0, 0.0], "Thigh_R": [-20.0, 0.0, 6.0], "Shin_R": [-26.0, 0.0, 0.0]}),
+		_pose("pose_2", "Soco", {"UpperArm_R": [96.0, 0.0, 3.0], "ForeArm_R": [2.0, 0.0, 0.0],
+			"Torso": [12.0, 36.0, 0.0], "UpperArm_L": [-28.0, 0.0, -24.0], "ForeArm_L": [78.0, 0.0, 0.0],
+			"Thigh_L": [46.0, 0.0, -5.0], "Shin_L": [-58.0, 0.0, 0.0], "Thigh_R": [-30.0, 0.0, 6.0], "Shin_R": [-14.0, 0.0, 0.0]}),
+		_pose("pose_3", "Recuperar", {"UpperArm_R": [38.0, 0.0, 8.0], "ForeArm_R": [34.0, 0.0, 0.0], "Torso": [6.0, 10.0, 0.0],
+			"Thigh_L": [14.0, 0.0, 0.0], "Shin_L": [-14.0, 0.0, 0.0], "Thigh_R": [-8.0, 0.0, 0.0], "Shin_R": [-8.0, 0.0, 0.0]}),
+	]
+	s.eventos = [
+		_pose_ev("recuo", 0.0, 0.45, "pose_1", 0.18),
+		_ev("vfx", "ar_no_punho", 0.05, 0.45, {"estilo": "Carga", "ancora": "Osso do jogador", "osso": "Mão direita", "escala": 1.0}),
+		_ev("vfx", "anel_no_chao", 0.1, 0.5, {"estilo": "Anel", "ancora": "Mundo", "altura": 0.08, "escala": 0.9}),
+		_som("som_carga", 0.0, "Vento", 0.8, -12.0),
+		_pose_ev("soco", 0.45, 0.3, "pose_2", 0.04),
+		_ev("projetil", "rajada", 0.5, 0.05, {}),
+		_ev("vfx", "estouro_do_soco", 0.5, 0.3, {"estilo": "Vento", "ancora": "Osso do jogador", "osso": "Mão direita", "escala": 1.1}),
+		_som("som_soco", 0.5, "Disparo", 0.7, -4.0),
+		_ev("camera", "tremor", 0.5, 0.28, {"tremor": 0.26}),
+		_pose_ev("fim", 0.8, 0.2, "pose_3", 0.2),
+	]
+	return s
+
+
+## X — agacha, soca o chão: a rachadura se abre e o vento explode num círculo de 6 m em volta do
+## jogador (hitbox esférica; o empurrão sai radialmente do jogador, ver `_antes_do_acerto`).
+func _x(fid: String) -> Dictionary:
+	var s := _base(fid, "base_quebra_chao_x", "Quebra-Chão",
+		"Soca o chão: abre uma rachadura e explode em vento ao redor, empurrando todos os inimigos para longe.", "X")
+	s.configuracoes.merge({"duracao": 1.5, "recarga": 9.0, "custo": 20.0, "alcance": 8.0}, true)
+	s.dano.merge({"valor": 70.0, "tipo": "Físico", "empurrao": 26.0, "atordoamento": 0.7}, true)
+	s.poses = [
+		_pose("pose_1", "Agachar", {"UpperArm_R": [-80.0, 0.0, 16.0], "ForeArm_R": [120.0, 0.0, 0.0],
+			"UpperArm_L": [30.0, 0.0, -30.0], "ForeArm_L": [50.0, 0.0, 0.0], "Torso": [10.0, 0.0, 0.0],
+			"Thigh_L": [40.0, 0.0, -14.0], "Thigh_R": [40.0, 0.0, 14.0], "Shin_L": [-70.0, 0.0, 0.0], "Shin_R": [-70.0, 0.0, 0.0]}),
+		_pose("pose_2", "Soco no chão", {"UpperArm_R": [150.0, 0.0, 4.0], "ForeArm_R": [4.0, 0.0, 0.0],
+			"UpperArm_L": [-20.0, 0.0, -34.0], "ForeArm_L": [60.0, 0.0, 0.0], "Torso": [48.0, 8.0, 0.0],
+			"Thigh_L": [58.0, 0.0, -16.0], "Thigh_R": [58.0, 0.0, 16.0], "Shin_L": [-90.0, 0.0, 0.0], "Shin_R": [-90.0, 0.0, 0.0]}),
+		_pose("pose_3", "Levantar", {"UpperArm_R": [30.0, 0.0, 10.0], "ForeArm_R": [30.0, 0.0, 0.0], "Torso": [8.0, 0.0, 0.0],
+			"Thigh_L": [16.0, 0.0, -4.0], "Thigh_R": [16.0, 0.0, 4.0], "Shin_L": [-18.0, 0.0, 0.0], "Shin_R": [-18.0, 0.0, 0.0]}),
+	]
+	s.eventos = [
+		_pose_ev("agachar", 0.0, 0.55, "pose_1", 0.22),
+		_ev("vfx", "ar_no_punho", 0.05, 0.5, {"estilo": "Carga", "ancora": "Osso do jogador", "osso": "Mão direita", "escala": 1.2}),
+		_som("som_carga", 0.0, "Vento", 0.6, -10.0),
+		_pose_ev("soco", 0.55, 0.4, "pose_2", 0.05),
+		# o impacto, a rachadura (fica parada no mundo, 3,6 de escala = ~5,8 m) e as ondas de vento
+		_ev("vfx", "rachadura", 0.58, 0.9, {"estilo": "Rachadura", "ancora": "Mundo", "altura": 0.03, "frente": 0.0, "escala": 3.6}),
+		_ev("vfx", "clarao", 0.58, 0.4, {"estilo": "Explosão", "ancora": "Mundo", "altura": 0.3, "frente": 0.9, "escala": 1.6}),
+		_ev("vfx", "onda_de_vento", 0.6, 0.6, {"estilo": "Anel", "ancora": "Mundo", "altura": 0.15, "frente": 0.0, "escala": 5.0}),
+		_ev("vfx", "onda_de_vento_2", 0.7, 0.6, {"estilo": "Vento", "ancora": "Mundo", "altura": 0.4, "frente": 0.0, "escala": 5.5}),
+		_ev("hitbox", "explosao_de_vento", 0.6, 0.15, {"forma": "Esfera", "raio": 6.0, "x": 0.0, "y": 1.0, "z": 0.0, "unicos": true}),
+		_som("som_impacto", 0.58, "Impacto", 0.6, -2.0),
+		_som("som_vento", 0.6, "Vento", 0.5, -4.0),
+		_ev("camera", "tremor", 0.58, 0.5, {"tremor": 0.4}),
+		_pose_ev("levantar", 1.05, 0.4, "pose_3", 0.25),
+	]
+	return s

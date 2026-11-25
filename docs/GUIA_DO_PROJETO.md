@@ -77,8 +77,9 @@ O Blender (5.2, usado só no pipeline de animação) está em
 - **Singleplayer roda o mesmo código do multiplayer**, com um servidor local na
   porta fixa **24565**.
 - **Arena:** grade de lajes de 10 m com 16 buracos. Rodada de 10 min. **Quem
-  mata é a queda**, não o atrito de vida — por isso `DamageZone.DAMAGE_SCALE =
-  0.12` e o foco de todo golpe é knockback.
+  mata é a queda**, não o atrito de vida — por isso o foco de todo golpe é
+  knockback. (O `DamageZone.DAMAGE_SCALE = 0,12` citado aqui até 22/09/2026 **saiu
+  do código em 2026-08-21**: o corte agora mora no `Balance`/`DamageSpec`.)
 - **Vida 2048 / energia 4096.** Uma skill custa `ENERGY_SKILL = 180`.
 - **Dois modos de combate** (tecla R): fruta (`current_fruit_id`) e estilo de
   luta (`FightingStyles.STYLES`).
@@ -136,20 +137,25 @@ Este guia diz **como construir**. Os outros dizem **o que existe**:
 
 | pergunta | documento |
 |---|---|
+| contexto curto do projeto e de cada área; onde está o código de X? | [`../PROJECT_CONTEXT.md`](../PROJECT_CONTEXT.md) (agentes), [`contexto/VISAO_GERAL.md`](contexto/VISAO_GERAL.md) (pessoas), busca: `python3 tools/contexto/indice.py buscar "..."` |
 | como esta fruta funciona hoje? | [`frutas/README.md`](frutas/README.md) → uma página por fruta |
 | que bugs conhecidos estão abertos? | [`LISTA_DE_CORRECOES.md`](LISTA_DE_CORRECOES.md) |
 | por que este bug aconteceu? | [`erros.md`](erros.md) |
 | como o `Player.gd` está sendo partido? | [`ARQUITETURA_PLAYER.md`](ARQUITETURA_PLAYER.md) |
+| como funciona o combate direcional do MODO HISTÓRIA (LMB/RMB, aparo, riposte)? | [`combat/README.md`](combat/README.md) |
 | como se divide trabalho entre agentes? | [`AGENTES.md`](AGENTES.md) |
 | o que a bateria de testes cobre e o que não cobre? | [`VALIDACAO.md`](VALIDACAO.md) |
 | pipeline Mixamo → rig | [`ANIMACOES_MIXAMO.md`](ANIMACOES_MIXAMO.md) |
-| o porquê de decisões antigas | `MUDANCAS_*.md`, `PEDIDO_*.md` — **nada ali é apagado** |
+| o porquê de decisões antigas | [`historico/MUDANCAS_*.md`](historico/), `PEDIDO_*.md` — **nada ali é apagado** |
 
-> ⚠️ **`DOCUMENTACAO.md`** (na raiz) é a visão geral **de 2026-08-02** e
-> envelheceu em pontos concretos: descreve `src/effects/` com "17 arquivos"
-> (hoje são 25), lista personagens que saíram do menu e não conhece nada da
-> partição do `Player.gd` nem da arena. Use-o como panorama histórico; onde ele
-> divergir deste guia, **este guia vale**.
+> **`DOCUMENTACAO.md`** (na raiz) foi **removido em 2026-09-12**. Era a visão
+> geral de 2026-08-02 e tinha envelhecido em pontos concretos: `src/effects/`
+> com "17 arquivos" (hoje são 25), personagens que saíram do menu, nada da
+> partição do `Player.gd` nem da arena — e uma tabela de controles que ainda
+> mandava apertar `R` para trocar de modo de combate, gesto que deixou de
+> existir em 2026-09-06. Duas visões gerais divergentes são pior que uma:
+> o panorama agora é o [`README.md`](../README.md) (incluindo os controles) e
+> **este guia** é a referência de quem vai escrever código.
 
 ---
 

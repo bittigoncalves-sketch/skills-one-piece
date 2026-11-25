@@ -35,6 +35,16 @@ extends RefCounted
 #  componentes criados no `_ready()` (medido na Fase 5: pai=7, filho=1).
 # ============================================================================
 
+## Energia por segundo NESTE modo, quando > 0. O Modo História põe aqui o número do
+## perfil da fruta: com energia máxima 10, os 0,5%/s da arena dariam 0,05/s — 200 s para
+## encher, e nenhuma técnica sairia duas vezes seguidas.
+var regen_energia_do_modo := 0.0
+## Regeneração do Mine Piece: sem a penalidade de combate e em dobro com a vida cheia (`PlayerTickEventProcedure`).
+var regen_energia_mod_dobra_com_vida_cheia := false
+
+## Multiplica a regeneração de VIDA e de ENERGIA (08/11/2026, pedido do dono: "aumentar a velocidade da regeneração"). 1.0 = a regra original
+## (arena, PvP, testes); o Modo História liga um valor maior em `equipar_fruta`. Não mexe na penalidade de combate nem no bônus de kill.
+var fator_de_regeneracao := 1.0
 const REGEN_ENERGIA_PCT := 0.005       # 0,5% do máximo por segundo
 const REGEN_ENERGIA_KILL_PCT := 0.02   # 2% por segundo, depois de matar
 
@@ -79,6 +89,10 @@ func montar_em(dono: Node) -> void:
 # sobrevive a qualquer quadro perdido.
 var _t_ultimo_dano: int = -999999
 var _t_bonus_kill: int = -999999
+var _t_comida_ate_ms: int = -999999     # até quando vale a regeneração acelerada da refeição (ver `premiar_comida`)
+var _fator_comida := 1.0
+var _t_agua_ate_ms: int = -999999       # até quando vale a regeneração de ENERGIA dobrada de beber água (`premiar_agua`)
+var _fator_agua := 1.0
 
 # ------------------------------------------------------------------- vida
 # Devolve `true` quando a vida chegou a zero — quem decide o que fazer com isso
@@ -92,6 +106,25 @@ func sofrer_dano(quantidade: float) -> bool:
 func premiar_kill() -> void:
 	_t_bonus_kill = Time.get_ticks_msec()
 	print("🩸 Regeneração acelerada por 30s (kill).")
+
+## REFEIÇÃO (20/11/2026): comer dá regeneração acelerada de vida e energia por `duracao` segundos (`fator` × a regen base). Comer de novo renova pelo MAIOR entre o que resta e o novo;
+## não empilha com o bônus de kill — vale o maior dos dois.
+func premiar_comida(fator: float, duracao: float) -> void:
+	var restante := maxf(float(_t_comida_ate_ms - Time.get_ticks_msec()) / 1000.0, 0.0)
+	_t_comida_ate_ms = Time.get_ticks_msec() + int(maxf(duracao, restante) * 1000.0)
+	_fator_comida = maxf(fator, _fator_comida if restante > 0.0 else 1.0)
+
+## Beber água: a regeneração de ENERGIA (só ela) é multiplicada por `fator` durante `duracao` s. Beber de novo renova pelo maior tempo restante.
+func premiar_agua(fator: float, duracao: float) -> void:
+	var restante := maxf(float(_t_agua_ate_ms - Time.get_ticks_msec()) / 1000.0, 0.0)
+	_t_agua_ate_ms = Time.get_ticks_msec() + int(maxf(duracao, restante) * 1000.0)
+	_fator_agua = maxf(fator, _fator_agua if restante > 0.0 else 1.0)
+
+func fator_da_agua() -> float:
+	return _fator_agua if Time.get_ticks_msec() < _t_agua_ate_ms else 1.0
+
+func fator_da_comida() -> float:
+	return _fator_comida if Time.get_ticks_msec() < _t_comida_ate_ms else 1.0
 
 func em_combate() -> bool:
 	return Time.get_ticks_msec() - _t_ultimo_dano < int(JANELA_DE_COMBATE * 1000.0)
@@ -108,15 +141,24 @@ func restaurar() -> void:
 # Regenera VIDA e ENERGIA. A penalidade de combate multiplica as duas; o bônus
 # de kill acelera as duas.
 func regenerar(delta: float) -> void:
+	if is_instance_valid(_dono) and float(_dono.get_meta("fome", 1.0)) <= 0.0: return
 	var fator := PENALIDADE_DANO if em_combate() else 1.0
 
 	var pct_vida := REGEN_VIDA_KILL_PCT if com_bonus_de_kill() else REGEN_VIDA_PCT
+	pct_vida = maxf(pct_vida, REGEN_VIDA_PCT * fator_da_comida())          # comida: vale o maior (não empilha com o kill)
 	if vida < vida_max:
-		vida = minf(vida + vida_max * pct_vida * fator * delta, vida_max)
+		vida = minf(vida + vida_max * pct_vida * fator * fator_de_regeneracao * delta, vida_max)
 
-	if energia < energia_max:
-		energia = minf(energia + regen_energia_por_s(energia_max, com_bonus_de_kill()) * fator * delta,
-			energia_max)
+	# O giro consome energia continuamente; regenerar durante ele permitiria
+	# imunidade ilimitada quando a capacidade ultrapassasse o dreno de 2/s.
+	if energia < energia_max and not (is_instance_valid(_dono) and bool(_dono.get_meta("giro_espada_ativo", false))):
+		var por_segundo := regen_energia_do_modo if regen_energia_do_modo > 0.0 \
+			else regen_energia_por_s(energia_max, com_bonus_de_kill())
+		por_segundo = maxf(por_segundo, regen_energia_por_s(energia_max) * fator_da_comida()) if regen_energia_do_modo <= 0.0 else por_segundo
+		var f_energia := fator
+		if regen_energia_mod_dobra_com_vida_cheia and regen_energia_do_modo > 0.0:
+			f_energia = 2.0 if vida >= vida_max else 1.0
+		energia = minf(energia + por_segundo * f_energia * fator_de_regeneracao * fator_da_agua() * delta, energia_max)
 
 # A regen de energia EM VALOR ABSOLUTO (por segundo), a partir do percentual.
 #

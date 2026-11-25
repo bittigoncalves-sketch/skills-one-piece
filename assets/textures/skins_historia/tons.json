@@ -1,0 +1,8 @@
+{
+  "muito_claro": {"nome": "Muito claro", "pele": "#f2d6c4", "sombra": "#cfa995", "luz": "#ffe9da", "labio": "#b97170", "brilho_labio": "#edaba0", "bochecha": "#e6b1a4", "boca": "#98685b"},
+  "claro": {"nome": "Claro", "pele": "#e2b493", "sombra": "#bd8a6d", "luz": "#f6cfad", "labio": "#ae6260", "brilho_labio": "#e9a18d", "bochecha": "#d3987f", "boca": "#865746"},
+  "medio": {"nome": "Médio", "pele": "#c9906d", "sombra": "#ae7156", "luz": "#dfa985", "labio": "#a5524e", "brilho_labio": "#e99a85", "bochecha": "#cc8067", "boca": "#744d3e"},
+  "moreno": {"nome": "Moreno", "pele": "#a56c49", "sombra": "#804d35", "luz": "#c38a61", "labio": "#874b43", "brilho_labio": "#c5816a", "bochecha": "#a45e49", "boca": "#5d382c"},
+  "escuro": {"nome": "Escuro", "pele": "#77492f", "sombra": "#553020", "luz": "#986545", "labio": "#6c3b36", "brilho_labio": "#a56656", "bochecha": "#7e4436", "boca": "#40271f"},
+  "muito_escuro": {"nome": "Muito escuro", "pele": "#4b2e22", "sombra": "#301d17", "luz": "#6c4936", "labio": "#502c2a", "brilho_labio": "#895849", "bochecha": "#59332a", "boca": "#271a15"}
+}

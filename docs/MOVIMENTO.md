@@ -106,12 +106,12 @@ avança**. Ler mais cedo mudaria esse comportamento sem ninguém perceber
 |---|---|---|---|
 | 1 | **Vault** | correndo (Shift+W) contra obstáculo baixo — **automático**, sem tecla | `vel.y = 16 × 0,7 = 11,2` · janela de impulso **0,35 s** |
 | 2 | **Salto longo** | Shift + **batida** do Espaço, no chão, andando à frente | `vel.y = 16 × 0,95 = 15,2` · janela **0,55 s** |
-| 3 | **Wall run** | no ar, sprint, W, rente a parede lateral, com `vel.y < 5` | gravidade a **12%** (piso −1,5 m/s) · corre na tangente · Espaço = pula para longe (`normal × 9` + `16 × 0,85`), janela **0,3 s** |
+| 3 | **Wall run** (refeito 03/10/2026, `corrida_na_parede.gd`) | **Espaço** correndo (≥ 3,5 m/s) rente a parede lateral, a ≤ 60° dela, no chão ou no ar | gravidade **normal**, sustentada pela velocidade (72 % a partir de 4 m/s) · impulso de entrada 5 m/s · perde 1,8 m/s² · acaba < 2,5 m/s, 1,8 s, sem parede, no chão ou **Ctrl** · Espaço = salta para longe (`normal × 7` + `tangente × v × 0,85` + `13` para cima) · mesma parede só após 0,35 s |
 | 4 | **Pouso de precisão** | Espaço **no ar** enquanto cai (`vel.y < 3`) | ao tocar o chão com pico de queda > **9 m/s**: rolamento de **0,4 s** + poeira + janela **0,28 s** — o embalo é **preservado** |
 | 5 | **Geppo** (pulo duplo) | Espaço no ar, fora de escalada/wall run, cargas > 0 | com direção: `dir × vel × 1,35` + `16 × 0,95`; parado: `16 × 1,15` · shake 0,28 · anel de ar |
-| 6 | **Escalada** | no ar, Espaço **segurado** + W contra parede vertical | sobe/desce a **4,5 m/s** (W/S), cola na parede a 1,0 m/s |
-| 7 | **Travessia lateral** | A/D **durante** a escalada | `4,5 × 0,8 = 3,6 m/s` na tangente |
-| 8 | **Mantle** | W durante a escalada, com a **cabeça já livre** acima da beirada | `−normal × 6` + `16 × 0,8` para cima, larga a parede, janela **0,25 s** |
+| 6 | **Escalada** (refeita 03/10/2026, `escalada.gd`) | no ar, indo de **frente** contra parede **escalável** — agarra sozinho | sobe/desce **2,2/2,8 m/s** (W/S), cola na parede a 1,0 m/s · Espaço salta para trás · Ctrl solta |
+| 7 | **Travessia lateral** | A/D **durante** a escalada | **1,6 m/s**; para na quina da parede |
+| 8 | **Subir a borda** (no lugar do mantle) | mãos chegam ao topo → **borda**; W sobe | sobe rente a 3,6 m/s até os pés passarem do topo, avança 0,9 m por cima — sem teleporte; sai andando a ~3 m/s |
 
 **A "janela de impulso" (`_long_jump_t`) é um multiplicador de velocidade
 horizontal de ×1,5**, e é o único ponto onde o parkour mexe na velocidade dos
@@ -149,19 +149,67 @@ inclusive nos 90 blocos cinza do mapa, sem ninguém precisar registrar nada
 
 ---
 
-## 4. Esquiva (Q) — 12 metros em 0,28 s
+## 4. Esquiva (Q) — ROLL desde 03/10/2026
 
-**Segurar Q mira; soltar dispara.** A direção é travada no disparo — girar a
-câmera no meio do dash **não o curva**.
+> Pedido do dono (03/10/2026): "roll passando a ser a tecla Q, eliminando o dash".
+> Decisão: o roll **herda o papel de esquiva** do dash (mesma recarga, mesma janela de
+> invulnerabilidade, mesmo cancelamento de golpe que acertou) e é um rolamento que se
+> vê, com o clipe Mixamo "Sprinting Forward Roll". O controlador continua se chamando
+> `DashController` para não quebrar quem o consulta. O que vem abaixo desta tabela
+> sobre o dash de 12 m é histórico.
+
+**Apertar Q dispara** (não há mais segurar para mirar). A direção é travada no
+disparo; o corpo vira para ela e rola para a frente do próprio rumo.
 
 | | |
 |---|---|
-| distância | **12,0 m** |
-| tempo | **0,28 s** (⇒ 42,86 m/s) |
+| distância | **8 m** (era 4,5 m até o fim da tarde de 03/10/2026 — o dono pediu mais) |
+| tempo | **0,65 s** (⇒ 12,3 m/s) |
+| efeito e som | **nenhum** — o anel de choque e o som do dash antigo saíram (pedido do dono, 03/10/2026); o roll se lê pelo clipe |
 | recarga | **1,5 s** |
 | gravidade | **suspensa** — o vetor inteiro é sobrescrito, `y` incluído |
-| direção | tecla segurada; sem tecla, a frente da câmera (as duas já sem pitch) |
-| imunidade | `damage_immune` ligado no disparo, desligado quando `_t` zera |
+| direção | WASD; sem tecla, a frente da câmera (as duas sem pitch) |
+| imunidade | `damage_immune` nos primeiros **0,28 s** (a janela do dash antigo) |
+| animação | clipe de ação `sprinting_forward_roll` 0,05→1,1 s, dirigido pelo progresso do roll |
+| capacidade | SEMPRE liberado (decisão do dono, 03/10/2026: "liberar o uso do Q"); o desbloqueio "dash" da progressão segue no save, mas não trava o Q |
+| teste | `tools/dev_tests/test_roll_deslize.gd` |
+
+### Agachar (Ctrl) — 20/10/2026
+
+Substitui o deslize no Ctrl por pedido do dono. Segurar para agachar; soltar
+para levantar quando houver espaço. Implementação: `src/player/agachar.gd`;
+pose editável: `src/anim/pose_agachar.gd`.
+
+- Velocidade: 30% da caminhada (1,26 m/s no personagem base), sem sprint ou
+  ganho diagonal. A colisão passa a 1,5/1,8 da altura, mantendo os pés e a largura.
+- Câmera: desce 0,35/1,8 da altura do corpo, suavizada; vale em 1ª e 3ª pessoa.
+- Bordas: testa apoio em X, Z e diagonal antes de mover; tolera desníveis de
+  até meio bloco na escala do corpo. Pulo e empurrão continuam podendo derrubar.
+- Teto: consulta o volume de pé, não apenas raios. Soltar sob teto conserva a
+  postura e a lentidão até sair. Q só cancela a postura se couber de pé.
+- Ctrl mantém descer na água e soltar parede. Agachado não inicia parkour.
+- Pose/corpo replicados por `net_agachado`; respawn restaura postura e colisão.
+- Toque: manter o botão AGACHAR. Sem custo de energia ou recarga.
+
+Referência de altura: [notas oficiais Minecraft 1.20.10](https://www.minecraft.net/en-us/article/1-20-10-update-available-bedrock).
+A proporção foi adaptada ao corpo de 1,6 m e à cápsula do jogo; não muda escala
+horizontal nem o salto do projeto. Teste: `tools/dev_tests/test_agachar.gd`.
+
+### Deslize antigo — histórico de 03/10/2026 (Ctrl substituído em 20/10)
+
+Pedido do dono: deslizar no Ctrl "somado à necessidade da velocidade de estar em
+movimento"; decisão: passa **por baixo** de obstáculos baixos. `src/player/deslize.gd`.
+
+| | |
+|---|---|
+| entrada | Ctrl no chão, correndo a ≥ 3,5 m/s, fora da parede, do roll e da água |
+| embalo | entra na velocidade da corrida e GANHA até +10 % ao longo de 0,75 s — nunca perde (decisão do dono, 03/10/2026) |
+| corpo | colisão e hurtbox pela METADE (centro desce ¼; a cápsula encolhe o raio junto) |
+| teto | só levanta com espaço em cima (5 raios do centro ao topo inteiro, sem a camada da hurtbox); preso, continua deslizando |
+| levantar | 0,3 s mantendo o embalo; a corrida retoma dele |
+| Espaço | pula com o embalo (se o teto deixar) |
+| animação | clipe de ação `running_slide` (desce 0,07→0,39, desliza até 0,85, levanta 0,85→1,44) |
+| toque | botão "DESLIZA" na fileira de ações |
 | som | pitch sorteado em ±6% para dois dashes seguidos não soarem colados |
 
 ⚠️ **`_passo` existe por causa de aritmética de ponto flutuante.** `_t` não zera
@@ -196,8 +244,14 @@ Confira o estado real antes de confiar nesta linha.*
 - ⚠️ **`src/player/move_frame.gd:70` tem um `print()` por quadro de física** —
   ~60 linhas por segundo por jogador no console. É resto de depuração do bug de
   WASD. Registrado como item **46** em [`LISTA_DE_CORRECOES.md`](LISTA_DE_CORRECOES.md).
-- ⚠️ **Wall run e escalada são exclusivos entre si**: `_parede_lateral` só é
-  sondada quando `_escalando` é falso. Não existe "escalar correndo".
+- ⚠️ **Com parede ao lado, o Espaço é dela**: `avaliar()` tenta o wall run ANTES
+  do pulo e do geppo. Correndo rente a uma parede, Espaço não pula — entra na
+  parede. Quem for depurar "apertei pulo e grudei" procura aqui.
+- ⚠️ **Buffer e coyote do wall run (03/10/2026)**: o Espaço vale por 0,15 s para
+  ENTRAR na parede se não virou pulo/geppo (no ar sem geppo, ele arma o pouso de
+  precisão E fica no buffer); e, se a parede acabou sozinha no ar, o Espaço nos
+  0,15 s seguintes ainda dá o SALTO da parede (`CorridaNaParede.salto_coyote`),
+  entregue por `aplicar_pulos` no lugar do pulo.
 - ⚠️ **O vault é automático.** Não há tecla; correr contra um obstáculo baixo
   basta. Quem for depurar "pulei sem apertar nada" procura aqui.
 - ⚠️ **A frente do modelo muda de dono conforme o estado**
@@ -217,10 +271,54 @@ Confira o estado real antes de confiar nesta linha.*
   a animação procedural específica não. O `SkeletalAnimator.update()` recebe só
   `velocity`, `is_on_floor()` e `escalando` — wall run, mantle, vault e travessia
   lateral lêem todos como "no ar".
-- **Nada do parkour atravessa a rede.** Não há RPC de escalada, wall run ou
-  geppo; o adversário vê o resultado pela posição replicada, não pelo estado.
+- **O parkour atravessa a rede como APRESENTAÇÃO (03/10/2026).** `net_parkour`
+  (token de pose), `net_escalando`, `net_parede_lado`, `net_subida` e
+  `net_inclinacao` vão no `MultiplayerSynchronizer` (`Main._make_player_sync`); a
+  cópia remota inclina o corpo no wall run, mostra escada/borda/subida e a
+  inclinação de curva. A física continua só de quem tem autoridade; não há RPC de
+  parkour. Teste: `test_parkour_rede.gd`.
 
 ---
+
+## Correr = 1,5× andar (2026-10-03)
+
+Decisão do dono: "retirar o ganho de velocidade ao correr; correr passa a ser apenas 1,5
+vezes a velocidade de andar". Saiu o `RunAccelerationController` (a corrida crescia até 2×
+em 3 s no chão). O buff de aceleração da Rocket (V, ×1,6) passou para a arrancada da
+locomoção (`LocomocaoChao.fator_aceleracao`): chega à velocidade mais depressa.
+
+## Corrida do Mixamo (2026-10-03)
+
+Pedido do dono: "tira a animação de correr do Naruto e coloca uma animação da Mixamo".
+Correndo, os clipes `running`/`sprint` tomam o corpo (`ProceduralAnimator._aplicar_corrida`):
+peso pela velocidade (entra de 1,8 a 3,0 m/s; sprint de 4,9 a 6,0), fase COMPARTILHADA
+(os dois começam com o pé esquerdo à frente), mistura por QUATÉRNIO (o euler gravado passa
+de ±π perto de 90°). A fase anda com a distância, pela passada que o clipe produz NESTE rig
+(`_passada_no_rig`), com teto de cadência 5,0/7,5 passos/s (os da marcha procedural) (o `base` tem perna curta e
+precisaria de 9). Por cima: inclinação de curva e de arrancada/frenagem, giro do quadril
+(`Corpo:giro`), quadril baixando (`Corpo:altura`) e olhar nivelado (±6°). A silhueta
+Naruto saiu; a marcha procedural (arrancada lenta, galope Mink, quem não tem clipe) balança
+os braços também no sprint. Testes: `test_corrida_mixamo.gd` (clipe, por geometria) e
+`test_walk_run.gd` (procedural, com o clipe desligado).
+
+## Locomoção no chão e a FRENTE de novo (2026-10-02) — substitui a regra abaixo fora do combate
+
+Pedido do dono (reformulação estilo Mirror's Edge Catalyst, `docs/PARKOUR_MIRRORS_EDGE_PLANO.md`):
+
+- **A frente** segue o **movimento** correndo livre e vira para a **mira** atacando,
+  usando skill, mirando arma, voando pilotado ou com golpe contextual — e fica na mira
+  por `Player.COMBATE_SEGURA` (0,8 s) depois disso (`_atualizar_combate`). A regra de
+  27/08 abaixo continua valendo DENTRO do combate (sonda `medir_facing.gd`, 8/8).
+- **Locomoção no chão** (`src/player/locomocao_chao.gd`, recebe e devolve a velocidade):
+  arrancada com o 1º passo mais forte (17 → 8 m/s²; 95 % da corrida em 0,33 s),
+  frenagem 15 m/s² (para em 0,55 m da corrida), derrapagem acima de 5,6 m/s, giro
+  (pedir mais de 130° da velocidade acima de 2,2 m/s: freia a 28 m/s², vira em 0,14 s e
+  arranca — 0,35 s até 90 % da corrida na direção nova; o estado muda no MESMO quadro
+  do comando), curva com rumo limitado (16 → 6,5 rad/s) e inclinação tg θ = v·ω/g
+  (13,6° correndo, 17,7° no sprint), visual só (`ProceduralAnimator.loco_*`). No ar o
+  embalo se preserva (controle 9 m/s², sem frear); combate e impulso de salto longo usam
+  aceleração firme em vetor (30 m/s²), sem giro. Na água, o controle antigo.
+- Medido em `tools/dev_tests/test_locomocao_chao.gd` (15 checagens, teclas reais).
 
 ## A FRENTE do personagem segue a MIRA (2026-08-27)
 
@@ -261,7 +359,7 @@ comportamento antigo, 0 passam e 8 falham.
 
 ---
 
-## Dash: os quatro rumos e o rolamento de costas (2026-08-27)
+## Dash: os quatro rumos e o rolamento de costas (2026-08-27) — SUBSTITUÍDO pelo roll em 03/10/2026
 
 Pedido do dono: dash lateral e dash para trás, com **rolamento** no de trás.
 
@@ -317,7 +415,13 @@ sem isso uma pose agachada passaria por rolamento.
 
 ---
 
-## Andar na superfície — no lugar da escalada (2026-08-27)
+## Andar na superfície — no lugar da escalada (2026-08-27) — REMOVIDO em 03/10/2026
+
+> ⚠️ **Histórico.** O dono decidiu em 02/10/2026 remover a mecânica de vez, junto
+> com a energia de parede e a cambalhota de saída (fatia 2 de
+> [`PARKOUR_MIRRORS_EDGE_PLANO.md`](PARKOUR_MIRRORS_EDGE_PLANO.md)). O wall run novo
+> mantém a parede como parede e a gravidade normal. O texto abaixo fica pelo que
+> ensina sobre bases degeneradas e histerese.
 
 Pedido do dono, inspirado em Naruto: onde o jogador escalaria, ele passa a
 **andar** sobre o objeto, gastando energia; cancela **pulando**; e não precisa

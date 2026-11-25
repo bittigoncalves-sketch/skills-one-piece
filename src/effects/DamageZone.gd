@@ -50,8 +50,23 @@ var reservado: bool = false
 var override_kb_dir: Vector3 = Vector3.ZERO
 var _hit: Dictionary = {}
 var is_weapon_swing: bool = false
+## Hitbox de M1 (clique do mouse). O alvo recebe o atacante pela meta do
+## `CombatResolver` — é o que deixa o Boss reagir diferente ao corpo a corpo.
+var corpo_a_corpo: bool = false
+## Técnica corpo a corpo com cadência PRÓPRIA (rajada da Luta, Z segurado): fica fora da janela de 500 ms por alvo do "clique rápido",
+## que existe para o M1 e engoliria os socos seguintes da técnica (só o primeiro entraria inteiro).
+var sem_janela_de_acerto: bool = false
 var is_projectile: bool = false
 var _clashed: bool = false
+
+# Explosoes normalmente atravessavam qualquer parede porque o overlap da esfera
+# nao conhece cobertura. A opcao e desligada por padrao para nao mudar golpes
+# antigos; o Tri-Beam a liga explicitamente e fornece o ponto do impacto.
+var exige_linha_de_visao: bool = false
+var origem_linha_de_visao: Vector3 = Vector3.ZERO
+## Rocket usa feedback local replicado: não desacelerar só o relógio do host.
+## Padrão preservado para os ataques existentes.
+var feedback_global := true
 
 # Cria a colisão e a agenda de vida. Chamar logo após add_child.
 #
@@ -78,24 +93,51 @@ func setup(dmg: float, kb: float, velocity: Vector3, life: float, caster_node: N
 		col.shape = shape
 	add_child(col)
 
+	# A MESMA esfera serve de colisor e de sonda da varredura — se um dia
+	# alguém mudar o raio, os dois mudam juntos por construção. Forma
+	# customizada (a parede de tsunami da Gura é uma caixa de 200 m) devolve
+	# `null` aqui e continua na varredura por raio, exatamente como antes.
+	_forma_varredura = col.shape as SphereShape3D
+
 	# ⚠️ GRUPO "hitbox" (2026-08-22): é assim que a visão do E (`ScreenFX`) acha os
 	# ataques em voo para desenhá-los através das paredes. Sem grupo, a única
 	# alternativa seria varrer a cena inteira a cada 0,15 s.
 	add_to_group("hitbox")
 	body_entered.connect(_on_body)
 	area_entered.connect(_on_area)
-	FxUtil.autofree(self, life)
+	_vida_timer = FxUtil.autofree(self, life)
+	# PROJÉTIL PEQUENO E RÁPIDO de jogador com fruta (Hie Z, Yami Z, Mera Z…): ganha núcleo + halo + rastro da cor da fruta (15/11/2026). Medido nas capturas:
+	# a cápsula de 0,12 m dava ~1% da imagem. Filhos do próprio hitbox: somem com ele (sem vazamento).
+	if velocity.length() >= 14.0 and radius <= 1.2 and forma == null and is_instance_valid(caster_node) and caster_node.is_in_group("player"):
+		PoderDaFruta.rastro_em_voo(self, "bullet", str(caster_node.get("current_fruit_id")))
 
 # PARALISIA opcional: > 0 = o alvo congela por esse tempo em vez de ser
 # empurrado. Usado pelos raios do El Thor, que prendem em vez de arremessar.
 var paralisa: float = 0.0
 
+# TEMPO LOCAL (Modo História, vida baixa do jogador): o disparo dos OUTROS anda no tempo do mundo
+# ao redor do jogador — mais devagar —, e a vida dele estica na mesma conta, senão ele sumiria
+# antes de chegar onde chegaria. O disparo do próprio jogador segue em tempo normal.
+var _vida_timer: SceneTreeTimer = null
+
+func _fator_de_tempo() -> float:
+	if TempoLocal.jogador == null:
+		return 1.0
+	return TempoLocal.fator_de_disparo(global_position, caster)
+
 func _physics_process(delta: float) -> void:
+	var tempo := _fator_de_tempo()
+	if tempo < 1.0:
+		if _vida_timer != null and _vida_timer.time_left > 0.0:
+			_vida_timer.time_left += delta * (1.0 - tempo)
+		delta *= tempo
 	if vel == Vector3.ZERO:
 		return
 	var antes := global_position
 	global_position += vel * delta
 	_varrer_caminho(antes, global_position)
+	if _forma_varredura != null and damage > 0.0:
+		DestruicaoDeEstruturas.golpe(get_tree(), global_position, _forma_varredura.radius)      # skills quebram construções
 
 # ⚠️ PROJÉTIL RÁPIDO ATRAVESSAVA O ALVO — e ninguém sabia.
 #
@@ -111,21 +153,99 @@ func _physics_process(delta: float) -> void:
 #
 # Sub-passo de POSIÇÃO não resolve: a `Area3D` detecta uma vez por quadro de
 # física, então mover em pedaços dentro do mesmo quadro não gera detecção nova.
-# O que resolve é VARRER O CAMINHO com um raio — o que a bala passou por cima
-# conta como acerto.
+# O que resolve é VARRER O CAMINHO.
+#
+# ------------------------------- ⚠️ O RAIO RESOLVIA METADE DO PROBLEMA (2026-09-06)
+# A varredura acima era um `intersect_ray`, e RAIO NÃO TEM ESPESSURA. Ou seja:
+# entre dois quadros a hitbox de uma bala deixava de ser a esfera anunciada e
+# virava a LINHA DO CENTRO dela. Quem passasse de raspão saía ileso, e o
+# jogador não tinha como saber por quê — a bola brilhante atravessou o peito
+# do adversário e não aconteceu nada.
+#
+# Medido nesta máquina (Godot 4.6.3, alvo-cápsula de raio 0,4 deslocado 0,45 m
+# do eixo, passo de 1,30 m — que é o do Z da Pika a 78 m/s):
+#     intersect_ray ....... PASSOU DIRETO
+#     cast_motion ......... acertou na fração 0,340 do passo
+#
+# Agora a varredura é uma ESFERA VARRIDA: `cast_motion` acha o instante do
+# primeiro contato ao longo do passo e `intersect_shape` diz quem estava lá.
+# A hitbox passa a valer o raio inteiro em todo o percurso, que é o que o
+# `radius` sempre prometeu.
+#
+# CUSTO, medido no caso que domina (voando no vazio, 2.000 chamadas):
+#     intersect_ray ....... 0,105 us      cast_motion ..... 0,176 us
+# São 21 us por quadro com 120 projéteis vivos — 0,13% de um quadro de 60 Hz.
+# O número assustador de 48x que aparece numa medição ingênua é o caso de
+# ACERTO, que acontece uma vez na vida de cada projétil.
+const MAX_ALVOS_VARREDURA := 8
+var _forma_varredura: SphereShape3D = null
+
 func _varrer_caminho(de: Vector3, ate: Vector3) -> void:
 	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		return                      # só o servidor decide acerto
 	var mundo := get_world_3d()
 	if mundo == null:
 		return
-	var par := PhysicsRayQueryParameters3D.create(de, ate)
-	par.collide_with_areas = is_projectile # Projéteis varrem áreas para serem cortados
-	par.collide_with_bodies = true
-	par.collision_mask = 15
+	var espaco := mundo.direct_space_state
+	var excluir: Array[RID] = []
 	if is_instance_valid(caster) and caster is CollisionObject3D:
-		par.exclude = [(caster as CollisionObject3D).get_rid()]
-	var hit := mundo.direct_space_state.intersect_ray(par)
+		excluir.append((caster as CollisionObject3D).get_rid())
+
+	if _forma_varredura == null:
+		# Forma customizada: segue no raio de sempre. A parede de tsunami da
+		# Gura tem 12 m de profundidade justamente para não tunelar, e varrer
+		# uma caixa de 200 m custaria caro para resolver um problema que ela
+		# não tem.
+		_varrer_por_raio(espaco, de, ate, excluir, true, is_projectile)
+		return
+
+	_varrer_por_esfera(espaco, de, ate, excluir)
+	# ⚠️ `cast_motion` NÃO enxerga `Area3D` — medido, não suposto. O clash de
+	# espada e o corte de projétil dependem de encontrar áreas, então eles
+	# continuam no raio. Fica barato porque só projétil paga por isso.
+	if is_projectile:
+		_varrer_por_raio(espaco, de, ate, excluir, false, true)
+
+
+# A esfera varrida. Quem tunelava agora acerta.
+func _varrer_por_esfera(espaco: PhysicsDirectSpaceState3D, de: Vector3,
+		ate: Vector3, excluir: Array[RID]) -> void:
+	var par := PhysicsShapeQueryParameters3D.new()
+	par.shape = _forma_varredura
+	par.transform = Transform3D(Basis(), de)
+	par.motion = ate - de
+	par.collision_mask = 15
+	par.collide_with_bodies = true
+	par.collide_with_areas = false
+	par.exclude = excluir
+
+	var fracao := espaco.cast_motion(par)
+	# [1,1] significa DUAS coisas: caminho livre, ou a esfera já nasceu
+	# sobreposta a alguém (medido: o Godot devolve o passo inteiro nesse caso,
+	# não zero). Os dois saem daqui, e o segundo está coberto — a própria
+	# `Area3D` emite `body_entered` para quem já está dentro dela.
+	if fracao.size() < 2 or fracao[1] >= 1.0:
+		return
+
+	par.transform = Transform3D(Basis(), de.lerp(ate, fracao[1]))
+	par.motion = Vector3.ZERO
+	# TODOS os resultados, não o primeiro: dois corpos colados na fração do
+	# contato são dois acertos legítimos, e ficar com um só recriaria em outro
+	# lugar o mesmo buraco que esta varredura fecha.
+	for resultado in espaco.intersect_shape(par, MAX_ALVOS_VARREDURA):
+		var corpo = resultado.get("collider")
+		if corpo is Node3D and not _hit.has(corpo):
+			_on_body(corpo as Node3D)
+
+
+func _varrer_por_raio(espaco: PhysicsDirectSpaceState3D, de: Vector3,
+		ate: Vector3, excluir: Array[RID], corpos: bool, areas: bool) -> void:
+	var par := PhysicsRayQueryParameters3D.create(de, ate)
+	par.collide_with_areas = areas
+	par.collide_with_bodies = corpos
+	par.collision_mask = 15
+	par.exclude = excluir
+	var hit := espaco.intersect_ray(par)
 	if hit.is_empty():
 		return
 	var corpo = hit.get("collider")
@@ -179,6 +299,8 @@ func _on_body(body: Node3D) -> void:
 		return
 	if body == caster or _hit.has(body):
 		return
+	if exige_linha_de_visao and not _tem_linha_de_visao(body):
+		return
 		
 	collided_with_any.emit(body)
 	
@@ -224,8 +346,11 @@ func _on_body(body: Node3D) -> void:
 		# buraco do mapa — e um golpe que parasse de empurrar ao esgotar o teto
 		# perderia a sua função principal.
 		antes_do_acerto.emit(body)
+		# Autor que já saiu da árvore (inimigo da raid some ao morrer; a zona do golpe dele
+		# ainda vive): vai como null — passar o objeto liberado quebra a chamada tipada.
+		var autor: Node = caster if is_instance_valid(caster) else null
 		CombatResolver.aplicar(body, damage, cast_id, teto, global_position, kb, hitstun,
-			reserva, reservado)
+			reserva, reservado, autor if corpo_a_corpo else null, autor, not sem_janela_de_acerto)
 		hit_landed.emit(body)
 		# Crédito de kill: registra quem bateu por último em quem. Se o alvo cair
 		# do mapa nos próximos segundos, a kill é de quem empurrou.
@@ -234,9 +359,37 @@ func _on_body(body: Node3D) -> void:
 			placar.register_hit(body, caster)
 		# Camera Feel no impacto: micro-pausa + flash quente + aberração cromática.
 		var gf := get_node_or_null("/root/GameFlow")
-		if gf and gf.has_method("hit_stop"):
+		if feedback_global and gf and gf.has_method("hit_stop"):
 			gf.hit_stop()
 		var sfx := get_node_or_null("/root/ScreenFX")
-		if sfx and sfx.has_method("flash"):
+		if feedback_global and sfx and sfx.has_method("flash"):
 			sfx.flash(Color(1.0, 0.9, 0.6), 0.22)
 			sfx.chromatic_pulse(0.5)
+
+
+## Personagens nao servem de parede para uma explosao; cenario solido, sim.
+## A iteracao evita que outro combatente esconda a parede que deve bloquear o
+## alvo verdadeiro.
+func _tem_linha_de_visao(body: Node3D) -> bool:
+	var de := origem_linha_de_visao
+	var ate := body.global_position + Vector3.UP * 0.35
+	var excluidos: Array[RID] = []
+	if caster is CollisionObject3D:
+		excluidos.append((caster as CollisionObject3D).get_rid())
+	for _i in 16:
+		var par := PhysicsRayQueryParameters3D.create(de, ate)
+		par.collision_mask = 15
+		par.collide_with_areas = false
+		par.collide_with_bodies = true
+		par.exclude = excluidos
+		var hit := get_world_3d().direct_space_state.intersect_ray(par)
+		if hit.is_empty():
+			return true
+		var encontrado = hit.get("collider")
+		if encontrado == body:
+			return true
+		if encontrado is CollisionObject3D and encontrado.has_method("take_damage"):
+			excluidos.append((encontrado as CollisionObject3D).get_rid())
+			continue
+		return false
+	return true

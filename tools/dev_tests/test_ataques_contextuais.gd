@@ -1,7 +1,9 @@
 extends SceneTree
-## Regressão da Fase 1 de docs/PLANO_COMBATE_CONTEXTUAL.md.
-## Cobre resolução W/A/S/D, prioridade básica, root motion, pose, VFX, dano
-## autoritativo em singleplayer e limpeza de estado ao fim da recuperação.
+## Regressão do clique contextual (docs/PLANO_COMBATE_CONTEXTUAL.md).
+## ⚠️ 2026-09-13: as variações de movimento simples (W cotovelada, S chute
+## recuando, A/D esquiva com gancho) foram apagadas a pedido do dono. Este teste
+## passa a garantir o contrário: andar + clique no chão sai o combo M1, sem pose
+## nem VFX contextual, e ainda causa dano.
 
 var _falhas := 0
 var _teclas := {}
@@ -24,10 +26,10 @@ func _init() -> void:
 
 	print("\n===== ATAQUES CONTEXTUAIS =====")
 	_resolvedor_puro()
-	await _integracao("W", KEY_W, "context_elbow", Vector3(0, 0, -1), true)
-	await _integracao("S", KEY_S, "context_retreat_kick", Vector3(0, 0, 1), false)
-	await _integracao("A", KEY_A, "context_side_hook_l", Vector3(-1, 0, 0), false)
-	await _integracao("D", KEY_D, "context_side_hook_r", Vector3(1, 0, 0), false)
+	await _integracao("W", KEY_W, Vector3(0, 0, -2.15))
+	await _integracao("S", KEY_S, Vector3(0, 0, -2.15))
+	await _integracao("A", KEY_A, Vector3(0, 0, -2.15))
+	await _integracao("D", KEY_D, Vector3(0, 0, -2.15))
 	_aplicar([])
 	print("===== %s =====" % ("TUDO OK" if _falhas == 0 else "%d FALHA(S)" % _falhas))
 	quit(1 if _falhas > 0 else 0)
@@ -49,17 +51,14 @@ func _contexto(f: float = 0.0, r: float = 0.0, no_chao: bool = true, correndo: b
 
 func _resolvedor_puro() -> void:
 	print("\n-- resolvedor e prioridade --")
-	_ok(ContextualMelee.resolver(_contexto(1.0)) == "context_elbow", "W resolve cotovelada")
-	_ok(ContextualMelee.resolver(_contexto(-1.0)) == "context_retreat_kick", "S resolve chute recuando")
-	_ok(ContextualMelee.resolver(_contexto(0.0, -1.0)) == "context_side_hook_l", "A resolve esquiva esquerda + gancho")
-	_ok(ContextualMelee.resolver(_contexto(0.0, 1.0)) == "context_side_hook_r", "D resolve esquiva direita + gancho")
-	_ok(ContextualMelee.resolver(_contexto(1.0, -1.0)) == "context_side_hook_l", "lateral vence W/S em entrada diagonal")
+	for entrada in [[1.0, 0.0], [-1.0, 0.0], [0.0, -1.0], [0.0, 1.0], [1.0, -1.0]]:
+		_ok(ContextualMelee.resolver(_contexto(entrada[0], entrada[1])) == "",
+			"andar %s + clique no chão é combo M1" % str(entrada))
 	# ⚠️ A REGRA MUDOU EM 2026-08-31 (Fase 4 do plano): no ar agora existe UMA
 	# variação, o chute aéreo. O que esta asserção sempre quis dizer continua
 	# valendo — nenhuma das quatro de SOLO pode sair no ar —, e é isso que ela
 	# passa a verificar, em vez de exigir vazio.
-	const SO_NO_CHAO := ["context_elbow", "context_retreat_kick",
-		"context_side_hook_l", "context_side_hook_r", "context_launcher"]
+	const SO_NO_CHAO := ["context_launcher"]
 	for entrada in [[1.0, 0.0], [-1.0, 0.0], [0.0, -1.0], [0.0, 1.0]]:
 		var no_ar := ContextualMelee.resolver(_contexto(entrada[0], entrada[1], false))
 		_ok(not (no_ar in SO_NO_CHAO),
@@ -69,52 +68,40 @@ func _resolvedor_puro() -> void:
 	_ok(ContextualMelee.resolver(_contexto(1.0, 0.0, true, true)) == "", "sprint preserva rota Mink/futura")
 	_ok(ContextualMelee.resolver(_contexto(1.0, 0.0, true, false, "sword")) == "", "arma preserva combo próprio")
 
-func _integracao(nome: String, tecla: Key, id: String, rumo: Vector3, deve_danificar: bool) -> void:
+func _integracao(nome: String, tecla: Key, alvo_em: Vector3) -> void:
 	print("\n-- %s + M1 --" % nome)
 	await _preparar()
-	# O alvo fica no alcance do W. Nas demais entradas ele só garante que a
-	# presença de outro corpo não impede a leitura da direção nem da pose.
-	_alvo.global_position = Vector3(0, _altura_base, -2.15)
+	# O acerto do caso anterior deixa o boneco deslizando: sem zerar a velocidade,
+	# ele sai do alcance e o caso seguinte erra por herança, não pelo golpe.
+	_alvo.global_position = Vector3(0, _altura_base, 0) + alvo_em
+	if "velocity" in _alvo:
+		_alvo.velocity = Vector3.ZERO
+	await _esperar(0.9)
+	_alvo.global_position = Vector3(0, _altura_base, 0) + alvo_em
 	var vida_antes := float(_alvo.get("health"))
-	var pos_antes := _player.global_position
 	_aplicar([tecla])
 	_player._request_melee()
-	await _esperar_inicio_contextual(id)
-	var id_aceito := String(_player._melee.contextual_id())
-	var ficha := ContextualMelee.especificacao(id)
-	var pose_esperada := str(ficha.get("pose", ""))
-	var pose_correta := String(_player.get_meta("custom_pose", "")) == pose_esperada
-	var vfx := _player.get_node_or_null("ContextualMeleeFX_" + id)
-	_ok(id_aceito == id, "%s escolhe o ID esperado" % nome)
-	_ok(_player._melee.fase() == "startup" or _player._melee.fase() == "ativo", "%s entra no frame data contextual" % nome)
-	_ok(pose_correta and vfx != null, "%s cria pose e VFX presos ao jogador" % nome)
-	if nome == "W":
-		# A visão pode mudar já no startup; a ação precisa manter a base aceita,
-		# não perseguir a mira como se fosse um projétil guiado.
-		_player._yaw = PI * 0.5
-	# A raiz física percorre o rumo declarado, não a mira que possa mudar depois.
-	await _esperar(0.13)
-	var deslocamento := _player.global_position - pos_antes
-	var moveu_no_rumo := Vector2(deslocamento.x, deslocamento.z).dot(Vector2(rumo.x, rumo.z)) > 0.10
-	_ok(moveu_no_rumo, "%s aplica root motion no rumo contextual" % nome)
-	if nome == "W":
-		var modelo: Node3D = _player.get("_char_model")
-		var fixou_base := absf(float(_player.get("_contextual_attack_yaw"))) < 0.01 \
-			and modelo != null and absf(wrapf(modelo.rotation.y, -PI, PI)) < 0.18
-		_ok(fixou_base, "W mantém direção e corpo congelados apesar da mira mudar")
-	if deve_danificar:
-		await _esperar(0.20)
-		_ok(float(_alvo.get("health")) < vida_antes, "W cria hitbox autoritativa e causa dano")
-	else:
-		await _esperar(0.20)
+	for _i in 12:
+		if _player._melee.passo_em_curso() >= 0 or not String(_player._melee.contextual_id()).is_empty():
+			break
+		await _quadros(1)
+	# Solta a tecla assim que o golpe sai: o que se mede é QUAL golpe saiu, não a
+	# caminhada levando o jogador para fora do alcance durante o startup.
 	_aplicar([])
-	await _esperar(0.42)
-	_ok(not _player._melee.contextual_ativo() and String(_player.get_meta("custom_pose", "")).begins_with("context_") == false,
-		"%s limpa relógio e pose ao terminar" % nome)
+	_ok(String(_player._melee.contextual_id()).is_empty(), "%s + clique não escolhe variação contextual" % nome)
+	_ok(_player._melee.passo_em_curso() == 0, "%s + clique sai o 1º golpe do combo M1" % nome)
+	_ok(not String(_player.get_meta("custom_pose", "")).begins_with("context_"), "%s + clique sem pose contextual" % nome)
+	await _esperar(0.45)
+	_ok(float(_alvo.get("health")) < vida_antes, "%s + clique acerta o alvo à frente com o M1" % nome)
 
 func _preparar() -> void:
 	_aplicar([])
 	_player._melee.cancelar_golpe()
+	# ⚠️ ZERAR A SEQUÊNCIA DO COMBO, e não só o golpe em voo: `cancelar_golpe`
+	# preserva a sequência de propósito (dash-cancel), e cada caso deste teste
+	# precisa começar do primeiro golpe.
+	_player._melee._passo = 0
+	_player._melee._janela = 0.0
 	_player._server_contextual_next_ms = 0
 	_player._input_buffer.clear()
 	_player._yaw = 0.0
@@ -127,15 +114,6 @@ func _preparar() -> void:
 		await _quadros(1)
 		espera += 1
 	await _quadros(3)
-
-func _esperar_inicio_contextual(id: String) -> void:
-	# A FSM consome o buffer no próximo tick físico. Quando um impacto anterior
-	# aplicou hit-stop visual, dois `process_frame` não representam uma janela
-	# estável; esperar pelo estado evita um falso negativo temporal do teste.
-	for _i in 12:
-		if String(_player._melee.contextual_id()) == id:
-			return
-		await _quadros(1)
 
 func _aplicar(teclas: Array) -> void:
 	for k in _teclas.keys():

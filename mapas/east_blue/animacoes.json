@@ -1,0 +1,154 @@
+{
+	"formato": "skills-one-piece/east-blue-animacoes",
+	"skills": {
+		"mpeb_ashura": {
+			"espada": "sword_rotate",
+			"punho": "sword_rotate"
+		},
+		"mpeb_ataque_investida": {
+			"espada": "sprint",
+			"punho": "sprint"
+		},
+		"mpeb_ataque_por_cima": {
+			"espada": "sword_overhead",
+			"punho": "punch_overhead"
+		},
+		"mpeb_ataque_salto": {
+			"espada": "sword_overhead",
+			"punho": "head_overhead"
+		},
+		"mpeb_ataque_veloz": {
+			"espada": "speed_attack_sword",
+			"punho": "speed_attack_punch"
+		},
+		"mpeb_cat_the_funjatta": {
+			"espada": "both_arm_up",
+			"punho": "both_arm_up"
+		},
+		"mpeb_chute_giratorio": {
+			"espada": "kick_rotate2",
+			"punho": "kick_rotate2"
+		},
+		"mpeb_chute_sete_mil_tijolos": {
+			"espada": "kick_rotate1",
+			"punho": "kick_rotate1"
+		},
+		"mpeb_comum_corte": {
+			"espada": "sword_to_right",
+			"punho": "sword_to_right"
+		},
+		"mpeb_comum_forte": {
+			"espada": "sword_overhead",
+			"punho": "punch_overhead"
+		},
+		"mpeb_comum_soco": {
+			"espada": "punch_right",
+			"punho": "punch_right"
+		},
+		"mpeb_comum_tiro": {
+			"espada": "right_arm_front",
+			"punho": "right_arm_front"
+		},
+		"mpeb_concasse": {
+			"espada": "kick_flying",
+			"punho": "kick_flying"
+		},
+		"mpeb_corte_projetado": {
+			"espada": "sword_to_left",
+			"punho": "sword_to_left"
+		},
+		"mpeb_fresh_fire": {
+			"espada": "right_arm_front",
+			"punho": "right_arm_front"
+		},
+		"mpeb_galaxy_divide": {
+			"espada": "punch_right",
+			"punho": "punch_right"
+		},
+		"mpeb_gomu_rocket": {
+			"espada": "punch_gomu_pistol1",
+			"punho": "punch_gomu_pistol1"
+		},
+		"mpeb_griffon_estocada": {
+			"espada": "right_arm_front",
+			"punho": "right_arm_front"
+		},
+		"mpeb_haki_do_rei": {
+			"espada": "energy_charge",
+			"punho": "energy_charge"
+		},
+		"mpeb_iai": {
+			"espada": "speed_attack_sword",
+			"punho": "speed_attack_sword"
+		},
+		"mpeb_investida_de_espada": {
+			"espada": "speed_attack_sword",
+			"punho": "speed_attack_sword"
+		},
+		"mpeb_kamusari": {
+			"espada": "sword_overhead",
+			"punho": "sword_overhead"
+		},
+		"mpeb_krieg_balas": {
+			"espada": "both_arm_front",
+			"punho": "both_arm_front"
+		},
+		"mpeb_lucky_roux_investida": {
+			"espada": "sprint",
+			"punho": "sprint"
+		},
+		"mpeb_lucky_roux_meteoro": {
+			"espada": "both_arm_up",
+			"punho": "both_arm_up"
+		},
+		"mpeb_moku_white_blow": {
+			"espada": "punch_right",
+			"punho": "punch_right"
+		},
+		"mpeb_moku_white_launcher": {
+			"espada": "speed_attack_sword",
+			"punho": "speed_attack_punch"
+		},
+		"mpeb_moku_white_out": {
+			"espada": "both_arm_up",
+			"punho": "both_arm_up"
+		},
+		"mpeb_moku_white_vine": {
+			"espada": "sword_to_right",
+			"punho": "sword_to_right"
+		},
+		"mpeb_mouton_shoot": {
+			"espada": "kick_flying",
+			"punho": "kick_flying"
+		},
+		"mpeb_narikabura": {
+			"espada": "punch_right",
+			"punho": "punch_right"
+		},
+		"mpeb_rankyaku": {
+			"espada": "kick_right",
+			"punho": "kick_right"
+		},
+		"mpeb_sanzen_sekai": {
+			"espada": "sword_rotate",
+			"punho": "sword_rotate"
+		},
+		"mpeb_shakushi": {
+			"espada": "speed_attack_sword",
+			"punho": "speed_attack_sword"
+		},
+		"mpeb_tatsumaki": {
+			"espada": "sword_rotate",
+			"punho": "sword_rotate"
+		},
+		"mpeb_tiro_forte": {
+			"espada": "right_arm_front",
+			"punho": "right_arm_front"
+		},
+		"mpeb_uchimizu": {
+			"espada": "right_arm_front",
+			"punho": "right_arm_front"
+		}
+	},
+	"versao": 1
+}

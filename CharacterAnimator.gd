@@ -82,6 +82,15 @@ func trigger_death() -> void:
 	is_locked = true
 	_play_state(AnimState.DEATH, "death")
 
+## De volta ao repouso depois de uma reanimação (o estado DEATH não sai sozinho).
+func trigger_idle_after_revive() -> void:
+	current_state = AnimState.IDLE
+	is_locked = false
+	if animation_player and animation_player.has_animation("idle"):
+		_restore_rest_pose()
+		animation_player.play("idle")
+
+
 func _play_state(new_state: AnimState, anim_name: String) -> void:
 	if current_state == new_state and animation_player and animation_player.is_playing():
 		return

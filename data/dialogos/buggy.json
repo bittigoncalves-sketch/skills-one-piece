@@ -1,0 +1,32 @@
+{
+  "id": "buggy",
+  "estados": {
+    "chegada": [
+      {"falante": "Buggy", "texto": "Atenção, vila! O grande Capitão Buggy chegou!"}
+    ],
+    "desafio": [
+      {"falante": "Buggy", "texto": "Você aí! Quer enfrentar o magnífico desafio dos três copos?"},
+      {"falante": "Buggy", "texto": "Acerte e mostre a todos que consegue me acompanhar!"}
+    ],
+    "regras": [
+      {"falante": "Buggy", "texto": "Vou esconder uma pedra sob um dos três copos e embaralhá-los."},
+      {"falante": "Buggy", "texto": "Observe bem: você tem uma única tentativa para escolher o copo certo."},
+      {"falante": "Buggy", "texto": "Se acertar, ganha 4000 XP!"}
+    ],
+    "acerto": [
+      {"falante": "Buggy", "texto": "O quê?! Você encontrou a pedra? Isso não estava no roteiro!"},
+      {"falante": "Buggy", "texto": "Pode ficar com seus 4000 XP... por enquanto!"}
+    ],
+    "erro_n7": [
+      {"falante": "Buggy", "texto": "Errou! Sua única chance nos copos acabou!"},
+      {"falante": "Buggy", "texto": "Vá treinar com o instrutor até o nível 3 e volte para lutar comigo no ringue!"},
+      {"falante": "Buggy", "texto": "Se me vencer, pouparei a vila. Gyahaha!"}
+    ],
+    "aceitou": [
+      {"falante": "Buggy", "texto": "Então está combinado! Treine até o nível 3 e volte para me enfrentar."}
+    ],
+    "recusou": [
+      {"falante": "Buggy", "texto": "Hahaha! Então não haverá desafio pela vila por enquanto."}
+    ]
+  }
+}

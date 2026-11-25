@@ -1,0 +1,115 @@
+{
+  "ilhas": 121,
+  "ilhas_volume_negativo": 0,
+  "arestas_abertas_ou_nao_manifold": 0,
+  "triangulos_malha": 4972,
+  "menor_y_vertice": -3.2,
+  "maior_y_vertice": 3.5,
+  "deck_y_ponta_menos_z": 0.0,
+  "deck_y_ponta_mais_z": 0.0,
+  "deck_y_meio": 2.4,
+  "deck_amostras": 146200,
+  "deck_frestas": 0,
+  "deck_maior_degrau_m": 3.8e-06,
+  "deck_maior_degrau_em_xz": [
+    -1.9,
+    -10.825
+  ],
+  "deck_maior_desvio_do_arco_m": 2.4e-06,
+  "deck_maior_diferenca_bruta_vizinhos_1cm_m": 0.00216,
+  "deck_maior_diferenca_bruta_vizinhos_1mm_m": 0.000219,
+  "deck_menor_normal_y_nos_raios": 0.9774,
+  "deck_faces_topo": 127,
+  "deck_faces_topo_normal_y_min": 0.9774,
+  "deck_faces_topo_normal_y_abaixo_0_9": 0,
+  "deck_faces_verticais_nas_pontas_z17": 2,
+  "deck_inclinacao_max_faces_graus": 12.19,
+  "arco_inclinacao_max_trechos_graus": 12.19,
+  "vao_util_entre_postes_m": 4.36,
+  "corrimao_acima_do_deck_m": 1.1,
+  "colisao": {
+    "triangulos": 396,
+    "ilhas": 3,
+    "ilhas_volume_negativo": 0,
+    "arestas_abertas_ou_nao_manifold": 0,
+    "vertices_no_interior_do_topo": 0,
+    "topo_diferenca_max_para_deck_visual_m": 3.8e-06,
+    "topo_amostras": 146200,
+    "topo_raios_sem_acerto": 0,
+    "topo_menor_normal_y": 0.9774,
+    "piso_x": [
+      -2.2,
+      2.2
+    ],
+    "piso_espessura_m": 0.3,
+    "paredes_x_abs": [
+      2.2,
+      2.35
+    ],
+    "paredes_z": [
+      -16.29,
+      16.29
+    ],
+    "paredes_altura_acima_do_deck_m": [
+      1.1,
+      1.1
+    ]
+  },
+  "glb": {
+    "malhas": {
+      "Colisao": {
+        "triangulos": 396,
+        "min": [
+          -2.3499999046325684,
+          -0.30000001192092896,
+          -17
+        ],
+        "max": [
+          2.3499999046325684,
+          3.5,
+          17
+        ],
+        "superficies": 1
+      },
+      "Ponte_rio": {
+        "triangulos": 4972,
+        "min": [
+          -3,
+          -3.200000047683716,
+          -17
+        ],
+        "max": [
+          3,
+          3.5,
+          17
+        ],
+        "superficies": 6
+      }
+    },
+    "materiais": [
+      "Colisao",
+      "Madeira_Escura",
+      "Madeira_Clara",
+      "Madeira_Media",
+      "Pedra",
+      "Pedra_Clara",
+      "Corda"
+    ],
+    "nos": [
+      {
+        "name": "Colisao",
+        "mesh": 0
+      },
+      {
+        "name": "Ponte_rio_low_poly",
+        "mesh": 1
+      }
+    ]
+  },
+  "caixa_tamanho": [
+    6,
+    6.7,
+    34
+  ],
+  "altura_pontas_deck_desde_fundo_caixa": 3.2
+}

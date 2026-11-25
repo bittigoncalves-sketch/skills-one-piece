@@ -58,7 +58,9 @@ var _pistol_holster: Node3D = null          # suporte temporário na cintura (sa
 var _pistols_in_draw: bool = false          # impede o Player de esconder a arma entre carga e disparo
 var _buki_armas: Dictionary = {}            # slot -> Node3D pré-construído (oculto)
 var _buki_pivot: Node3D = null              # pivô do canhão-corpo (X)
+var visual_definition: CharacterVisualDefinition = null
 var item_handle: Node3D = null              # ponto de ancoragem para itens segurados na mão direita
+var item_handle_l: Node3D = null            # idem na mão ESQUERDA (12/11/2026: segunda arma do Epic Fight — adaga dual)
 
 func montar_em(dono: Node3D) -> void:
 	_dono = dono
@@ -86,6 +88,15 @@ func montar(cid: String) -> void:
 		push_error("[PlayerRig] montar() sem dono — chame montar_em(player) antes")
 		return
 
+	# Valida a opção inteira antes de liberar o visual anterior.
+	var option := CharacterVisualDefinition.test_option(_dono)
+	var char_data: Dictionary = option.instantiate_visual() if option else {}
+	visual_definition = option if not char_data.is_empty() else null
+	if char_data.is_empty() and _dono.has_meta("corpo_historia"):
+		char_data = preload("res://src/player/corpo_historia.gd").construir(str(_dono.get_meta("corpo_historia")), str(_dono.get_meta("tom_de_pele", "medio")), _dono.get_meta("aparencia_historia", {}))
+	if char_data.is_empty():
+		char_data = CharacterBuilder.build_character(cid)
+
 	if _char_model:
 		_char_model.queue_free()
 	if _animator:
@@ -105,7 +116,6 @@ func montar(cid: String) -> void:
 	_buki_armas = {}          # morrem junto com o _char_model; o pivô do X é solto abaixo
 	_is_skinned = false
 
-	var char_data := CharacterBuilder.build_character(cid)
 	_char_model = char_data["node"]
 	_is_skinned = char_data.get("skinned", false)   # antes do fit (afeta a escala)
 	_dono.add_child(_char_model)
@@ -121,13 +131,15 @@ func montar(cid: String) -> void:
 		# DIREÇÃO: modelos Meshy nascem olhando +Z (pra câmera); a convenção do jogo é
 		# FRENTE = -Z. Giro a Armature 180° pra alinhar (o facing gira o _char_model).
 		var arm := _char_model.find_child("Armature", true, false)
-		if arm is Node3D:
+		if arm is Node3D and visual_definition == null:
 			(arm as Node3D).rotation.y += PI
 		# O AnimationPlayer do próprio modelo brigaria com o driver pelos ossos.
 		var model_ap: AnimationPlayer = char_data.get("anim_player")
 		if model_ap:
 			model_ap.active = false
 		_setup_procedural_anim(cid)
+		if visual_definition:
+			_attach_test_hand_sockets()
 		_head_node = _char_model.find_child("Head", true, false) as Node3D
 		# A pistola TAMBÉM vale no skinnado. Ela ficava de fora por acidente: o
 		# `return` logo abaixo pulava a chamada que está depois deste bloco, então
@@ -144,41 +156,44 @@ func montar(cid: String) -> void:
 		_attach_pistol(_char_model)
 		_attach_buki_arsenal(_char_model)   # arsenal da Buki (oculto até empunhar)
 		_attach_item_handle(_char_model)
+		_attach_item_handle_l(_char_model)
 		return
 
 	_attach_pistol(_char_model)   # pistola na mão direita (oculta até a rajada Z)
 	_attach_item_handle(_char_model)
+	_attach_item_handle_l(_char_model)
 	_attach_buki_arsenal(_char_model)   # arsenal da Buki (oculto até empunhar)
 
-	# Marcador Visual de COSTAS: Mochila Dourada Emissiva em z = -0.35
-	var back_marker := MeshInstance3D.new()
-	back_marker.name = "BackMarkerVisual"
-	var marker_mesh := BoxMesh.new()
-	marker_mesh.size = Vector3(0.42, 0.52, 0.18)
-	back_marker.mesh = marker_mesh
-	var marker_mat := StandardMaterial3D.new()
-	marker_mat.albedo_color = Color(1.0, 0.8, 0.1)
-	marker_mat.emission_enabled = true
-	marker_mat.emission = Color(1.0, 0.75, 0.1)
-	marker_mat.emission_energy_multiplier = 2.5
-	back_marker.material_override = marker_mat
-	back_marker.position = Vector3(0, 0.1, 0.35)
-	_char_model.add_child(back_marker)
+	if not _char_model.get_meta("reference_proportions", false):
+		# Marcador Visual de COSTAS: Mochila Dourada Emissiva em z = -0.35
+		var back_marker := MeshInstance3D.new()
+		back_marker.name = "BackMarkerVisual"
+		var marker_mesh := BoxMesh.new()
+		marker_mesh.size = Vector3(0.42, 0.52, 0.18)
+		back_marker.mesh = marker_mesh
+		var marker_mat := StandardMaterial3D.new()
+		marker_mat.albedo_color = Color(1.0, 0.8, 0.1)
+		marker_mat.emission_enabled = true
+		marker_mat.emission = Color(1.0, 0.75, 0.1)
+		marker_mat.emission_energy_multiplier = 2.5
+		back_marker.material_override = marker_mat
+		back_marker.position = Vector3(0, 0.1, 0.35)
+		_char_model.add_child(back_marker)
 
-	# Marcador Visual de FRENTE (PEITO): Insígnia Vermelha no Peito em z = -0.35
-	var chest_marker := MeshInstance3D.new()
-	chest_marker.name = "ChestMarkerFront"
-	var chest_mesh := BoxMesh.new()
-	chest_mesh.size = Vector3(0.35, 0.35, 0.15)
-	chest_marker.mesh = chest_mesh
-	var chest_mat := StandardMaterial3D.new()
-	chest_mat.albedo_color = Color(1.0, 0.15, 0.15)
-	chest_mat.emission_enabled = true
-	chest_mat.emission = Color(1.0, 0.2, 0.1)
-	chest_mat.emission_energy_multiplier = 3.0
-	chest_marker.material_override = chest_mat
-	chest_marker.position = Vector3(0, 0.15, -0.35)
-	_char_model.add_child(chest_marker)
+		# Marcador Visual de FRENTE (PEITO): Insígnia Vermelha no Peito em z = -0.35
+		var chest_marker := MeshInstance3D.new()
+		chest_marker.name = "ChestMarkerFront"
+		var chest_mesh := BoxMesh.new()
+		chest_mesh.size = Vector3(0.35, 0.35, 0.15)
+		chest_marker.mesh = chest_mesh
+		var chest_mat := StandardMaterial3D.new()
+		chest_mat.albedo_color = Color(1.0, 0.15, 0.15)
+		chest_mat.emission_enabled = true
+		chest_mat.emission = Color(1.0, 0.2, 0.1)
+		chest_mat.emission_energy_multiplier = 3.0
+		chest_marker.material_override = chest_mat
+		chest_marker.position = Vector3(0, 0.15, -0.35)
+		_char_model.add_child(chest_marker)
 
 	_animator = CharacterAnimator.new()
 	_animator.character_id = cid
@@ -222,10 +237,10 @@ func _setup_procedural_anim(cid: String) -> void:
 func _fit_model_to_body() -> void:
 	if _char_model == null:
 		return
-	var ab := PlayerModelKit.skeleton_aabb(_char_model) if _is_skinned else PlayerModelKit.model_aabb(_char_model)
+	var ab := PlayerModelKit.skeleton_aabb(_char_model) if _is_skinned and visual_definition == null else PlayerModelKit.model_aabb(_char_model)
 	# Altura-alvo: skinnado (Meshy) é mais encorpado -> um pouco menor p/ casar com o mundo.
-	var target_h := SKINNED_TARGET_H if _is_skinned else MODEL_TARGET_H
-	if character_id == "blackbeard":
+	var target_h := visual_definition.target_height if visual_definition else (SKINNED_TARGET_H if _is_skinned else MODEL_TARGET_H)
+	if visual_definition == null and character_id == "blackbeard":
 		target_h *= 1.5   # Barba Negra tem 1.5 de tamanho em comparação aos demais
 	var ky := 1.0
 	if ab.size.y > 0.01:
@@ -233,7 +248,7 @@ func _fit_model_to_body() -> void:
 	# Voxel: engrossa o eixo Z (1.85x). SKINNADO (Skeleton3D): escala UNIFORME —
 	# escala não-uniforme num skeleton corrompe o skinning (transform NaN -> tela cinza).
 	_char_model.scale = Vector3(ky, ky, ky)
-	if not _is_skinned:
+	if not _is_skinned and not _char_model.get_meta("reference_proportions", false):
 		PlayerModelKit.bake_depth(_char_model, 1.85)
 		
 	# pés (base da AABB) no fundo da colisão
@@ -254,9 +269,12 @@ func _attach_pistol(model: Node3D) -> void:
 		var arm := model.find_child(side, true, false)
 		if not (arm is Node3D):
 			continue
+		var grip := model.find_child("Grip_" + side.right(1), true, false) as Node3D
+		if grip:
+			arm = grip
 		var gun := PlayerModelKit.build_mera_pistol()
 		gun.name = "MeraPistol_" + side
-		gun.position = Vector3(0, -0.36, 0.02)   # ponta do antebraço (mão)
+		gun.position = Vector3.ZERO if grip else Vector3(0, -0.36, 0.02)
 		gun.visible = false
 		(arm as Node3D).add_child(gun)
 		_pistols.append(gun)
@@ -293,9 +311,12 @@ func empunhar_pistolas_mera() -> void:
 		var arm := _char_model.find_child(side_name, true, false) as Node3D
 		if arm == null:
 			continue
+		var grip := _char_model.find_child("Grip_" + side_name.right(1), true, false) as Node3D
+		if grip:
+			arm = grip
 		if gun.get_parent() != arm:
 			gun.reparent(arm, false)
-		gun.position = Vector3(0, -0.36, 0.02)
+		gun.position = Vector3.ZERO if grip else Vector3(0, -0.36, 0.02)
 		gun.rotation = Vector3.ZERO
 		gun.visible = true
 
@@ -307,8 +328,31 @@ func esconder_pistolas_mera() -> void:
 
 # Ponto de ancoragem para itens (como a espada). No voxel vai no braço,
 # no esqueleto usamos BoneAttachment3D para herdar posição E rotação.
+#
+# ⚠️ ESTE NÓ É A MÃO, E AGORA TEM NOME (2026-09-06). Pedido do dono: "nomeie o
+# cabo como handle e a mão do jogador também, depois os ligue — assim será
+# possível ter uma referência de onde será segurada".
+#
+# O rig do projeto tem 13 papéis e NENHUM deles é mão: a cadeia do braço termina
+# em `ForeArm`. Este nó sempre foi a mão de fato — é onde a arma encosta — só
+# que nascia anônimo (`@Node3D@N`) e vivia guardado numa variável. Nomeá-lo
+# `Hand_R` faz três coisas: aparece na árvore da cena com nome legível, dá para
+# achá-lo por `find_child` de qualquer lugar, e transforma "onde a espada é
+# segurada" numa relação entre dois nós nomeados (`handle` sobre `Hand_R`) em
+# vez de um offset escondido.
+#
+# `item_handle` continua apontando para ele: nada do que já usava a variável
+# precisa mudar.
+const NOME_DA_MAO := "Hand_R"
+
 func _attach_item_handle(model: Node3D) -> void:
 	if model == null:
+		return
+	var authored_socket := model.find_child("Weapon_R", true, false) as Node3D
+	if authored_socket:
+		# The new rig has a real hand and an authored grip inside the palm.
+		item_handle = authored_socket
+		item_handle.rotation = Vector3(PI, 0, 0)
 		return
 	if _is_skinned:
 		var skel := BodyScanner._find_skeleton(model)
@@ -317,14 +361,65 @@ func _attach_item_handle(model: Node3D) -> void:
 			ba.bone_name = "ForeArm_R"
 			skel.add_child(ba)
 			item_handle = Node3D.new()
+			item_handle.name = NOME_DA_MAO
 			item_handle.position = Vector3(0, 0.36, 0.0) # Ponta do osso
 			ba.add_child(item_handle)
 	else:
 		var arm := model.find_child("ForeArm_R", true, false)
 		if arm is Node3D:
 			item_handle = Node3D.new()
+			item_handle.name = NOME_DA_MAO
 			item_handle.position = Vector3(0, -0.36, 0.02)
+			# ⚠️ 180°, E É O CONSERTO DA ESPADA APONTANDO PARA TRÁS (2026-09-06).
+			#
+			# Repare no `y = -0.36` da linha acima e no `y = +0.36` do ramo
+			# skinnado: nos dois casos a mão está na PONTA do antebraço, mas para
+			# lados opostos do eixo Y local do osso. Ou seja, "para fora da mão"
+			# é +Y no esqueleto e **-Y** no voxel.
+			#
+			# Tudo que é segurado cresce no próprio +Y (a Yoru, e antes dela o
+			# `SwordPickup`, cuja lâmina também subia em +Y a partir da mão).
+			# Sem esta rotação, no personagem voxel — que é o padrão do jogo — a
+			# arma crescia de volta PELO BRAÇO.
+			#
+			# Medido no personagem real antes do conserto: a ponta da Yoru ficava
+			# 1,15 m ATRÁS do jogador e 0,55 m para o lado errado.
+			#
+			# O conserto mora aqui, e não na espada, porque a diferença é do RIG:
+			# é o antebraço que tem eixos opostos entre os dois tipos de
+			# personagem. Resolvendo na mão, qualquer item futuro nasce certo sem
+			# saber que os dois rigs existem.
+			item_handle.rotation = Vector3(PI, 0.0, 0.0)
 			arm.add_child(item_handle)
+
+## A âncora da MÃO ESQUERDA, espelho da direita (mesmos eixos do antebraço em cada tipo de rig; ver os comentários de `_attach_item_handle`).
+func _attach_item_handle_l(model: Node3D) -> void:
+	if model == null:
+		return
+	var authored := model.find_child("Weapon_L", true, false) as Node3D
+	if authored:
+		item_handle_l = authored
+		item_handle_l.rotation = Vector3(PI, 0, 0)
+		return
+	if _is_skinned:
+		var skel := BodyScanner._find_skeleton(model)
+		if skel:
+			var ba := BoneAttachment3D.new()
+			ba.bone_name = "ForeArm_L"
+			skel.add_child(ba)
+			item_handle_l = Node3D.new()
+			item_handle_l.name = "Hand_L"
+			item_handle_l.position = Vector3(0, 0.36, 0.0)
+			ba.add_child(item_handle_l)
+	else:
+		var arm := model.find_child("ForeArm_L", true, false)
+		if arm is Node3D:
+			item_handle_l = Node3D.new()
+			item_handle_l.name = "Hand_L"
+			item_handle_l.position = Vector3(0, -0.36, 0.02)
+			item_handle_l.rotation = Vector3(PI, 0.0, 0.0)
+			arm.add_child(item_handle_l)
+
 
 # ---------------------------------------------------------------- BUKI BUKI ---
 # Constrói as QUATRO armas da fruta UMA VEZ, ocultas, junto com o personagem —
@@ -369,3 +464,22 @@ func _attach_buki_arsenal(model: Node3D) -> void:
 		arma.visible = false
 		pai.add_child(arma)
 		_buki_armas[slot] = arma
+
+# Sockets seguem a pose final dos ossos, inclusive a posição da mão.
+func _attach_test_hand_sockets() -> void:
+	var skeleton := BodyScanner._find_skeleton(_char_model)
+	for side in ["L", "R"]:
+		var bone_name := str(visual_definition.hand_bones.get(side, ""))
+		if skeleton.find_bone(bone_name) < 0:
+			continue
+		var attachment := BoneAttachment3D.new()
+		attachment.name = "TestHandBone_" + side
+		attachment.bone_name = bone_name
+		skeleton.add_child(attachment)
+		var grip := Node3D.new()
+		grip.name = "Grip_" + side
+		attachment.add_child(grip)
+		if side == "R":
+			var weapon := Node3D.new()
+			weapon.name = "Weapon_R"
+			grip.add_child(weapon)

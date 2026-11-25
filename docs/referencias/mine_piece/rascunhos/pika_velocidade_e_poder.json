@@ -1,0 +1,281 @@
+{
+	"animacao": {
+		"clipe": "Ataque",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.0
+	},
+	"ativacao": {
+		"andar_segurando": false,
+		"carga": 0.0,
+		"empurrao_carga_max": 1.5,
+		"modo": "Pressionar",
+		"paralisar_segurando": false,
+		"ponto_segurar": 0.0,
+		"repetir": false,
+		"segurar_max": 4.0,
+		"tecla": "C"
+	},
+	"audio": {
+		"som": "Impacto",
+		"tom": 1.0,
+		"volume": -12.0
+	},
+	"camera": {
+		"tremor": 0.2,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 6.0,
+		"exige_alvo": false,
+		"exige_chao": false,
+		"nivel_minimo": 1,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 6.0,
+		"custo": 4.0,
+		"custo_por_segundo": 0.0,
+		"duracao": 1.5,
+		"fim_sobre_alvo": 0.0,
+		"flutuar": false,
+		"inicio_do_fim": -1.0,
+		"intervalo_depois": 0.5,
+		"mirar_no_alvo": false,
+		"parar_no_vazio": false,
+		"recarga": 9.0
+	},
+	"dano": {
+		"atordoamento": 0.15,
+		"critico": 0.0,
+		"duracao_efeito": 1.0,
+		"empurrao": 1.5,
+		"lentidao": 0.0,
+		"multiplicador": 2.0,
+		"tipo": "Físico",
+		"valor": 118.0
+	},
+	"eventos": [
+		{
+			"duracao": 1.0,
+			"habilitado": true,
+			"id": "pose",
+			"inicio": 0.0,
+			"parametros": {
+				"pose": "pose_1",
+				"transicao": 0.08
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 1.0,
+			"habilitado": true,
+			"id": "viagem",
+			"inicio": 0.0,
+			"parametros": {
+				"escala": 1.0,
+				"estilo": "Cometa",
+				"na_mao": false
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.1,
+			"habilitado": true,
+			"id": "soco1",
+			"inicio": 1.0,
+			"parametros": {
+				"altura": 2.0,
+				"forma": "Esfera",
+				"largura": 3.0,
+				"mirar": true,
+				"na_mao": false,
+				"profundidade": 3.0,
+				"unicos": true,
+				"x": 0.0,
+				"y": 1.0,
+				"z": -1.5
+			},
+			"tipo": "hitbox"
+		},
+		{
+			"duracao": 0.1,
+			"habilitado": true,
+			"id": "soco2",
+			"inicio": 1.15,
+			"parametros": {
+				"altura": 4.0,
+				"forma": "Esfera",
+				"largura": 6.0,
+				"mirar": true,
+				"na_mao": false,
+				"profundidade": 6.0,
+				"unicos": true,
+				"x": 0.0,
+				"y": 1.0,
+				"z": -2.0
+			},
+			"tipo": "hitbox"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "impacto",
+			"inicio": 1.15,
+			"parametros": {
+				"escala": 1.8,
+				"estilo": "Anel",
+				"na_mao": false
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som",
+			"inicio": 1.0,
+			"parametros": {
+				"som": "Luz: teleporte",
+				"tom": 1.0,
+				"volume": -6.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.2,
+			"habilitado": true,
+			"id": "tremor",
+			"inicio": 1.15,
+			"parametros": {
+				"tremor": 0.15
+			},
+			"tipo": "camera"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 3.0,
+		"forma": "Esfera",
+		"largura": 3.0,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 1.5,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": -2.0
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "[RASCUNHO Mine Piece, a revisar] Some por ~1 s e reaparece junto ao alvo (até 6 m) dando dois socos: o primeiro seco, o segundo maior, com marcas de impacto.",
+		"dono": "Jogador",
+		"fruta": "pika_pika",
+		"id": "pika_velocidade_e_poder",
+		"modelo": "Base",
+		"nome": "Velocidade é Poder"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 2.0,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 6.0
+	},
+	"poses": [
+		{
+			"id": "pose_1",
+			"nome": "Apontar",
+			"ossos": {
+				"ForeArm_L": [
+					38.0,
+					0.0,
+					0.0
+				],
+				"ForeArm_R": [
+					4.0,
+					0.0,
+					0.0
+				],
+				"Head": [
+					-4.0,
+					12.0,
+					0.0
+				],
+				"Shin_L": [
+					-22.0,
+					0.0,
+					0.0
+				],
+				"Shin_R": [
+					-12.0,
+					0.0,
+					0.0
+				],
+				"Thigh_L": [
+					22.0,
+					0.0,
+					0.0
+				],
+				"Thigh_R": [
+					-10.0,
+					0.0,
+					0.0
+				],
+				"Torso": [
+					8.0,
+					-18.0,
+					0.0
+				],
+				"UpperArm_L": [
+					18.0,
+					0.0,
+					-12.0
+				],
+				"UpperArm_R": [
+					88.0,
+					0.0,
+					6.0
+				]
+			}
+		}
+	],
+	"projeteis": {
+		"abertura": 20.0,
+		"area_chuva": 8.0,
+		"direcao_disparo": "Mira",
+		"explosao": 0.0,
+		"giro": 0.0,
+		"gravidade": 0.0,
+		"modelo": "",
+		"perfurar": false,
+		"quantidade": 1,
+		"raio": 0.4,
+		"rastro": "Nenhum",
+		"sem_dano": false,
+		"som_explosao": "Impacto",
+		"velocidade": 12.0,
+		"vida": 2.0,
+		"visual": "Energia"
+	},
+	"versao": 1,
+	"vfx": {
+		"altura": 1.0,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#ffd23f",
+		"cor_2": "#fff1b8",
+		"escala": 1.0,
+		"estilo": "Impacto",
+		"frente": 1.0,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "Mão direita",
+		"projetil_de": ""
+	}
+}

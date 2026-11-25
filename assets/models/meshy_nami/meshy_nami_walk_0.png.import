@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://finb8fux468c"
-path="res://.godot/imported/meshy_nami_walk_0.png-241d76e49ece2ac3fb18ec337233b644.ctex"
+path.bptc="res://.godot/imported/meshy_nami_walk_0.png-241d76e49ece2ac3fb18ec337233b644.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "23acb259216361e12c19e69952add8ef"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/meshy_nami/meshy_nami_walk_0.png"
-dest_files=["res://.godot/imported/meshy_nami_walk_0.png-241d76e49ece2ac3fb18ec337233b644.ctex"]
+dest_files=["res://.godot/imported/meshy_nami_walk_0.png-241d76e49ece2ac3fb18ec337233b644.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

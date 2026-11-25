@@ -455,7 +455,7 @@ static func _find_closest_entity(world: Node, ignore_caster: Node, center: Vecto
 		arv = Engine.get_main_loop() as SceneTree
 	if arv == null:
 		return null
-	var candidates := arv.get_nodes_in_group("enemy") + arv.get_nodes_in_group("player")
+	var candidates := AlvosDeGolpe.todos(arv)
 	for c in candidates:
 		if not (c is Node3D) or c == ignore_caster:
 			continue
@@ -864,7 +864,7 @@ class BlackHoleController extends Node:
 		# A cada 0.05s (20Hz) processa sucção, afundo e bloqueio de poderes
 		if tick >= 0.05 and get_tree():
 			tick = 0.0
-			var all_entities := get_tree().get_nodes_in_group("enemy") + get_tree().get_nodes_in_group("player")
+			var all_entities := AlvosDeGolpe.todos(get_tree())
 			for e in all_entities:
 				if not (e is Node3D) or e == caster:
 					continue
@@ -913,7 +913,7 @@ class BlackHoleController extends Node:
 				caster.set_meta("yami_black_hole_active", false)
 
 		if get_tree():
-			var all_entities := get_tree().get_nodes_in_group("enemy") + get_tree().get_nodes_in_group("player")
+			var all_entities := AlvosDeGolpe.todos(get_tree())
 			for e in all_entities:
 				if is_instance_valid(e) and e.has_meta("in_black_hole") and e.get_meta("in_black_hole"):
 					e.set_meta("in_black_hole", false)
@@ -956,7 +956,7 @@ class YamiBlock extends Node3D:
 		mesh_inst.scale = Vector3(randf_range(0.5, 1.3), randf_range(0.5, 1.3), randf_range(0.5, 1.3))
 		add_child(mesh_inst)
 		if get_tree():
-			_cached_targets = get_tree().get_nodes_in_group("enemy") + get_tree().get_nodes_in_group("player")
+			_cached_targets = AlvosDeGolpe.todos(get_tree())
 
 	func despawn() -> void:
 		if get_tree() == null or not is_inside_tree():

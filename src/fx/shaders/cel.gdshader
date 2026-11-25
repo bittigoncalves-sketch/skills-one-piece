@@ -29,6 +29,9 @@ render_mode specular_disabled, diffuse_lambert;
 uniform vec4 cor : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 uniform sampler2D textura : source_color, hint_default_white, filter_nearest_mipmap;
 uniform bool usar_textura = false;
+// TERRENO (30/09/2026): cada face do relevo traz a cor do solo no vértice (grama,
+// terra, areia...). Desligado, o shader ignora o COLOR da malha — nada muda na arena.
+uniform bool usar_cor_vertice = false;
 
 // ⚠️ DUAS FAIXAS, e a razão é a geometria DESTE jogo. Banda de luz só aparece
 // onde a normal VARIA ao longo da superfície — numa esfera, num cilindro, na
@@ -96,10 +99,23 @@ float ruido_suave(vec2 p) {
 	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
+// Furo retangular no mundo (x_min, z_min, x_max, z_max, em metros): a malha DISTANTE do relevo em blocos some onde as seções
+// de blocos já estão desenhadas (`GradeVoxel`), senão uma cratera mostraria o terreno antigo por baixo. Caixa vazia = sem furo.
+uniform vec4 furo_caixa = vec4(0.0);
+
 void fragment() {
+	if (furo_caixa.z > furo_caixa.x) {
+		vec3 mundo_f = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+		if (mundo_f.x > furo_caixa.x && mundo_f.x < furo_caixa.z && mundo_f.z > furo_caixa.y && mundo_f.z < furo_caixa.w) {
+			discard;
+		}
+	}
 	vec3 base = cor.rgb;
 	if (usar_textura) {
 		base *= texture(textura, UV).rgb;
+	}
+	if (usar_cor_vertice) {
+		base *= COLOR.rgb;
 	}
 	if (usar_grade) {
 		// posição no MUNDO — ver a nota da grade

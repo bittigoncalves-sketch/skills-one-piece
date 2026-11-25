@@ -1,0 +1,905 @@
+{
+	"aro_aro": {
+		"mapa": {
+			"X": 23,
+			"Z": 21
+		},
+		"tecnicas": [
+			{
+				"custo": 150.0,
+				"nome": "Arrow",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 300.0,
+				"nome": "Two-Hit Combo",
+				"numero": -1,
+				"tecla": "X"
+			}
+		]
+	},
+	"batto_batto": {
+		"mapa": {
+			"B": 26,
+			"C": 24,
+			"V": 25,
+			"X": 23,
+			"Z": 21
+		},
+		"tecnicas": [
+			{
+				"custo": 60.0,
+				"nome": "Finger Pistol",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 100.0,
+				"nome": "Tempest Kick",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 50.0,
+				"nome": "Flying Finger Pistol",
+				"numero": -1,
+				"tecla": "C"
+			},
+			{
+				"custo": 200.0,
+				"nome": "Paper Art: Afterimage",
+				"numero": -1,
+				"tecla": "V"
+			},
+			{
+				"custo": 200.0,
+				"nome": "Forgive Me...♡",
+				"numero": -1,
+				"tecla": "B"
+			}
+		]
+	},
+	"bisu_bisu": {
+		"mapa": {
+			"B": 25,
+			"C": 23,
+			"V": 24,
+			"X": 22,
+			"Z": 21
+		},
+		"tecnicas": [
+			{
+				"custo": 150.0,
+				"nome": "Honey Pretzel",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 250.0,
+				"nome": "Crash Pretzel",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 200.0,
+				"nome": "Biscuit Warrior",
+				"numero": -1,
+				"tecla": "C"
+			},
+			{
+				"custo": 200.0,
+				"nome": "Biscuit Warrior: Assault Attack",
+				"numero": -1,
+				"tecla": "V"
+			},
+			{
+				"custo": 50.0,
+				"nome": "Biscuit",
+				"numero": -1,
+				"tecla": "B"
+			}
+		]
+	},
+	"hito_hito_daibutsu": {
+		"mapa": {
+			"B": 25,
+			"C": 23,
+			"V": 24,
+			"X": 1001,
+			"Z": 22
+		},
+		"tecnicas": [
+			{
+				"custo": 200.0,
+				"nome": "Tackle",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 40.0,
+				"nome": "Flor de Buda",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 250.0,
+				"nome": "Wave Motion Gun",
+				"numero": -1,
+				"tecla": "C"
+			},
+			{
+				"custo": 250.0,
+				"nome": "Strongest Overhead Attack",
+				"numero": -1,
+				"tecla": "V"
+			},
+			{
+				"custo": 500.0,
+				"nome": "Impact Wave",
+				"numero": -1,
+				"tecla": "B"
+			}
+		]
+	},
+	"horo_horo": {
+		"mapa": {
+			"C": 27,
+			"V": 28,
+			"X": 25,
+			"Z": 21
+		},
+		"tecnicas": [
+			{
+				"custo": 150.0,
+				"nome": "Negative Hollow",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 100.0,
+				"nome": "Mini Hollow: Ghost Rap",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 400.0,
+				"nome": "Special Hollow: Kamikaze Rap",
+				"numero": -1,
+				"tecla": "C"
+			},
+			{
+				"custo": 100.0,
+				"nome": "Kumacy",
+				"numero": -1,
+				"tecla": "V"
+			}
+		]
+	},
+	"imu": {
+		"mapa": {
+			"Z": 21
+		},
+		"tecnicas": [
+			{
+				"custo": 150.0,
+				"nome": "Devil's Arrow",
+				"numero": -1,
+				"tecla": "Z"
+			}
+		]
+	},
+	"inu_inu_okuchi_no_makami": {
+		"mapa": {
+			"C": 25,
+			"V": 26,
+			"X": 24,
+			"Z": 23
+		},
+		"tecnicas": [
+			{
+				"custo": 250.0,
+				"nome": "Thunder Bagua",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 250.0,
+				"nome": "Narikabura Arrow",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 200.0,
+				"nome": "Namuji Glacier Fang",
+				"numero": -1,
+				"tecla": "C"
+			},
+			{
+				"custo": 500.0,
+				"nome": "Hallowed Glacier Slash",
+				"numero": -1,
+				"tecla": "V"
+			}
+		]
+	},
+	"inu_inu_wolf": {
+		"mapa": {
+			"B": 26,
+			"C": 24,
+			"N": 27,
+			"V": 25,
+			"X": 23,
+			"Z": 21
+		},
+		"tecnicas": [
+			{
+				"custo": 60.0,
+				"nome": "Finger Pistol",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 100.0,
+				"nome": "Tempest Kick \"Lone Wolf\"",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 400.0,
+				"nome": "Tempest Kick \"Lupus Fall\"",
+				"numero": -1,
+				"tecla": "C"
+			},
+			{
+				"custo": 150.0,
+				"nome": "Kung Fu Wolf Bullet",
+				"numero": -1,
+				"tecla": "V"
+			},
+			{
+				"custo": 300.0,
+				"nome": "Ten Finger Pistol",
+				"numero": -1,
+				"tecla": "B"
+			},
+			{
+				"custo": 200.0,
+				"nome": "Wolf Hunt Highspeed Scratch",
+				"numero": -1,
+				"tecla": "N"
+			}
+		]
+	},
+	"kage_kage": {
+		"mapa": {
+			"C": 25,
+			"V": 26,
+			"X": 24,
+			"Z": 22
+		},
+		"tecnicas": [
+			{
+				"custo": 150.0,
+				"nome": "Brick Bat",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 150.0,
+				"nome": "Spiky Shadow Lizard",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 400.0,
+				"nome": "Doppelman",
+				"numero": -1,
+				"tecla": "C"
+			},
+			{
+				"custo": 1000.0,
+				"nome": "Shadow's Asgard",
+				"numero": -1,
+				"tecla": "V"
+			}
+		]
+	},
+	"kira_kira": {
+		"mapa": {
+			"C": 25,
+			"X": 24,
+			"Z": 22
+		},
+		"tecnicas": [
+			{
+				"custo": 200.0,
+				"nome": "Brilliant Punk",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 150.0,
+				"nome": "Stone Throwing",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 500.0,
+				"nome": "Giant Rock Throwing",
+				"numero": -1,
+				"tecla": "C"
+			}
+		]
+	},
+	"kiro_kiro": {
+		"mapa": {
+			"X": 26,
+			"Z": 23
+		},
+		"tecnicas": [
+			{
+				"custo": 300.0,
+				"nome": "10,000 Kill-o-Press",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 0.0,
+				"nome": "Weight Manipulation",
+				"numero": -1,
+				"tecla": "X"
+			}
+		]
+	},
+	"mero_mero": {
+		"mapa": {
+			"C": 24,
+			"V": 25,
+			"X": 22,
+			"Z": 21
+		},
+		"tecnicas": [
+			{
+				"custo": 50.0,
+				"nome": "Pistol Kiss",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 100.0,
+				"nome": "Roundhouse Kick",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 200.0,
+				"nome": "Perfume Femur",
+				"numero": -1,
+				"tecla": "C"
+			},
+			{
+				"custo": 300.0,
+				"nome": "Perfume Femur Magna",
+				"numero": -1,
+				"tecla": "V"
+			}
+		]
+	},
+	"mochi_mochi": {
+		"mapa": {
+			"B": 25,
+			"C": 23,
+			"N": 29,
+			"V": 24,
+			"X": 22,
+			"Z": 21
+		},
+		"tecnicas": [
+			{
+				"custo": 100.0,
+				"nome": "Edged Mochi",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 300.0,
+				"nome": "Punch Mochi",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 400.0,
+				"nome": "That should be enough, right? For an \"Elephant Gun\"",
+				"numero": -1,
+				"tecla": "C"
+			},
+			{
+				"custo": 120.0,
+				"nome": "Burning Mochi",
+				"numero": -1,
+				"tecla": "V"
+			},
+			{
+				"custo": 300.0,
+				"nome": "Buzz Cut Mochi",
+				"numero": -1,
+				"tecla": "B"
+			},
+			{
+				"custo": 200.0,
+				"nome": "Unstoppable Donuts",
+				"numero": -1,
+				"tecla": "N"
+			}
+		]
+	},
+	"mori_mori": {
+		"mapa": {
+			"C": 23,
+			"V": 24,
+			"X": 22,
+			"Z": 21
+		},
+		"tecnicas": [
+			{
+				"custo": 150.0,
+				"nome": "Tree Strike",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 400.0,
+				"nome": "Giant Tree",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 200.0,
+				"nome": "Assault Attack",
+				"numero": -1,
+				"tecla": "C"
+			},
+			{
+				"custo": 300.0,
+				"nome": "I'll Skewer You",
+				"numero": -1,
+				"tecla": "V"
+			}
+		]
+	},
+	"neko_neko_leopard": {
+		"mapa": {
+			"B": 27,
+			"C": 24,
+			"V": 26,
+			"X": 23,
+			"Z": 21
+		},
+		"tecnicas": [
+			{
+				"custo": 60.0,
+				"nome": "Finger Pistol",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 100.0,
+				"nome": "Tempest Kick",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 300.0,
+				"nome": "Tempest Kick \"Victory Bird\"",
+				"numero": -1,
+				"tecla": "C"
+			},
+			{
+				"custo": 200.0,
+				"nome": "Hand Pistol",
+				"numero": -1,
+				"tecla": "V"
+			},
+			{
+				"custo": 600.0,
+				"nome": "Six King Gun",
+				"numero": -1,
+				"tecla": "B"
+			}
+		]
+	},
+	"neko_neko_sabertiger": {
+		"mapa": {
+			"C": 25,
+			"V": 26,
+			"X": 23,
+			"Z": 21
+		},
+		"tecnicas": [
+			{
+				"custo": 60.0,
+				"nome": "Finger Pistol",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 100.0,
+				"nome": "Finger Pistol Spots",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 100.0,
+				"nome": "Fang Pistol",
+				"numero": -1,
+				"tecla": "C"
+			},
+			{
+				"custo": 400.0,
+				"nome": "Fang Flash",
+				"numero": -1,
+				"tecla": "V"
+			}
+		]
+	},
+	"riki_riki": {
+		"mapa": {
+			"C": 24,
+			"V": 25,
+			"X": 23,
+			"Z": 22
+		},
+		"tecnicas": [
+			{
+				"custo": 200.0,
+				"nome": "Shockwave Elbow",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 250.0,
+				"nome": "Galleon Lariat",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 150.0,
+				"nome": "Stone Throwing",
+				"numero": -1,
+				"tecla": "C"
+			},
+			{
+				"custo": 500.0,
+				"nome": "Giant Rock Throwing",
+				"numero": -1,
+				"tecla": "V"
+			}
+		]
+	},
+	"ryu_ryu_brachiosaurus": {
+		"mapa": {
+			"C": 26,
+			"V": 27,
+			"X": 25,
+			"Z": 22
+		},
+		"tecnicas": [
+			{
+				"custo": 300.0,
+				"nome": "Brachio Bomber",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 150.0,
+				"nome": "Black Coffee Beam",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 100.0,
+				"nome": "Brachio Launcher",
+				"numero": -1,
+				"tecla": "C"
+			},
+			{
+				"custo": 200.0,
+				"nome": "Sparking Queen",
+				"numero": -1,
+				"tecla": "V"
+			}
+		]
+	},
+	"ryu_ryu_pachycephalosaurus": {
+		"mapa": {
+			"C": 28,
+			"X": 27,
+			"Z": 23
+		},
+		"tecnicas": [
+			{
+				"custo": 100.0,
+				"nome": "Headbutt",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 250.0,
+				"nome": "Ulti-Mortar",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 500.0,
+				"nome": "Ulti-Meteor",
+				"numero": -1,
+				"tecla": "C"
+			}
+		]
+	},
+	"ryu_ryu_pteranodon": {
+		"mapa": {
+			"X": 26,
+			"Z": 23
+		},
+		"tecnicas": [
+			{
+				"custo": 150.0,
+				"nome": "Imperial Archer",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 200.0,
+				"nome": "Imperial Slings And Arrows",
+				"numero": -1,
+				"tecla": "X"
+			}
+		]
+	},
+	"soru_soru": {
+		"mapa": {
+			"B": 27,
+			"C": 25,
+			"V": 26,
+			"X": 24,
+			"Z": 23
+		},
+		"tecnicas": [
+			{
+				"custo": 250.0,
+				"nome": "Thunder Bolt",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 250.0,
+				"nome": "Heavenly Fire",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 250.0,
+				"nome": "Fulgora",
+				"numero": -1,
+				"tecla": "C"
+			},
+			{
+				"custo": 300.0,
+				"nome": "Marma-Raid",
+				"numero": -1,
+				"tecla": "V"
+			},
+			{
+				"custo": 500.0,
+				"nome": "Ikoku Sovereignty",
+				"numero": -1,
+				"tecla": "B"
+			}
+		]
+	},
+	"supa_supa": {
+		"mapa": {
+			"C": 23,
+			"V": 24,
+			"X": 22,
+			"Z": 21
+		},
+		"tecnicas": [
+			{
+				"custo": 100.0,
+				"nome": "Projectile Slash",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 150.0,
+				"nome": "Atomic Spurt",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 250.0,
+				"nome": "Sparkling Daisy",
+				"numero": -1,
+				"tecla": "C"
+			},
+			{
+				"custo": 300.0,
+				"nome": "Spar Break",
+				"numero": -1,
+				"tecla": "V"
+			}
+		]
+	},
+	"uo_uo_seiryu": {
+		"mapa": {
+			"B": 27,
+			"C": 25,
+			"N": 28,
+			"V": 26,
+			"X": 24,
+			"Z": 23
+		},
+		"tecnicas": [
+			{
+				"custo": 250.0,
+				"nome": "Thunder Bagua",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 250.0,
+				"nome": "Vajra Arrow",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 200.0,
+				"nome": "Demolition Gust",
+				"numero": -1,
+				"tecla": "C"
+			},
+			{
+				"custo": 400.0,
+				"nome": "Blast Breath",
+				"numero": -1,
+				"tecla": "V"
+			},
+			{
+				"custo": 500.0,
+				"nome": "Conqueror of Three Worlds Ragnaraku",
+				"numero": -1,
+				"tecla": "B"
+			},
+			{
+				"custo": 500.0,
+				"nome": "Ikoku Sovereignty",
+				"numero": -1,
+				"tecla": "N"
+			}
+		]
+	},
+	"ushi_ushi_giraffe": {
+		"mapa": {
+			"C": 24,
+			"V": 25,
+			"X": 23,
+			"Z": 21
+		},
+		"tecnicas": [
+			{
+				"custo": 60.0,
+				"nome": "Finger Pistol",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 100.0,
+				"nome": "Tempest Kick",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 150.0,
+				"nome": "Tempest Kick \"Slaughter\"",
+				"numero": -1,
+				"tecla": "C"
+			},
+			{
+				"custo": 400.0,
+				"nome": "Tempest Kick \"Sky Slicer\"",
+				"numero": -1,
+				"tecla": "V"
+			}
+		]
+	},
+	"uta_uta": {
+		"mapa": {
+			"C": 23,
+			"V": 25,
+			"X": 22,
+			"Z": 21
+		},
+		"tecnicas": [
+			{
+				"custo": 50.0,
+				"nome": "Note",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 200.0,
+				"nome": "Note Beam",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 400.0,
+				"nome": "Note Barrier",
+				"numero": -1,
+				"tecla": "C"
+			},
+			{
+				"custo": 200.0,
+				"nome": "Note Warrior",
+				"numero": -1,
+				"tecla": "V"
+			}
+		]
+	},
+	"zushi_zushi": {
+		"mapa": {
+			"B": 28,
+			"C": 24,
+			"V": 26,
+			"X": 23,
+			"Z": 22
+		},
+		"tecnicas": [
+			{
+				"custo": 150.0,
+				"nome": "Gravity Blade",
+				"numero": -1,
+				"tecla": "Z"
+			},
+			{
+				"custo": 200.0,
+				"nome": "Small Meteors",
+				"numero": -1,
+				"tecla": "X"
+			},
+			{
+				"custo": 400.0,
+				"nome": "Raging Tiger",
+				"numero": -1,
+				"tecla": "C"
+			},
+			{
+				"custo": 600.0,
+				"nome": "Rubbles",
+				"numero": -1,
+				"tecla": "V"
+			},
+			{
+				"custo": 1250.0,
+				"nome": "Meteor",
+				"numero": -1,
+				"tecla": "B"
+			},
+			{
+				"custo": 450.0,
+				"nome": "Jigoku Tabi",
+				"numero": -1,
+				"tecla": "K"
+			},
+			{
+				"custo": 700.0,
+				"nome": "Abare Himatsuri",
+				"numero": -1,
+				"tecla": "L"
+			}
+		]
+	}
+}

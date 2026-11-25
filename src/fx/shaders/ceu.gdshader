@@ -66,6 +66,13 @@ uniform vec3 cor_topo : source_color = vec3(0.13, 0.45, 0.90);
 uniform vec3 cor_horizonte : source_color = vec3(0.66, 0.86, 0.99);
 uniform vec3 cor_chao_horizonte : source_color = vec3(0.20, 0.28, 0.38);
 uniform vec3 cor_chao_fundo : source_color = vec3(0.03, 0.04, 0.07);
+// Chuva de Luz (Pika V): tinge o céu real, sem cúpula ou disco geométrico.
+// Zero mantém exatamente a direção de arte normal; um produz a atmosfera
+// dourada temporária controlada pelo efeito.
+uniform float pika_v_dourado : hint_range(0.0, 1.0) = 0.0;
+// Estrelas (10/10/2026, ciclo de dia e noite do Modo História): 0 = dia, sem custo
+// (o laço nem roda); 1 = noite fechada. Atrás das nuvens elas somem. A arena fica em 0.
+uniform float estrelas : hint_range(0.0, 1.0) = 0.0;
 // Curva pequena = transição CURTA E DURA (o expoente é 1/curva). O chão em
 // 0.04 vira expoente 25: cinco graus abaixo do horizonte já é quase o fundo
 // escuro — que é exatamente a regra 1 lá de cima.
@@ -246,5 +253,36 @@ void sky() {
 		nuvem = mix(cor_horizonte, nuvem, perto);
 
 		COLOR = mix(fundo, nuvem, silhueta * perto);
+
+		// ------------------------------------------------------------- ESTRELAS
+		// Uma estrela por célula sorteada, numa grade sobre a projeção estereográfica
+		// do céu (sem costura no zênite). Ponto duro com brilho que pisca devagar; some
+		// rente ao horizonte (névoa) e atrás de nuvem. Fora do mapa de radiância.
+		if (estrelas > 0.001 && !AT_CUBEMAP_PASS) {
+			vec2 ps = EYEDIR.xz / (1.0 + EYEDIR.y) * 90.0;
+			vec2 cel = floor(ps);
+			float h = hash21(cel);
+			if (h > 0.972) {
+				vec2 centro = cel + vec2(hash21(cel + 17.0), hash21(cel + 31.0)) * 0.7 + 0.15;
+				float dist = length(ps - centro);
+				float tam = mix(0.06, 0.16, hash21(cel + 7.0));
+				float pisca = 0.75 + 0.25 * sin(TIME * (0.8 + 2.2 * hash21(cel + 3.0)) + h * 40.0);
+				float ponto = smoothstep(tam, tam * 0.35, dist) * pisca;
+				vec3 tom = mix(vec3(0.75, 0.85, 1.0), vec3(1.0, 0.93, 0.8), hash21(cel + 11.0));
+				COLOR += tom * ponto * estrelas * smoothstep(0.03, 0.25, EYEDIR.y) * (1.0 - silhueta * perto) * 1.6;
+			}
+		}
+
+		// O dourado conserva a massa e o relevo das nuvens: muda a iluminação do
+		// céu, não cola uma cor chapada na tela. Mais luminoso no horizonte e
+		// âmbar profundo no zênite, como a progressão da referência do Pika V.
+		vec3 ouro_topo = vec3(0.52, 0.29, 0.055);
+		vec3 ouro_horizonte = vec3(1.10, 0.72, 0.20);
+		vec3 fundo_ouro = mix(ouro_horizonte, ouro_topo, rampa(elev, curva_ceu));
+		vec3 nuvem_ouro = mix(vec3(0.72, 0.40, 0.08),
+			vec3(1.28, 0.96, 0.46), degrau(relevo, faixas, suavidade));
+		vec3 cena_ouro = mix(fundo_ouro, nuvem_ouro, silhueta * perto);
+		cena_ouro += vec3(1.0, 0.72, 0.24) * (halo + disco * 1.20);
+		COLOR = mix(COLOR, cena_ouro, pika_v_dourado);
 	}
 }

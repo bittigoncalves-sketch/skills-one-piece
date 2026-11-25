@@ -58,9 +58,18 @@ const ARSENAL := {
 	# consistência por velocidade (o dano ESPERADO não muda: acima de 79 m/s
 	# velocidade x chance de acerto é constante).
 	"C": {"nome": "Sniper",  "balas": 5,   "cadencia": 1.05, "raio": 0.16, "vel": 250.0, "kb": 10.0, "shake": 0.45, "recuo": 0.0,  "papel": "ForeArm_R", "som": "sniper",  "fogacho": 0.55},
-	"V": {"nome": "Minigun", "balas": 100, "cadencia": 0.06, "raio": 0.14, "vel": 46.0, "kb": 1.6,  "shake": 0.05, "recuo": 0.0,  "papel": "ForeArm_R", "som": "minigun", "fogacho": 0.18},
+	"V": {"nome": "Minigun", "balas": 100, "cadencia": 0.06, "raio": 0.14, "vel": 46.0, "kb": 1.6,  "shake": 0.05, "recuo": 0.0,  "papel": "ForeArm_R", "som": "minigun", "fogacho": 0.18,
+		"vida": 0.8, "efeito_cada": 3},
 }
 const SLOTS := ["Z", "X", "C", "V"]
+
+# ⚠️ ANTI-LAG DO V (21/11/2026): a rajada faz ~17 tiros/s e cada bala vivia 3 s varrendo a física (e quebrando
+# construções) a cada quadro = ~50 balas vivas + 3 sistemas de partículas e uma luz POR TIRO. Agora a bala some em `vida`
+# segundos (V: 0,8 s ≈ 37 m, alcance de sobra para um minigun) e o clarão/estojo/fumaça saem só a cada `efeito_cada` tiros
+# (o som e o dano continuam em todos). Sem `vida`/`efeito_cada` na linha da arma, nada muda (3 s, todo tiro).
+const VIDA_PADRAO := 3.0
+static var _tiros_por_slot := {}
+static var _explosoes_por_slot := {}   # V: só 1 em cada `efeito_cada` balas explode (anti-lag)
 
 static func municao(slot: String) -> int:
 	return int(ARSENAL[slot]["balas"]) if ARSENAL.has(slot) else 0
@@ -109,8 +118,14 @@ static func disparo(world: Node, origin: Vector3, dir: Vector3, slot: String,
 		return
 	var d: Dictionary = ARSENAL.get(slot, ARSENAL["Z"])
 	_projetil(world, origin, dir, damage, caster, slot, alvo, spec)
-	_fogacho(world, origin, dir, float(d.get("fogacho", 0.35)))
 	_som(world, origin, str(d.get("som", "pistol")))
+	var n: int = int(_tiros_por_slot.get(slot, 0))
+	_tiros_por_slot[slot] = n + 1
+	if n % maxi(int(d.get("efeito_cada", 1)), 1) != 0:
+		return                          # tiro "seco": a bala e o som saíram, o enfeite fica para o próximo
+	# FPS: o clarão nasce a 0,6 m da câmera; com o tamanho de 3ª pessoa ele tampava o retículo.
+	var em_fps: bool = is_instance_valid(caster) and caster.get("buki_viewmodel") != null and caster.get("buki_viewmodel").ativo()
+	_fogacho(world, origin, dir, float(d.get("fogacho", 0.35)) * (0.18 if em_fps else 1.0))
 	if slot != "X":
 		_capsulas(world, origin, dir)   # latão saltando: dá cadência VISÍVEL à rajada
 
@@ -186,10 +201,30 @@ static func arma_do_slot(slot: String) -> Node3D:
 # Z — a MÃO vira pistola. Reusa a mesma peça da pistola do jogo (PlayerModelKit),
 # que já nasce com o cano em −Y: nada a girar aqui.
 static func _montar_pistola() -> Node3D:
-	var g := PlayerModelKit.build_pistol()
+	var g := _voxel_pistola()
 	g.name = "BukiArma_Z"
 	g.position = Vector3(0, -0.36, 0.02)
 	return g
+
+# PISTOLA (21/11/2026) da pose do Codex `pose_z_mira.png`: ferrolho cinza claro com alça de mira, cano curto, empunhadura marrom e guarda-mato. O cano segue −Y (eixo do antebraço).
+static func _voxel_pistola() -> Node3D:
+	var r := Node3D.new()
+	var ferrolho := _mat_aco()
+	ferrolho.albedo_color = Color(0.62, 0.63, 0.67)
+	ferrolho.metallic = 0.4
+	ferrolho.roughness = 0.55
+	var escuro := _mat_escuro()
+	escuro.albedo_color = Color(0.14, 0.14, 0.16)
+	var madeira := StandardMaterial3D.new()
+	madeira.albedo_color = Color(0.5, 0.27, 0.1)
+	madeira.roughness = 0.9
+	r.add_child(_caixa(Vector3(0.07, 0.34, 0.085), Vector3(0, -0.05, 0.0), ferrolho))             # ferrolho
+	r.add_child(_caixa(Vector3(0.045, 0.06, 0.05), Vector3(0, -0.24, 0.0), escuro))               # boca do cano
+	r.add_child(_caixa(Vector3(0.02, 0.025, 0.03), Vector3(0, 0.08, 0.05), escuro))               # alça de mira
+	r.add_child(_caixa(Vector3(0.02, 0.025, 0.03), Vector3(0, -0.18, 0.05), escuro))              # massa de mira
+	r.add_child(_caixa(Vector3(0.065, 0.075, 0.12), Vector3(0, 0.09, -0.10), madeira))            # empunhadura
+	r.add_child(_caixa(Vector3(0.05, 0.10, 0.02), Vector3(0, 0.02, -0.055), escuro))              # guarda-mato
+	return r
 
 # C — SNIPER. ⚠️ NÃO EXISTE .glb de sniper (ver relatório): esticamos a
 # metralhadora no eixo do cano e pregamos uma luneta em cima. É um remendo
@@ -205,27 +240,88 @@ static func _montar_sniper() -> Node3D:
 	var r := _arma("sniper")
 	r.name = "BukiArma_C"
 	r.rotation_degrees.x = -90.0
-	r.position = Vector3(0, -0.30, 0)
+	r.position = Vector3(0, -0.30, AJUSTE_NA_MAO)
 	return r
 
+# Deslocamento que põe sniper e minigun NA MÃO no rig do Modo História (capturas Weston 21/11: com 0 a arma aparecia ~0,3 m abaixo, desprendida da mão).
+const AJUSTE_NA_MAO := -0.28
+
 static func _montar_minigun() -> Node3D:
-	var r := Node3D.new()
+	var r := _voxel_minigun()
 	r.name = "BukiArma_V"
-	var corpo := _arma("metralhadora")
-	corpo.scale = Vector3(1.35, 1.35, 1.15)
-	r.add_child(corpo)
 	r.rotation_degrees.x = -90.0
-	r.position = Vector3(0, -0.30, 0)
+	r.position = Vector3(0, -0.30, AJUSTE_NA_MAO)
+	return r
+
+# MINIGUN (21/11/2026) a partir da folha do Codex `art_src/references/buki_buki_codex/arma_v_minigun.png`: feixe de SEIS canos com duas braçadeiras, caixa de mecanismo com cinta
+# laranja e tambor de munição com faixas laranja embaixo. Frente = −Z (como as outras armas do braço).
+static func _voxel_minigun() -> Node3D:
+	var r := Node3D.new()
+	var aco := _mat_aco()
+	aco.albedo_color = Color(0.22, 0.23, 0.26)           # gunmetal escuro como na folha do Codex
+	aco.metallic = 0.3
+	aco.roughness = 0.7
+	var escuro := _mat_escuro()
+	escuro.albedo_color = Color(0.13, 0.13, 0.15)
+	var laranja := StandardMaterial3D.new()
+	laranja.albedo_color = Color(0.95, 0.62, 0.12)
+	laranja.emission_enabled = true
+	laranja.emission = Color(0.9, 0.5, 0.08)
+	laranja.emission_energy_multiplier = 0.6
+	var y := -0.34
+	r.add_child(_caixa(Vector3(0.24, 0.22, 0.34), Vector3(0, y + 0.02, -0.10), escuro))          # caixa do mecanismo
+	r.add_child(_caixa(Vector3(0.255, 0.05, 0.10), Vector3(0, y + 0.06, -0.10), laranja))        # cinta laranja
+	for i in 6:                                                                                  # os seis canos em anel
+		var a := TAU * i / 6.0
+		r.add_child(_cil(0.032, 0.62, Vector3(cos(a) * 0.075, y + sin(a) * 0.075, -0.50), aco))
+	for z in [-0.34, -0.66]:                                                                     # braçadeiras
+		r.add_child(_cil(0.125, 0.045, Vector3(0, y, z), escuro))
+	r.add_child(_cil(0.05, 0.50, Vector3(0, y, -0.50), escuro))                                  # eixo central
+	r.add_child(_cil(0.16, 0.16, Vector3(0, y - 0.20, -0.12), escuro, "y"))                       # tambor
+	for k in 3:                                                                                  # faixas laranja do tambor
+		r.add_child(_cil(0.165, 0.028, Vector3(0, y - 0.20 + (k - 1) * 0.05, -0.12), laranja, "y"))
 	return r
 
 # X — o jogador vira o CANHÃO INTEIRO. Este nó não mora no braço: mora num pivô
 # preso ao corpo (o Player esconde o modelo enquanto o canhão está empunhado).
 static func _montar_canhao_corpo() -> Node3D:
-	var r := Node3D.new()
+	var r := _voxel_canhao_codex()
 	r.name = "BukiArma_X"
-	var corpo := _arma("canhao")
-	corpo.scale = Vector3(1.6, 1.6, 2.0)     # ~0.67 x 0.74 x 2.0 m: lê como canhão de gente
-	r.add_child(corpo)
+	return r
+
+# CANHÃO X (21/11/2026) da folha do Codex `arma_x_canhao.png`: tubo de ferro escuro com duas cintas cinza-claras e boca alargada, reparo de madeira com ferragens e duas rodas
+# de aro escuro e cubo de madeira. Frente = −Z; ~0,7 m de largura, ~1,7 m de comprimento (lê como "canhão de gente").
+static func _voxel_canhao_codex() -> Node3D:
+	var r := Node3D.new()
+	var ferro := _mat_aco()
+	ferro.albedo_color = Color(0.2, 0.21, 0.24)
+	ferro.metallic = 0.3
+	ferro.roughness = 0.75
+	var cinta := _mat_aco()
+	cinta.albedo_color = Color(0.55, 0.56, 0.6)
+	cinta.metallic = 0.4
+	cinta.roughness = 0.6
+	var madeira := StandardMaterial3D.new()
+	madeira.albedo_color = Color(0.55, 0.32, 0.14)
+	madeira.roughness = 0.9
+	var aro := _mat_escuro()
+	aro.albedo_color = Color(0.14, 0.14, 0.16)
+	var y := 0.1
+	r.add_child(_cil(0.32, 1.30, Vector3(0, y, -0.1), ferro))                                  # tubo
+	r.add_child(_cil(0.28, 0.20, Vector3(0, y, 0.62), ferro))                                  # culatra
+	r.add_child(_cil(0.37, 0.16, Vector3(0, y, -0.78), cinta))                                 # boca alargada
+	r.add_child(_cil(0.35, 0.10, Vector3(0, y, -0.45), cinta))                                 # cinta da frente
+	r.add_child(_cil(0.35, 0.10, Vector3(0, y, 0.22), cinta))                                  # cinta do meio
+	r.add_child(_caixa(Vector3(0.50, 0.22, 1.10), Vector3(0, y - 0.38, 0.0), madeira))         # reparo (berço)
+	r.add_child(_caixa(Vector3(0.62, 0.10, 0.20), Vector3(0, y - 0.28, -0.35), madeira))        # travessa
+	for lado in [-1.0, 1.0]:
+		var roda := _cil(0.36, 0.14, Vector3(lado * 0.40, y - 0.40, 0.05), aro, "y")
+		roda.rotation_degrees = Vector3(0, 0, 90)
+		r.add_child(roda)
+		var cubo := _cil(0.14, 0.17, Vector3(lado * 0.42, y - 0.40, 0.05), madeira, "y")
+		cubo.rotation_degrees = Vector3(0, 0, 90)
+		r.add_child(cubo)
+		r.add_child(_caixa(Vector3(0.06, 0.08, 0.08), Vector3(lado * 0.27, y - 0.30, -0.05), cinta))   # ferragem
 	return r
 
 # O AÇO SE ESPALHANDO PELA PELE — é isto que faz a fruta ler como "o corpo virou
@@ -277,7 +373,7 @@ static func alvo_da_mira(caster: Node, origin: Vector3, dir: Vector3) -> Node3D:
 	var fwd := dir.normalized()
 	var best: Node3D = null
 	var best_align := CONE_MIRA
-	for e in caster.get_tree().get_nodes_in_group("enemy"):
+	for e in AlvosDeGolpe.npcs(caster.get_tree()):
 		if not (e is Node3D) or e == caster:
 			continue
 		var to: Vector3 = (e.global_position + Vector3.UP * 0.6) - origin
@@ -318,13 +414,51 @@ static func _projetil(world: Node, origin: Vector3, dir: Vector3, damage: float,
 	# teto que os 3 tiros do canhão. Sem isso, a arma com mais munição seria
 	# automaticamente a mais forte — e era: o minigun somava 108 contra os 32 do
 	# canhão. Ver `Player._spec_do_disparo`.
-	zone.setup(damage, float(d["kb"]), fwd * velocidade, 3.0, caster, raio)
+	zone.setup(damage, float(d["kb"]), fwd * velocidade, float(d.get("vida", VIDA_PADRAO)), caster, raio)
 	if spec != null:
 		spec.marcar(zone)
 	zone.add_child(BukiProjeteis.montar(slot, raio, velocidade))
+	zone.hit_landed.connect(_ao_acertar.bind(world, caster, slot))
+	# Explosão ao bater em QUALQUER coisa (pequena; grande no canhão) + aviso de esquiva aos inimigos.
+	BalaDaBuki.instalar(zone, slot, raio, damage, int(d.get("efeito_cada", 1)))
 
 	if alvo != null and is_instance_valid(alvo):
 		_perseguir(zone, alvo, velocidade)
+
+# ACERTO ao estilo FPS (21/11/2026): faíscas no ponto do impacto e marcador "X" no retículo de quem atirou. O V (17 tiros/s) só faísca a cada `efeito_cada` acertos.
+static var _acertos_por_slot := {}
+static func _ao_acertar(alvo: Node, world: Node, caster: Node, slot: String) -> void:
+	if not is_instance_valid(alvo) or world == null or not world.is_inside_tree():
+		return
+	var morreu := alvo.get("health") != null and float(alvo.get("health")) <= 0.0
+	if is_instance_valid(caster) and caster.has_method("is_multiplayer_authority") and caster.is_multiplayer_authority():
+		MarcadorDeAcerto.piscar(world.get_tree(), morreu)
+	var n: int = int(_acertos_por_slot.get(slot, 0))
+	_acertos_por_slot[slot] = n + 1
+	if n % maxi(int(ARSENAL.get(slot, {}).get("efeito_cada", 1)), 1) != 0 or not (alvo is Node3D):
+		return
+	var p := GPUParticles3D.new()
+	p.amount = FxQualityPolicy.quantidade(10, "essencial")
+	p.lifetime = 0.35
+	p.one_shot = true
+	p.explosiveness = 1.0
+	p.emitting = true
+	var pm := ParticleProcessMaterial.new()
+	pm.direction = Vector3.UP
+	pm.spread = 80.0
+	pm.initial_velocity_min = 2.0
+	pm.initial_velocity_max = 5.5
+	pm.gravity = Vector3(0, -9.0, 0)
+	pm.scale_min = 0.25
+	pm.scale_max = 0.5
+	pm.color_ramp = FxUtil.gradient(FAISCA)
+	p.process_material = pm
+	var cubo := BoxMesh.new()
+	cubo.size = Vector3(0.05, 0.05, 0.05)
+	p.draw_pass_1 = cubo
+	world.add_child(p)
+	(p as Node3D).global_position = (alvo as Node3D).global_position + Vector3.UP * 1.0
+	world.get_tree().create_timer(0.8).timeout.connect(p.queue_free)
 
 # Correção de rumo por frame. Fica na própria zona (morre junto com ela).
 static func _perseguir(zone: Node3D, alvo: Node3D, velocidade: float) -> void:

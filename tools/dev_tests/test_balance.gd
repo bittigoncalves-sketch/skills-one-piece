@@ -64,6 +64,9 @@ func _faixas_por_slot() -> void:
 			var ref: Dictionary = Balance.SLOT[slot]
 			var nome := "%s/%s" % [fruta, slot]
 			match s.tipo:
+				DamageSpec.Tipo.UTILITARIO:
+					_ok(s.dano == 0.0 and s.dano_max == 0.0 and s.teto == 0.0,
+						"%s: técnica utilitária deve declarar dano e teto zero" % nome)
 				DamageSpec.Tipo.UNICO:
 					var f: Array = ref["unico"]
 					# A pistola da Yami é a exceção declarada: é um TOGGLE sem pente,

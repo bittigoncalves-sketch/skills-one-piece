@@ -1,0 +1,58 @@
+{
+  "besta_mar_bovina": {
+    "nome": "Besta do mar — Bovina",
+    "boss": false,
+    "vida": 500,
+    "dano": 5,
+    "andar": 3.0,
+    "nadar": 4.5,
+    "correr": 8.0,
+    "visao": 45.0,
+    "perseguicao": 65.0,
+    "alcance": 35.0,
+    "recarga": 2.5,
+    "tempo_submerso": 60.0
+  },
+  "besta_mar_girafa": {
+    "nome": "Besta do mar — Girafa",
+    "boss": false,
+    "vida": 450,
+    "dano": 4,
+    "andar": 3.5,
+    "nadar": 5.0,
+    "correr": 9.0,
+    "visao": 45.0,
+    "perseguicao": 65.0,
+    "alcance": 40.0,
+    "recarga": 2.4,
+    "tempo_submerso": 60.0
+  },
+  "besta_mar_javali": {
+    "nome": "Besta do mar — Javali",
+    "boss": false,
+    "vida": 600,
+    "dano": 7,
+    "andar": 3.2,
+    "nadar": 4.0,
+    "correr": 8.5,
+    "visao": 45.0,
+    "perseguicao": 65.0,
+    "alcance": 35.0,
+    "recarga": 3.0,
+    "tempo_submerso": 60.0
+  },
+  "besta_mar_serpente": {
+    "nome": "Sea Serpent",
+    "boss": true,
+    "vida": 2000,
+    "dano": 6,
+    "andar": 2.5,
+    "nadar": 5.0,
+    "correr": 10.0,
+    "visao": 80.0,
+    "perseguicao": 110.0,
+    "alcance": 55.0,
+    "recarga": 3.2,
+    "tempo_submerso": 60.0
+  }
+}

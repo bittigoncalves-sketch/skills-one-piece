@@ -1,6 +1,6 @@
 extends SceneTree
-## Mera Mera Z — prova o ciclo visual completo:
-## coldres durante a carga -> mãos ao completar -> arma some após a rajada.
+## Mera Mera Z — prova o ciclo visual completo, agora SEM CARGA:
+## aperto -> pistolas já nas mãos e rajada correndo -> arma some ao fim do pente.
 ## Execute: godot --headless --path . -s tools/dev_tests/test_mera_z_saque.gd
 
 var _falhas := 0
@@ -35,24 +35,23 @@ func _init() -> void:
 		_verificar(not malhas.is_empty() and Visual.e_adorno(malhas[0]),
 			"pistola é marcada para não receber a cor do personagem")
 
+	# ⚠️ SEM CARGA — pedido do dono: "elimina a necessidade de tempo para desferir
+	#   ataques de frutas na Mera Mera no Mi". O Z agora saca E atira no mesmo
+	#   aperto, e as pistolas pulam o coldre: nascem direto nas mãos. A janela
+	#   curta abaixo é de propósito — se a espera voltar, ela acusa na hora.
 	player.begin_charge("Z")
-	await _esperar(0.35)
-	_verificar(rig.pistolas_em_saque(), "pistolas ficam visíveis durante a carga")
-	for gun in rig.pistolas():
-		_verificar(gun.visible and gun.get_parent().name == "MeraPistolHolsters",
-			"pistola começa no coldre da cintura")
-	_verificar(player._cast.progresso_mera_z() > 0.0 and player._cast.progresso_mera_z() < 1.0,
-		"progresso da animação acompanha o carregamento")
-
-	# A carga completa leva 0,5 s; esta margem também cobre o frame que transfere
-	# as pistolas do coldre para as mãos antes da primeira bala.
-	await _esperar(0.35)
+	await _esperar(0.1)
+	_verificar(rig.pistolas_em_saque(), "as pistolas aparecem no mesmo aperto")
 	for gun in rig.pistolas():
 		_verificar(gun.visible and String(gun.get_parent().name).begins_with("ForeArm_"),
-			"pistola foi transferida para a mão antes do disparo")
-	_verificar(player._rapid_fire, "carga completa inicia a rajada animada do Player")
+			"pistola nasce na mão, sem passar pelo coldre")
+	_verificar(player._rapid_fire, "a rajada começa sem carga nenhuma")
+	# ⚠️ CONTROLE DO "SEM CARGA": se a Mera voltasse para `CARREGAVEIS`, o nó de
+	#   carga marcaria progresso e a rajada só sairia meio segundo depois. Sem
+	#   esta linha, um retorno da barra passaria despercebido.
+	_verificar(player._cast.progresso_mera_z() == 0.0, "não existe mais barra de carga na Mera Z")
 
-	await _esperar(2.85)
+	await _esperar(3.4)
 	_verificar(not rig.pistolas_em_saque(), "pistolas foram ocultadas após a rajada")
 	_verificar(not player.has_meta("custom_pose"), "pose de saque foi limpa e não trava as próximas animações")
 	player.remove_meta("damage_immune")

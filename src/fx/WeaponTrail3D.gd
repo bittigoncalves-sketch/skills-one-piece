@@ -32,6 +32,12 @@ func clear() -> void:
 	mesh.clear_surfaces()
 
 func _process(delta: float) -> void:
+	var t := Cronometro.ini()
+	_process_corpo(delta)
+	Cronometro.fim(&"WeaponTrail3D.process", t)
+
+
+func _process_corpo(delta: float) -> void:
 	if _is_emitting and target_base and target_tip:
 		_points.push_front({
 			"base": target_base.global_position,

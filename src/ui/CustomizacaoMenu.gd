@@ -19,13 +19,9 @@ extends Control
 #  Gear 2, que também veste o chapéu, obedecer à mesma regra de graça.
 #
 #  ------------------------------------------------------- O PERSONAGEM 3D
-#  Um `SubViewport` com câmera, luz e o modelo de verdade (`CharacterBuilder`),
-#  mostrado num `SubViewportContainer`. É o mesmo modelo que entra em partida —
-#  então o que se vê aqui é o que se leva, e não uma maquete que pode divergir.
-#
-#  ⚠️ O viewport precisa de `own_world_3d = true`. Sem isso ele compartilha o
-#  mundo da cena principal: a arena inteira apareceria atrás do personagem, e a
-#  luz daqui vazaria para o jogo.
+#  A `PreviaDoPersonagem` (src/ui/PreviaDoPersonagem.gd): viewport com mundo
+#  próprio, luz, câmera enquadrada pela caixa do modelo e giro por arrasto. Morava
+#  aqui até 30/09/2026; saiu para a janela de Status (M) usar a MESMA montagem.
 # ============================================================================
 
 ## A arte de fundo da tela, desenhada pelo dono. `COR_FUNDO` sobrevive como a
@@ -50,46 +46,29 @@ const ROTULO_CATEGORIA := {"acessorios": "ACESSÓRIOS", "raca": "RAÇA",
 signal fechado
 
 var _categoria := "acessorios"
-var _modelo: Node3D = null
-var _viewport: SubViewport = null
+var _previa: PreviaDoPersonagem = null
+## O modelo e o viewport moram na `_previa`; os nomes antigos ficaram como atalho —
+## o menu aplica o visual em `_modelo` a cada escolha, e a `medir_customizacao` lê
+## os dois.
+var _modelo: Node3D:
+	get: return _previa.modelo if _previa != null else null
+var _viewport: SubViewport:
+	get: return _previa.viewport if _previa != null else null
 var _lista_direita: VBoxContainer = null
 var _botoes_categoria: Dictionary = {}
-var _giro := 0.0
-var _camera: Camera3D = null
-var _arrastando := false
 
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	# A prévia monta o modelo, aplica o visual salvo e enquadra no quadro seguinte.
 	_montar()
-	Visual.carregar_uma_vez()
-	Visual.aplicar(_modelo)
 	_selecionar_categoria("acessorios")
-	# ⚠️ ENQUADRAR SÓ NO QUADRO SEGUINTE. `_caixa_visual` lê `global_transform`
-	# de cada malha, e o Godot só propaga as transformações depois que a árvore
-	# processa. Enquadrar dentro do `_ready` mede a hierarquia ainda em repouso e
-	# devolve uma caixa errada — foi o que pôs a câmera dentro do tronco.
-	await get_tree().process_frame
-	_enquadrar()
 
 
-## ⚠️ SEM GIRO AUTOMÁTICO. O personagem girava sozinho, e isso atrapalha o que o
-## menu existe para fazer: comparar duas opções. Quando ele nunca para, cada
-## escolha aparece num ângulo diferente e a comparação vira memória. Agora ele
-## fica parado e gira quando o jogador ARRASTA — quem quer ver as costas vê, na
-## hora que quiser.
+## Arrastar gira o personagem (sem giro automático — ver `PreviaDoPersonagem.arrastar`).
 func _ao_arrastar(e: InputEvent) -> void:
-	if _modelo == null or not is_instance_valid(_modelo):
-		return
-	if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT:
-		_arrastando = e.pressed
-	elif e is InputEventMouseMotion and _arrastando:
-		# 0,01 rad por pixel: uma volta completa em ~630 px, que é
-		# aproximadamente a largura do painel. Assim o gesto natural (arrastar de
-		# ponta a ponta) dá a volta inteira.
-		_giro -= (e as InputEventMouseMotion).relative.x * 0.01
-		_modelo.rotation.y = _giro
+	_previa.arrastar(e)
 
 
 func _input(event: InputEvent) -> void:
@@ -201,156 +180,12 @@ func _centro() -> Control:
 	st.set_corner_radius_all(10)
 	caixa.add_theme_stylebox_override("panel", st)
 
-	var cont := SubViewportContainer.new()
-	cont.stretch = true
-	# O container é quem recebe o arrasto: é ele que ocupa a área do personagem.
-	cont.mouse_filter = Control.MOUSE_FILTER_STOP
-	cont.gui_input.connect(_ao_arrastar)
-	cont.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	cont.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	caixa.add_child(cont)
-
-	_viewport = SubViewport.new()
-	# ⚠️ mundo PRÓPRIO: sem isto o viewport herda o mundo da cena e a arena
-	# inteira apareceria atrás do personagem.
-	_viewport.own_world_3d = true
-	# ⚠️ TRANSPARENTE, senão o personagem aparece dentro de um RETÂNGULO AZUL
-	# recortado sobre a arte. O viewport pinta o próprio fundo antes da cena, e
-	# com a imagem atrás isso vira uma janela opaca no meio da tela.
-	_viewport.transparent_bg = true
-	_viewport.size = Vector2i(520, 620)
-	_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	cont.add_child(_viewport)
-
-	var amb := WorldEnvironment.new()
-	var env := Environment.new()
-	# BG_CLEAR_COLOR (e não BG_COLOR) é o que respeita o `transparent_bg` acima:
-	# com BG_COLOR o ambiente pinta a cor de qualquer jeito e a transparência do
-	# viewport não vale nada.
-	env.background_mode = Environment.BG_CLEAR_COLOR
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.55, 0.68, 0.90)
-	env.ambient_light_energy = 0.9
-	amb.environment = env
-	_viewport.add_child(amb)
-
-	# Base baixa e escura: ancora os pés do personagem e separa sua silhueta da
-	# arte de fundo, sem virar um segundo cenário dentro do menu.
-	var base := MeshInstance3D.new()
-	var disco := CylinderMesh.new()
-	disco.top_radius = 2.25
-	disco.bottom_radius = 2.45
-	disco.height = 0.10
-	disco.radial_segments = 48
-	base.mesh = disco
-	base.position = Vector3(0.0, -0.06, 0.0)
-	base.material_override = Materiais.superficie(Color(0.055, 0.10, 0.20))
-	_viewport.add_child(base)
-
-	var luz := DirectionalLight3D.new()
-	luz.rotation = Vector3(deg_to_rad(-42.0), deg_to_rad(-38.0), 0.0)
-	luz.light_energy = 1.5
-	_viewport.add_child(luz)
-	# Recorte frio no lado oposto: destaca cabelo, asas e acessórios escuros
-	# contra o fundo azul sem achatar a luz principal.
-	var recorte := DirectionalLight3D.new()
-	recorte.rotation = Vector3(deg_to_rad(-28.0), deg_to_rad(132.0), 0.0)
-	recorte.light_color = Color(0.48, 0.72, 1.0)
-	recorte.light_energy = 0.55
-	_viewport.add_child(recorte)
-
-	_camera = Camera3D.new()
-	_camera.fov = 42.0
-	_viewport.add_child(_camera)
-	_camera.current = true
-
-	_montar_modelo()
+	_previa = PreviaDoPersonagem.new()
+	_previa.name = "Previa"
+	_previa.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_previa.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	caixa.add_child(_previa)
 	return caixa
-
-
-func _montar_modelo() -> void:
-	var dados := CharacterBuilder.build_character("base")
-	_modelo = dados.get("node") as Node3D
-	if _modelo == null:
-		push_warning("[Customizacao] não consegui montar o personagem de prévia")
-		return
-	_modelo.position = Vector3(0, 0.0, 0)
-	_viewport.add_child(_modelo)
-
-
-## ⚠️ ENQUADRAMENTO MEDIDO, não números fixos. A primeira versão punha a câmera
-## em (0, 1.0, 2.6) — e o modelo do `CharacterBuilder` vem no tamanho NATIVO
-## dele, sem a escala que o rig aplica em partida. Resultado: a câmera nascia
-## dentro do tronco e a tela mostrava uma parede verde.
-##
-## Aqui a moldura sai da caixa do próprio modelo: altura e largura decidem a
-## distância, então trocar de personagem ou mudar a proporção do rig continua
-## enquadrando.
-## ⚠️ SEMPRE ADIADO. `_enquadrar` lê `global_transform` das malhas, e o Godot só
-## propaga isso depois que a árvore processa. Chamar logo após equipar mede a
-## peça nova ainda em repouso e devolve uma moldura errada — é o mesmo erro que
-## já pôs a câmera dentro do tronco no `_ready` (ver docs/erros.md).
-func _reenquadrar() -> void:
-	await get_tree().process_frame
-	_enquadrar()
-
-
-func _enquadrar() -> void:
-	if _modelo == null or _camera == null:
-		return
-	var cx := _caixa_visual(_modelo)
-	var alvo := cx.position + cx.size * 0.5
-	# O maior lado manda: personagem alto pede recuo por altura, largo por
-	# largura. `tan(fov/2)` converte "quanto cabe" em "a que distância".
-	var maior: float = maxf(cx.size.y, maxf(cx.size.x, cx.size.z))
-	var dist: float = (maior * 0.5) / tan(deg_to_rad(_camera.fov * 0.5))
-	dist *= 1.35   # respiro nas bordas: personagem colado na moldura sufoca
-	# ⚠️ CÂMERA NO −Z, não no +Z. O personagem olha para −Z (convenção do Godot e
-	# deste projeto, ver `RosaDosVentos`), então pôr a câmera no +Z mostra as
-	# COSTAS — e num menu de customização o rosto é o que o jogador quer ver. O
-	# giro lento leva as costas ao quadro sozinho, para quem quer ver as asas.
-	# ⚠️ IDEMPOTENTE: NÃO MOVE O MODELO. A primeira versão deslocava o modelo para
-	# centrar o alvo no eixo — e cada nova chamada subtraía de novo, acumulando
-	# DERIVA. Como `_enquadrar` agora roda a cada troca de raça e de acessório,
-	# isso empurrava o personagem para longe da câmera a cada clique.
-	#
-	# Em vez disso, a mira usa o EIXO do modelo em X/Z (para o giro ficar
-	# centrado) e a altura do centro da caixa em Y (para o enquadramento
-	# vertical). Chamar dez vezes dá o mesmo resultado de chamar uma.
-	# `alvo` já está em MUNDO. Em X/Z a mira usa o EIXO do modelo, para o giro
-	# ficar centrado; em Y usa a altura do centro da caixa, para o enquadramento
-	# vertical pegar o corpo inteiro.
-	var base := _modelo.global_position
-	var mira := Vector3(base.x, alvo.y, base.z)
-	_camera.position = Vector3(mira.x, mira.y, mira.z - dist)
-	_camera.look_at(mira, Vector3.UP)
-
-
-## A caixa que o modelo realmente OCUPA, em coordenadas de MUNDO.
-##
-## ⚠️ MUNDO, não espaço do modelo. A primeira versão convertia para o espaço do
-## modelo (`raiz.global_transform.affine_inverse()`) e devolvia 3,6 de altura —
-## mas o rig tem escala 1,8, então o corpo mede 6,48 no mundo, que é onde a
-## câmera está. A distância saía calculada pela metade e o enquadramento pegava
-## só a cabeça.
-##
-## `VisualInstance3D.get_aabb()` sozinho não serve: ele é da malha, não da
-## hierarquia, e o rig tem membros pendurados em vários nós.
-func _caixa_visual(raiz: Node3D) -> AABB:
-	var malhas: Array = []
-	FxUtil._collect_meshes(raiz, malhas)
-	var uniao := AABB()
-	var primeiro := true
-	for m in malhas:
-		if not (m is MeshInstance3D) or (m as MeshInstance3D).mesh == null:
-			continue
-		var mi := m as MeshInstance3D
-		var a: AABB = mi.global_transform * mi.mesh.get_aabb()
-		uniao = a if primeiro else uniao.merge(a)
-		primeiro = false
-	if primeiro:
-		return AABB(Vector3(-0.5, 0.0, -0.5), Vector3(1.0, 2.0, 1.0))
-	return uniao
 
 
 func _coluna_direita() -> Control:
@@ -448,7 +283,7 @@ func _itens_acessorios() -> void:
 					# que já ocupava a parte antes de pôr o novo.
 					Visual.equipar(Acessorios.parte_de(aid), aid)
 					Visual.aplicar(_modelo)
-					_reenquadrar()
+					_previa.reenquadrar()
 					_encher_direita())
 			_lista_direita.add_child(b)
 
@@ -480,7 +315,7 @@ func _itens_cabelo() -> void:
 			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 				Visual.equipar("cabelo", cid)
 				Visual.aplicar(_modelo)
-				_reenquadrar()
+				_previa.reenquadrar()
 				_encher_direita())
 		_lista_direita.add_child(b)
 
@@ -518,7 +353,7 @@ func _itens_raca() -> void:
 				# pintura. Quem pinta agora é o `Visual.aplicar` acima.
 				# Raça muda a silhueta (pernas longas, asas, cauda): sem
 				# re-enquadrar, o personagem sai do quadro.
-				_reenquadrar()
+				_previa.reenquadrar()
 				_encher_direita())
 		_lista_direita.add_child(b)
 
@@ -692,6 +527,9 @@ func _botao(texto: String, selecionado: bool, amostra := Color(0, 0, 0, 0)) -> P
 
 
 func _estilo_botao(p: PanelContainer, selecionado: bool) -> void:
+	if GuiMinecraft.disponivel():
+		p.add_theme_stylebox_override("panel", GuiMinecraft.botao("hover" if selecionado else "normal"))
+		return
 	var st := StyleBoxFlat.new()
 	st.bg_color = COR_PAINEL_SEL if selecionado else COR_PAINEL
 	st.border_color = COR_BORDA if selecionado else Color(0.25, 0.42, 0.72)

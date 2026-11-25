@@ -1,0 +1,13 @@
+[
+	{
+		"cor": "#bfe6ff",
+		"estilo": true,
+		"id": "estilo_de_combate_base",
+		"nome": "Estilo de Combate Base",
+		"teclas": {
+			"C": "mp_luta_sequencia_c",
+			"X": "mp_luta_pesado_x",
+			"Z": "mp_luta_soco_z"
+		}
+	}
+]

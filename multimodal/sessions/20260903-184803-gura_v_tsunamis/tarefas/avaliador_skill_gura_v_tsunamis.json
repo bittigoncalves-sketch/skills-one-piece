@@ -1,0 +1,52 @@
+{
+  "id": "avaliador_skill_gura_v_tsunamis",
+  "agente": "avaliador",
+  "modelo": "claude",
+  "objetivo": "Julgar 'gura V tsunamis' contra a barra de um jogo famoso do gênero — gráfico E funcionamento — e dizer se está pronto.",
+  "references": {
+    "spec": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184803-gura_v_tsunamis/specs/reference_spec.yaml",
+    "contact_sheets": [
+      "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184803-gura_v_tsunamis/extraido/contact_sheets/gura_gura_V.png"
+    ],
+    "frames": [],
+    "images": [],
+    "docs": [
+      "/home/gabriel-bitti/dev/skills-one-piece/docs/ESTADO_ATUAL.md",
+      "/home/gabriel-bitti/dev/skills-one-piece/docs/AGENTES.md"
+    ]
+  },
+  "relevant_files": [
+    "src/combat/",
+    "Player.gd",
+    "src/effects/DamageZone.gd",
+    "network/",
+    "src/effects/",
+    "src/fx/",
+    "VFX/",
+    "src/items/",
+    "SkillSystem.gd",
+    "src/combat/Balance.gd"
+  ],
+  "allowed_changes": [],
+  "forbidden_changes": [
+    "nada — este agente não escreve"
+  ],
+  "constraints": [
+    "FRENTE = -Z. Mira, movimento e VFX direcional usam o `fwd` recebido; nunca hardcodar Vector3(0,0,±1) de mundo.",
+    "Escala direcional com Node3D.scale (LOCAL) + look_at. NUNCA Basis.scaled() — ela escala no eixo do MUNDO e distorce fora do Z.",
+    "Servidor-autoridade: VFX roda em todos os clientes, mas dano, knockback e física em outros corpos SÓ no servidor.",
+    "class_name novo não entra sozinho no cache: depois de criar, rodar `./checar_cache.sh` — senão o jogo abre em TELA CINZA.",
+    "A porta 24565 não paraleliza: nada de subir duas instâncias do jogo ao mesmo tempo.",
+    "Tudo é código/procedural — sem asset externo importado à mão."
+  ],
+  "acceptance": [
+    "nota 0-10 nos 11 critérios da rubrica, cada uma com evidência (quadro@instante ou arquivo:linha)",
+    "nota final = MÍNIMO dos eixos, nunca a média",
+    "pelo menos dois jogos citados como régua, dizendo em que ponto específico eles estão à frente",
+    "gaps ordenados por impacto, cada um com o arquivo onde se conserta e o custo",
+    "veredito explícito: APROVADO / APROVADO COM RESSALVA / REPROVADO"
+  ],
+  "output_schema": null,
+  "sandbox": "read-only",
+  "timeout_s": 900
+}

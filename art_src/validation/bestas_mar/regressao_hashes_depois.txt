@@ -1,0 +1,2 @@
+85c9bceec32f987942735af221417ac61add50485311ee7e2242cce9cfee83f8  mapas/historia/baseplate.json
+3d66e1d10cb958eaeb67ebe2cf1635648202866ee276c22af71dcc69656e804e  mapas/modelos/catalogo.json

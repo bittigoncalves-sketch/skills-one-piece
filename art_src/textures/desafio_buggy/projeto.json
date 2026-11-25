@@ -1,0 +1,1177 @@
+{
+  "versao": 1,
+  "descricao": "Projeto de recoloracao pontual e expressoes para aplicar aos PNGs originais; nao altera UV nem alfa.",
+  "convencoes": {
+    "regiao": "[x0,y0,x1,y1]; extremos finais exclusivos; origem no canto superior esquerdo",
+    "recolor": "comparar RGB exato do atlas original, substituir pelo RGB para nos pixels da regiao; preservar alfa de cada pixel; nao pintar pixels totalmente transparentes; operacoes contra a imagem original, sem cascata",
+    "ordem": "1. recolores do corpo; 2. copiar o resultado base em cada variante; 3. aplicar apenas a grade facial; neutro tambem eh uma variante desenhada",
+    "pontos": ". significa preservar pixel da textura-base recolorida",
+    "filtragem": "nearest, sem mipmaps borrados",
+    "aviso_uv": "As regioes sao retangulos de selecao de cor, nao uma afirmacao de que cada malha usa o layout padrao, especialmente Richie."
+  },
+  "personagens": {
+    "mp_buggy": {
+      "paleta": {
+        "azul_cabelo": "#315D9C",
+        "azul_roupa": "#282D70",
+        "vermelho_circo": "#AF2632",
+        "marfim_faixa": "#F3E8CF",
+        "E": "#1D1722",
+        "D": "#100D18",
+        "W": "#FFFFFF",
+        "S": "#F8D3AC",
+        "B": "#D88187",
+        "M": "#3C1019",
+        "T": "#FFFFFF"
+      },
+      "recores": [
+        {
+          "regiao": [
+            0,
+            0,
+            32,
+            16
+          ],
+          "de": "#497BAF",
+          "para": "#315D9C"
+        },
+        {
+          "regiao": [
+            0,
+            16,
+            64,
+            32
+          ],
+          "de": "#32368C",
+          "para": "#282D70"
+        },
+        {
+          "regiao": [
+            0,
+            32,
+            64,
+            48
+          ],
+          "de": "#991B1E",
+          "para": "#AF2632"
+        },
+        {
+          "regiao": [
+            0,
+            32,
+            64,
+            48
+          ],
+          "de": "#EBEBED",
+          "para": "#F3E8CF"
+        }
+      ],
+      "pixels": []
+    },
+    "mp_cabaji": {
+      "paleta": {
+        "cabelo_verde_escuro": "#193D2E",
+        "cabelo_verde_medio": "#31573A",
+        "casaco_indigo": "#2B365D",
+        "listra_azul": "#7296C9",
+        "luz_aco": "#CAD4E8"
+      },
+      "recores": [
+        {
+          "regiao": [
+            0,
+            0,
+            32,
+            16
+          ],
+          "de": "#122C0F",
+          "para": "#193D2E"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            32,
+            16
+          ],
+          "de": "#1E451A",
+          "para": "#31573A"
+        },
+        {
+          "regiao": [
+            0,
+            16,
+            64,
+            32
+          ],
+          "de": "#36345E",
+          "para": "#2B365D"
+        },
+        {
+          "regiao": [
+            0,
+            48,
+            64,
+            64
+          ],
+          "de": "#36345E",
+          "para": "#2B365D"
+        },
+        {
+          "regiao": [
+            0,
+            32,
+            64,
+            48
+          ],
+          "de": "#97AFD8",
+          "para": "#7296C9"
+        }
+      ],
+      "pixels": []
+    },
+    "mp_richie": {
+      "paleta": {
+        "juba_lilas_luz": "#CBB1DC",
+        "juba_lilas_sombra": "#B4A0CB",
+        "pelagem_clara": "#D8DCB6",
+        "focinho": "#2B2525"
+      },
+      "recores": [
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#B8A3C6",
+          "para": "#B399C3"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#B9A7C7",
+          "para": "#B49DC4"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#B9A7C8",
+          "para": "#B49DC5"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#BAA7C9",
+          "para": "#B59DC6"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#BAA7CA",
+          "para": "#B59DC7"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#BAA8C8",
+          "para": "#B59EC5"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#BBA8C9",
+          "para": "#B69EC6"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#BBAACA",
+          "para": "#B6A0C7"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#BBABCB",
+          "para": "#B6A1C8"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#BCA8CA",
+          "para": "#B79EC7"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#BCABCB",
+          "para": "#B7A1C8"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#BDAACB",
+          "para": "#B8A0C8"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#BDAACC",
+          "para": "#B8A0C9"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#BEAACA",
+          "para": "#B9A0C7"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#BEABCC",
+          "para": "#B9A1C9"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#BEACCC",
+          "para": "#B9A2C9"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#BFABCC",
+          "para": "#BAA1C9"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#BFACCE",
+          "para": "#BAA2CB"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#BFADCF",
+          "para": "#BAA3CC"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C0ACCE",
+          "para": "#BBA2CB"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C1ACCF",
+          "para": "#BCA2CC"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C1ACD0",
+          "para": "#BCA2CD"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C1ADCF",
+          "para": "#BCA3CC"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C1ADD0",
+          "para": "#BCA3CD"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C1AECF",
+          "para": "#BCA4CC"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C1AED0",
+          "para": "#BCA4CD"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C2ADD0",
+          "para": "#BDA3CD"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C2ADD1",
+          "para": "#BDA3CE"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C2AED0",
+          "para": "#BDA4CD"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C2AFD1",
+          "para": "#BDA5CE"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C3AFD1",
+          "para": "#BEA5CE"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C3B0D1",
+          "para": "#BEA6CE"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C3B0D2",
+          "para": "#BEA6CF"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C3B1D2",
+          "para": "#BEA7CF"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C4AFD1",
+          "para": "#BFA5CE"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C4B0D2",
+          "para": "#BFA6CF"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C4B1D2",
+          "para": "#BFA7CF"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C4B1D3",
+          "para": "#BFA7D0"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C5B1D4",
+          "para": "#C0A7D1"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C5B2D5",
+          "para": "#C0A8D2"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C5B3D5",
+          "para": "#C0A9D2"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C6B1D4",
+          "para": "#C1A7D1"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C6B1D5",
+          "para": "#C1A7D2"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C6B1D6",
+          "para": "#C1A7D3"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C6B2D5",
+          "para": "#C1A8D2"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C6B2D6",
+          "para": "#C1A8D3"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C7B1D3",
+          "para": "#C2A7D0"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C7B2D5",
+          "para": "#C2A8D2"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C7B2D6",
+          "para": "#C2A8D3"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C7B3D6",
+          "para": "#C2A9D3"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C7B5D7",
+          "para": "#C2ABD4"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C8B4D7",
+          "para": "#C3AAD4"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C8B5D7",
+          "para": "#C3ABD4"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C9B4D7",
+          "para": "#C4AAD4"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C9B5D8",
+          "para": "#C4ABD5"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#C9B6D9",
+          "para": "#C4ACD6"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#CAB5D9",
+          "para": "#C5ABD6"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#CAB6D8",
+          "para": "#C5ACD5"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#CAB6D9",
+          "para": "#C5ACD6"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#CAB6DA",
+          "para": "#C5ACD7"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#CBB6D9",
+          "para": "#C6ACD6"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#CBB6DA",
+          "para": "#C6ACD7"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#CBB7DA",
+          "para": "#C6ADD7"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#CBB8DB",
+          "para": "#C6AED8"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#CCB6DB",
+          "para": "#C7ACD8"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#CCB7DA",
+          "para": "#C7ADD7"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#CCB7DB",
+          "para": "#C7ADD8"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#CCB7DC",
+          "para": "#C7ADD9"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#CDB7DB",
+          "para": "#C8ADD8"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#CDB8DC",
+          "para": "#C8AED9"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#CEB9DD",
+          "para": "#C9AFDA"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#CEBBDD",
+          "para": "#C9B1DA"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#CFBADD",
+          "para": "#CAB0DA"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#CFBADE",
+          "para": "#CAB0DB"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#CFBBDE",
+          "para": "#CAB1DB"
+        },
+        {
+          "regiao": [
+            0,
+            0,
+            64,
+            64
+          ],
+          "de": "#D0BBDF",
+          "para": "#CBB1DC"
+        }
+      ],
+      "pixels": []
+    },
+    "mp_pirate_pirate4": {
+      "paleta": {
+        "vermelho_luz": "#C12D35",
+        "vermelho_medio": "#A62530",
+        "vermelho_sombra": "#761923",
+        "marrom_escuro": "#352C2A"
+      },
+      "recores": [
+        {
+          "regiao": [
+            0,
+            16,
+            64,
+            32
+          ],
+          "de": "#AF0000",
+          "para": "#C12D35"
+        },
+        {
+          "regiao": [
+            0,
+            16,
+            64,
+            32
+          ],
+          "de": "#A80000",
+          "para": "#B62932"
+        },
+        {
+          "regiao": [
+            0,
+            16,
+            64,
+            32
+          ],
+          "de": "#990000",
+          "para": "#A62530"
+        },
+        {
+          "regiao": [
+            0,
+            16,
+            64,
+            32
+          ],
+          "de": "#7F0000",
+          "para": "#8D1D29"
+        },
+        {
+          "regiao": [
+            0,
+            16,
+            64,
+            32
+          ],
+          "de": "#680000",
+          "para": "#761923"
+        },
+        {
+          "regiao": [
+            0,
+            48,
+            64,
+            64
+          ],
+          "de": "#AF0000",
+          "para": "#C12D35"
+        },
+        {
+          "regiao": [
+            0,
+            48,
+            64,
+            64
+          ],
+          "de": "#A80000",
+          "para": "#B62932"
+        },
+        {
+          "regiao": [
+            0,
+            48,
+            64,
+            64
+          ],
+          "de": "#7F0000",
+          "para": "#8D1D29"
+        },
+        {
+          "regiao": [
+            0,
+            48,
+            64,
+            64
+          ],
+          "de": "#680000",
+          "para": "#761923"
+        }
+      ],
+      "pixels": []
+    },
+    "mp_pirate_pirate5": {
+      "paleta": {
+        "cinza_luz": "#434F61",
+        "cinza_medio": "#354254",
+        "cinza_sombra": "#222B39",
+        "ouro": "#A88125"
+      },
+      "recores": [
+        {
+          "regiao": [
+            0,
+            16,
+            64,
+            32
+          ],
+          "de": "#2C2C2C",
+          "para": "#434F61"
+        },
+        {
+          "regiao": [
+            0,
+            16,
+            64,
+            32
+          ],
+          "de": "#232323",
+          "para": "#354254"
+        },
+        {
+          "regiao": [
+            0,
+            16,
+            64,
+            32
+          ],
+          "de": "#141414",
+          "para": "#222B39"
+        },
+        {
+          "regiao": [
+            0,
+            16,
+            64,
+            32
+          ],
+          "de": "#8E6D00",
+          "para": "#A88125"
+        },
+        {
+          "regiao": [
+            0,
+            48,
+            64,
+            64
+          ],
+          "de": "#2C2C2C",
+          "para": "#434F61"
+        },
+        {
+          "regiao": [
+            0,
+            48,
+            64,
+            64
+          ],
+          "de": "#232323",
+          "para": "#354254"
+        },
+        {
+          "regiao": [
+            0,
+            48,
+            64,
+            64
+          ],
+          "de": "#141414",
+          "para": "#222B39"
+        },
+        {
+          "regiao": [
+            0,
+            48,
+            64,
+            64
+          ],
+          "de": "#8E6D00",
+          "para": "#A88125"
+        }
+      ],
+      "pixels": []
+    }
+  },
+  "expressoes_buggy": {
+    "regiao": [
+      8,
+      8,
+      16,
+      16
+    ],
+    "paleta": {
+      "E": "#1D1722",
+      "D": "#100D18",
+      "W": "#FFFFFF",
+      "S": "#F8D3AC",
+      "B": "#D88187",
+      "M": "#3C1019",
+      "T": "#FFFFFF"
+    },
+    "grades": {
+      "neutro": [
+        "........",
+        "........",
+        ".EE..EE.",
+        "WD....DW",
+        "WW....WW",
+        ".B....B.",
+        "..MMMM..",
+        "........"
+      ],
+      "riso": [
+        "........",
+        "........",
+        "EE....EE",
+        "DD....DD",
+        ".B....B.",
+        ".MMMMMM.",
+        ".MTTTTM.",
+        "..MMMM.."
+      ],
+      "raiva": [
+        "........",
+        "........",
+        "EE....EE",
+        ".EE..EE.",
+        "WD....DW",
+        "WW....WW",
+        ".MMMMMM.",
+        "M......M"
+      ],
+      "surpresa": [
+        "........",
+        "........",
+        "EE....EE",
+        "WW....WW",
+        "DD....DD",
+        ".B....B.",
+        "...MM...",
+        "...MM..."
+      ],
+      "malicioso": [
+        "........",
+        "........",
+        "EEE...EE",
+        "WD....DW",
+        "WW....WW",
+        ".B....B.",
+        "..MMMMM.",
+        "...TTTM."
+      ],
+      "derrotado": [
+        "........",
+        "........",
+        "E......E",
+        ".EE..EE.",
+        "DW....WD",
+        "WW....WW",
+        "...MM...",
+        "..M..M.."
+      ]
+    },
+    "observacao": "Versao 2: sobrancelhas, olhos e bocas de alto contraste afastados do centro ocupado pelo nariz; cabelo preservado. Depende de novas capturas na camera real."
+  }
+}

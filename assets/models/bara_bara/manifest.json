@@ -1,0 +1,61 @@
+{
+  "bara_bara_fruit": {
+    "triangles": 47540,
+    "meshes": 4,
+    "godot_min": [
+      -0.4090691804885864,
+      -0.3700000047683716,
+      -0.4090873897075653
+    ],
+    "godot_max": [
+      0.4090646803379059,
+      0.6184734106063843,
+      0.4090430438518524
+    ],
+    "bytes": 1301472
+  },
+  "cannon": {
+    "triangles": 29560,
+    "meshes": 2,
+    "godot_min": [
+      -0.5659999847412109,
+      -0.013999998569488525,
+      -0.8999998569488525
+    ],
+    "godot_max": [
+      0.5660001039505005,
+      0.9779868125915527,
+      0.8250000476837158
+    ],
+    "bytes": 885788
+  },
+  "buggy_ball": {
+    "triangles": 18692,
+    "meshes": 1,
+    "godot_min": [
+      -0.2099999189376831,
+      -0.20999997854232788,
+      -0.2499999850988388
+    ],
+    "godot_max": [
+      0.2099999487400055,
+      0.2526400685310364,
+      0.20999987423419952
+    ],
+    "bytes": 472972
+  },
+  "conventions": {
+    "units": "meters",
+    "up": "+Y",
+    "forward": "-Z",
+    "cannon_muzzle": [
+      0,
+      0.69,
+      -0.9
+    ],
+    "cannon_root": "ground under axle",
+    "ball_root": "sphere center",
+    "fruit_root": "fruit center",
+    "procedence": "Generated from original meshes and textures in tools/blender/bara_bara_assets.py; anime-inspired motifs, no external source assets."
+  }
+}

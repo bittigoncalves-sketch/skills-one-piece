@@ -1,0 +1,3789 @@
+{
+ "formato": "skills-one-piece/visual-mine-piece",
+ "versao": 1,
+ "origem": {
+  "mod": "MinePiece-ver14-forge-1.20.1.jar",
+  "extraido_por": "tools/mine_piece/extrair_visual.py"
+ },
+ "sons": {
+  "minepiece:sword_sweep": [
+   "sword_sweep"
+  ],
+  "minepiece:flame_explode": [
+   "fire1"
+  ],
+  "minepiece:punch": [
+   "punch_hit1"
+  ],
+  "minepiece:wind_chime": [
+   "wind_chime"
+  ],
+  "minepiece:slow_motion_end": [
+   "slow_motion_end"
+  ],
+  "minepiece:piano_horror": [
+   "piano_horror"
+  ],
+  "minepiece:tinnitus": [
+   "tinnitus"
+  ],
+  "minepiece:electric_shock": [
+   "electric_shock"
+  ],
+  "minepiece:guard_just": [
+   "guard_just"
+  ],
+  "minepiece:frame_set": [
+   "frame_set"
+  ],
+  "minepiece:stone_crash": [
+   "stone_crash"
+  ],
+  "minepiece:glass_crash": [
+   "glass_crash"
+  ],
+  "minepiece:gacon": [
+   "gacon"
+  ],
+  "minepiece:devil_laugh": [
+   "devil_voice"
+  ],
+  "minepiece:strong_hit": [
+   "hit_strong"
+  ],
+  "minepiece:clap": [
+   "clap"
+  ],
+  "minepiece:crush": [
+   "crush"
+  ],
+  "minepiece:guard_sword": [
+   "guard_sword"
+  ],
+  "minepiece:ice_generate": [
+   "ice_generate"
+  ],
+  "minepiece:gavel": [
+   "gavel"
+  ],
+  "minepiece:step_seraphim": [
+   "step_seraphim"
+  ],
+  "minepiece:gravity": [
+   "gravity"
+  ],
+  "minepiece:water_splash": [
+   "water_splash"
+  ],
+  "minepiece:suzume_living": [
+   "suzume_living"
+  ],
+  "minepiece:haki_haoshoku": [
+   "haki_haoshoku"
+  ],
+  "minepiece:thunder_impact": [
+   "thunder_impact"
+  ],
+  "minepiece:rocket_launcher": [
+   "rocket"
+  ],
+  "minepiece:gun_shot1": [
+   "gun_shot1"
+  ],
+  "minepiece:high_speed_movement": [
+   "high_speed_movement"
+  ],
+  "minepiece:laser_beam": [
+   "laser_beam"
+  ],
+  "minepiece:electric_short": [
+   "electric_short"
+  ],
+  "minepiece:bat_hit_metal": [
+   "bat_hit_metal"
+  ],
+  "minepiece:motor": [
+   "motor"
+  ],
+  "minecraft:ambient.cave": [
+   "mc_ambient_cave_cave1",
+   "mc_ambient_cave_cave2",
+   "mc_ambient_cave_cave3",
+   "mc_ambient_cave_cave4",
+   "mc_ambient_cave_cave5",
+   "mc_ambient_cave_cave6",
+   "mc_ambient_cave_cave7",
+   "mc_ambient_cave_cave8",
+   "mc_ambient_cave_cave9",
+   "mc_ambient_cave_cave10",
+   "mc_ambient_cave_cave11",
+   "mc_ambient_cave_cave12",
+   "mc_ambient_cave_cave13",
+   "mc_ambient_cave_cave14",
+   "mc_ambient_cave_cave15",
+   "mc_ambient_cave_cave16",
+   "mc_ambient_cave_cave17",
+   "mc_ambient_cave_cave18",
+   "mc_ambient_cave_cave19"
+  ],
+  "minecraft:block.anvil.place": [
+   "mc_random_anvil_land"
+  ],
+  "minecraft:block.beacon.activate": [
+   "mc_block_beacon_activate"
+  ],
+  "minecraft:block.cherry_wood_button.click_on": [
+   {
+    "n": "mc_block_cherrywood_button_cherrywood_click",
+    "v": 0.4,
+    "p": 0.6
+   }
+  ],
+  "minecraft:block.chest.open": [
+   "mc_block_chest_open"
+  ],
+  "minecraft:block.enchantment_table.use": [
+   "mc_block_enchantment_table_enchant1",
+   "mc_block_enchantment_table_enchant2",
+   "mc_block_enchantment_table_enchant3"
+  ],
+  "minecraft:block.end_gateway.spawn": [
+   "mc_random_explode1",
+   "mc_random_explode2",
+   "mc_random_explode3",
+   "mc_random_explode4"
+  ],
+  "minecraft:block.end_portal.spawn": [
+   "mc_block_end_portal_endportal"
+  ],
+  "minecraft:block.fire.ambient": [
+   "mc_fire_fire"
+  ],
+  "minecraft:block.fire.extinguish": [
+   "mc_random_fizz"
+  ],
+  "minecraft:block.glass.break": [
+   "mc_random_glass1",
+   "mc_random_glass2",
+   "mc_random_glass3"
+  ],
+  "minecraft:block.lava.ambient": [
+   "mc_liquid_lava"
+  ],
+  "minecraft:block.lava.pop": [
+   "mc_liquid_lavapop"
+  ],
+  "minecraft:block.note_block.guitar": [
+   "mc_note_guitar"
+  ],
+  "minecraft:block.portal.ambient": [
+   "mc_portal_portal"
+  ],
+  "minecraft:block.sand.break": [
+   "mc_dig_sand1",
+   "mc_dig_sand2",
+   "mc_dig_sand3",
+   "mc_dig_sand4"
+  ],
+  "minecraft:block.snow.break": [
+   "mc_dig_snow1",
+   "mc_dig_snow2",
+   "mc_dig_snow3",
+   "mc_dig_snow4"
+  ],
+  "minecraft:block.stone.break": [
+   "mc_dig_stone1",
+   "mc_dig_stone2",
+   "mc_dig_stone3",
+   "mc_dig_stone4"
+  ],
+  "minecraft:block.stone.step": [
+   "mc_step_stone1",
+   "mc_step_stone2",
+   "mc_step_stone3",
+   "mc_step_stone4",
+   "mc_step_stone5",
+   "mc_step_stone6"
+  ],
+  "minecraft:block.stone_button.click_on": [
+   {
+    "n": "mc_random_click",
+    "v": 0.3,
+    "p": 0.6
+   }
+  ],
+  "minecraft:block.water.ambient": [
+   "mc_liquid_water"
+  ],
+  "minecraft:entity.arrow.shoot": [
+   "mc_random_bow"
+  ],
+  "minecraft:entity.bat.takeoff": [
+   "mc_mob_bat_takeoff"
+  ],
+  "minecraft:entity.blaze.shoot": [
+   "mc_mob_ghast_fireball4"
+  ],
+  "minecraft:entity.ender_dragon.flap": [
+   "mc_mob_enderdragon_wings1",
+   "mc_mob_enderdragon_wings2",
+   "mc_mob_enderdragon_wings3",
+   "mc_mob_enderdragon_wings4",
+   "mc_mob_enderdragon_wings5",
+   "mc_mob_enderdragon_wings6"
+  ],
+  "minecraft:entity.ender_dragon.growl": [
+   "mc_mob_enderdragon_growl1",
+   "mc_mob_enderdragon_growl2",
+   "mc_mob_enderdragon_growl3",
+   "mc_mob_enderdragon_growl4"
+  ],
+  "minecraft:entity.enderman.teleport": [
+   "mc_mob_endermen_portal",
+   "mc_mob_endermen_portal2"
+  ],
+  "minecraft:entity.firework_rocket.blast": [
+   "mc_fireworks_blast1"
+  ],
+  "minecraft:entity.firework_rocket.blast_far": [
+   "mc_fireworks_blast_far1"
+  ],
+  "minecraft:entity.firework_rocket.large_blast": [
+   "mc_fireworks_largeblast1"
+  ],
+  "minecraft:entity.firework_rocket.launch": [
+   "mc_fireworks_launch1"
+  ],
+  "minecraft:entity.generic.explode": [
+   "mc_random_explode1",
+   "mc_random_explode2",
+   "mc_random_explode3",
+   "mc_random_explode4"
+  ],
+  "minecraft:entity.generic.splash": [
+   "mc_liquid_splash",
+   "mc_liquid_splash2"
+  ],
+  "minecraft:entity.item.pickup": [
+   "mc_random_pop"
+  ],
+  "minecraft:entity.lightning_bolt.impact": [
+   "mc_random_explode1",
+   "mc_random_explode2",
+   "mc_random_explode3",
+   "mc_random_explode4"
+  ],
+  "minecraft:entity.lightning_bolt.thunder": [
+   "mc_ambient_weather_thunder1",
+   "mc_ambient_weather_thunder2",
+   "mc_ambient_weather_thunder3"
+  ],
+  "minecraft:entity.player.attack.crit": [
+   {
+    "n": "mc_entity_player_attack_crit1",
+    "v": 0.7
+   },
+   {
+    "n": "mc_entity_player_attack_crit2",
+    "v": 0.7
+   },
+   {
+    "n": "mc_entity_player_attack_crit3",
+    "v": 0.7
+   }
+  ],
+  "minecraft:entity.player.attack.strong": [
+   {
+    "n": "mc_entity_player_attack_strong1",
+    "v": 0.6
+   },
+   {
+    "n": "mc_entity_player_attack_strong2",
+    "v": 0.6
+   },
+   {
+    "n": "mc_entity_player_attack_strong3",
+    "v": 0.6
+   },
+   {
+    "n": "mc_entity_player_attack_strong4",
+    "v": 0.6
+   },
+   {
+    "n": "mc_entity_player_attack_strong5",
+    "v": 0.7
+   },
+   {
+    "n": "mc_entity_player_attack_strong6",
+    "v": 0.7
+   }
+  ],
+  "minecraft:entity.player.attack.sweep": [
+   {
+    "n": "mc_entity_player_attack_sweep1",
+    "v": 0.7
+   },
+   {
+    "n": "mc_entity_player_attack_sweep2",
+    "v": 0.7
+   },
+   {
+    "n": "mc_entity_player_attack_sweep3",
+    "v": 0.7
+   },
+   {
+    "n": "mc_entity_player_attack_sweep4",
+    "v": 0.7
+   },
+   {
+    "n": "mc_entity_player_attack_sweep5",
+    "v": 0.7
+   },
+   {
+    "n": "mc_entity_player_attack_sweep6",
+    "v": 0.7
+   },
+   {
+    "n": "mc_entity_player_attack_sweep7",
+    "v": 0.7
+   }
+  ],
+  "minecraft:entity.player.breath": [
+   "mc_random_breath"
+  ],
+  "minecraft:entity.player.levelup": [
+   "mc_random_levelup"
+  ],
+  "minecraft:entity.player.splash": [
+   "mc_liquid_splash",
+   "mc_liquid_splash2"
+  ],
+  "minecraft:entity.player.splash.high_speed": [
+   "mc_liquid_heavy_splash"
+  ],
+  "minecraft:entity.tnt.primed": [
+   "mc_random_fuse"
+  ],
+  "minecraft:entity.wither.death": [
+   "mc_mob_wither_death"
+  ],
+  "minecraft:entity.wither.shoot": [
+   "mc_mob_wither_shoot"
+  ],
+  "minecraft:entity.wither.spawn": [
+   "mc_mob_wither_spawn"
+  ],
+  "minecraft:entity.zombie.attack_wooden_door": [
+   "mc_mob_zombie_wood1",
+   "mc_mob_zombie_wood2",
+   "mc_mob_zombie_wood3",
+   "mc_mob_zombie_wood4"
+  ],
+  "minecraft:entity.zombie.break_wooden_door": [
+   "mc_mob_zombie_woodbreak"
+  ],
+  "minecraft:item.totem.use": [
+   "mc_item_totem_use_totem"
+  ],
+  "minecraft:ui.button.click": [
+   "mc_random_click_stereo"
+  ],
+  "minecraft:block.note_block.bass": [
+   "mc_note_bassattack"
+  ],
+  "minecraft:block.note_block.didgeridoo": [
+   "mc_note_didgeridoo"
+  ],
+  "minecraft:ui.toast.challenge_complete": [
+   {
+    "n": "mc_ui_toast_challenge_complete",
+    "v": 0.6
+   }
+  ]
+ },
+ "particulas": {
+  "minepiece:particle_bat": {
+   "quadros": 12,
+   "w": 32,
+   "h": 32
+  },
+  "minepiece:particle_big_smoke": {
+   "quadros": 12,
+   "w": 16,
+   "h": 16
+  },
+  "minepiece:particle_blue": {
+   "quadros": 15,
+   "w": 8,
+   "h": 8
+  },
+  "minepiece:particle_broken_glass": {
+   "quadros": 4,
+   "w": 16,
+   "h": 16
+  },
+  "minepiece:particle_broken_glass_small": {
+   "quadros": 4,
+   "w": 16,
+   "h": 16
+  },
+  "minepiece:particle_claws": {
+   "quadros": 8,
+   "w": 32,
+   "h": 32
+  },
+  "minepiece:particle_dark": {
+   "quadros": 15,
+   "w": 32,
+   "h": 32
+  },
+  "minepiece:particle_fangs": {
+   "quadros": 8,
+   "w": 32,
+   "h": 32
+  },
+  "minepiece:particle_fire_fly": {
+   "quadros": 1,
+   "w": 8,
+   "h": 8
+  },
+  "minepiece:particle_fire_spark": {
+   "quadros": 14,
+   "w": 16,
+   "h": 16
+  },
+  "minepiece:particle_flame": {
+   "quadros": 10,
+   "w": 64,
+   "h": 64
+  },
+  "minepiece:particle_flame_blue": {
+   "quadros": 15,
+   "w": 64,
+   "h": 64
+  },
+  "minepiece:particle_flame_green": {
+   "quadros": 10,
+   "w": 64,
+   "h": 64
+  },
+  "minepiece:particle_flame_purple": {
+   "quadros": 15,
+   "w": 64,
+   "h": 64
+  },
+  "minepiece:particle_flame_red": {
+   "quadros": 15,
+   "w": 64,
+   "h": 64
+  },
+  "minepiece:particle_flame_small": {
+   "quadros": 10,
+   "w": 64,
+   "h": 64
+  },
+  "minepiece:particle_flame_yellow": {
+   "quadros": 15,
+   "w": 64,
+   "h": 64
+  },
+  "minepiece:particle_flash_red": {
+   "quadros": 7,
+   "w": 32,
+   "h": 32
+  },
+  "minepiece:particle_flash_red_small": {
+   "quadros": 7,
+   "w": 32,
+   "h": 32
+  },
+  "minepiece:particle_flower": {
+   "quadros": 12,
+   "w": 3,
+   "h": 3
+  },
+  "minepiece:particle_flower_pink": {
+   "quadros": 12,
+   "w": 3,
+   "h": 3
+  },
+  "minepiece:particle_gravity": {
+   "quadros": 4,
+   "w": 32,
+   "h": 32
+  },
+  "minepiece:particle_ice": {
+   "quadros": 12,
+   "w": 16,
+   "h": 16
+  },
+  "minepiece:particle_light_large": {
+   "quadros": 5,
+   "w": 32,
+   "h": 32
+  },
+  "minepiece:particle_light_large_red": {
+   "quadros": 1,
+   "w": 32,
+   "h": 32
+  },
+  "minepiece:particle_light_small": {
+   "quadros": 5,
+   "w": 32,
+   "h": 32
+  },
+  "minepiece:particle_magma": {
+   "quadros": 12,
+   "w": 32,
+   "h": 32
+  },
+  "minepiece:particle_negative": {
+   "quadros": 1,
+   "w": 32,
+   "h": 32
+  },
+  "minepiece:particle_note": {
+   "quadros": 8,
+   "w": 16,
+   "h": 16
+  },
+  "minepiece:particle_note_black": {
+   "quadros": 10,
+   "w": 32,
+   "h": 32
+  },
+  "minepiece:particle_purple": {
+   "quadros": 15,
+   "w": 16,
+   "h": 16
+  },
+  "minepiece:particle_red": {
+   "quadros": 15,
+   "w": 8,
+   "h": 8
+  },
+  "minepiece:particle_sand": {
+   "quadros": 12,
+   "w": 16,
+   "h": 16
+  },
+  "minepiece:particle_shock_hit": {
+   "quadros": 6,
+   "w": 16,
+   "h": 16
+  },
+  "minepiece:particle_shockwave": {
+   "quadros": 8,
+   "w": 32,
+   "h": 32
+  },
+  "minepiece:particle_slash": {
+   "quadros": 10,
+   "w": 32,
+   "h": 32
+  },
+  "minepiece:particle_thunder_black": {
+   "quadros": 22,
+   "w": 48,
+   "h": 48
+  },
+  "minepiece:particle_thunder_blue": {
+   "quadros": 22,
+   "w": 48,
+   "h": 48
+  },
+  "minepiece:particle_thunder_dark_blue": {
+   "quadros": 22,
+   "w": 48,
+   "h": 48
+  },
+  "minepiece:particle_thunder_light_blue": {
+   "quadros": 22,
+   "w": 48,
+   "h": 48
+  },
+  "minepiece:particle_water": {
+   "quadros": 8,
+   "w": 32,
+   "h": 32
+  },
+  "minepiece:particle_water_2": {
+   "quadros": 8,
+   "w": 32,
+   "h": 32
+  },
+  "minecraft:angry_villager": {
+   "quadros": 1,
+   "w": 8,
+   "h": 8
+  },
+  "minecraft:cloud": {
+   "quadros": 8,
+   "w": 8,
+   "h": 8
+  },
+  "minecraft:crit": {
+   "quadros": 1,
+   "w": 8,
+   "h": 8
+  },
+  "minecraft:dragon_breath": {
+   "quadros": 3,
+   "w": 8,
+   "h": 8
+  },
+  "minecraft:enchanted_hit": {
+   "quadros": 1,
+   "w": 8,
+   "h": 8
+  },
+  "minecraft:end_rod": {
+   "quadros": 8,
+   "w": 8,
+   "h": 8
+  },
+  "minecraft:explosion": {
+   "quadros": 16,
+   "w": 32,
+   "h": 32
+  },
+  "minecraft:firework": {
+   "quadros": 8,
+   "w": 8,
+   "h": 8
+  },
+  "minecraft:flame": {
+   "quadros": 1,
+   "w": 8,
+   "h": 8
+  },
+  "minecraft:flash": {
+   "quadros": 1,
+   "w": 32,
+   "h": 32
+  },
+  "minecraft:instant_effect": {
+   "quadros": 8,
+   "w": 8,
+   "h": 8
+  },
+  "minecraft:large_smoke": {
+   "quadros": 8,
+   "w": 8,
+   "h": 8
+  },
+  "minecraft:lava": {
+   "quadros": 1,
+   "w": 8,
+   "h": 8
+  },
+  "minecraft:portal": {
+   "quadros": 8,
+   "w": 8,
+   "h": 8
+  },
+  "minecraft:small_flame": {
+   "quadros": 1,
+   "w": 8,
+   "h": 8
+  },
+  "minecraft:soul": {
+   "quadros": 11,
+   "w": 16,
+   "h": 16
+  },
+  "minecraft:soul_fire_flame": {
+   "quadros": 1,
+   "w": 8,
+   "h": 8
+  },
+  "minecraft:squid_ink": {
+   "quadros": 8,
+   "w": 8,
+   "h": 8
+  }
+ },
+ "origem_minecraft": "Minecraft 1.20.1 local (sounds.json do índice 5)",
+ "invisiveis": [
+  "entity_armament_haki",
+  "entity_haoshoku_haki",
+  "entity_impact",
+  "entity_impact_wave"
+ ],
+ "modelos": {
+  "kaidou": {
+   "glb": "mpx_kaidou.glb",
+   "textura": "textures/entities/kaidou.png",
+   "dinamica": true,
+   "animacoes": 28
+  },
+  "bepo": {
+   "glb": "mpx_bepo.glb",
+   "textura": "textures/entities/bepo.png",
+   "dinamica": true,
+   "animacoes": 18
+  },
+  "luffy_1": {
+   "glb": "mpx_luffy_1.glb",
+   "textura": "textures/entities/luffy.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "lucci_cp_9": {
+   "glb": "mpx_lucci_cp_9.glb",
+   "textura": "textures/entities/lucci_cp9.png",
+   "dinamica": true,
+   "animacoes": 77
+  },
+  "lucci_cp_0": {
+   "glb": "mpx_lucci_cp_0.glb",
+   "textura": "textures/entities/lucci_cp0.png",
+   "dinamica": true,
+   "animacoes": 77
+  },
+  "shanks_four_emperors": {
+   "glb": "mpx_shanks_four_emperors.glb",
+   "textura": "textures/entities/shanks_four_emperors.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "marshall_d_teach_four_emperors": {
+   "glb": "mpx_marshall_d_teach_four_emperors.glb",
+   "textura": "textures/entities/kurohige_four_emperors.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "projectile_slash": {
+   "glb": "mpx_projectile_slash.glb",
+   "textura": "textures/entities/clear.png",
+   "dinamica": true,
+   "animacoes": 14
+  },
+  "luffy_2_years_later": {
+   "glb": "mpx_luffy_2_years_later.glb",
+   "textura": "textures/entities/luffy2.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "luffy_wano_country": {
+   "glb": "mpx_luffy_wano_country.glb",
+   "textura": "textures/entities/luffy2.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "s_hawk": {
+   "glb": "mpx_s_hawk.glb",
+   "textura": "textures/entities/s_hawk.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "s_snake": {
+   "glb": "mpx_s_snake.glb",
+   "textura": "textures/entities/s_snake.png",
+   "dinamica": true,
+   "animacoes": 21
+  },
+  "fist": {
+   "glb": "mpx_fist.glb",
+   "textura": "textures/entities/clear.png",
+   "dinamica": true,
+   "animacoes": 1
+  },
+  "pad": {
+   "glb": "mpx_pad.glb",
+   "textura": "textures/entities/clear.png",
+   "dinamica": true,
+   "animacoes": 1
+  },
+  "kuma": {
+   "glb": "mpx_kuma.glb",
+   "textura": "textures/entities/kuma.png",
+   "dinamica": true,
+   "animacoes": 21
+  },
+  "zoro_2_years_later": {
+   "glb": "mpx_zoro_2_years_later.glb",
+   "textura": "textures/entities/zoro_2yearslater.png",
+   "dinamica": true,
+   "animacoes": 28
+  },
+  "zoro_onigashima": {
+   "glb": "mpx_zoro_onigashima.glb",
+   "textura": "textures/entities/zoro_onigashima.png",
+   "dinamica": true,
+   "animacoes": 28
+  },
+  "kizaru": {
+   "glb": "mpx_kizaru.glb",
+   "textura": "textures/entities/kizaru.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "blueno_cp_9": {
+   "glb": "mpx_blueno_cp_9.glb",
+   "textura": "textures/entities/blueno_cp9.png",
+   "dinamica": true,
+   "animacoes": 17
+  },
+  "jabra_cp_9": {
+   "glb": "mpx_jabra_cp_9.glb",
+   "textura": "textures/entities/jabra.png",
+   "dinamica": true,
+   "animacoes": 81
+  },
+  "tornado": {
+   "glb": "mpx_tornado.glb",
+   "textura": "textures/entities/slash_blue.png",
+   "dinamica": true,
+   "animacoes": 2
+  },
+  "biscuit_warrrior": {
+   "glb": "mpx_biscuit_warrrior.glb",
+   "textura": "textures/entities/biscuit_warrrior.png",
+   "dinamica": true,
+   "animacoes": 12
+  },
+  "charlotte_cracker": {
+   "glb": "mpx_charlotte_cracker.glb",
+   "textura": "textures/entities/charlotte_cracker.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "tiger": {
+   "glb": "mpx_tiger.glb",
+   "textura": "textures/entities/tiger.png",
+   "dinamica": true,
+   "animacoes": 1
+  },
+  "rubble": {
+   "glb": "mpx_rubble.glb",
+   "textura": "textures/entities/clear.png",
+   "dinamica": true,
+   "animacoes": 1
+  },
+  "meteor": {
+   "glb": "mpx_meteor.glb",
+   "textura": "textures/entities/meteor.png",
+   "dinamica": true,
+   "animacoes": 1
+  },
+  "fujitora": {
+   "glb": "mpx_fujitora.glb",
+   "textura": "textures/entities/fujitora.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "ashura": {
+   "glb": "mpx_ashura.glb",
+   "textura": "textures/entities/ashura.png",
+   "dinamica": true,
+   "animacoes": 1
+  },
+  "entity_gryphon": {
+   "glb": "mpx_entity_gryphon.glb",
+   "textura": "textures/entities/gryphon_trans.png",
+   "dinamica": true,
+   "animacoes": 1
+  },
+  "entity_slash": {
+   "glb": "mpx_entity_slash.glb",
+   "textura": "textures/entities/clear.png",
+   "dinamica": true,
+   "animacoes": 13
+  },
+  "entity_sweep": {
+   "glb": "mpx_entity_sweep.glb",
+   "textura": "textures/entities/clear.png",
+   "dinamica": true,
+   "animacoes": 13
+  },
+  "ulti": {
+   "glb": "mpx_ulti.glb",
+   "textura": "textures/entities/ulti.png",
+   "dinamica": true,
+   "animacoes": 77
+  },
+  "page_one": {
+   "glb": "mpx_page_one.glb",
+   "textura": "textures/entities/pageone.png",
+   "dinamica": true,
+   "animacoes": 77
+  },
+  "benn_beckman_2": {
+   "glb": "mpx_benn_beckman_2.glb",
+   "textura": "textures/entities/beckman_2.png",
+   "dinamica": true,
+   "animacoes": 16
+  },
+  "stussy": {
+   "glb": "mpx_stussy.glb",
+   "textura": "textures/entities/stussy.png",
+   "dinamica": true,
+   "animacoes": 81
+  },
+  "kaku_cp_9": {
+   "glb": "mpx_kaku_cp_9.glb",
+   "textura": "textures/entities/kaku.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "entity_energy": {
+   "glb": "mpx_entity_energy.glb",
+   "textura": "textures/entities/clear.png",
+   "dinamica": true,
+   "animacoes": 14
+  },
+  "entity_flame_ball": {
+   "glb": "mpx_entity_flame_ball.glb",
+   "textura": "textures/entities/clear.png",
+   "dinamica": true,
+   "animacoes": 1
+  },
+  "entity_wolf_projectile": {
+   "glb": "mpx_entity_wolf_projectile.glb",
+   "textura": "textures/entities/jabra_wolf_projectile.png",
+   "dinamica": true,
+   "animacoes": 1
+  },
+  "king": {
+   "glb": "mpx_king.glb",
+   "textura": "textures/entities/king.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "entity_negative_hollow": {
+   "glb": "mpx_entity_negative_hollow.glb",
+   "textura": "textures/entities/ghost1_1.png",
+   "dinamica": true,
+   "animacoes": 6
+  },
+  "entity_mini_hollow": {
+   "glb": "mpx_entity_mini_hollow.glb",
+   "textura": "textures/entities/clear.png",
+   "dinamica": true,
+   "animacoes": 4
+  },
+  "entity_dark_ball": {
+   "glb": "mpx_entity_dark_ball.glb",
+   "textura": "textures/entities/tex_black.png",
+   "dinamica": true,
+   "animacoes": 1
+  },
+  "entity_partisan": {
+   "glb": "mpx_entity_partisan.glb",
+   "textura": "textures/entities/tex_ice.png",
+   "dinamica": true,
+   "animacoes": 3
+  },
+  "entity_bird": {
+   "glb": "mpx_entity_bird.glb",
+   "textura": "textures/entities/tex_ice.png",
+   "dinamica": true,
+   "animacoes": 1
+  },
+  "entity_ice_ball": {
+   "glb": "mpx_entity_ice_ball.glb",
+   "textura": "textures/entities/tex_ice.png",
+   "dinamica": true,
+   "animacoes": 2
+  },
+  "entity_dog_head": {
+   "glb": "mpx_entity_dog_head.glb",
+   "textura": "textures/entities/inugami_guren.png",
+   "dinamica": true,
+   "animacoes": 1
+  },
+  "entity_dai_funka": {
+   "glb": "mpx_entity_dai_funka.glb",
+   "textura": "textures/entities/tex_magma.png",
+   "dinamica": true,
+   "animacoes": 1
+  },
+  "akainu": {
+   "glb": "mpx_akainu.glb",
+   "textura": "textures/entities/akainu.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "yasopp_2": {
+   "glb": "mpx_yasopp_2.glb",
+   "textura": "textures/entities/yasopp_2years.png",
+   "dinamica": true,
+   "animacoes": 15
+  },
+  "yamakaji": {
+   "glb": "mpx_yamakaji.glb",
+   "textura": "textures/entities/yamakaji.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "momonga": {
+   "glb": "mpx_momonga.glb",
+   "textura": "textures/entities/momonga.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "stainless": {
+   "glb": "mpx_stainless.glb",
+   "textura": "textures/entities/stainless.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "doll": {
+   "glb": "mpx_doll.glb",
+   "textura": "textures/entities/doll.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "doberman": {
+   "glb": "mpx_doberman.glb",
+   "textura": "textures/entities/doberman.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "sanji_1": {
+   "glb": "mpx_sanji_1.glb",
+   "textura": "textures/entities/sanji.png",
+   "dinamica": true,
+   "animacoes": 26
+  },
+  "sanji_2_years_later": {
+   "glb": "mpx_sanji_2_years_later.glb",
+   "textura": "textures/entities/sanji_2years.png",
+   "dinamica": true,
+   "animacoes": 26
+  },
+  "sanji_onigashima": {
+   "glb": "mpx_sanji_onigashima.glb",
+   "textura": "textures/entities/sanji_onigajima.png",
+   "dinamica": true,
+   "animacoes": 26
+  },
+  "entity_dragon_head": {
+   "glb": "mpx_entity_dragon_head.glb",
+   "textura": "textures/entities/flame_tiger.png",
+   "dinamica": true,
+   "animacoes": 1
+  },
+  "shiryu": {
+   "glb": "mpx_shiryu.glb",
+   "textura": "textures/entities/shiryu.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "koala": {
+   "glb": "mpx_koala.glb",
+   "textura": "textures/entities/koala.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "sengoku": {
+   "glb": "mpx_sengoku.glb",
+   "textura": "textures/entities/sengoku.png",
+   "dinamica": true,
+   "animacoes": 81
+  },
+  "entity_haoshoku_haki_2": {
+   "glb": "mpx_entity_haoshoku_haki_2.glb",
+   "textura": "textures/entities/clear.png",
+   "dinamica": true,
+   "animacoes": 1
+  },
+  "hack": {
+   "glb": "mpx_hack.glb",
+   "textura": "textures/entities/hack.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "s_bear": {
+   "glb": "mpx_s_bear.glb",
+   "textura": "textures/entities/s_bear.png",
+   "dinamica": true,
+   "animacoes": 18
+  },
+  "s_shark": {
+   "glb": "mpx_s_shark.glb",
+   "textura": "textures/entities/s_shark.png",
+   "dinamica": true,
+   "animacoes": 26
+  },
+  "kaku_cp_0": {
+   "glb": "mpx_kaku_cp_0.glb",
+   "textura": "textures/entities/kaku_cp0.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "marshall_d_teach": {
+   "glb": "mpx_marshall_d_teach.glb",
+   "textura": "textures/entities/kurohige_four_emperors.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "silvers_rayleigh_old": {
+   "glb": "mpx_silvers_rayleigh_old.glb",
+   "textura": "textures/entities/rayleigh_2.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "van_augur": {
+   "glb": "mpx_van_augur.glb",
+   "textura": "textures/entities/van_ogre.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "entity_gomu_arm": {
+   "glb": "mpx_entity_gomu_arm.glb",
+   "textura": "textures/entities/clear.png",
+   "dinamica": true,
+   "animacoes": 12
+  },
+  "jesus_burgess": {
+   "glb": "mpx_jesus_burgess.glb",
+   "textura": "textures/entities/burgess.png",
+   "dinamica": true,
+   "animacoes": 25
+  },
+  "franky_2_years_later": {
+   "glb": "mpx_franky_2_years_later.glb",
+   "textura": "textures/entities/franky_2.png",
+   "dinamica": true,
+   "animacoes": 19
+  },
+  "gecko_moria": {
+   "glb": "mpx_gecko_moria.glb",
+   "textura": "textures/entities/gecko_moria.png",
+   "dinamica": true,
+   "animacoes": 19
+  },
+  "oars": {
+   "glb": "mpx_oars.glb",
+   "textura": "textures/entities/oars.png",
+   "dinamica": true,
+   "animacoes": 18
+  },
+  "charlotte_katakuri": {
+   "glb": "mpx_charlotte_katakuri.glb",
+   "textura": "textures/entities/charlotte_katakuri.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "marco": {
+   "glb": "mpx_marco.glb",
+   "textura": "textures/entities/marco.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "monkey_d_garp_2": {
+   "glb": "mpx_monkey_d_garp_2.glb",
+   "textura": "textures/entities/garp2.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "silvers_rayleigh": {
+   "glb": "mpx_silvers_rayleigh.glb",
+   "textura": "textures/entities/rayleigh.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "penguin": {
+   "glb": "mpx_penguin.glb",
+   "textura": "textures/entities/penguin.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "killer_whale": {
+   "glb": "mpx_killer_whale.glb",
+   "textura": "textures/entities/killer_whale.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "akainu_fleet_admira": {
+   "glb": "mpx_akainu_fleet_admira.glb",
+   "textura": "textures/entities/akainu2.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "vista": {
+   "glb": "mpx_vista.glb",
+   "textura": "textures/entities/vista.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "jozu": {
+   "glb": "mpx_jozu.glb",
+   "textura": "textures/entities/jozu.png",
+   "dinamica": true,
+   "animacoes": 23
+  },
+  "jack": {
+   "glb": "mpx_jack.glb",
+   "textura": "textures/entities/jack.png",
+   "dinamica": true,
+   "animacoes": 16
+  },
+  "entity_crack": {
+   "glb": "mpx_entity_crack.glb",
+   "textura": "textures/entities/crack.png",
+   "dinamica": true,
+   "animacoes": 2
+  },
+  "edward_newgate": {
+   "glb": "mpx_edward_newgate.glb",
+   "textura": "textures/entities/edward_newgate.png",
+   "dinamica": true,
+   "animacoes": 30
+  },
+  "scopper_gaban_old": {
+   "glb": "mpx_scopper_gaban_old.glb",
+   "textura": "textures/entities/scopper_gaban2.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "scopper_gaban": {
+   "glb": "mpx_scopper_gaban.glb",
+   "textura": "textures/entities/scopper_gaban.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "edward_newgate_heyday": {
+   "glb": "mpx_edward_newgate_heyday.glb",
+   "textura": "textures/entities/edward_newgate_2.png",
+   "dinamica": true,
+   "animacoes": 30
+  },
+  "ryuma": {
+   "glb": "mpx_ryuma.glb",
+   "textura": "textures/entities/ryuma_zombie.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "kalifa_cp_9": {
+   "glb": "mpx_kalifa_cp_9.glb",
+   "textura": "textures/entities/kalifa.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "atmos": {
+   "glb": "mpx_atmos.glb",
+   "textura": "textures/entities/atmos.png",
+   "dinamica": true,
+   "animacoes": 17
+  },
+  "fossa": {
+   "glb": "mpx_fossa.glb",
+   "textura": "textures/entities/fossa.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "haruta": {
+   "glb": "mpx_haruta.glb",
+   "textura": "textures/entities/haruta.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "speed_jil": {
+   "glb": "mpx_speed_jil.glb",
+   "textura": "textures/entities/speed_jil.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "blenheim": {
+   "glb": "mpx_blenheim.glb",
+   "textura": "textures/entities/blenheim.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "thatch": {
+   "glb": "mpx_thatch.glb",
+   "textura": "textures/entities/thatch.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "izo": {
+   "glb": "mpx_izo.glb",
+   "textura": "textures/entities/izo.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "hongo_2": {
+   "glb": "mpx_hongo_2.glb",
+   "textura": "textures/entities/hongo.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "kingdew": {
+   "glb": "mpx_kingdew.glb",
+   "textura": "textures/entities/kingdew.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "bonk_punch_2": {
+   "glb": "mpx_bonk_punch_2.glb",
+   "textura": "textures/entities/bonk_punch.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "lime_juice_2": {
+   "glb": "mpx_lime_juice_2.glb",
+   "textura": "textures/entities/lime_juice.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "bramenko": {
+   "glb": "mpx_bramenko.glb",
+   "textura": "textures/entities/bramenko.png",
+   "dinamica": true,
+   "animacoes": 16
+  },
+  "rakuyo": {
+   "glb": "mpx_rakuyo.glb",
+   "textura": "textures/entities/rakuyo.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "namur": {
+   "glb": "mpx_namur.glb",
+   "textura": "textures/entities/namur.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "curiel": {
+   "glb": "mpx_curiel.glb",
+   "textura": "textures/entities/curiel.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "kouzuki_oden": {
+   "glb": "mpx_kouzuki_oden.glb",
+   "textura": "textures/entities/oden.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "gol_d_roger": {
+   "glb": "mpx_gol_d_roger.glb",
+   "textura": "textures/entities/roger.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "uta": {
+   "glb": "mpx_uta.glb",
+   "textura": "textures/entities/uta.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "ashura_doji": {
+   "glb": "mpx_ashura_doji.glb",
+   "textura": "textures/entities/ashura_doji.png",
+   "dinamica": true,
+   "animacoes": 17
+  },
+  "nekomamushi": {
+   "glb": "mpx_nekomamushi.glb",
+   "textura": "textures/entities/nekomamushi.png",
+   "dinamica": true,
+   "animacoes": 17
+  },
+  "inuarashi": {
+   "glb": "mpx_inuarashi.glb",
+   "textura": "textures/entities/inuarashi.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "denjiro": {
+   "glb": "mpx_denjiro.glb",
+   "textura": "textures/entities/denjiro.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "kinemon": {
+   "glb": "mpx_kinemon.glb",
+   "textura": "textures/entities/kinemon.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "scratchmen_apoo": {
+   "glb": "mpx_scratchmen_apoo.glb",
+   "textura": "textures/entities/scratchmen_apoo.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "shiryu_2": {
+   "glb": "mpx_shiryu_2.glb",
+   "textura": "textures/entities/shiryu.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "jesus_burgess_2": {
+   "glb": "mpx_jesus_burgess_2.glb",
+   "textura": "textures/entities/burgess_2.png",
+   "dinamica": true,
+   "animacoes": 25
+  },
+  "van_augur_2": {
+   "glb": "mpx_van_augur_2.glb",
+   "textura": "textures/entities/van_ogre.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "kikunojo": {
+   "glb": "mpx_kikunojo.glb",
+   "textura": "textures/entities/kikunojo.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "kawamatsu": {
+   "glb": "mpx_kawamatsu.glb",
+   "textura": "textures/entities/kawamatsu.png",
+   "dinamica": true,
+   "animacoes": 20
+  },
+  "rock_fragment": {
+   "glb": "mpx_rock_fragment.glb",
+   "textura": "textures/entities/rock_fragment.png",
+   "dinamica": true,
+   "animacoes": 1
+  },
+  "tot_musica": {
+   "glb": "mpx_tot_musica.glb",
+   "textura": "textures/entities/slash_black.png",
+   "dinamica": false,
+   "animacoes": 2
+  },
+  "tot_musica_energy": {
+   "glb": "mpx_tot_musica_energy.glb",
+   "textura": "textures/entities/haki_red.png",
+   "dinamica": true,
+   "animacoes": 1
+  },
+  "imu": {
+   "glb": "mpx_imu.glb",
+   "textura": "textures/entities/imu.png",
+   "dinamica": true,
+   "animacoes": 76
+  },
+  "note_warrior_1": {
+   "glb": "mpx_note_warrior_1.glb",
+   "textura": "textures/entities/note_warrior1.png",
+   "dinamica": true,
+   "animacoes": 76
+  },
+  "note_warrior_2": {
+   "glb": "mpx_note_warrior_2.glb",
+   "textura": "textures/entities/note_warrior2.png",
+   "dinamica": true,
+   "animacoes": 76
+  },
+  "entity_tot_musica_arm": {
+   "glb": "mpx_entity_tot_musica_arm.glb",
+   "textura": "textures/entities/tot_musica_3.png",
+   "dinamica": true,
+   "animacoes": 6
+  },
+  "lilith": {
+   "glb": "mpx_lilith.glb",
+   "textura": "textures/entities/lilith.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "building_snake_2": {
+   "glb": "mpx_building_snake_2.glb",
+   "textura": "textures/entities/building_snake.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "gab_2": {
+   "glb": "mpx_gab_2.glb",
+   "textura": "textures/entities/gab.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "lucky_roux_2": {
+   "glb": "mpx_lucky_roux_2.glb",
+   "textura": "textures/entities/lucky_roux.png",
+   "dinamica": true,
+   "animacoes": 20
+  },
+  "monster_2": {
+   "glb": "mpx_monster_2.glb",
+   "textura": "textures/entities/monster.png",
+   "dinamica": true,
+   "animacoes": 15
+  },
+  "rockstar": {
+   "glb": "mpx_rockstar.glb",
+   "textura": "textures/entities/rockstar.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "entity_note": {
+   "glb": "mpx_entity_note.glb",
+   "textura": "textures/entities/haki_green.png",
+   "dinamica": false,
+   "animacoes": 1
+  },
+  "x_drake": {
+   "glb": "mpx_x_drake.glb",
+   "textura": "textures/entities/x_drake.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "whos_who": {
+   "glb": "mpx_whos_who.glb",
+   "textura": "textures/entities/whos_who.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "nero": {
+   "glb": "mpx_nero.glb",
+   "textura": "textures/entities/nero.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "red_king": {
+   "glb": "mpx_red_king.glb",
+   "textura": "textures/entities/red_king.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "bluegrass": {
+   "glb": "mpx_bluegrass.glb",
+   "textura": "textures/entities/bluegrass.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "enel": {
+   "glb": "mpx_enel.glb",
+   "textura": "textures/entities/enel.png",
+   "dinamica": true,
+   "animacoes": 77
+  },
+  "projectile_sweep": {
+   "glb": "mpx_projectile_sweep.glb",
+   "textura": "textures/entities/clear.png",
+   "dinamica": true,
+   "animacoes": 14
+  },
+  "entity_dyna_stones": {
+   "glb": "mpx_entity_dyna_stones.glb",
+   "textura": "textures/entities/entity_dyna_stones.png",
+   "dinamica": true,
+   "animacoes": 2
+  },
+  "ethanbaron_v_nusjuro": {
+   "glb": "mpx_ethanbaron_v_nusjuro.glb",
+   "textura": "textures/entities/ethan_baron_v_nasujuro.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "hody_jones": {
+   "glb": "mpx_hody_jones.glb",
+   "textura": "textures/entities/hordy_jones.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "entity_arrow": {
+   "glb": "mpx_entity_arrow.glb",
+   "textura": "textures/entities/aroaro_arrow.png",
+   "dinamica": true,
+   "animacoes": 6
+  },
+  "entity_doppelman": {
+   "glb": "mpx_entity_doppelman.glb",
+   "textura": "textures/entities/tex_black.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "entity_muso_donatsu": {
+   "glb": "mpx_entity_muso_donatsu.glb",
+   "textura": "textures/entities/tex_white3.png",
+   "dinamica": true,
+   "animacoes": 1
+  },
+  "entity_abyss": {
+   "glb": "mpx_entity_abyss.glb",
+   "textura": "textures/entities/abyss.png",
+   "dinamica": true,
+   "animacoes": 3
+  },
+  "entity_prometheus": {
+   "glb": "mpx_entity_prometheus.glb",
+   "textura": "textures/entities/prometheus.png",
+   "dinamica": true,
+   "animacoes": 1
+  },
+  "entity_zeus": {
+   "glb": "mpx_entity_zeus.glb",
+   "textura": "textures/entities/zeus.png",
+   "dinamica": true,
+   "animacoes": 1
+  },
+  "charlotte_linlin": {
+   "glb": "mpx_charlotte_linlin.glb",
+   "textura": "textures/entities/charlotte_linlin.png",
+   "dinamica": true,
+   "animacoes": 51
+  },
+  "ryuma_human": {
+   "glb": "mpx_ryuma_human.glb",
+   "textura": "textures/entities/ryuma.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "vasco_shot": {
+   "glb": "mpx_vasco_shot.glb",
+   "textura": "textures/entities/vasco_shot.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "charlotte_snack": {
+   "glb": "mpx_charlotte_snack.glb",
+   "textura": "textures/entities/snack.png",
+   "dinamica": true,
+   "animacoes": 17
+  },
+  "charlotte_perospero": {
+   "glb": "mpx_charlotte_perospero.glb",
+   "textura": "textures/entities/perospero.png",
+   "dinamica": true,
+   "animacoes": 80
+  },
+  "dr_indigo": {
+   "glb": "mpx_dr_indigo.glb",
+   "textura": "textures/entities/dr_indigo.png",
+   "dinamica": true,
+   "animacoes": 87
+  },
+  "entity_strike": {
+   "glb": "mpx_entity_strike.glb",
+   "textura": "textures/entities/clear.png",
+   "dinamica": true,
+   "animacoes": 4
+  }
+ },
+ "modelos_java": {
+  "tree_root": {
+   "tex_w": 32,
+   "tex_h": 32,
+   "partes": [
+    {
+     "nome": "body2",
+     "pai": "",
+     "pos": [
+      0.0,
+      16.0,
+      0.0
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "caixas": []
+    },
+    {
+     "nome": "bone",
+     "pai": "body2",
+     "pos": [
+      0.0,
+      0.0,
+      4.0
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "caixas": []
+    },
+    {
+     "nome": "cube_r1",
+     "pai": "bone",
+     "pos": [
+      0.0,
+      0.0,
+      -2.0
+     ],
+     "rot": [
+      -1.5708,
+      0.0,
+      0.7854
+     ],
+     "caixas": [
+      [
+       28.0,
+       0.0,
+       -0.5,
+       -10.0,
+       -0.5,
+       1.0,
+       16.0,
+       1.0,
+       0.0
+      ],
+      [
+       5.0,
+       4.0,
+       -1.0,
+       -8.0,
+       -1.0,
+       2.0,
+       12.0,
+       2.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "cube_r2",
+     "pai": "bone",
+     "pos": [
+      -0.3777,
+      0.0616,
+      -4.4347
+     ],
+     "rot": [
+      -1.5708,
+      0.0,
+      0.0
+     ],
+     "caixas": [
+      [
+       28.0,
+       0.0,
+       -0.1223,
+       -14.4347,
+       -0.5616,
+       1.0,
+       20.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "cube_r3",
+     "pai": "bone",
+     "pos": [
+      0.0,
+      0.0,
+      -2.0
+     ],
+     "rot": [
+      -1.5708,
+      0.0,
+      1.5708
+     ],
+     "caixas": [
+      [
+       5.0,
+       4.0,
+       -1.0,
+       -6.0,
+       -1.0,
+       2.0,
+       8.0,
+       2.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "bone2",
+     "pai": "body2",
+     "pos": [
+      -3.2929,
+      4.2346,
+      5.7071
+     ],
+     "rot": [
+      0.3927,
+      0.3927,
+      0.0
+     ],
+     "caixas": []
+    },
+    {
+     "nome": "cube_r4",
+     "pai": "bone2",
+     "pos": [
+      0.0,
+      0.0,
+      -2.0
+     ],
+     "rot": [
+      -1.5708,
+      0.0,
+      0.7854
+     ],
+     "caixas": [
+      [
+       28.0,
+       0.0,
+       -0.5,
+       -10.0,
+       -0.5,
+       1.0,
+       16.0,
+       1.0,
+       0.0
+      ],
+      [
+       5.0,
+       4.0,
+       -1.0,
+       -8.0,
+       -1.0,
+       2.0,
+       12.0,
+       2.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "cube_r5",
+     "pai": "bone2",
+     "pos": [
+      -0.3777,
+      0.0616,
+      -4.4347
+     ],
+     "rot": [
+      -1.5708,
+      0.0,
+      0.0
+     ],
+     "caixas": [
+      [
+       28.0,
+       0.0,
+       -0.1223,
+       -14.4347,
+       -0.5616,
+       1.0,
+       20.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "cube_r6",
+     "pai": "bone2",
+     "pos": [
+      0.0,
+      0.0,
+      -2.0
+     ],
+     "rot": [
+      -1.5708,
+      0.0,
+      1.5708
+     ],
+     "caixas": [
+      [
+       5.0,
+       4.0,
+       -1.0,
+       -6.0,
+       -1.0,
+       2.0,
+       8.0,
+       2.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "bone5",
+     "pai": "body2",
+     "pos": [
+      3.2929,
+      -4.2346,
+      5.7071
+     ],
+     "rot": [
+      -0.3927,
+      -0.3927,
+      0.0
+     ],
+     "caixas": []
+    },
+    {
+     "nome": "cube_r7",
+     "pai": "bone5",
+     "pos": [
+      0.0,
+      0.0,
+      -2.0
+     ],
+     "rot": [
+      1.5708,
+      0.0,
+      0.7854
+     ],
+     "caixas": [
+      [
+       28.0,
+       0.0,
+       -0.5,
+       -6.0,
+       -0.5,
+       1.0,
+       16.0,
+       1.0,
+       0.0
+      ],
+      [
+       5.0,
+       4.0,
+       -1.0,
+       -4.0,
+       -1.0,
+       2.0,
+       12.0,
+       2.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "cube_r8",
+     "pai": "bone5",
+     "pos": [
+      0.3777,
+      -0.0616,
+      -4.4347
+     ],
+     "rot": [
+      1.5708,
+      0.0,
+      0.0
+     ],
+     "caixas": [
+      [
+       28.0,
+       0.0,
+       -0.8777,
+       -5.5653,
+       -0.5616,
+       1.0,
+       20.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "cube_r9",
+     "pai": "bone5",
+     "pos": [
+      0.0,
+      0.0,
+      -2.0
+     ],
+     "rot": [
+      1.5708,
+      0.0,
+      1.5708
+     ],
+     "caixas": [
+      [
+       5.0,
+       4.0,
+       -1.0,
+       -2.0,
+       -1.0,
+       2.0,
+       8.0,
+       2.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "bone4",
+     "pai": "body2",
+     "pos": [
+      4.2929,
+      3.2346,
+      5.7071
+     ],
+     "rot": [
+      0.3927,
+      -0.3927,
+      0.0
+     ],
+     "caixas": []
+    },
+    {
+     "nome": "cube_r10",
+     "pai": "bone4",
+     "pos": [
+      0.0,
+      0.0,
+      -2.0
+     ],
+     "rot": [
+      -1.5708,
+      0.0,
+      -0.7854
+     ],
+     "caixas": [
+      [
+       28.0,
+       0.0,
+       -0.5,
+       -10.0,
+       -0.5,
+       1.0,
+       16.0,
+       1.0,
+       0.0
+      ],
+      [
+       5.0,
+       4.0,
+       -1.0,
+       -8.0,
+       -1.0,
+       2.0,
+       12.0,
+       2.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "cube_r11",
+     "pai": "bone4",
+     "pos": [
+      0.3777,
+      0.0616,
+      -4.4347
+     ],
+     "rot": [
+      -1.5708,
+      0.0,
+      0.0
+     ],
+     "caixas": [
+      [
+       28.0,
+       0.0,
+       -0.8777,
+       -14.4347,
+       -0.5616,
+       1.0,
+       20.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "cube_r12",
+     "pai": "bone4",
+     "pos": [
+      0.0,
+      0.0,
+      -2.0
+     ],
+     "rot": [
+      -1.5708,
+      0.0,
+      -1.5708
+     ],
+     "caixas": [
+      [
+       5.0,
+       4.0,
+       -1.0,
+       -6.0,
+       -1.0,
+       2.0,
+       8.0,
+       2.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "bone3",
+     "pai": "body2",
+     "pos": [
+      -4.2929,
+      -3.2346,
+      5.7071
+     ],
+     "rot": [
+      -0.3927,
+      0.3927,
+      0.0
+     ],
+     "caixas": []
+    },
+    {
+     "nome": "cube_r13",
+     "pai": "bone3",
+     "pos": [
+      0.0,
+      0.0,
+      -2.0
+     ],
+     "rot": [
+      1.5708,
+      0.0,
+      -0.7854
+     ],
+     "caixas": [
+      [
+       28.0,
+       0.0,
+       -0.5,
+       -6.0,
+       -0.5,
+       1.0,
+       16.0,
+       1.0,
+       0.0
+      ],
+      [
+       5.0,
+       4.0,
+       -1.0,
+       -4.0,
+       -1.0,
+       2.0,
+       12.0,
+       2.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "cube_r14",
+     "pai": "bone3",
+     "pos": [
+      -0.3777,
+      -0.0616,
+      -4.4347
+     ],
+     "rot": [
+      1.5708,
+      0.0,
+      0.0
+     ],
+     "caixas": [
+      [
+       28.0,
+       0.0,
+       -0.1223,
+       -5.5653,
+       -0.5616,
+       1.0,
+       20.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "cube_r15",
+     "pai": "bone3",
+     "pos": [
+      0.0,
+      0.0,
+      -2.0
+     ],
+     "rot": [
+      1.5708,
+      0.0,
+      -1.5708
+     ],
+     "caixas": [
+      [
+       5.0,
+       4.0,
+       -1.0,
+       -2.0,
+       -1.0,
+       2.0,
+       8.0,
+       2.0,
+       0.0
+      ]
+     ]
+    }
+   ],
+   "textura": "tex_wood",
+   "modelo": "Modelwooden_spear2",
+   "camadas_extras": [
+    "tex_ice"
+   ]
+  },
+  "entity_ball": {
+   "tex_w": 6,
+   "tex_h": 6,
+   "partes": [
+    {
+     "nome": "ball",
+     "pai": "",
+     "pos": [
+      0.0,
+      24.0,
+      0.0
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "caixas": []
+    },
+    {
+     "nome": "ball_r1",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      0.3927,
+      0.0,
+      1.5708
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r2",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      0.3655,
+      0.147,
+      1.2053
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r3",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      2.8567,
+      0.274,
+      -0.8249
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r4",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      0.1572,
+      0.3614,
+      0.4215
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r5",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      0.1572,
+      -0.3614,
+      2.7201
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r6",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      0.3655,
+      -0.147,
+      1.9363
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r7",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      2.8567,
+      -0.274,
+      -2.3166
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r8",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      0.7854,
+      0.0,
+      1.5708
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r9",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      0.7459,
+      0.274,
+      1.2859
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r10",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      2.5261,
+      0.5236,
+      -0.9553
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r11",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      0.3655,
+      0.7119,
+      0.5299
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r12",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      0.3655,
+      -0.7119,
+      2.6117
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r13",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      0.7459,
+      -0.274,
+      1.8557
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r14",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      2.5261,
+      -0.5236,
+      -2.1863
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r15",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      1.1781,
+      0.0,
+      1.5708
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r16",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      1.1493,
+      0.3614,
+      1.4136
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r17",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      2.1007,
+      0.7119,
+      -1.2053
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r18",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      0.7459,
+      1.0228,
+      0.8249
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r19",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      0.7459,
+      -1.0228,
+      2.3166
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r20",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      1.1493,
+      -0.3614,
+      1.728
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r21",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      2.1007,
+      -0.7119,
+      -1.9363
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r22",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      1.5708,
+      0.0,
+      1.5708
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r23",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      1.5708,
+      0.3927,
+      1.5708
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r24",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      1.5708,
+      0.7854,
+      -1.5708
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r25",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      1.5708,
+      1.1781,
+      1.5708
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r26",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      1.5708,
+      -1.1781,
+      1.5708
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r27",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      1.5708,
+      -0.3927,
+      1.5708
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r28",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      1.5708,
+      -0.7854,
+      -1.5708
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r29",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      1.9635,
+      0.0,
+      1.5708
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r30",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      1.9923,
+      0.3614,
+      1.728
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r31",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      1.0409,
+      0.7119,
+      -1.9363
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r32",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      2.3957,
+      1.0228,
+      2.3166
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r33",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      2.3957,
+      -1.0228,
+      0.8249
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r34",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      1.9923,
+      -0.3614,
+      1.4136
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r35",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      1.0409,
+      -0.7119,
+      -1.2053
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r36",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      2.3562,
+      0.0,
+      1.5708
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r37",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      2.3957,
+      0.274,
+      1.8557
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r38",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      0.6155,
+      0.5236,
+      -2.1863
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r39",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      2.7761,
+      0.7119,
+      2.6117
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r40",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      2.7761,
+      -0.7119,
+      0.5299
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r41",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      2.3957,
+      -0.274,
+      1.2859
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r42",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      0.6155,
+      -0.5236,
+      -0.9553
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r43",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      -3.1416,
+      0.0,
+      0.0
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r44",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      2.7489,
+      0.0,
+      1.5708
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r45",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      2.7761,
+      0.147,
+      1.9363
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r46",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      0.2849,
+      0.274,
+      -2.3166
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r47",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      2.9844,
+      0.3614,
+      2.7201
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r48",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      2.9844,
+      -0.3614,
+      0.4215
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r49",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      2.7761,
+      -0.147,
+      1.2053
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r50",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      0.2849,
+      -0.274,
+      -0.8249
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r51",
+     "pai": "ball",
+     "pos": [
+      0.0137,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      3.1416,
+      0.0,
+      1.5708
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5137,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r52",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      3.1416,
+      0.0,
+      1.9635
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r53",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      -2.3562
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r54",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      -3.1416,
+      0.0,
+      2.7489
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r55",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      -3.1416,
+      0.0,
+      0.3927
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r56",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      -3.1416,
+      0.0,
+      1.1781
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    },
+    {
+     "nome": "ball_r57",
+     "pai": "ball",
+     "pos": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "rot": [
+      0.0,
+      0.0,
+      -0.7854
+     ],
+     "caixas": [
+      [
+       0.0,
+       0.0,
+       -0.5,
+       -2.5,
+       -0.5,
+       1.0,
+       5.0,
+       1.0,
+       0.0
+      ]
+     ]
+    }
+   ],
+   "textura": "tex_black",
+   "modelo": "Modelball",
+   "camadas_extras": []
+  }
+ }
+}

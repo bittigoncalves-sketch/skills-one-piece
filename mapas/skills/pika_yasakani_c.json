@@ -1,0 +1,445 @@
+{
+	"animacao": {
+		"clipe": "Ataque",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.0
+	},
+	"ativacao": {
+		"andar_segurando": false,
+		"carga": 0.5,
+		"empurrao_carga_max": 1.0,
+		"modo": "Sustentar",
+		"ponto_segurar": 0.5,
+		"repetir": false,
+		"segurar_max": 5.0,
+		"tecla": "C"
+	},
+	"audio": {
+		"som": "Impacto",
+		"tom": 1.0,
+		"volume": -12.0
+	},
+	"camera": {
+		"tremor": 0.2,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 30.0,
+		"exige_alvo": false,
+		"exige_chao": false,
+		"nivel_minimo": 1,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 40.0,
+		"custo": 4.4,
+		"custo_por_segundo": 0.0,
+		"duracao": 1.9,
+		"fim_sobre_alvo": 0.0,
+		"flutuar": true,
+		"inicio_do_fim": -1.0,
+		"intervalo_depois": 0.5,
+		"mirar_no_alvo": false,
+		"parar_no_vazio": false,
+		"recarga": 10.0
+	},
+	"dano": {
+		"atordoamento": 0.15,
+		"critico": 0.0,
+		"duracao_efeito": 1.0,
+		"empurrao": 0.5,
+		"lentidao": 0.0,
+		"multiplicador": 2.0,
+		"tipo": "Físico",
+		"valor": 40.0
+	},
+	"eventos": [
+		{
+			"duracao": 0.08,
+			"habilitado": true,
+			"id": "sobe",
+			"inicio": 0.0,
+			"parametros": {
+				"direcao": "Acima",
+				"distancia": 7.0,
+				"teleporte": true,
+				"velocidade": 100.0
+			},
+			"tipo": "movimento"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_sobe",
+			"inicio": 0.0,
+			"parametros": {
+				"som": "Luz: teleporte",
+				"tom": 1.1,
+				"volume": -8.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 1.8,
+			"habilitado": true,
+			"id": "pose",
+			"inicio": 0.1,
+			"parametros": {
+				"pose": "pose_1",
+				"pulso": 0.4,
+				"transicao": 0.1
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 1.65,
+			"habilitado": true,
+			"id": "carga",
+			"inicio": 0.1,
+			"parametros": {
+				"altura": 1.3,
+				"escala": 0.9,
+				"estilo": "Carga",
+				"frente": 0.6
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 1.0,
+			"habilitado": true,
+			"id": "som_barragem",
+			"inicio": 0.2,
+			"parametros": {
+				"som": "Luz: barragem",
+				"tom": 1.0,
+				"volume": -8.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.75,
+			"habilitado": true,
+			"id": "som_barragem_2",
+			"inicio": 1.0,
+			"parametros": {
+				"som": "Luz: barragem",
+				"tom": 1.05,
+				"volume": -8.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 1.55,
+			"habilitado": true,
+			"id": "tremor",
+			"inicio": 0.2,
+			"parametros": {
+				"tremor": 0.07
+			},
+			"tipo": "camera"
+		},
+		{
+			"duracao": 0.1,
+			"habilitado": true,
+			"id": "chuva_1",
+			"inicio": 0.2,
+			"parametros": {
+				"abertura": 0.0,
+				"area_chuva": 9.0,
+				"direcao_disparo": "Chuva",
+				"explosao": 1.6,
+				"gravidade": 30.0,
+				"perfurar": false,
+				"quantidade": 14,
+				"raio": 0.18,
+				"rastro": "Brilho",
+				"som_explosao": "Luz: impacto",
+				"velocidade": 20.0,
+				"vida": 2.0,
+				"visual": "Energia"
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.1,
+			"habilitado": true,
+			"id": "chuva_2",
+			"inicio": 0.38,
+			"parametros": {
+				"abertura": 0.0,
+				"area_chuva": 9.0,
+				"direcao_disparo": "Chuva",
+				"explosao": 1.6,
+				"gravidade": 30.0,
+				"perfurar": false,
+				"quantidade": 14,
+				"raio": 0.18,
+				"rastro": "Brilho",
+				"som_explosao": "Luz: impacto",
+				"velocidade": 20.0,
+				"vida": 2.0,
+				"visual": "Energia"
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.1,
+			"habilitado": true,
+			"id": "chuva_3",
+			"inicio": 0.56,
+			"parametros": {
+				"abertura": 0.0,
+				"area_chuva": 9.0,
+				"direcao_disparo": "Chuva",
+				"explosao": 1.6,
+				"gravidade": 30.0,
+				"perfurar": false,
+				"quantidade": 14,
+				"raio": 0.18,
+				"rastro": "Brilho",
+				"som_explosao": "Luz: impacto",
+				"velocidade": 20.0,
+				"vida": 2.0,
+				"visual": "Energia"
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.1,
+			"habilitado": true,
+			"id": "chuva_4",
+			"inicio": 0.74,
+			"parametros": {
+				"abertura": 0.0,
+				"area_chuva": 9.0,
+				"direcao_disparo": "Chuva",
+				"explosao": 1.6,
+				"gravidade": 30.0,
+				"perfurar": false,
+				"quantidade": 14,
+				"raio": 0.18,
+				"rastro": "Brilho",
+				"som_explosao": "Luz: impacto",
+				"velocidade": 20.0,
+				"vida": 2.0,
+				"visual": "Energia"
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.1,
+			"habilitado": true,
+			"id": "chuva_5",
+			"inicio": 0.92,
+			"parametros": {
+				"abertura": 0.0,
+				"area_chuva": 9.0,
+				"direcao_disparo": "Chuva",
+				"explosao": 1.6,
+				"gravidade": 30.0,
+				"perfurar": false,
+				"quantidade": 14,
+				"raio": 0.18,
+				"rastro": "Brilho",
+				"som_explosao": "Luz: impacto",
+				"velocidade": 20.0,
+				"vida": 2.0,
+				"visual": "Energia"
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.1,
+			"habilitado": true,
+			"id": "chuva_6",
+			"inicio": 1.1,
+			"parametros": {
+				"abertura": 0.0,
+				"area_chuva": 9.0,
+				"direcao_disparo": "Chuva",
+				"explosao": 1.6,
+				"gravidade": 30.0,
+				"perfurar": false,
+				"quantidade": 14,
+				"raio": 0.18,
+				"rastro": "Brilho",
+				"som_explosao": "Luz: impacto",
+				"velocidade": 20.0,
+				"vida": 2.0,
+				"visual": "Energia"
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.1,
+			"habilitado": true,
+			"id": "chuva_7",
+			"inicio": 1.28,
+			"parametros": {
+				"abertura": 0.0,
+				"area_chuva": 9.0,
+				"direcao_disparo": "Chuva",
+				"explosao": 1.6,
+				"gravidade": 30.0,
+				"perfurar": false,
+				"quantidade": 14,
+				"raio": 0.18,
+				"rastro": "Brilho",
+				"som_explosao": "Luz: impacto",
+				"velocidade": 20.0,
+				"vida": 2.0,
+				"visual": "Energia"
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.1,
+			"habilitado": true,
+			"id": "chuva_8",
+			"inicio": 1.46,
+			"parametros": {
+				"abertura": 0.0,
+				"area_chuva": 9.0,
+				"direcao_disparo": "Chuva",
+				"explosao": 1.6,
+				"gravidade": 30.0,
+				"perfurar": false,
+				"quantidade": 14,
+				"raio": 0.18,
+				"rastro": "Brilho",
+				"som_explosao": "Luz: impacto",
+				"velocidade": 20.0,
+				"vida": 2.0,
+				"visual": "Energia"
+			},
+			"tipo": "projetil"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 3.0,
+		"forma": "Esfera",
+		"largura": 3.0,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 1.5,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": -2.0
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "Sobe e, enquanto a tecla estiver apertada, faz chover bolinhas de luz numa área larga em volta da mira; cada uma estoura ao tocar.",
+		"dono": "Jogador",
+		"fruta": "pika_pika",
+		"id": "pika_yasakani_c",
+		"modelo": "Base",
+		"nome": "Yasakani no Magatama"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 2.0,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 6.0
+	},
+	"poses": [
+		{
+			"id": "pose_1",
+			"nome": "Barragem",
+			"ossos": {
+				"ForeArm_L": [
+					8.0,
+					0.0,
+					0.0
+				],
+				"ForeArm_R": [
+					8.0,
+					0.0,
+					0.0
+				],
+				"Head": [
+					6.0,
+					0.0,
+					0.0
+				],
+				"Shin_L": [
+					-36.0,
+					0.0,
+					0.0
+				],
+				"Shin_R": [
+					-30.0,
+					0.0,
+					0.0
+				],
+				"Thigh_L": [
+					26.0,
+					0.0,
+					0.0
+				],
+				"Thigh_R": [
+					12.0,
+					0.0,
+					0.0
+				],
+				"Torso": [
+					12.0,
+					0.0,
+					0.0
+				],
+				"UpperArm_L": [
+					84.0,
+					0.0,
+					-14.0
+				],
+				"UpperArm_R": [
+					84.0,
+					0.0,
+					14.0
+				]
+			}
+		}
+	],
+	"projeteis": {
+		"abertura": 20.0,
+		"area_chuva": 8.0,
+		"direcao_disparo": "Mira",
+		"explosao": 0.0,
+		"giro": 0.0,
+		"gravidade": 0.0,
+		"modelo": "",
+		"perfurar": false,
+		"quantidade": 1,
+		"raio": 0.4,
+		"rastro": "Nenhum",
+		"sem_dano": false,
+		"som_explosao": "Impacto",
+		"velocidade": 12.0,
+		"vida": 2.0,
+		"visual": "Energia"
+	},
+	"versao": 1,
+	"vfx": {
+		"altura": 1.0,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#ffd23f",
+		"cor_2": "#fff1b8",
+		"escala": 1.0,
+		"estilo": "Impacto",
+		"frente": 1.0,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "Mão direita",
+		"projetil_de": ""
+	}
+}

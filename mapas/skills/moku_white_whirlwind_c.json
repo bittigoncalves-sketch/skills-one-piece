@@ -1,0 +1,226 @@
+{
+	"animacao": {
+		"clipe": "chapa_giratoria_2",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.0
+	},
+	"ativacao": {
+		"andar_segurando": false,
+		"carga": 0.0,
+		"empurrao_carga_max": 1.0,
+		"modo": "Pressionar",
+		"ponto_segurar": 0.5,
+		"repetir": false,
+		"segurar_max": 5.0,
+		"tecla": "C"
+	},
+	"audio": {
+		"som": "Vento",
+		"tom": 0.9,
+		"volume": -6.0
+	},
+	"camera": {
+		"tremor": 0.15,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 30.0,
+		"exige_alvo": false,
+		"exige_chao": false,
+		"nivel_minimo": 1,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 12.0,
+		"custo": 22.0,
+		"custo_por_segundo": 0.0,
+		"duracao": 1.8,
+		"fim_sobre_alvo": 0.0,
+		"flutuar": false,
+		"inicio_do_fim": -1.0,
+		"intervalo_depois": 0.5,
+		"mirar_no_alvo": false,
+		"parar_no_vazio": false,
+		"recarga": 7.0
+	},
+	"dano": {
+		"atordoamento": 0.4,
+		"critico": 0.0,
+		"duracao_efeito": 3.0,
+		"empurrao": 2.0,
+		"lentidao": 60.0,
+		"multiplicador": 2.0,
+		"tipo": "Vento",
+		"valor": 185.0
+	},
+	"eventos": [
+		{
+			"duracao": 1.6,
+			"habilitado": true,
+			"id": "anim_giro",
+			"inicio": 0.0,
+			"parametros": {
+				"clipe": "chapa_giratoria_2",
+				"intensidade": 1.0,
+				"velocidade": 1.0
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.8,
+			"habilitado": true,
+			"id": "som_vento_inicio",
+			"inicio": 0.0,
+			"parametros": {
+				"som": "Vento",
+				"tom": 0.9,
+				"volume": -6.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 1.5,
+			"habilitado": true,
+			"id": "vfx_tornado",
+			"inicio": 0.1,
+			"parametros": {
+				"altura": 1.0,
+				"cor": "#dcdde1",
+				"cor_2": "#8395a7",
+				"escala": 2.4,
+				"estilo": "Tornado",
+				"frente": 1.5
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.9,
+			"habilitado": true,
+			"id": "som_vento_continuo",
+			"inicio": 0.6,
+			"parametros": {
+				"som": "Vento",
+				"tom": 1.1,
+				"volume": -7.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.6,
+			"habilitado": true,
+			"id": "hitbox_vortice_1",
+			"inicio": 0.2,
+			"parametros": {
+				"altura": 3.0,
+				"forma": "Esfera",
+				"largura": 3.0,
+				"profundidade": 3.0,
+				"raio": 3.5,
+				"unicos": true,
+				"x": 0.0,
+				"y": 1.0,
+				"z": -1.5
+			},
+			"tipo": "hitbox"
+		},
+		{
+			"duracao": 0.7,
+			"habilitado": true,
+			"id": "hitbox_vortice_2",
+			"inicio": 0.8,
+			"parametros": {
+				"altura": 3.0,
+				"forma": "Esfera",
+				"largura": 3.0,
+				"profundidade": 3.0,
+				"raio": 3.8,
+				"unicos": true,
+				"x": 0.0,
+				"y": 1.0,
+				"z": -1.5
+			},
+			"tipo": "hitbox"
+		},
+		{
+			"duracao": 0.5,
+			"habilitado": true,
+			"id": "tremor_giro",
+			"inicio": 0.2,
+			"parametros": {
+				"tremor": 0.15,
+				"zoom": 40.0
+			},
+			"tipo": "camera"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 3.0,
+		"forma": "Esfera",
+		"largura": 3.0,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 3.5,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": -1.5
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "Gera um turbilh\u00e3o girat\u00f3rio de fuma\u00e7a que suga e atordoa os oponentes na \u00e1rea, aplicando forte lentid\u00e3o e dano cont\u00ednuo.",
+		"dono": "Jogador",
+		"fruta": "moku_moku",
+		"id": "moku_white_whirlwind_c",
+		"modelo": "Base",
+		"nome": "V\u00f3rtice de Fuma\u00e7a"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 2.0,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 6.0
+	},
+	"poses": [],
+	"projeteis": {
+		"abertura": 20.0,
+		"area_chuva": 8.0,
+		"direcao_disparo": "Mira",
+		"explosao": 0.0,
+		"giro": 0.0,
+		"gravidade": 0.0,
+		"modelo": "",
+		"perfurar": false,
+		"quantidade": 1,
+		"raio": 0.4,
+		"rastro": "Nenhum",
+		"sem_dano": false,
+		"som_explosao": "Impacto",
+		"velocidade": 12.0,
+		"vida": 2.0,
+		"visual": "Energia"
+	},
+	"versao": 1,
+	"vfx": {
+		"altura": 1.0,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#dcdde1",
+		"cor_2": "#8395a7",
+		"escala": 2.4,
+		"estilo": "Tornado",
+		"frente": 1.5,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "M\u00e3o direita",
+		"projetil_de": ""
+	}
+}

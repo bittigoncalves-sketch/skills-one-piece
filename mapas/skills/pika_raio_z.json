@@ -1,0 +1,288 @@
+{
+	"animacao": {
+		"clipe": "Ataque",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.0
+	},
+	"ativacao": {
+		"andar_segurando": false,
+		"carga": 1.5,
+		"empurrao_carga_max": 1.5,
+		"modo": "Carregar e soltar",
+		"paralisar_segurando": true,
+		"ponto_segurar": 0.0,
+		"repetir": false,
+		"segurar_max": 4.0,
+		"tecla": "Z"
+	},
+	"audio": {
+		"som": "Impacto",
+		"tom": 1.0,
+		"volume": -12.0
+	},
+	"camera": {
+		"tremor": 0.2,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 30.0,
+		"exige_alvo": false,
+		"exige_chao": false,
+		"nivel_minimo": 1,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 40.0,
+		"custo": 4.4,
+		"custo_por_segundo": 0.0,
+		"duracao": 0.5,
+		"fim_sobre_alvo": 0.0,
+		"flutuar": false,
+		"inicio_do_fim": -1.0,
+		"intervalo_depois": 0.5,
+		"mirar_no_alvo": false,
+		"parar_no_vazio": false,
+		"recarga": 5.0
+	},
+	"dano": {
+		"atordoamento": 0.15,
+		"critico": 0.0,
+		"duracao_efeito": 1.0,
+		"empurrao": 2.0,
+		"lentidao": 0.0,
+		"multiplicador": 2.0,
+		"tipo": "Físico",
+		"valor": 98.0
+	},
+	"eventos": [
+		{
+			"duracao": 0.5,
+			"habilitado": true,
+			"id": "pose",
+			"inicio": 0.0,
+			"parametros": {
+				"pose": "pose_1",
+				"transicao": 0.08
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.12,
+			"habilitado": true,
+			"id": "estrela",
+			"inicio": 0.0,
+			"parametros": {
+				"escala": 0.6,
+				"estilo": "Estrela",
+				"na_mao": true
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.04,
+			"habilitado": true,
+			"id": "som_carga",
+			"inicio": 0.0,
+			"parametros": {
+				"som": "Luz: carga",
+				"tom": 1.0,
+				"volume": -10.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "raio",
+			"inicio": 0.05,
+			"parametros": {
+				"comprimento": 40.0,
+				"escala": 0.5,
+				"estilo": "Feixe",
+				"mirar": true,
+				"na_mao": true
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.35,
+			"habilitado": true,
+			"id": "fotons",
+			"inicio": 0.05,
+			"parametros": {
+				"escala": 0.4,
+				"estilo": "Fótons",
+				"na_mao": true
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.08,
+			"habilitado": true,
+			"id": "acerto",
+			"inicio": 0.06,
+			"parametros": {
+				"altura": 1.0,
+				"forma": "Caixa",
+				"largura": 1.0,
+				"mirar": true,
+				"na_mao": true,
+				"profundidade": 40.0,
+				"unicos": true,
+				"x": 0.0,
+				"y": 1.35,
+				"z": 0.0
+			},
+			"tipo": "hitbox"
+		},
+		{
+			"duracao": 0.4,
+			"habilitado": true,
+			"id": "som",
+			"inicio": 0.05,
+			"parametros": {
+				"som": "Luz: disparo",
+				"tom": 1.0,
+				"volume": -6.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.12,
+			"habilitado": true,
+			"id": "tremor",
+			"inicio": 0.05,
+			"parametros": {
+				"tremor": 0.08
+			},
+			"tipo": "camera"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 3.0,
+		"forma": "Esfera",
+		"largura": 3.0,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 1.5,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": -2.0
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "Segure: uma estrela de luz cresce na mão. Solte: um raio só, instantâneo, da mão até a mira (até 40 m); quanto mais carregado, mais forte o empurrão (até 1,5×).",
+		"dono": "Jogador",
+		"fruta": "pika_pika",
+		"id": "pika_raio_z",
+		"modelo": "Base",
+		"nome": "Raio de Luz"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 2.0,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 6.0
+	},
+	"poses": [
+		{
+			"id": "pose_1",
+			"nome": "Apontar",
+			"ossos": {
+				"ForeArm_L": [
+					38.0,
+					0.0,
+					0.0
+				],
+				"ForeArm_R": [
+					4.0,
+					0.0,
+					0.0
+				],
+				"Head": [
+					-4.0,
+					12.0,
+					0.0
+				],
+				"Shin_L": [
+					-22.0,
+					0.0,
+					0.0
+				],
+				"Shin_R": [
+					-12.0,
+					0.0,
+					0.0
+				],
+				"Thigh_L": [
+					22.0,
+					0.0,
+					0.0
+				],
+				"Thigh_R": [
+					-10.0,
+					0.0,
+					0.0
+				],
+				"Torso": [
+					8.0,
+					-18.0,
+					0.0
+				],
+				"UpperArm_L": [
+					18.0,
+					0.0,
+					-12.0
+				],
+				"UpperArm_R": [
+					88.0,
+					0.0,
+					6.0
+				]
+			}
+		}
+	],
+	"projeteis": {
+		"abertura": 20.0,
+		"area_chuva": 8.0,
+		"direcao_disparo": "Mira",
+		"explosao": 0.0,
+		"giro": 0.0,
+		"gravidade": 0.0,
+		"modelo": "",
+		"perfurar": false,
+		"quantidade": 1,
+		"raio": 0.4,
+		"rastro": "Nenhum",
+		"sem_dano": false,
+		"som_explosao": "Impacto",
+		"velocidade": 12.0,
+		"vida": 2.0,
+		"visual": "Energia"
+	},
+	"versao": 1,
+	"vfx": {
+		"altura": 1.0,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#ffd23f",
+		"cor_2": "#fff1b8",
+		"escala": 1.0,
+		"estilo": "Impacto",
+		"frente": 1.0,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "Mão direita",
+		"projetil_de": ""
+	}
+}

@@ -38,8 +38,11 @@ var sprint: bool = false            # Shift COM movimento (segurar parado não c
 var espaco_segurado: bool = false
 var espaco_agora: bool = false      # BORDA: só no quadro em que o Espaço bate
 var dash_segurado: bool = false     # Q segurado (mira do dash)
+var soltar_agora: bool = false      # BORDA do Ctrl: larga a parede
+var agachar_segurado: bool = false # Ctrl mantido: agachar em terra
 
 var _espaco_antes: bool = false
+var _soltar_antes: bool = false
 
 # `yaw` é a orientação real da câmera. Nada de adivinhar: a direção do
 # movimento sai da mesma base que o jogador está vendo.
@@ -88,6 +91,13 @@ func ler(yaw: float, menu_fechado: bool = true) -> void:
 
 	dash_segurado = Input.is_physical_key_pressed(KEY_Q) and ativo
 
+	# Ctrl solta a parede (decisão do dono, 02/10/2026, controles estilo Mirror's
+	# Edge). Na água o Ctrl é "afundar" — lido lá, direto da tecla.
+	var ctrl := Input.is_physical_key_pressed(KEY_CTRL) and ativo
+	agachar_segurado = ctrl
+	soltar_agora = ctrl and not _soltar_antes
+	_soltar_antes = ctrl
+
 # O combate CONGELA o movimento (rajada Z da Mera/Hie: fica parado atirando, só
 # a câmera gira). É o Player quem decide isso — daí ser um pedido, e não uma
 # leitura de tecla a mais aqui dentro.
@@ -113,3 +123,11 @@ func travar_golpe() -> void:
 	r = 0.0
 	espaco_segurado = false
 	espaco_agora = false
+
+
+# SEGURANDO UMA SKILL DO BUILDER (pedido do dono, 07/10/2026): "quando o jogador está
+# segurando uma skill ele não consegue se mover, a não ser que a skill diga o
+# contrário". Como o golpe, e também sem a esquiva: o Q também move o corpo.
+func travar_por_skill() -> void:
+	travar_golpe()
+	dash_segurado = false

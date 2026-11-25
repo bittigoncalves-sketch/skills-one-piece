@@ -30,16 +30,15 @@ extends RefCounted
 const COUNTER_HITSTUN := 1.55   # +55% de tempo parado
 const COUNTER_KNOCKBACK := 0.45 # +45% de empurrão, somado ao que já foi aplicado
 
+# ⚠️ AS VARIAÇÕES DE MOVIMENTO SIMPLES FORAM APAGADAS (2026-09-13, pedido do
+# dono). W/A/S/D + clique no chão davam cotovelada (W), chute recuando (S) e
+# esquiva com gancho (A/D). Elas trocavam o M1 do combo por outro golpe só
+# porque o jogador estava andando — e, no Boss, esse golpe chegava sem a marca
+# de corpo a corpo e o empurrava. No chão, andar + clique agora é sempre o combo
+# M1. Ficam as variações que pedem uma situação, não só movimento: Lançamento
+# (W no 4º golpe), chute aéreo, chute de parede; e, fora deste arquivo, a Aú
+# (Espaço + clique) e a investida Mink (corrida).
 const ESPECIFICACOES := {
-	"context_elbow": {
-		"nome": "Cotovelada de Avanço",
-		"pose": "context_elbow",
-		"startup": 0.14, "ativo": 0.08, "recuperacao": 0.20,
-		"dano": 60.0, "knockback": 16.0, "hitstun": 0.62,
-		"alcance": 1.45, "raio": 1.32,
-		"deslocamento": 1.00, "direcao": "frente",
-		"vfx": "cotovelo",
-	},
 	# ⚠️ SUBSTITUI O QUARTO M1, e por isso é a única variação que não é "mais uma
 	# opção": ela TROCA o finalizador de 112 por 72. O que se perde em dano se
 	# ganha em rota — o alvo sobe e abre a perseguição aérea, que é o item
@@ -88,33 +87,6 @@ const ESPECIFICACOES := {
 		"deslocamento": 1.45, "direcao": "frente",
 		"vfx": "cotovelo",
 		"no_ar": true,
-	},
-	"context_retreat_kick": {
-		"nome": "Chute Recuando",
-		"pose": "context_retreat_kick",
-		"startup": 0.15, "ativo": 0.08, "recuperacao": 0.23,
-		"dano": 56.0, "knockback": 17.0, "hitstun": 0.60,
-		"alcance": 1.55, "raio": 1.30,
-		"deslocamento": 0.85, "direcao": "tras",
-		"vfx": "recuo",
-	},
-	"context_side_hook_l": {
-		"nome": "Esquiva Esquerda + Gancho",
-		"pose": "context_side_hook_l",
-		"startup": 0.16, "ativo": 0.08, "recuperacao": 0.24,
-		"dano": 58.0, "knockback": 15.0, "hitstun": 0.61,
-		"alcance": 1.40, "raio": 1.28,
-		"deslocamento": 1.10, "direcao": "esquerda",
-		"vfx": "esquiva_l",
-	},
-	"context_side_hook_r": {
-		"nome": "Esquiva Direita + Gancho",
-		"pose": "context_side_hook_r",
-		"startup": 0.16, "ativo": 0.08, "recuperacao": 0.24,
-		"dano": 58.0, "knockback": 15.0, "hitstun": 0.61,
-		"alcance": 1.40, "raio": 1.28,
-		"deslocamento": 1.10, "direcao": "direita",
-		"vfx": "esquiva_r",
 	},
 }
 
@@ -268,24 +240,10 @@ static func resolver(contexto: Dictionary) -> String:
 		return "context_air_kick"
 	if contexto.get("sprinting", false):
 		return ""
-	# Lateral vence frente/ré se os dois vieram juntos: a leitura em tela fica
-	# clara e coincide com a tabela de prioridade documentada.
-	var lado := float(contexto.get("input_side", 0.0))
-	if lado < -0.01:
-		return "context_side_hook_l"
-	if lado > 0.01:
-		return "context_side_hook_r"
-	var frente := float(contexto.get("input_forward", 0.0))
-	if frente < -0.01:
-		return "context_retreat_kick"
-	if frente > 0.01:
-		# No QUARTO golpe do combo (índice 3), W deixa de ser cotovelada e vira
-		# lançamento — é a troca que o plano descreve. Nos três primeiros a
-		# cotovelada continua valendo, senão o jogador perderia a variação de
-		# avanço no meio da sequência.
-		if int(contexto.get("combo_step", -1)) == 3:
-			return "context_launcher"
-		return "context_elbow"
+	# No chão resta uma variação: W no QUARTO golpe do combo (índice 3) troca o
+	# finalizador pelo Lançamento. Fora disso, andar + clique é o combo M1.
+	if int(contexto.get("combo_step", -1)) == 3 and float(contexto.get("input_forward", 0.0)) > 0.01:
+		return "context_launcher"
 	return ""
 
 ## Este golpe exige os pés no chão?
@@ -401,6 +359,7 @@ static func golpear(mundo: Node, caster: Node3D, id: String, origem: Vector3, fw
 		mundo.add_child(zona)
 		zona.global_position = ponto_ativo + frente * float(e["alcance"]) * escala
 		zona.override_kb_dir = frente
+		zona.corpo_a_corpo = true
 		# COUNTER HIT: quem estava em startup no instante do impacto é anotado
 		# ANTES de o dano correr, e recebe o bônus logo depois. Duas etapas
 		# porque o hitstun do golpe normal precisa ter sido aplicado primeiro —
@@ -412,6 +371,17 @@ static func golpear(mundo: Node, caster: Node3D, id: String, origem: Vector3, fw
 					and alvo.call("em_startup_de_ataque"):
 				em_startup[alvo.get_instance_id()] = true)
 		zona.hit_landed.connect(func(alvo):
+			# Quem tem reação própria ao corpo a corpo (o Boss) já decidiu paralisar ou
+			# arremessar no `take_damage`; os impulsos extras de counter, lançamento e
+			# sustento viriam como um segundo golpe sem marca e o empurrariam.
+			var reacao_propria: bool = alvo != null and is_instance_valid(alvo) and alvo.has_method("reage_ao_corpo_a_corpo")
+			if reacao_propria:
+				if is_instance_valid(caster):
+					if caster.has_method("_confirmar_acerto_contextual_servidor"):
+						caster.call("_confirmar_acerto_contextual_servidor", sequencia)
+					elif "hit_confirmed" in caster:
+						caster.hit_confirmed = true
+				return
 			if alvo != null and is_instance_valid(alvo) \
 					and em_startup.get(alvo.get_instance_id(), false):
 				_aplicar_counter(alvo, caster, e, frente, escala)

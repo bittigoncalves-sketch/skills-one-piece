@@ -14,6 +14,8 @@ extends Control
 # ============================================================================
 
 var cor: Color = Estilo.VIDA
+## Barra de VIDA: a cor acompanha a fração (verde → amarelo → vermelho, `Estilo.cor_da_vida`).
+var cor_pela_vida := false
 var _r: float = 1.0
 
 
@@ -29,10 +31,15 @@ func valor(r: float) -> void:
 	if absf(novo - _r) < 0.0005:
 		return
 	_r = novo
+	if cor_pela_vida:
+		cor = Estilo.cor_da_vida(_r)
 	queue_redraw()
 
 
 func _draw() -> void:
+	if GuiMinecraft.disponivel():
+		_desenhar_vanilla()
+		return
 	var h := size.y
 	var largura := size.x - Estilo.INCLINACAO
 	draw_colored_polygon(Estilo.pontos(0.0, largura, h), Estilo.FUNDO)
@@ -42,3 +49,17 @@ func _draw() -> void:
 	var p := Estilo.pontos(0.0, largura, h)
 	var fechado := PackedVector2Array([p[0], p[1], p[2], p[3], p[0]])
 	draw_polyline(fechado, Estilo.LINHA, Estilo.GROSSURA)
+
+
+## Tema do Minecraft (12/11/2026): retângulo reto como a barra de XP do vanilla — fundo quase preto, enchimento com um friso claro em cima
+## e um escuro embaixo (o relevo do `icons.png`), moldura preta de 2 px. A cor continua informando (vida verde→vermelha, energia azul).
+func _desenhar_vanilla() -> void:
+	var caixa := Rect2(Vector2.ZERO, size)
+	draw_rect(caixa, Color(0.08, 0.08, 0.08, 0.92))
+	var dentro := caixa.grow(-2.0)
+	if _r > 0.0 and dentro.size.x > 0.0:
+		var enchimento := Rect2(dentro.position, Vector2(dentro.size.x * _r, dentro.size.y))
+		draw_rect(enchimento, cor)
+		draw_rect(Rect2(enchimento.position, Vector2(enchimento.size.x, maxf(2.0, enchimento.size.y * 0.3))), cor.lightened(0.35))
+		draw_rect(Rect2(enchimento.position + Vector2(0.0, enchimento.size.y * 0.75), Vector2(enchimento.size.x, enchimento.size.y * 0.25)), cor.darkened(0.3))
+	draw_rect(caixa, Color.BLACK, false, 2.0)

@@ -1,0 +1,96 @@
+{
+	"formato": "skills-one-piece/frutas-builder",
+	"frutas": [
+		{
+			"cor": "#ff7ad9",
+			"id": "noro_noro",
+			"nome": "Noro Noro no Mi",
+			"teclas": {
+				"Z": "noro_noro_beam"
+			}
+		},
+		{
+			"cor": "#ffd23f",
+			"id": "pika_pika",
+			"nome": "Pika Pika no Mi",
+			"reconstroi": true,
+			"teclas": {
+				"C": "pika_yasakani_c",
+				"F": "pika_voo_f",
+				"X": "pika_yata_x",
+				"Z": "pika_raio_z"
+			}
+		},
+		{
+			"cor": "#dcdde1",
+			"id": "moku_moku",
+			"nome": "Moku Moku no Mi",
+			"teclas": {
+				"C": "moku_white_whirlwind_c",
+				"F": "moku_white_flight_f",
+				"V": "moku_white_out_v",
+				"X": "moku_white_blow_x",
+				"Z": "moku_white_dash_z"
+			}
+		},
+		{
+			"cor": "#9fe8ff",
+			"id": "hie_hie",
+			"nome": "Hie Hie no Mi",
+			"reconstroi": true,
+			"teclas": {
+				"Z": "Z_ice"
+			}
+		},
+		{
+			"cor": "#ff8fb8",
+			"id": "nikyu_nikyu",
+			"nome": "Nikyu Nikyu no Mi",
+			"teclas": {
+				"C": "nikyu_dor_c",
+				"V": "nikyu_repulsao_v",
+				"X": "nikyu_metralhadora_x",
+				"Z": "nikyu_pata_gigante_z"
+			}
+		},
+		{
+			"cor": "#ffd23f",
+			"id": "pika_pika_no_mi_mine_piece",
+			"nome": "Pika Pika no Mi (Mine Piece)",
+			"teclas": {
+				"C": "mp_pika_chute_de_luz",
+				"X": "mp_pika_velocidade_e_poder",
+				"Z": "mp_pika_laser_pesado"
+			}
+		},
+		{
+			"cor": "#9fe8ff",
+			"id": "hie_hie_no_mi_mine_piece",
+			"nome": "Hie Hie no Mi (Mine Piece)",
+			"teclas": {
+				"C": "mp_hie_campo_de_estacas",
+				"X": "mp_hie_bico_de_faisao",
+				"Z": "mp_hie_bola_de_gelo"
+			}
+		},
+		{
+			"cor": "#dcdde1",
+			"id": "moku_moku_no_mi_mine_piece",
+			"nome": "Moku Moku no Mi (Mine Piece)",
+			"teclas": {
+				"Z": "mp_moku_cipo_branco"
+			}
+		},
+		{
+			"cor": "#ff8fb8",
+			"id": "nikyu_nikyu_no_mi_mine_piece",
+			"nome": "Nikyu Nikyu no Mi (Mine Piece)",
+			"teclas": {
+				"C": "mp_nikyu_choque_do_urso",
+				"X": "mp_nikyu_soco_do_urso",
+				"Z": "mp_nikyu_tapa_de_pata"
+			}
+		}
+	],
+	"versao": 1.0
+}

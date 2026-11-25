@@ -25,6 +25,7 @@ inteiro, em headless, sem dizer que a causa está noutra pasta.
 | arquivo | de onde vem | vai para o jogo como |
 |---|---|---|
 | `blender/personagem_base.blend` | `tools/blender/montar_personagem.py` | nada — é para animar |
+| `blender/personagem_base_v2.blend` | `tools/blender/redesenhar_base.py` + referência de 08/09/2026 | `assets/models/base_v2/` — personagem atual e GLB com 134 ossos |
 | (referências e saídas cruas) | Meshy AI, geradores | passam por `tools/blender/preparar_*.py` |
 
 O caminho de um asset é sempre: **fonte aqui → script de preparo em `tools/` →

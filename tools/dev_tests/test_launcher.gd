@@ -30,16 +30,18 @@ func _init() -> void:
 ## 1. QUANDO o launcher sai. Só no quarto golpe, e só com W.
 func _a_regra_de_escolha() -> void:
 	print("=== 1. a escolha ===")
+	# ⚠️ A REGRA MUDOU EM 2026-09-13: as variações de movimento simples (W
+	# cotovelada, S chute recuando, A/D esquiva com gancho) foram apagadas. W só
+	# muda o clique no QUARTO golpe; nos três primeiros é o combo M1.
 	for passo in [0, 1, 2]:
-		_ok("passo %d + W ainda é a cotovelada" % passo,
-			ContextualMelee.resolver(_ctx(1.0, 0.0, passo)) == "context_elbow")
+		_ok("passo %d + W é combo M1" % passo,
+			ContextualMelee.resolver(_ctx(1.0, 0.0, passo)) == "")
 	_ok("passo 3 + W vira o LANÇAMENTO",
 		ContextualMelee.resolver(_ctx(1.0, 0.0, 3)) == "context_launcher")
-	# As outras direções não podem ser afetadas pelo passo do combo.
-	_ok("passo 3 + S continua o chute recuando",
-		ContextualMelee.resolver(_ctx(-1.0, 0.0, 3)) == "context_retreat_kick")
-	_ok("passo 3 + A continua o gancho lateral",
-		ContextualMelee.resolver(_ctx(0.0, -1.0, 3)) == "context_side_hook_l")
+	# S/A/D não trocam o clique em passo nenhum, nem no quarto.
+	for entrada in [[-1.0, 0.0], [0.0, -1.0], [0.0, 1.0]]:
+		_ok("passo 3 + entrada %s é o finalizador M1" % str(entrada),
+			ContextualMelee.resolver(_ctx(entrada[0], entrada[1], 3)) == "")
 	# ⚠️ CONTROLE: sem W não há launcher, por mais avançado que o combo esteja.
 	_ok("passo 3 SEM direção não vira lançamento (é o M1 normal)",
 		ContextualMelee.resolver(_ctx(0.0, 0.0, 3)) == "")
@@ -148,11 +150,11 @@ func _o_chute_de_parede() -> void:
 	# ⚠️ UM POR CONTATO: gasto, volta a ser o chute aéreo comum.
 	_ok("gasto o chute de parede, volta ao chute aéreo",
 		ContextualMelee.resolver(_ctx_ar(Vector3(1, 0, 0), true)) == "context_air_kick")
-	# ⚠️ E NO CHÃO A PAREDE NÃO VALE: lá quem manda são as variações de solo.
+	# ⚠️ E NO CHÃO A PAREDE NÃO VALE: parede ao lado + W no início do combo é M1.
 	var no_chao := _ctx(1.0, 0.0, 0)
 	no_chao["wall_normal"] = Vector3(1, 0, 0)
-	_ok("no CHÃO a parede não sequestra a cotovelada",
-		ContextualMelee.resolver(no_chao) == "context_elbow")
+	_ok("no CHÃO a parede não vira chute de parede",
+		ContextualMelee.resolver(no_chao) == "")
 
 	# A validação da normal: chão e teto não podem contar como parede.
 	print("   limiar de normal: |n.y| < %.2f" % ContextualMelee.LIMIAR_NORMAL_PAREDE)
@@ -163,9 +165,10 @@ func _o_chute_de_parede() -> void:
 	# variações aéreas em partida com rede — e elas passariam no singleplayer,
 	# onde o cliente é o servidor. Bug que só aparece com duas máquinas.
 	print("\n   exige chão?")
-	for id in ["context_elbow", "context_retreat_kick", "context_side_hook_l",
-			"context_launcher"]:
+	for id in ["context_launcher"]:
 		_ok("   %s exige chão" % id, ContextualMelee.exige_chao(id))
+	for id in ["context_elbow", "context_retreat_kick", "context_side_hook_l", "context_side_hook_r"]:
+		_ok("   %s não existe mais" % id, not ContextualMelee.e_id_valido(id))
 	for id in ["context_air_kick", "context_wall_kick"]:
 		_ok("   %s NÃO exige chão" % id, not ContextualMelee.exige_chao(id))
 

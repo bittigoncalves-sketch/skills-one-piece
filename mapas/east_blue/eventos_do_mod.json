@@ -1,0 +1,209 @@
+{
+ "formato": "skills-one-piece/eventos-mine-piece",
+ "versao": 1,
+ "origem": {
+  "mod": "MinePiece-ver14-forge-1.20.1.jar",
+  "sha256": "349b36cdc4dacfe066e385f9ba05205eeb90551a743cf742cf95bfc7a3fbd765",
+  "extraido_por": "tools/mine_piece/extrair_eventos.py"
+ },
+ "eventos": {
+  "AdvancementEvent": [
+   [
+    "AdvancementOtherEntity1Procedure",
+    "onAdvancement"
+   ],
+   [
+    "AdvancementOtherProcedure",
+    "onAdvancement"
+   ],
+   [
+    "AdvancementPirates1Procedure",
+    "onAdvancement"
+   ],
+   [
+    "CompletedAdvancementProcedure",
+    "onAdvancement"
+   ],
+   [
+    "HelpMessagesProcedure",
+    "onAdvancement"
+   ],
+   [
+    "StartMinePieceComplatedProcedure",
+    "onAdvancement"
+   ]
+  ],
+  "LivingTickEvent": [
+   [
+    "BlasterAwayProcedure",
+    "onEntityTick"
+   ],
+   [
+    "EntityActiveProcedure",
+    "onEntityTick"
+   ]
+  ],
+  "LivingDamageEvent": [
+   [
+    "ChangeTargetProcedure",
+    "onLivingDamage"
+   ],
+   [
+    "RatioDamageProcedure",
+    "onLivingDamage"
+   ]
+  ],
+  "ComputeFogColor": [
+   [
+    "ComputeFogColorProcedure",
+    "computeFogColor"
+   ]
+  ],
+  "Finish": [
+   [
+    "EatDevilFruitProcedure",
+    "onUseItemFinish"
+   ]
+  ],
+  "LivingAttackEvent": [
+   [
+    "PlayAnimationEntityProcedure",
+    "onEntityAttacked"
+   ],
+   [
+    "PlayAnimationPlayerProcedure",
+    "onEntityAttacked"
+   ],
+   [
+    "WhenEntityAttackedNoSourceEntityProcedure",
+    "onEntityAttacked"
+   ],
+   [
+    "WhenEntityTakesDamageProcedure",
+    "onEntityAttacked"
+   ]
+  ],
+  "PlayerTickEvent": [
+   [
+    "PlayerPhysicalAbilityProcedure",
+    "onPlayerTick"
+   ],
+   [
+    "PlayerTickEvent2Procedure",
+    "onPlayerTick"
+   ],
+   [
+    "PlayerTickEventProcedure",
+    "onPlayerTick"
+   ],
+   [
+    "PlayerTickFlyProcedure",
+    "onPlayerTick"
+   ]
+  ],
+  "LivingDeathEvent": [
+   [
+    "RaiderDieProcedure",
+    "onEntityDeath"
+   ],
+   [
+    "WhenEntityDieProcedure",
+    "onEntityDeath"
+   ]
+  ],
+  "ItemTooltipEvent": [
+   [
+    "SetAttributeProcedure",
+    "onItemTooltip"
+   ]
+  ],
+  "LivingJumpEvent": [
+   [
+    "WhenBackStepProcedure",
+    "onEntityJump"
+   ],
+   [
+    "WhenPlayerJumpProcedure",
+    "onEntityJump"
+   ]
+  ],
+  "LivingHurtEvent": [
+   [
+    "WhenBeforeEntityisHurtNoSourceProcedure",
+    "onEntityAttacked"
+   ]
+  ],
+  "LivingFallEvent": [
+   [
+    "WhenEntityFallProcedure",
+    "onEntityFall"
+   ]
+  ],
+  "LeftClickBlock": [
+   [
+    "WhenEntityLeftClickToBlockProcedure",
+    "onLeftClickBlock"
+   ]
+  ],
+  "EntityInteract": [
+   [
+    "WhenEntityRightClickProcedure",
+    "onRightClickEntity"
+   ]
+  ],
+  "EntityJoinLevelEvent": [
+   [
+    "WhenEntitySpawnsProcedure",
+    "onEntitySpawned"
+   ]
+  ],
+  "LeftClickEmpty": [
+   [
+    "WhenEntitySwingHandProcedure",
+    "onLeftClick"
+   ]
+  ],
+  "ItemTossEvent": [
+   [
+    "WhenItemDroppedProcedure",
+    "onGemDropped"
+   ]
+  ],
+  "RightClickItem": [
+   [
+    "WhenItemRightClickProcedure",
+    "onRightClickItem"
+   ]
+  ],
+  "PlayerLoggedInEvent": [
+   [
+    "WhenPlayerJointheWorldProcedure",
+    "onPlayerLoggedIn"
+   ]
+  ],
+  "PlayerLoggedOutEvent": [
+   [
+    "WhenPlayerLeaveWorldProcedure",
+    "onPlayerLoggedOut"
+   ]
+  ],
+  "PlayerRespawnEvent": [
+   [
+    "WhenRespawnProcedure",
+    "onPlayerRespawned"
+   ]
+  ],
+  "RightClickBlock": [
+   [
+    "WhenRightClickToBlockProcedure",
+    "onRightClickBlock"
+   ]
+  ],
+  "LevelTickEvent": [
+   [
+    "WhenWorldTickProcedure",
+    "onWorldTick"
+   ]
+  ]
+ }
+}

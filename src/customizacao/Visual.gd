@@ -29,6 +29,40 @@ extends RefCounted
 
 const ARQUIVO := "user://visual.cfg"
 
+# ============================================================================
+#  PADRONIZAÇÃO TEMPORÁRIA (2026-09-08, pedido do dono)
+#
+#  Enquanto o MODELO DO PERSONAGEM está sendo atualizado, todo mundo joga com o
+#  mesmo boneco: sem acessório, raça Humano e corpo cinza. A customização fica
+#  bloqueada — não apagada.
+#
+#  ⚠️ GATILHO PARA DESFAZER: quando o modelo novo do personagem entrar. Vire
+#  `PADRONIZADO` para `false` e o sistema inteiro volta como estava; nada aqui
+#  destrói escolha nenhuma.
+#
+#  ⚠️ POR QUE AQUI E NÃO NO MENU. `Visual` é o ponto ÚNICO por onde a prévia do
+#  menu e o modelo do Player passam — é a razão de esta classe existir (ver o
+#  cabeçalho). Bloquear na tela deixaria o caminho do jogo aberto, que é
+#  exatamente o defeito de 2026-08-29 que `Visual` veio consertar.
+#
+#  ⚠️ O QUE O JOGADOR ESCOLHEU CONTINUA NO DISCO. `user://visual.cfg` não é
+#  reescrito por esta trava: `salvar()` está desligado enquanto ela vale, então
+#  ninguém perde o personagem que montou. Desligar `PADRONIZADO` devolve tudo.
+# ============================================================================
+const PADRONIZADO := true
+
+## A raça do boneco padrão. "humano" existe no catálogo como escolha explícita
+## — é o personagem base, não a ausência de raça.
+const RACA_PADRAO := "humano"
+
+## O cinza da padronização.
+##
+## ⚠️ NÃO ENTRA em `Paleta.CORES`. Aquela lista é de cores de TIME, e `cor_idx`
+## indexa ela — um índice que a REDE transmite. Acrescentar cinza lá o tornaria
+## uma cor de time escolhível e mudaria o significado de um índice já em uso.
+## Aqui ele é o que é: uma cor fixa de um estado temporário.
+const COR_PADRAO := Color(0.55, 0.55, 0.57)
+
 ## Onde a escala original do modelo fica guardada — ver `escalar`.
 const META_ESCALA_BASE := "visual_escala_base"
 
@@ -73,6 +107,10 @@ static func definir_raca(id: String) -> void:
 
 
 static func customizacao_bloqueada() -> bool:
+	# A padronização global vem PRIMEIRO: ela não depende de raça nenhuma, e é
+	# justamente a raça que ela força.
+	if PADRONIZADO:
+		return true
 	return Racas.bloqueia_customizacao(raca)
 
 
@@ -81,6 +119,9 @@ static func equipado(parte: String) -> String:
 
 
 static func cor_do_corpo() -> Color:
+	# A padronização ganha de tudo, inclusive da raça.
+	if PADRONIZADO:
+		return COR_PADRAO
 	# ⚠️ A RAÇA VEM PRIMEIRO. O Oni é vermelho e o Lunariano é escuro por
 	# definição — se a paleta ganhasse, escolher "verde" na aba Cor apagaria a
 	# raça que o jogador acabou de escolher na aba ao lado.
@@ -96,6 +137,10 @@ static func cor_do_corpo() -> Color:
 
 
 static func cor_do_cabelo() -> Color:
+	# O boneco padrão é cinza inteiro — cabelo incluído, senão o corpo sai
+	# uniforme e a cabeça continua com o tom que o jogador tinha escolhido.
+	if PADRONIZADO:
+		return COR_PADRAO
 	# "cabelos sempre brancos como REGRA" para o Lunariano — mesma precedência.
 	var da_raca := Racas.cabelo_de(raca)
 	if da_raca.a > 0.0:
@@ -114,6 +159,8 @@ static func cor_do_cabelo() -> Color:
 ## quem pinta o corpo com a cor do time e é o que distingue os jogadores. Então
 ## lá a limpeza não acontece: sem escolha de cor, o que o jogo pintou fica.
 static func aplicar(modelo: Node3D, preservar_cor_do_jogo: bool = false) -> void:
+	if is_instance_valid(modelo) and modelo.get_meta("preserve_original_materials", false):
+		return
 	if modelo == null or not is_instance_valid(modelo):
 		return
 	# Também normaliza configurações antigas carregadas do disco, que podem ter
@@ -121,6 +168,11 @@ static func aplicar(modelo: Node3D, preservar_cor_do_jogo: bool = false) -> void
 	if customizacao_bloqueada():
 		acessorios.clear()
 		olho = ""
+	# ⚠️ A RAÇA TAMBÉM É FORÇADA, e tem de ser aqui, ANTES do `pintar` lá
+	# embaixo: `cor_do_corpo` dá precedência à pele da raça, então um "oni"
+	# vindo do disco pintaria o corpo de vermelho e o cinza nunca apareceria.
+	if PADRONIZADO:
+		raca = RACA_PADRAO
 
 	# ⚠️ LIMPA TODA PARTE, inclusive as que o estado não menciona. Sem isso,
 	# reaplicar depois de tirar um chapéu deixaria o chapéu velho no lugar — o
@@ -202,6 +254,12 @@ static func e_adorno(n: Node) -> bool:
 
 # --------------------------------------------------------------- persistência
 static func salvar() -> void:
+	# ⚠️ DESLIGADO enquanto a padronização vale. O estado em memória agora é o
+	# boneco forçado, não a escolha do jogador; gravá-lo apagaria do disco o
+	# personagem que ele montou antes — e a trava é temporária, então esse dado
+	# ainda vai ser usado.
+	if PADRONIZADO:
+		return
 	var cfg := ConfigFile.new()
 	cfg.set_value("visual", "acessorios", acessorios)
 	cfg.set_value("visual", "raca", raca)

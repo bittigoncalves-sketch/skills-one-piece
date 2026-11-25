@@ -32,3 +32,12 @@ static func scatter(parent: Node, blocks: Array, count: int, seed_value: int) ->
 		tree.position = Vector3(b["x"], b["top"], b["z"])  # em cima do bloco
 		tree.rotation.y = rng.randf_range(0.0, TAU)         # giro aleatório
 		parent.add_child(tree)
+	# Frutas do Mine Piece (18/10/2026): uma árvore de cada nos blocos SEGUINTES da mesma
+	# ordem sorteada — as `count` de antes ficam onde estavam, com o mesmo giro.
+	var extras := TreeAndFruitGenerator.get_tree_definitions_mine_piece()
+	for e in mini(extras.size(), idxs.size() - n):
+		var b: Dictionary = blocks[idxs[n + e]]
+		var tree := TreeAndFruitGenerator.create_tree_3d(extras[e])
+		tree.position = Vector3(b["x"], b["top"], b["z"])
+		tree.rotation.y = rng.randf_range(0.0, TAU)
+		parent.add_child(tree)

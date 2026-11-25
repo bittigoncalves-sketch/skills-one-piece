@@ -1,0 +1,475 @@
+{
+ "formato": "skills-one-piece/itens-mine-piece",
+ "versao": 1,
+ "origem": {
+  "mod": "MinePiece-ver14-forge-1.20.1.jar",
+  "sha256": "349b36cdc4dacfe066e385f9ba05205eeb90551a743cf742cf95bfc7a3fbd765",
+  "extraido_por": "tools/mine_piece/extrair_itens.py"
+ },
+ "itens": {
+  "skill_selector": {
+   "classe": "SkillSelectorItem",
+   "base": "Item"
+  },
+  "enma": {
+   "classe": "EnmaItem",
+   "base": "SwordItem"
+  },
+  "ameno_habakiri": {
+   "classe": "AmenoHabakiriItem",
+   "base": "SwordItem"
+  },
+  "cat_claws": {
+   "classe": "CatClawsItem",
+   "base": "SwordItem"
+  },
+  "gold_spear": {
+   "classe": "GoldSpearItem",
+   "base": "SwordItem"
+  },
+  "kikoku": {
+   "classe": "KikokuItem",
+   "base": "Item"
+  },
+  "lance": {
+   "classe": "LanceItem",
+   "base": "SwordItem"
+  },
+  "lance_uta": {
+   "classe": "LanceUtaItem",
+   "base": "SwordItem"
+  },
+  "shield_uta": {
+   "classe": "ShieldUtaItem",
+   "base": "ShieldItem"
+  },
+  "rifle": {
+   "classe": "RifleItem",
+   "base": "Item"
+  },
+  "yoru": {
+   "classe": "YoruItem",
+   "base": "SwordItem"
+  },
+  "knife": {
+   "classe": "KnifeItem",
+   "base": "SwordItem"
+  },
+  "griffon": {
+   "classe": "GriffonItem",
+   "base": "SwordItem"
+  },
+  "pipe": {
+   "classe": "PipeItem",
+   "base": "TieredItem"
+  },
+  "takeru": {
+   "classe": "TakeruItem",
+   "base": "TieredItem"
+  },
+  "tonfa": {
+   "classe": "TonfaItem",
+   "base": "TieredItem"
+  },
+  "saber": {
+   "classe": "SaberItem",
+   "base": "SwordItem"
+  },
+  "cutlass": {
+   "classe": "CutlassItem",
+   "base": "SwordItem"
+  },
+  "hook": {
+   "classe": "HookItem",
+   "base": "TieredItem"
+  },
+  "masakari": {
+   "classe": "MasakariItem",
+   "base": "Item"
+  },
+  "ace": {
+   "classe": "AceItem",
+   "base": "SwordItem"
+  },
+  "kitetsu_shodai": {
+   "classe": "KitetsuShodaiItem",
+   "base": "Item"
+  },
+  "item_devil_fruit_yami_yami": {
+   "classe": "ItemDevilFruitYamiYamiItem",
+   "base": "Item"
+  },
+  "item_devil_fruit_mera_mera": {
+   "classe": "ItemDevilFruitMeraMeraItem",
+   "base": "Item"
+  },
+  "punk_pistols_right": {
+   "classe": "PunkPistolsRightItem",
+   "base": "Item"
+  },
+  "punk_pistols_left": {
+   "classe": "PunkPistolsLeftItem",
+   "base": "Item"
+  },
+  "item_devil_fruit_pika_pika": {
+   "classe": "ItemDevilFruitPikaPikaItem",
+   "base": "Item"
+  },
+  "wado_ichimonji": {
+   "classe": "WadoIchimonjiItem",
+   "base": "SwordItem"
+  },
+  "kitetsu_sandai": {
+   "classe": "KitetsuSandaiItem",
+   "base": "SwordItem"
+  },
+  "shusui": {
+   "classe": "ShusuiItem",
+   "base": "SwordItem"
+  },
+  "mizu_mizu_meat": {
+   "classe": "MizuMizuMeatItem",
+   "base": "Item"
+  },
+  "meat_on_the_bone": {
+   "classe": "MeatOnTheBoneItem",
+   "base": "Item"
+  },
+  "jitte": {
+   "classe": "JitteItem",
+   "base": "TieredItem"
+  },
+  "item_devil_fruit_bisu_bisu": {
+   "classe": "ItemDevilFruitBisuBisuItem",
+   "base": "Item"
+  },
+  "shield_biscuit": {
+   "classe": "ShieldBiscuitItem",
+   "base": "ShieldItem"
+  },
+  "biscuit": {
+   "classe": "BiscuitItem",
+   "base": "Item"
+  },
+  "hassaikai": {
+   "classe": "HassaikaiItem",
+   "base": "TieredItem"
+  },
+  "yakuza_kasen": {
+   "classe": "YakuzaKasenItem",
+   "base": "Item"
+  },
+  "yakuza_kasen_blade": {
+   "classe": "YakuzaKasenBladeItem",
+   "base": "SwordItem"
+  },
+  "yakuza_kasen_sheath": {
+   "classe": "YakuzaKasenSheathItem",
+   "base": "Item"
+  },
+  "pistol": {
+   "classe": "PistolItem",
+   "base": "Item"
+  },
+  "amano_murakumo": {
+   "classe": "AmanoMurakumoItem",
+   "base": "SwordItem"
+  },
+  "kikoku_sheath": {
+   "classe": "KikokuSheathItem",
+   "base": "Item"
+  },
+  "kikoku_blade": {
+   "classe": "KikokuBladeItem",
+   "base": "SwordItem"
+  },
+  "sword_kaku": {
+   "classe": "SwordKakuItem",
+   "base": "SwordItem"
+  },
+  "item_mogcy": {
+   "classe": "ItemKumashiItem",
+   "base": "Item"
+  },
+  "perona_umbrella": {
+   "classe": "PeronaUmbrellaItem",
+   "base": "Item"
+  },
+  "item_devil_fruit_horo_horo": {
+   "classe": "ItemDevilFruitHoroHoroItem",
+   "base": "Item"
+  },
+  "sword_s_hawk": {
+   "classe": "SwordSHawkItem",
+   "base": "SwordItem"
+  },
+  "item_devil_fruit_hie_hie": {
+   "classe": "ItemDevilFruitHieHieItem",
+   "base": "Item"
+  },
+  "item_devil_fruit_magu_magu": {
+   "classe": "ItemDevilFruitMaguMaguItem",
+   "base": "Item"
+  },
+  "item_bullet": {
+   "classe": "ItemBulletItem",
+   "base": "Item"
+  },
+  "pistol_gold": {
+   "classe": "PistolGoldItem",
+   "base": "Item"
+  },
+  "item_devil_fruit": {
+   "classe": "ItemDevilFruitItem",
+   "base": "Item"
+  },
+  "kukuri_knife": {
+   "classe": "KukuriKnifeItem",
+   "base": "SwordItem"
+  },
+  "item_devil_fruit_gomu_gomu": {
+   "classe": "ItemDevilFruitGomuGomuItem",
+   "base": "Item"
+  },
+  "treasure_chest": {
+   "classe": "TreasureChestItem",
+   "base": "Item"
+  },
+  "treasure_chest_locked": {
+   "classe": "TreasureChestLockedItem",
+   "base": "Item"
+  },
+  "pirate_flag": {
+   "classe": "PirateFlagItem",
+   "base": "Item"
+  },
+  "ice_cream_3": {
+   "classe": "IceCream3Item",
+   "base": "Item"
+  },
+  "senriku": {
+   "classe": "SenrikuItem",
+   "base": "Item"
+  },
+  "scythe_jack": {
+   "classe": "ScytheJackItem",
+   "base": "SwordItem"
+  },
+  "spear": {
+   "classe": "SpearItem",
+   "base": "SwordItem"
+  },
+  "item_devil_fruit_gura_gura": {
+   "classe": "ItemDevilFruitGuraGuraItem",
+   "base": "Item"
+  },
+  "item_devil_fruit_kira_kira": {
+   "classe": "ItemDevilFruitKiraKiraItem",
+   "base": "Item"
+  },
+  "item_devil_fruit_supa_supa": {
+   "classe": "ItemDevilFruitSupaSupaItem",
+   "base": "Item"
+  },
+  "long_stick": {
+   "classe": "LongStickItem",
+   "base": "TieredItem"
+  },
+  "thunder_stick": {
+   "classe": "ThunderStickItem",
+   "base": "TieredItem"
+  },
+  "morning_star": {
+   "classe": "MorningStarItem",
+   "base": "Item"
+  },
+  "rocket_launcher": {
+   "classe": "RocketLauncherItem",
+   "base": "Item"
+  },
+  "battle_smasher": {
+   "classe": "BattleSmasherItem",
+   "base": "Item"
+  },
+  "spear_2": {
+   "classe": "Spear2Item",
+   "base": "SwordItem"
+  },
+  "item_devil_fruit_imu": {
+   "classe": "ItemDevilFruitImuItem",
+   "base": "Item"
+  },
+  "shield_note": {
+   "classe": "ShieldNoteItem",
+   "base": "ShieldItem"
+  },
+  "item_devil_fruit_uta_uta": {
+   "classe": "ItemDevilFruitUtaUtaItem",
+   "base": "Item"
+  },
+  "forbidden_score": {
+   "classe": "ForbiddenScoreItem",
+   "base": "Item"
+  },
+  "brook_sword": {
+   "classe": "BrookSwordItem",
+   "base": "TieredItem"
+  },
+  "brook_sword_blade": {
+   "classe": "BrookSwordBladeItem",
+   "base": "SwordItem"
+  },
+  "perospero_staff": {
+   "classe": "PerosperoStaffItem",
+   "base": "TieredItem"
+  },
+  "item_shark_guitar": {
+   "classe": "ItemSharkGuitarItem",
+   "base": "Item"
+  },
+  "item_devil_fruit_moku_moku": {
+   "classe": "ItemDevilFruitMokuMokuItem",
+   "base": "Item"
+  },
+  "raid_flag": {
+   "classe": "RaidFlagItem",
+   "base": "Item"
+  },
+  "item_devil_fruit_goro_goro": {
+   "classe": "ItemDevilFruitGoroGoroItem",
+   "base": "Item"
+  },
+  "golden_stick": {
+   "classe": "GoldenStickItem",
+   "base": "TieredItem"
+  },
+  "item_devil_fruit_mero_mero": {
+   "classe": "ItemDevilFruitMeroMeroItem",
+   "base": "Item"
+  },
+  "item_devil_fruit_riki_riki": {
+   "classe": "ItemDevilFruitRikiRikiItem",
+   "base": "Item"
+  },
+  "item_devil_fruit_bomu_bomu": {
+   "classe": "ItemDevilFruitBomuBomuItem",
+   "base": "Item"
+  },
+  "item_devil_fruit_ope_ope": {
+   "classe": "ItemDevilFruitOpeOpeItem",
+   "base": "Item"
+  },
+  "bat": {
+   "classe": "BatItem",
+   "base": "SwordItem"
+  },
+  "item_devil_fruit_suna_suna": {
+   "classe": "ItemDevilFruitSunaSunaItem",
+   "base": "Item"
+  },
+  "item_heart": {
+   "classe": "ItemHeartItem",
+   "base": "Item"
+  },
+  "item_devil_fruit_kiro_kiro": {
+   "classe": "ItemDevilFruitKiroKiroItem",
+   "base": "Item"
+  },
+  "dyna_stones": {
+   "classe": "DynaStonesItem",
+   "base": "TieredItem"
+  },
+  "chakram": {
+   "classe": "ChakramItem",
+   "base": "SwordItem"
+  },
+  "item_devil_fruit_aro_aro": {
+   "classe": "ItemDevilFruitAroAroItem",
+   "base": "Item"
+  },
+  "item_devil_fruit_kage_kage": {
+   "classe": "ItemDevilFruitKageKageItem",
+   "base": "Item"
+  },
+  "item_devil_fruit_mori_mori": {
+   "classe": "ItemDevilFruitMoriMoriItem",
+   "base": "Item"
+  },
+  "daisenso": {
+   "classe": "DaisensoItem",
+   "base": "Item"
+  },
+  "raiu": {
+   "classe": "RaiuItem",
+   "base": "Item"
+  },
+  "murakumogiri": {
+   "classe": "MurakumogiriItem",
+   "base": "Item"
+  },
+  "bramenko_hammer": {
+   "classe": "BramenkoHammerItem",
+   "base": "Item"
+  },
+  "arm_axe": {
+   "classe": "ArmAxeItem",
+   "base": "Item"
+  },
+  "pencil": {
+   "classe": "PencilItem",
+   "base": "Item"
+  },
+  "mogura": {
+   "classe": "MoguraItem",
+   "base": "Item"
+  },
+  "onitake": {
+   "classe": "OnitakeItem",
+   "base": "Item"
+  },
+  "weapon_ulti": {
+   "classe": "WeaponUltiItem",
+   "base": "TieredItem"
+  },
+  "sword_king": {
+   "classe": "SwordKingItem",
+   "base": "Item"
+  },
+  "pretzel": {
+   "classe": "PretzelItem",
+   "base": "Item"
+  },
+  "kiribachi": {
+   "classe": "KiribachiItem",
+   "base": "Item"
+  },
+  "metal_rod": {
+   "classe": "MetalRodItem",
+   "base": "Item"
+  },
+  "kitetsu_shodai_sheath": {
+   "classe": "KitetsuShodaiSheathItem",
+   "base": "Item"
+  },
+  "kitetsu_shodai_blade": {
+   "classe": "KitetsuShodaiBladeItem",
+   "base": "SwordItem"
+  },
+  "napoleon": {
+   "classe": "NapoleonItem",
+   "base": "SwordItem"
+  },
+  "item_devil_fruit_soru_soru": {
+   "classe": "ItemDevilFruitSoruSoruItem",
+   "base": "Item"
+  },
+  "big_axe": {
+   "classe": "BigAxeItem",
+   "base": "SwordItem"
+  },
+  "big_sword": {
+   "classe": "BigSwordItem",
+   "base": "SwordItem"
+  }
+ }
+}

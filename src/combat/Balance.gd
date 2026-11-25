@@ -1,5 +1,73 @@
 class_name Balance
 extends RefCounted
+## Modo História (pedido do dono, 23/10/2026): "diminuir o dano do soco e aumentar o dano
+## das skills" — soco −50 %, técnicas +50 %. Só com o perfil de fruta da história (a arena
+## não tem perfil: fica como está). Soco = o boxe do jogador (`multiplicador_de_dano` do
+## executor, ver `ModoHistoria.instalar_combate_direcional`) e o soco do Mine Piece
+## (`Player.escala_de_dano_da_fruta(fruta, false)`); técnica = o resto do kit da fruta.
+const HISTORIA_SOCO := 0.5
+## 22/11/2026 (pedido do dono, "aumentar o dano das akuma no mi"): técnicas das FRUTAS 1,5 -> 2,0.
+## O estilo de combate BASE (o kit do Builder, `KitDoBuilder.ID`) passa pela mesma escala e subiu junto no 1º teste (3,0): ele FICA em 1,5.
+const HISTORIA_TECNICAS := 2.0
+const HISTORIA_TECNICAS_ESTILO_BASE := 1.5
+## Frutas FORA do +50 % (decisão do dono, 23/10/2026): a Magu da história já tem dano
+## elevado próprio (`MAGU_HISTORIA`, pago pela antecipação lenta); com o bônus um golpe
+## passaria da metade da vida do inimigo comum (132 de 250).
+const HISTORIA_SEM_BONUS_DE_TECNICA: Array[String] = ["magu_magu"]
+## AIRubbleProcedure (Mine Piece v14), unidades do mod; MundoMinePiece converte.
+const MINE_PIECE_OPE := {"entulho": 15.0, "tamanho_minimo_dano": 0.8, "empurrao": 0.5}
+## Mine Piece: danos adaptados à arena; história aplica PerfilDeFrutas.ESCALA_DO_MOD (dano do mod × 10 × 1/10 = o do mod).
+## Rajada distribui orçamento entre os contatos; final preserva proporção 11 × 1,2.
+const MINE_PIECE_LUTA := {
+	# 30/10/2026 (pedido do dono): Z e X empurram bem mais (eram 3 e 18); no C só o golpe FINAL empurra — os da
+	# rajada não empurram (0) e PARALISAM o alvo (`paralisia`, segundos renovados a cada soco; ver `combate_mine_piece`).
+	"soco": {"dano": 90.0, "empurrao": 9.0, "stun": 0.12},
+	"pesado": {"dano": 110.0, "empurrao": 27.0, "stun": 0.3},
+	"rajada": {"dano": 8.0, "empurrao": 0.0, "stun": 0.0, "paralisia": 0.4},
+	"final": {"dano": 132.0, "empurrao": 21.6, "stun": 0.3},
+}
+## Goro Goro (Mine Piece), em UNIDADES DO MOD ("Damage" de cada procedimento do v14):
+## `MundoMinePiece.ataque_em_area` multiplica por 10 (escala da arena) e pela escala do modo.
+## As fórmulas que somam carga (`× (1 + cnt6 × 0,1)`) ficam nas técnicas, como no mod.
+const MINE_PIECE_GORO := {
+	"vari": 14.0,                 # VariProcedure: (14 + cnt3 × 0,01) × CNT6
+	"el_thor": 16.0, "el_thor_forte": 24.0,   # ElThor/ElThorFall: 16, 24 depois do tick 20/25
+	"sango": 18.0,                # SangoProcedure, cada raio do céu
+	"relampago": 18.0,            # LightningStrike2Procedure (o raio de carga do Sango)
+	"mamaragan": 18.0,            # MamaraganOnEffectActiveTick, cada raio da tempestade
+	"onda": 16.0, "onda_forte": 24.0,         # AIImpactWave modo 56: 16, 24 nos 6 últimos ticks
+	"meteoro_queda": 24.0, "meteoro_explosao": 45.0,   # AIMeteor modo 1 (Raigo)
+	"kari_krash": 18.0,           # KariKrashProcedure
+}
+## Hie Hie (Mine Piece v14), unidades do mod; MundoMinePiece converte.
+const MINE_PIECE_HIE := {
+	"partisan": 15.0,             # AIEntityBird (EntityPartisan): 15 × CNT6
+	"passaro": 20.0,              # AIEntityBird (EntityBird): 20 × CNT6
+	"vida_partisan": 40.0,        # IceBlockPartisan/2: HP 40 (+ Força × 4)
+	"vida_passaro": 60.0,         # IceBlockPheasantBeak: HP 60 (+ Força × 10)
+	"bola": 15.0,                 # IceBallProcedure: 15 × CNT6 por cubo
+	"ice_age": 18.0,              # IceAgeProcedure: (18 + cnt2 × 0,1) × CNT6
+	"vida_gelo": 30.0,            # Effect12: HP da EntityIceBall 30 × CNT6 (+ Força × 8)
+	"gelo_ticks": 300,            # AIIceBall: some depois de 300 ticks
+}
+## Moku Moku (Mine Piece v14), unidades do mod; MundoMinePiece converte.
+const MINE_PIECE_MOKU := {
+	"punho": 18.0,                # AIFist (FistEntity, move −1): 18 × CNT6
+	"vida_punho": 50.0,           # WhiteBlow: HP 50 (+ Força × 8)
+	"tornado": 11.0,              # AITornado: 11 × CNT6 por tick no corpo
+	"vida_tornado": 50.0,         # WhiteVine: HP 50 (+ Força × 10)
+	"white_out": 18.0,            # WhiteOut: 18 × CNT6, cubo de 32 × CNT6
+}
+## Pika Pika (Mine Piece v14), unidades do mod; MundoMinePiece converte.
+const MINE_PIECE_PIKA := {
+	"laser": 17.0,                # KizaruLaser1: 17 × CNT6 no feixe e na explosão (cubo 12 × CNT6)
+	"laser_pe": 24.0,             # KizaruLaser2: 24 × CNT6 (explosão 24 × CNT6)
+	"chute": 17.0,                # KizaruKick (no Yata no Kagami): 17 × CNT6, cubo de 6
+	"mergulho": 20.0,             # SpeedIsPower: 20 a cada bloco do mergulho
+	"impacto_mergulho": 21.0,     # SpeedIsPower: 21 no chão, cubo de 12
+	"flecha": 0.6,                # YasakaniNoMagatama: dano base da flecha (× DamageFix × 8 de velocidade)
+	"espada": 8.0,                # AmanoMurakumoItem: 3 + 4 do tier + 1 do jogador
+}
 # ============================================================================
 #  A TABELA. Todo número de dano do jogo mora aqui, e só aqui.
 #
@@ -53,6 +121,7 @@ const HP_BASE := 2048.0
 # contra 60 s). Repetir o número aqui criaria um TERCEIRO valor e transformaria
 # uma divergência conhecida numa armadilha. Este arquivo manda em dano, só.
 const SLOT := {
+	"F": {"unico": [0.0, 0.0], "por_hit": 0.0, "teto": 0.0},
 	# ⚠️ O Z GANHOU FAIXA DE CARGA em 2026-08-31, com a Bomu Bomu — a primeira
 	# fruta do jogo com um Z CARREGADO. Sem ela, `ref.get("carregado",
 	# ref["unico"])` caía no único ([80, 96]) e reprovava qualquer carga de Z,
@@ -70,6 +139,9 @@ const SLOT := {
 		  "carregado": [240.0, 384.0]},
 	"V": {"unico": [512.0, 768.0], "por_hit": 96.0, "teto": 768.0,
 		  "carregado": [512.0, 768.0], "base": 640.0},
+	# K e L: poderes extras da Zushi Zushi autoral (12/11/2026). Sem eles `test_balance` abortava (`SLOT["K"]` inexistente) e não validava NENHUMA fruta depois.
+	"K": {"unico": [240.0, 300.0], "por_hit": 100.0, "teto": 300.0, "carregado": [240.0, 300.0]},
+	"L": {"unico": [240.0, 300.0], "por_hit": 100.0, "teto": 480.0, "carregado": [240.0, 480.0]},
 }
 
 # ------------------------------------------------------------------- AS FRUTAS
@@ -81,6 +153,51 @@ const SLOT := {
 # `teto / nº de balas`. Uma rajada de 16 balas a 40 cada valeria 640, três
 # vezes o teto do slot: a segunda metade do pente não faria nada.
 const FRUTAS := {
+	# Zushi Zushi autoral (12/11/2026): os poderes do Fujitora fora do mod. K = Jigoku Tabi (cratera, um impacto); L = Abare Himatsuri (chuva de meteoros).
+	"zushi_zushi": {
+		"K": {"tipo": T.UNICO, "dano": 260.0},
+		"L": {"tipo": T.MULTI, "dano": 60.0, "hits": 8, "teto": 480.0},
+		"V": {"tipo": T.MULTI, "dano": 50.0, "hits": 12, "teto": 600.0},     # Rubble autoral: chuva de rochas sobre o alvo
+	},
+	# Ushi Ushi autoral (21/11/2026): Z/X/C da girafa humanoide e do humano; "ushi_ushi_girafa" = forma quadrúpede (Z Pescoçada, X Martelada; sem C).
+	"ushi_ushi_giraffe": {
+		"Z": {"tipo": T.UNICO, "dano": 96.0},                           # Investida do Pescoço
+		"X": {"tipo": T.UNICO, "dano": 160.0},                          # Corte no Ar
+		"C": {"tipo": T.MULTI, "dano": 36.0, "hits": 9, "teto": 324.0},   # Rajada de Cortes: 9 cortes do X em leque
+	},
+	"ushi_ushi_girafa": {
+		"Z": {"tipo": T.UNICO, "dano": 96.0},                           # Pescoçada
+		"X": {"tipo": T.UNICO, "dano": 192.0},                          # Martelada com o nariz
+	},
+	"hito_hito_daibutsu": {
+		"X": {"tipo": T.UNICO, "dano": 192.0}, # Flor de Buda autoral: um impacto em área.
+	},
+	"tori_tori_phoenix": {
+		"Z": {"tipo": T.UTILITARIO, "dano": 0.0, "teto": 0.0},
+		"X": {"tipo": T.UNICO, "dano": 160.0},
+		"C": {"tipo": T.UNICO, "dano": 240.0},
+		"V": {"tipo": T.UNICO, "dano": 512.0},
+		"F": {"tipo": T.UTILITARIO, "dano": 0.0, "teto": 0.0},
+	},
+	# Magu: dano alto compensado por preparação e deslocamento lentos.
+	"magu_magu": {
+		"Z": {"tipo": T.UNICO, "dano": 96.0},
+		"X": {"tipo": T.UNICO, "dano": 192.0},
+		"C": {"tipo": T.UNICO, "dano": 256.0},
+		"V": {"tipo": T.MULTI, "dano": 96.0, "hits": 8, "teto": 768.0},
+	},
+	"rocket": {
+		"Z": {"tipo": T.UNICO, "dano": 88.0},
+		"X": {"tipo": T.UNICO, "dano": 160.0},
+		"C": {"tipo": T.MULTI, "dano": 40.0, "hits": 8, "teto": 320.0},
+		"V": {"tipo": T.UNICO, "dano": 576.0, "teto": 576.0},
+	},
+	"ope_ope": {
+		"Z": {"tipo": T.UTILITARIO, "dano": 0.0, "teto": 0.0},
+		"X": {"tipo": T.UTILITARIO, "dano": 0.0, "teto": 0.0},
+		"C": {"tipo": T.MULTI, "dano": 64.0, "hits": 5, "teto": 320.0},
+		"V": {"tipo": T.UNICO, "dano": 576.0, "teto": 576.0},
+	},
 	"gomu_gomu": {
 		"Z": {"tipo": T.UNICO, "dano": 88.0},
 		"X": {"tipo": T.UNICO, "dano": 176.0},
@@ -95,10 +212,15 @@ const FRUTAS := {
 		# Liberation, que ejeta até 25 e paga 8.
 		"C": {"tipo": T.MULTI, "dano": 80.0, "hits": 3,
 			  "partes": {"final": 144.0}, "reserva": 144.0},
-		# A queimadura do Red Hawk varre o grupo "enemies", que está vazio desde
-		# que os inimigos foram desativados. O valor fica declarado para o dia em
-		# que voltarem, mas hoje não alcança ninguém.
-		"V": {"tipo": T.UNICO, "dano": 704.0, "partes": {"queimadura": 32.0}},
+		# ⚠️ O V DA GOMU É A TRANSFORMAÇÃO GEAR 2 (decisão de 2026-08-27): estado,
+		# não golpe com dano.
+		"V": {"tipo": T.UTILITARIO, "dano": 0.0, "teto": 0.0},
+	},
+	"gomu_gomu_gear2": {
+		"Z": {"tipo": T.UNICO, "dano": 96.0},
+		"X": {"tipo": T.UNICO, "dano": 192.0},
+		"C": {"tipo": T.UNICO, "dano": 256.0},
+		"V": {"tipo": T.UTILITARIO, "dano": 0.0, "teto": 0.0},
 	},
 	"gura_gura": {
 		"Z": {"tipo": T.UNICO, "dano": 96.0},
@@ -146,19 +268,11 @@ const FRUTAS := {
 		"X": {"tipo": T.CARREGADO, "dano": 192.0, "dano_max": 256.0, "tempo_de_carga": 0.5},
 	},
 	"bara_bara": {
-		"Z": {"tipo": T.UNICO, "dano": 92.0},
-		"X": {"tipo": T.UNICO, "dano": 168.0},
-		# ⚠️ REDESENHADA junto com o número. Era um tique a cada 0,25 s por 7 s
-		# = 28 acertos de dano CRU, 175 de dano total. Só reescalar produziria 28
-		# tiques de 14, e uma névoa que tira lascas não lê como "área cortante".
-		# Agora são 5 cortes pesados (intervalo em `BaraFX.INTERVALO_CLEAVE`).
-		"C": {"tipo": T.MULTI, "dano": 80.0, "hits": 5},
-		# ⚠️ REDESENHADA pelo mesmo motivo, em escala maior: eram 3 cortes por
-		# segundo durante 30 s (90 acertos, 810 de dano cru) num raio de 40 m
-		# sem linha de visão. Agora é 1 corte a cada 3,5 s — o domínio continua
-		# durando 30 s e continua sendo controle de área; o que ele não é mais é
-		# um moedor que tira 40% da vida de quem estiver na metade da arena.
-		"V": {"tipo": T.MULTI, "dano": 96.0, "hits": 8},
+		"Z": {"tipo": T.UNICO, "dano": 92.0, "teto": 92.0},
+		"X": {"tipo": T.UNICO, "dano": 176.0, "teto": 176.0},
+		"C": {"tipo": T.UNICO, "dano": 240.0, "teto": 240.0},
+		"V": {"tipo": T.MULTI, "dano": 96.0, "hits": 4, "teto": 576.0,
+			"partes": {"final": 192.0}, "reserva": 192.0},
 	},
 	"goro_goro": {
 		"Z": {"tipo": T.UNICO, "dano": 84.0},
@@ -223,6 +337,21 @@ const FRUTAS := {
 		"C": {"tipo": T.MULTI, "dano": 76.0, "hits": 5},    # sniper,    5 x 76 = 380
 		"V": {"tipo": T.MULTI, "dano": 7.0,  "hits": 100},  # minigun, 100 x  7 = 700
 	},
+	# PIKA PIKA — o Z é salva de 7 raios. O número por raio é DECISÃO DO DONO
+	# (2026-09-04), não leitura do vídeo: dano não se lê em gravação. Chegou por
+	# vizinhança — Mera Z tira 25 num acerto só, Gura Z tira 96, e a Buki Z faz
+	# 12 x 16. Sete x 14 = 98 no teto, e só se a salva inteira conectar.
+		"pika_pika": {
+			"Z": {"tipo": T.MULTI, "dano": 14.0, "hits": 7},    # yasakani, 7 x 14 = 98
+		# X — a explosão do mergulho. ESCOLHA MINHA, o dono ajusta: fica na
+		# vizinhança dos outros X (mera 160, hie 168), e só sai se o ziguezague
+		# realmente encontrar alguém.
+			"X": {"tipo": T.UNICO, "dano": 160.0},             # yata no kagami
+			# C/V: valores inferidos pela faixa canônica do slot. Muitos feixes são
+			# visuais; o cast_id/teto impede a densidade de multiplicar o dano.
+			"C": {"tipo": T.MULTI, "dano": 8.0, "hits": 48, "teto": 384.0},
+			"V": {"tipo": T.MULTI, "dano": 32.0, "hits": 24, "teto": 768.0},
+		},
 }
 
 # ------------------------------------------------------------- CORPO A CORPO
@@ -231,8 +360,15 @@ const FRUTAS := {
 # uma opção — os valores antigos (30/34/40/70) estavam na escala pré-0,12.
 const MELEE := {
 	"combo":  [48.0, 54.0, 64.0, 112.0],   # soco D, soco E, chute, finalizador
-	"espada": [64.0, 72.0, 96.0],          # corte D-E, corte E-D, corte vertical
-	"projetil_mult": 1.2,                  # a meia-lua do corte vertical
+	# ⚠️ ERAM TRÊS (64/72/96). O combo da espada virou um PAR — horizontal e
+	# vertical — a pedido do dono em 2026-09-06, e o corte D-E do meio saiu.
+	# Os dois que ficaram mantêm os valores que já tinham: o par vale 160, ainda
+	# abaixo do combo de punho completo (278), o que é coerente com ele ter dois
+	# golpes em vez de quatro.
+	"espada": [64.0, 96.0],                # corte horizontal, corte vertical
+	# Continua aqui porque a meia-lua ainda existe no código do projétil; hoje
+	# nenhum passo da espada a dispara (ver a nota em `Melee.COMBO_SWORD`).
+	"projetil_mult": 1.2,
 }
 
 # ------------------------------------------------ ESTILOS DE LUTA (modo style)
@@ -280,10 +416,25 @@ static func spec(fruta: String, slot: String) -> DamageSpec:
 	_moldes[chave] = s
 	return s
 
-## A spec pronta para uso, com identidade de conjuração própria.
-static func novo(fruta: String, slot: String) -> DamageSpec:
+## A spec pronta para uso, com identidade de conjuração própria. `escala` = a do
+## modo de jogo (1 na arena; no Modo História, a do perfil da fruta — quem chama
+## pergunta ao corpo: `Player.escala_de_dano_da_fruta`). Explícita de propósito: o
+## fator escondido de 0,12 na `DamageZone` foi o erro que esta tabela veio corrigir.
+# Magu da HISTÓRIA: pedido de dano elevado, pago pela antecipação lenta.
+# Valores ainda na unidade da tabela; a escala do perfil é aplicada uma vez.
+# A arena conserva as faixas de SLOT, sem mudar as outras frutas/modos.
+const MAGU_HISTORIA := {"Z": [400.0,400.0], "X": [560.0,560.0], "C": [720.0,720.0], "V": [120.0,960.0]}
+
+static func novo(fruta: String, slot: String, escala: float = 1.0) -> DamageSpec:
 	var molde := spec(fruta, slot)
-	return molde.para_cast() if molde != null else null
+	if molde == null:
+		return null
+	var s := molde.para_cast()
+	if fruta == "magu_magu" and escala < 1.0 and MAGU_HISTORIA.has(slot):
+		s.dano = MAGU_HISTORIA[slot][0]
+		s.dano_max = s.dano
+		s.teto = MAGU_HISTORIA[slot][1]
+	return s.escalar(escala) if not is_equal_approx(escala, 1.0) else s
 
 static func teto_do_slot(slot: String) -> float:
 	return float(SLOT[slot]["teto"]) if SLOT.has(slot) else 0.0

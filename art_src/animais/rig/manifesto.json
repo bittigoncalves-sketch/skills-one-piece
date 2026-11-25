@@ -1,0 +1,1443 @@
+{
+ "beagle": {
+  "clipes": {
+   "attack": {
+    "duracao": 0.7333,
+    "golpe": 0.36,
+    "loop": false,
+    "quadros": 22
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 26,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "idle": {
+    "duracao": 6.0,
+    "loop": true,
+    "quadros": 180
+   },
+   "run": {
+    "duracao": 0.3,
+    "loop": true,
+    "quadros": 9,
+    "velocidade_jogo": 3.0
+   },
+   "walk": {
+    "duracao": 0.5333,
+    "loop": true,
+    "quadros": 16,
+    "velocidade_jogo": 1.0
+   }
+  },
+  "escala_jogo": 0.45654,
+  "estiramento_max": 0.0,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "perna_tras_1.L",
+   "perna_tras_2.L",
+   "perna_tras_3.L",
+   "perna_tras_1.R",
+   "perna_tras_2.R",
+   "perna_tras_3.R",
+   "cauda_1",
+   "cauda_2",
+   "cauda_3",
+   "peito",
+   "pescoco",
+   "cabeca",
+   "perna_frente_1.L",
+   "perna_frente_2.L",
+   "perna_frente_3.L",
+   "perna_frente_1.R",
+   "perna_frente_2.R",
+   "perna_frente_3.R"
+  ],
+  "perfil": {
+   "abana": true,
+   "ataque": "mordida",
+   "casco": false,
+   "parado": "farejar"
+  }
+ },
+ "bear": {
+  "clipes": {
+   "attack": {
+    "duracao": 1.2,
+    "golpe": 0.78,
+    "loop": false,
+    "quadros": 36
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 26,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "idle": {
+    "duracao": 6.0,
+    "loop": true,
+    "quadros": 180
+   },
+   "run": {
+    "duracao": 0.3,
+    "loop": true,
+    "quadros": 9,
+    "velocidade_jogo": 6.2
+   },
+   "walk": {
+    "duracao": 0.5667,
+    "loop": true,
+    "quadros": 17,
+    "velocidade_jogo": 1.6
+   }
+  },
+  "escala_jogo": 0.65556,
+  "estiramento_max": 0.0,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "perna_tras_1.L",
+   "perna_tras_2.L",
+   "perna_tras_3.L",
+   "perna_tras_1.R",
+   "perna_tras_2.R",
+   "perna_tras_3.R",
+   "peito",
+   "pescoco",
+   "cabeca",
+   "perna_frente_1.L",
+   "perna_frente_2.L",
+   "perna_frente_3.L",
+   "perna_frente_1.R",
+   "perna_frente_2.R",
+   "perna_frente_3.R"
+  ],
+  "perfil": {
+   "ataque": "empinar",
+   "cabeca": 0.25,
+   "casco": false,
+   "empina": 30,
+   "parado": "farejar"
+  }
+ },
+ "bird-h5izaudltz": {
+  "clipes": {
+   "attack": {
+    "duracao": 0.9,
+    "golpe": 0.42,
+    "loop": false,
+    "quadros": 27
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 27,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "fly": {
+    "duracao": 0.3,
+    "loop": true,
+    "quadros": 9
+   },
+   "idle": {
+    "duracao": 3.0,
+    "loop": true,
+    "quadros": 90
+   }
+  },
+  "escala_jogo": 0.98967,
+  "estiramento_max": 0.0,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "cauda_1",
+   "cauda_2",
+   "peito",
+   "pescoco",
+   "cabeca",
+   "asa_1.L",
+   "asa_2.L",
+   "asa_1.R",
+   "asa_2.R"
+  ],
+  "perfil": {
+   "batida": 0.3,
+   "corpo": "voador"
+  }
+ },
+ "bird_2": {
+  "clipes": {
+   "attack": {
+    "duracao": 0.9,
+    "golpe": 0.42,
+    "loop": false,
+    "quadros": 27
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 27,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "fly": {
+    "duracao": 0.2667,
+    "loop": true,
+    "quadros": 8
+   },
+   "idle": {
+    "duracao": 3.0,
+    "loop": true,
+    "quadros": 90
+   }
+  },
+  "escala_jogo": 1.03319,
+  "estiramento_max": 0.0,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "cauda_1",
+   "cauda_2",
+   "peito",
+   "pescoco",
+   "cabeca",
+   "asa_1.L",
+   "asa_2.L",
+   "asa_1.R",
+   "asa_2.R"
+  ],
+  "perfil": {
+   "batida": 0.27,
+   "corpo": "voador"
+  }
+ },
+ "bizon": {
+  "clipes": {
+   "attack": {
+    "duracao": 0.9,
+    "golpe": 0.42,
+    "loop": false,
+    "quadros": 27
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 26,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "idle": {
+    "duracao": 6.0,
+    "loop": true,
+    "quadros": 180
+   },
+   "run": {
+    "duracao": 0.4333,
+    "loop": true,
+    "quadros": 13,
+    "velocidade_jogo": 5.0
+   },
+   "walk": {
+    "duracao": 0.8333,
+    "loop": true,
+    "quadros": 25,
+    "velocidade_jogo": 1.3
+   }
+  },
+  "escala_jogo": 0.66151,
+  "estiramento_max": 0.0,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "perna_tras_1.L",
+   "perna_tras_2.L",
+   "perna_tras_3.L",
+   "perna_tras_1.R",
+   "perna_tras_2.R",
+   "perna_tras_3.R",
+   "cauda_1",
+   "cauda_2",
+   "cauda_3",
+   "peito",
+   "pescoco",
+   "cabeca",
+   "perna_frente_1.L",
+   "perna_frente_2.L",
+   "perna_frente_3.L",
+   "perna_frente_1.R",
+   "perna_frente_2.R",
+   "perna_frente_3.R"
+  ],
+  "perfil": {
+   "ataque": "cabecada",
+   "parado": "pastar",
+   "pescoco": 0.12
+  }
+ },
+ "cat": {
+  "clipes": {
+   "attack": {
+    "duracao": 0.8,
+    "golpe": 0.4,
+    "loop": false,
+    "quadros": 24
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 26,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "idle": {
+    "duracao": 6.0,
+    "loop": true,
+    "quadros": 180
+   },
+   "run": {
+    "duracao": 0.3,
+    "loop": true,
+    "quadros": 9,
+    "velocidade_jogo": 3.0
+   },
+   "walk": {
+    "duracao": 0.5333,
+    "loop": true,
+    "quadros": 16,
+    "velocidade_jogo": 1.0
+   }
+  },
+  "escala_jogo": 0.42366,
+  "estiramento_max": 0.0082,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "perna_tras_1.L",
+   "perna_tras_2.L",
+   "perna_tras_3.L",
+   "perna_tras_1.R",
+   "perna_tras_2.R",
+   "perna_tras_3.R",
+   "cauda_1",
+   "cauda_2",
+   "cauda_3",
+   "peito",
+   "pescoco",
+   "cabeca",
+   "perna_frente_1.L",
+   "perna_frente_2.L",
+   "perna_frente_3.L",
+   "perna_frente_1.R",
+   "perna_frente_2.R",
+   "perna_frente_3.R"
+  ],
+  "perfil": {
+   "ataque": "patada",
+   "casco": false,
+   "parado": "farejar"
+  }
+ },
+ "chick": {
+  "clipes": {
+   "attack": {
+    "duracao": 0.6,
+    "golpe": 0.28,
+    "loop": false,
+    "quadros": 18
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 26,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "idle": {
+    "duracao": 6.0,
+    "loop": true,
+    "quadros": 180
+   },
+   "run": {
+    "duracao": 0.2667,
+    "loop": true,
+    "quadros": 8,
+    "velocidade_jogo": 3.0
+   },
+   "walk": {
+    "duracao": 0.3333,
+    "loop": true,
+    "quadros": 10,
+    "velocidade_jogo": 0.7
+   }
+  },
+  "escala_jogo": 1.4641,
+  "estiramento_max": 0.0,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "perna_tras_1.L",
+   "perna_tras_2.L",
+   "perna_tras_3.L",
+   "perna_tras_1.R",
+   "perna_tras_2.R",
+   "perna_tras_3.R",
+   "peito",
+   "pescoco",
+   "cabeca"
+  ],
+  "perfil": {
+   "ataque": "bicada",
+   "bamboleio": 6,
+   "cabeca": 0.3,
+   "corpo": "ave"
+  }
+ },
+ "chicken": {
+  "clipes": {
+   "attack": {
+    "duracao": 0.6,
+    "golpe": 0.28,
+    "loop": false,
+    "quadros": 18
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 26,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "idle": {
+    "duracao": 6.0,
+    "loop": true,
+    "quadros": 180
+   },
+   "run": {
+    "duracao": 0.2667,
+    "loop": true,
+    "quadros": 8,
+    "velocidade_jogo": 3.0
+   },
+   "walk": {
+    "duracao": 0.3333,
+    "loop": true,
+    "quadros": 10,
+    "velocidade_jogo": 1.0
+   }
+  },
+  "escala_jogo": 0.94692,
+  "estiramento_max": 0.009,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "perna_tras_1.L",
+   "perna_tras_2.L",
+   "perna_tras_3.L",
+   "perna_tras_1.R",
+   "perna_tras_2.R",
+   "perna_tras_3.R",
+   "cauda_1",
+   "cauda_2",
+   "cauda_3",
+   "peito",
+   "pescoco",
+   "cabeca"
+  ],
+  "perfil": {
+   "ataque": "bicada",
+   "bamboleio": 5,
+   "corpo": "ave"
+  }
+ },
+ "corgi": {
+  "clipes": {
+   "attack": {
+    "duracao": 0.7333,
+    "golpe": 0.36,
+    "loop": false,
+    "quadros": 22
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 26,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "idle": {
+    "duracao": 6.0,
+    "loop": true,
+    "quadros": 180
+   },
+   "run": {
+    "duracao": 0.3,
+    "loop": true,
+    "quadros": 9,
+    "velocidade_jogo": 3.0
+   },
+   "walk": {
+    "duracao": 0.5333,
+    "loop": true,
+    "quadros": 16,
+    "velocidade_jogo": 1.0
+   }
+  },
+  "escala_jogo": 0.54509,
+  "estiramento_max": 0.0934,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "perna_tras_1.L",
+   "perna_tras_2.L",
+   "perna_tras_3.L",
+   "perna_tras_1.R",
+   "perna_tras_2.R",
+   "perna_tras_3.R",
+   "cauda_1",
+   "cauda_2",
+   "cauda_3",
+   "peito",
+   "pescoco",
+   "cabeca",
+   "perna_frente_1.L",
+   "perna_frente_2.L",
+   "perna_frente_3.L",
+   "perna_frente_1.R",
+   "perna_frente_2.R",
+   "perna_frente_3.R"
+  ],
+  "perfil": {
+   "abana": true,
+   "ataque": "mordida",
+   "casco": false,
+   "parado": "farejar"
+  }
+ },
+ "cow": {
+  "clipes": {
+   "attack": {
+    "duracao": 0.9,
+    "golpe": 0.42,
+    "loop": false,
+    "quadros": 27
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 26,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "idle": {
+    "duracao": 6.0,
+    "loop": true,
+    "quadros": 180
+   },
+   "run": {
+    "duracao": 0.6,
+    "loop": true,
+    "quadros": 18,
+    "velocidade_jogo": 3.0
+   },
+   "walk": {
+    "duracao": 1.0667,
+    "loop": true,
+    "quadros": 32,
+    "velocidade_jogo": 0.8
+   }
+  },
+  "escala_jogo": 0.7815,
+  "estiramento_max": 0.0,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "perna_tras_1.L",
+   "perna_tras_2.L",
+   "perna_tras_3.L",
+   "perna_tras_1.R",
+   "perna_tras_2.R",
+   "perna_tras_3.R",
+   "cauda_1",
+   "cauda_2",
+   "cauda_3",
+   "peito",
+   "pescoco",
+   "cabeca",
+   "perna_frente_1.L",
+   "perna_frente_2.L",
+   "perna_frente_3.L",
+   "perna_frente_1.R",
+   "perna_frente_2.R",
+   "perna_frente_3.R"
+  ],
+  "perfil": {
+   "ataque": "cabecada",
+   "parado": "pastar"
+  }
+ },
+ "deer": {
+  "clipes": {
+   "attack": {
+    "duracao": 0.9,
+    "golpe": 0.42,
+    "loop": false,
+    "quadros": 27
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 26,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "idle": {
+    "duracao": 6.0,
+    "loop": true,
+    "quadros": 180
+   },
+   "run": {
+    "duracao": 0.3,
+    "loop": true,
+    "quadros": 9,
+    "velocidade_jogo": 8.5
+   },
+   "walk": {
+    "duracao": 0.5333,
+    "loop": true,
+    "quadros": 16,
+    "velocidade_jogo": 1.4
+   }
+  },
+  "escala_jogo": 0.688,
+  "estiramento_max": 0.0,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "perna_tras_1.L",
+   "perna_tras_2.L",
+   "perna_tras_3.L",
+   "perna_tras_1.R",
+   "perna_tras_2.R",
+   "perna_tras_3.R",
+   "cauda_1",
+   "cauda_2",
+   "cauda_3",
+   "peito",
+   "pescoco",
+   "cabeca",
+   "perna_frente_1.L",
+   "perna_frente_2.L",
+   "perna_frente_3.L",
+   "perna_frente_1.R",
+   "perna_frente_2.R",
+   "perna_frente_3.R"
+  ],
+  "perfil": {
+   "ataque": "cabecada",
+   "parado": "pastar"
+  }
+ },
+ "deer-blt2gjhppt": {
+  "clipes": {
+   "attack": {
+    "duracao": 0.9,
+    "golpe": 0.42,
+    "loop": false,
+    "quadros": 27
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 26,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "idle": {
+    "duracao": 6.0,
+    "loop": true,
+    "quadros": 180
+   },
+   "run": {
+    "duracao": 0.3,
+    "loop": true,
+    "quadros": 9,
+    "velocidade_jogo": 8.5
+   },
+   "walk": {
+    "duracao": 0.5667,
+    "loop": true,
+    "quadros": 17,
+    "velocidade_jogo": 1.4
+   }
+  },
+  "escala_jogo": 0.60725,
+  "estiramento_max": 0.0228,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "perna_tras_1.L",
+   "perna_tras_2.L",
+   "perna_tras_3.L",
+   "perna_tras_1.R",
+   "perna_tras_2.R",
+   "perna_tras_3.R",
+   "peito",
+   "pescoco",
+   "cabeca",
+   "perna_frente_1.L",
+   "perna_frente_2.L",
+   "perna_frente_3.L",
+   "perna_frente_1.R",
+   "perna_frente_2.R",
+   "perna_frente_3.R"
+  ],
+  "perfil": {
+   "ataque": "cabecada",
+   "cabeca_acima": -0.6,
+   "parado": "pastar"
+  }
+ },
+ "dog": {
+  "clipes": {
+   "attack": {
+    "duracao": 0.7333,
+    "golpe": 0.36,
+    "loop": false,
+    "quadros": 22
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 26,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "idle": {
+    "duracao": 6.0,
+    "loop": true,
+    "quadros": 180
+   },
+   "run": {
+    "duracao": 0.3,
+    "loop": true,
+    "quadros": 9,
+    "velocidade_jogo": 3.0
+   },
+   "walk": {
+    "duracao": 0.5333,
+    "loop": true,
+    "quadros": 16,
+    "velocidade_jogo": 1.0
+   }
+  },
+  "escala_jogo": 0.61257,
+  "estiramento_max": 0.0,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "perna_tras_1.L",
+   "perna_tras_2.L",
+   "perna_tras_3.L",
+   "perna_tras_1.R",
+   "perna_tras_2.R",
+   "perna_tras_3.R",
+   "cauda_1",
+   "cauda_2",
+   "cauda_3",
+   "peito",
+   "pescoco",
+   "cabeca",
+   "perna_frente_1.L",
+   "perna_frente_2.L",
+   "perna_frente_3.L",
+   "perna_frente_1.R",
+   "perna_frente_2.R",
+   "perna_frente_3.R"
+  ],
+  "perfil": {
+   "abana": true,
+   "ataque": "mordida",
+   "casco": false,
+   "parado": "farejar"
+  }
+ },
+ "dog-9bqpcxoyrk": {
+  "clipes": {
+   "attack": {
+    "duracao": 0.7333,
+    "golpe": 0.36,
+    "loop": false,
+    "quadros": 22
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 26,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "idle": {
+    "duracao": 6.0,
+    "loop": true,
+    "quadros": 180
+   },
+   "run": {
+    "duracao": 0.3,
+    "loop": true,
+    "quadros": 9,
+    "velocidade_jogo": 3.0
+   },
+   "walk": {
+    "duracao": 0.5333,
+    "loop": true,
+    "quadros": 16,
+    "velocidade_jogo": 1.0
+   }
+  },
+  "escala_jogo": 0.48781,
+  "estiramento_max": 0.0,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "perna_tras_1.L",
+   "perna_tras_2.L",
+   "perna_tras_3.L",
+   "perna_tras_1.R",
+   "perna_tras_2.R",
+   "perna_tras_3.R",
+   "cauda_1",
+   "cauda_2",
+   "cauda_3",
+   "peito",
+   "pescoco",
+   "cabeca",
+   "perna_frente_1.L",
+   "perna_frente_2.L",
+   "perna_frente_3.L",
+   "perna_frente_1.R",
+   "perna_frente_2.R",
+   "perna_frente_3.R"
+  ],
+  "perfil": {
+   "abana": true,
+   "ataque": "mordida",
+   "casco": false,
+   "parado": "farejar"
+  }
+ },
+ "dog_final_": {
+  "clipes": {
+   "attack": {
+    "duracao": 0.7333,
+    "golpe": 0.36,
+    "loop": false,
+    "quadros": 22
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 26,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "idle": {
+    "duracao": 6.0,
+    "loop": true,
+    "quadros": 180
+   },
+   "run": {
+    "duracao": 0.3,
+    "loop": true,
+    "quadros": 9,
+    "velocidade_jogo": 3.0
+   },
+   "walk": {
+    "duracao": 0.5333,
+    "loop": true,
+    "quadros": 16,
+    "velocidade_jogo": 1.0
+   }
+  },
+  "escala_jogo": 0.53725,
+  "estiramento_max": 0.0,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "perna_tras_1.L",
+   "perna_tras_2.L",
+   "perna_tras_3.L",
+   "perna_tras_1.R",
+   "perna_tras_2.R",
+   "perna_tras_3.R",
+   "cauda_1",
+   "cauda_2",
+   "cauda_3",
+   "peito",
+   "pescoco",
+   "cabeca",
+   "perna_frente_1.L",
+   "perna_frente_2.L",
+   "perna_frente_3.L",
+   "perna_frente_1.R",
+   "perna_frente_2.R",
+   "perna_frente_3.R"
+  ],
+  "perfil": {
+   "abana": true,
+   "ataque": "mordida",
+   "casco": false,
+   "parado": "farejar"
+  }
+ },
+ "duck": {
+  "clipes": {
+   "attack": {
+    "duracao": 0.6,
+    "golpe": 0.28,
+    "loop": false,
+    "quadros": 18
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 26,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "idle": {
+    "duracao": 6.0,
+    "loop": true,
+    "quadros": 180
+   },
+   "run": {
+    "duracao": 0.2667,
+    "loop": true,
+    "quadros": 8,
+    "velocidade_jogo": 3.0
+   },
+   "walk": {
+    "duracao": 0.3333,
+    "loop": true,
+    "quadros": 10,
+    "velocidade_jogo": 1.0
+   }
+  },
+  "escala_jogo": 0.8117,
+  "estiramento_max": 0.0618,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "perna_tras_1.L",
+   "perna_tras_2.L",
+   "perna_tras_3.L",
+   "perna_tras_1.R",
+   "perna_tras_2.R",
+   "perna_tras_3.R",
+   "cauda_1",
+   "cauda_2",
+   "cauda_3",
+   "peito",
+   "pescoco",
+   "cabeca"
+  ],
+  "perfil": {
+   "ataque": "bicada",
+   "bamboleio": 9,
+   "corpo": "ave"
+  }
+ },
+ "fox": {
+  "clipes": {
+   "attack": {
+    "duracao": 0.7333,
+    "golpe": 0.36,
+    "loop": false,
+    "quadros": 22
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 26,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "idle": {
+    "duracao": 6.0,
+    "loop": true,
+    "quadros": 180
+   },
+   "run": {
+    "duracao": 0.3,
+    "loop": true,
+    "quadros": 9,
+    "velocidade_jogo": 7.5
+   },
+   "walk": {
+    "duracao": 0.5333,
+    "loop": true,
+    "quadros": 16,
+    "velocidade_jogo": 1.4
+   }
+  },
+  "escala_jogo": 0.48621,
+  "estiramento_max": 0.0,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "perna_tras_1.L",
+   "perna_tras_2.L",
+   "perna_tras_3.L",
+   "perna_tras_1.R",
+   "perna_tras_2.R",
+   "perna_tras_3.R",
+   "cauda_1",
+   "cauda_2",
+   "cauda_3",
+   "peito",
+   "pescoco",
+   "cabeca",
+   "perna_frente_1.L",
+   "perna_frente_2.L",
+   "perna_frente_3.L",
+   "perna_frente_1.R",
+   "perna_frente_2.R",
+   "perna_frente_3.R"
+  ],
+  "perfil": {
+   "ataque": "mordida",
+   "casco": false,
+   "parado": "farejar"
+  }
+ },
+ "frog": {
+  "clipes": {
+   "attack": {
+    "duracao": 0.8,
+    "golpe": 0.44,
+    "loop": false,
+    "quadros": 24
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 26,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "idle": {
+    "duracao": 6.0,
+    "loop": true,
+    "quadros": 180
+   },
+   "run": {
+    "duracao": 0.3,
+    "loop": true,
+    "quadros": 9,
+    "velocidade_jogo": 3.0
+   },
+   "walk": {
+    "duracao": 0.3,
+    "loop": true,
+    "quadros": 9,
+    "velocidade_jogo": 0.8
+   }
+  },
+  "escala_jogo": 1.15674,
+  "estiramento_max": 0.186,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "perna_tras_1.L",
+   "perna_tras_2.L",
+   "perna_tras_3.L",
+   "perna_tras_1.R",
+   "perna_tras_2.R",
+   "perna_tras_3.R",
+   "peito",
+   "pescoco",
+   "cabeca",
+   "perna_frente_1.L",
+   "perna_frente_2.L",
+   "perna_frente_3.L",
+   "perna_frente_1.R",
+   "perna_frente_2.R",
+   "perna_frente_3.R"
+  ],
+  "perfil": {
+   "ataque": "bote",
+   "bote_patas": false,
+   "cabeca": 0.3,
+   "casco": false,
+   "corpo": "saltador",
+   "parado": "farejar"
+  }
+ },
+ "horse": {
+  "clipes": {
+   "attack": {
+    "duracao": 1.2,
+    "golpe": 0.78,
+    "loop": false,
+    "quadros": 36
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 26,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "idle": {
+    "duracao": 6.0,
+    "loop": true,
+    "quadros": 180
+   },
+   "run": {
+    "duracao": 0.3,
+    "loop": true,
+    "quadros": 9,
+    "velocidade_jogo": 7.0
+   },
+   "walk": {
+    "duracao": 1.0667,
+    "loop": true,
+    "quadros": 32,
+    "velocidade_jogo": 1.0
+   }
+  },
+  "escala_jogo": 0.82777,
+  "estiramento_max": 0.0666,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "perna_tras_1.L",
+   "perna_tras_2.L",
+   "perna_tras_3.L",
+   "perna_tras_1.R",
+   "perna_tras_2.R",
+   "perna_tras_3.R",
+   "cauda_1",
+   "cauda_2",
+   "cauda_3",
+   "peito",
+   "pescoco",
+   "cabeca",
+   "perna_frente_1.L",
+   "perna_frente_2.L",
+   "perna_frente_3.L",
+   "perna_frente_1.R",
+   "perna_frente_2.R",
+   "perna_frente_3.R"
+  ],
+  "perfil": {
+   "ataque": "empinar",
+   "cabeca": 0.22,
+   "parado": "pastar"
+  }
+ },
+ "lizard": {
+  "clipes": {
+   "attack": {
+    "duracao": 0.7333,
+    "golpe": 0.36,
+    "loop": false,
+    "quadros": 22
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 26,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "idle": {
+    "duracao": 6.0,
+    "loop": true,
+    "quadros": 180
+   },
+   "run": {
+    "duracao": 0.3,
+    "loop": true,
+    "quadros": 9,
+    "velocidade_jogo": 5.0
+   },
+   "walk": {
+    "duracao": 0.3,
+    "loop": true,
+    "quadros": 9,
+    "velocidade_jogo": 1.4
+   }
+  },
+  "escala_jogo": 0.79709,
+  "estiramento_max": 0.0072,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "perna_tras_1.L",
+   "perna_tras_2.L",
+   "perna_tras_3.L",
+   "perna_tras_1.R",
+   "perna_tras_2.R",
+   "perna_tras_3.R",
+   "cauda_1",
+   "cauda_2",
+   "cauda_3",
+   "peito",
+   "pescoco",
+   "cabeca",
+   "perna_frente_1.L",
+   "perna_frente_2.L",
+   "perna_frente_3.L",
+   "perna_frente_1.R",
+   "perna_frente_2.R",
+   "perna_frente_3.R"
+  ],
+  "perfil": {
+   "ataque": "mordida",
+   "cabeca": 0.12,
+   "casco": false,
+   "corpo": "rastejante",
+   "faixa_chao": 0.75,
+   "parado": "farejar"
+  }
+ },
+ "rabbit": {
+  "clipes": {
+   "attack": {
+    "duracao": 0.8,
+    "golpe": 0.44,
+    "loop": false,
+    "quadros": 24
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 26,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "idle": {
+    "duracao": 6.0,
+    "loop": true,
+    "quadros": 180
+   },
+   "run": {
+    "duracao": 0.3,
+    "loop": true,
+    "quadros": 9,
+    "velocidade_jogo": 7.0
+   },
+   "walk": {
+    "duracao": 0.3,
+    "loop": true,
+    "quadros": 9,
+    "velocidade_jogo": 1.4
+   }
+  },
+  "escala_jogo": 0.91312,
+  "estiramento_max": 0.0,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "perna_tras_1.L",
+   "perna_tras_2.L",
+   "perna_tras_3.L",
+   "perna_tras_1.R",
+   "perna_tras_2.R",
+   "perna_tras_3.R",
+   "peito",
+   "pescoco",
+   "cabeca",
+   "perna_frente_1.L",
+   "perna_frente_2.L",
+   "perna_frente_3.L",
+   "perna_frente_1.R",
+   "perna_frente_2.R",
+   "perna_frente_3.R"
+  ],
+  "perfil": {
+   "ataque": "bote",
+   "cabeca": 0.25,
+   "casco": false,
+   "corpo": "saltador",
+   "parado": "farejar"
+  }
+ },
+ "sheep": {
+  "clipes": {
+   "attack": {
+    "duracao": 0.9,
+    "golpe": 0.42,
+    "loop": false,
+    "quadros": 27
+   },
+   "damage": {
+    "duracao": 0.5,
+    "loop": false,
+    "quadros": 15
+   },
+   "death": {
+    "assentar_desde": 26,
+    "duracao": 1.4,
+    "loop": false,
+    "quadros": 42
+   },
+   "idle": {
+    "duracao": 6.0,
+    "loop": true,
+    "quadros": 180
+   },
+   "run": {
+    "duracao": 0.3333,
+    "loop": true,
+    "quadros": 10,
+    "velocidade_jogo": 3.0
+   },
+   "walk": {
+    "duracao": 0.5667,
+    "loop": true,
+    "quadros": 17,
+    "velocidade_jogo": 0.8
+   }
+  },
+  "escala_jogo": 0.64922,
+  "estiramento_max": 0.0161,
+  "ossos": [
+   "raiz",
+   "tronco",
+   "quadril",
+   "perna_tras_1.L",
+   "perna_tras_2.L",
+   "perna_tras_3.L",
+   "perna_tras_1.R",
+   "perna_tras_2.R",
+   "perna_tras_3.R",
+   "peito",
+   "pescoco",
+   "cabeca",
+   "perna_frente_1.L",
+   "perna_frente_2.L",
+   "perna_frente_3.L",
+   "perna_frente_1.R",
+   "perna_frente_2.R",
+   "perna_frente_3.R"
+  ],
+  "perfil": {
+   "ataque": "cabecada",
+   "cabeca": 0.18,
+   "parado": "pastar",
+   "pescoco": 0.12
+  }
+ }
+}

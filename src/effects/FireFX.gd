@@ -1,7 +1,17 @@
 class_name FireFX
 extends RefCounted
 # Geração de FOGO procedural e detalhada (Mera Mera no Mi).
-# Reformulada para refletir fielmente as 4 skills: Higan (Z), Hiken (X), Hibashira (C) e Inferno (V).
+#
+# Slots de HOJE: Higan (Z), Hiken (X), Vagalumes de Fogo (C) e Dai Enkai: Entei
+# (V). ⚠️ O comentário anterior anunciava "Hibashira (C) e Inferno (V)" — dois
+# golpes que não existem mais desde a reestruturação de 2026-08-21. Corrigido em
+# 2026-09-08; ver `docs/frutas/mera_mera.md`.
+#
+# O DESENHO mora em `MeraVfx` (2026-09-08). Este arquivo continua dono da
+# hitbox, da velocidade e do tempo de vida — a mesma divisão que a Ope faz entre
+# `OpeVfx` e `OpeController`.
+const VFX := preload("res://src/effects/MeraVfx.gd")
+const MERA_BODY := preload("res://src/effects/MeraEmberBody.gd")
 
 const FLAME := [
 	Color(1.0, 0.95, 0.5, 0.95),  # núcleo quente
@@ -112,15 +122,15 @@ static func bullet(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 	core.material_override = cm
 	zone.add_child(core)
 
-	var pm := ParticleProcessMaterial.new()       # rastro de fogo (pra trás)
-	pm.direction = Vector3(0, 0, 1)               # local +Z = trás (a zona olha -Z)
-	pm.spread = 8.0
-	pm.initial_velocity_min = 1.0
-	pm.initial_velocity_max = 3.0
-	pm.scale_min = 0.3
-	pm.scale_max = 0.8
-	pm.color_ramp = FxUtil.gradient([Color(1, 0.7, 0.2), Color(1, 0.3, 0.05), Color(0.2, 0.05, 0, 0)])
-	zone.add_child(FxUtil.particles(18, 0.24, false, pm, FxUtil.grain(0.16)))
+	# RASTRO em malha (2026-09-08). Eram 18 partículas; a bala voa a 82 m/s e
+	# cruza a tela em ~0,3 s, então o rastro só existe em movimento — e quadrado
+	# virado para a câmera não deixa risco de fogo, deixa cintilação. A língua
+	# de chama escorre para +Z local (a zona olha para -Z).
+	VFX.trail(zone, Vector3(0, 0, 1), 0.085)
+
+	# CLARÃO DO CANO: a rajada dispara 8 vezes, e sem clarão o Z não tem quadro
+	# de saída — o jogador só via a bala já longe.
+	VFX.muzzle(world, origin, fwd, 0.75)
 
 	AudioFX.gunshot(world, origin, randf_range(0.95, 1.1)) # som de tiro potente
 	zone.setup(damage, 9.0, fwd * 82.0, 0.65, caster, 0.35)  # menor e bem mais veloz
@@ -258,51 +268,18 @@ static func _hiken(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 	# Subimos 0.5 para não raspar no chão imediatamente, já que a hitbox é grande
 	zone.global_position = origin + Vector3.UP * 0.5
 	
-	# Voxel Fist (Literal Punho de Fogo)
-	var blocks = []
-	var bs = 0.5
-	# Base da mão (Palma e dorso)
-	for x in range(-2, 3):
-		for y in range(-1, 2):
-			for z in range(0, 3):
-				blocks.append(Vector3(x, y, z) * bs)
-	
-	# 4 Dedos dobrados na frente (-z)
-	for x in range(-2, 2): # mindinho até indicador
-		blocks.append(Vector3(x, 1, -1) * bs)
-		blocks.append(Vector3(x, 1, -2) * bs)
-		blocks.append(Vector3(x, 0, -2) * bs)
-		blocks.append(Vector3(x, -1, -2) * bs)
-		blocks.append(Vector3(x, -1, -1) * bs)
-		
-	# Polegar (na lateral direita, x = 2)
-	blocks.append(Vector3(2, 0, -1) * bs)
-	blocks.append(Vector3(3, 0, -1) * bs)
-	blocks.append(Vector3(2, -1, -1) * bs)
-	blocks.append(Vector3(1, -1, -1) * bs)
-					
-	var mmi := MultiMeshInstance3D.new()
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.instance_count = blocks.size()
-	var box := BoxMesh.new(); box.size = Vector3.ONE * (bs * 0.95)
-	mm.mesh = box
-	mmi.multimesh = mm
-	mmi.material_override = _voxel_material()
-	for i in range(blocks.size()):
-		mm.set_instance_transform(i, Transform3D(Basis(), blocks[i]))
-		
-	# Orientar punho
+	# O PUNHO. Era um `MultiMesh` de ~60 caixas laranjas chapadas com 200
+	# partículas por cima; virou crosta de brasa com coroa de chama
+	# (`MeraVfx.fist`, 2026-09-08). O motivo não é gosto: caixa não tem silhueta
+	# de fogo, e a régua da casa é ler o golpe pelo contorno. As partículas
+	# saíram junto — elas são quadrados virados para a câmera, então de longe o
+	# punho virava mancha, exatamente onde a silhueta mais importa.
+	#
+	# ⚠️ NADA AQUI MUDOU DE JOGO: mesma hitbox, mesma velocidade, mesmo raio,
+	# mesmo dano. Só o desenho.
 	var d = dir.normalized()
-	if d.length_squared() > 0.1:
-		var up = Vector3.UP if abs(d.y) < 0.99 else Vector3.RIGHT
-		mmi.transform.basis = Basis.looking_at(d, up)
-	zone.add_child(mmi)
-	
-	var pm := _flame_proc(Vector3(0,0,1), 15.0, 3.0, 6.0, Vector3(0,1,0), 1.0, 3.0, 2.0)
-	zone.add_child(FxUtil.particles(200, 1.0, false, pm, FxUtil.grain(0.8)))
-	zone.add_child(_embers())
-	
+	VFX.fist(zone, d if d.length_squared() > 0.1 else Vector3.FORWARD, 1.35)
+
 	# Velocidade e tempo de vida (raio diminuído de 2.5 para 1.5 para não tocar o chão)
 	zone.setup(spec.dano, 35.0, d * 25.0, 10.0, caster, 1.5)
 	spec.marcar(zone)
@@ -322,8 +299,8 @@ static func _hiken(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 			var pm_exp = _flame_proc(Vector3.UP, 180.0, 5.0, 15.0, Vector3(0, 1.0, 0), 2.0, 4.0, 2.0)
 			var fire = FxUtil.particles(80, 0.6, true, pm_exp, FxUtil.grain(0.8), 0.85)
 			fire.material_override = FxUtil.particle_material(Color(1, 0.4, 0.1), 6.0, true)
+			world.add_child(fire)      # na árvore ANTES da posição global (era o inverso)
 			fire.global_position = zone.global_position
-			world.add_child(fire)
 			AudioFX.impact(world, zone.global_position, 1.0)
 		# ⚠️ A EXPLOSÃO NASCE AQUI (2026-08-22), e é isso que corrige o incentivo
 		# invertido. Antes ela vinha de um temporizador de 1,15 s que só corria se
@@ -363,39 +340,33 @@ static func _entei_sun(world: Node, origin: Vector3, dir: Vector3, damage: float
 	ctrl.shoot(dir, charge)
 
 static func _build_sun_model() -> Node3D:
-	var root := Node3D.new()
-	root.name = "SunVisual"
-	
-	var yellow := Color(1.0, 0.82, 0.05)       # Amarelo vibrante
-	var yellow_bright := Color(1.0, 0.95, 0.3) # Brilho central
-	
-	var core_mesh = BoxMesh.new()
-	core_mesh.size = Vector3(14.0, 14.0, 14.0)
-	var core_mat = StandardMaterial3D.new()
-	core_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	core_mat.albedo_color = FxUtil.brilho(yellow, 4.0)
-	
-	var core_mi = MeshInstance3D.new()
-	core_mi.mesh = core_mesh
-	core_mi.material_override = core_mat
-	root.add_child(core_mi)
-	
-	# Detalhamento: criar "erupções" cúbicas menores ao redor do cubo central
-	for i in range(24):
-		var bump = MeshInstance3D.new()
-		var b_mesh = BoxMesh.new()
-		b_mesh.size = Vector3(randf_range(3.0, 8.0), randf_range(3.0, 8.0), randf_range(3.0, 8.0))
-		bump.mesh = b_mesh
-		
-		var b_mat = StandardMaterial3D.new()
-		b_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		b_mat.albedo_color = FxUtil.brilho(yellow_bright if (i % 4 == 0) else yellow, 6.0 if (i % 4 == 0) else 3.0)
-		bump.material_override = b_mat
-		
-		bump.position = Vector3(randf_range(-7.0, 7.0), randf_range(-7.0, 7.0), randf_range(-7.0, 7.0))
-		root.add_child(bump)
-		
-	return root
+	# O SOL QUADRADO (redesenhado em 2026-09-08).
+	#
+	# Era um cubo de 14 com 24 caixas amarelas chapadas por cima, sorteadas com
+	# `randf_range` — o que dava um sol DIFERENTE em cada máquina, porque cada
+	# peer sorteava o seu. Agora a silhueta é determinística.
+	#
+	# A forma cúbica FICA: o golpe se chama Sol Quadrado, o quadrado é o nome.
+	# O que mudou é a superfície — de amarelo sem sombreamento para crosta de
+	# magma com fenda acesa (`mera_ember.gdshader`), mais a coroa de chama em
+	# volta. O deslocamento de vértice do shader tira o canto perfeito, então
+	# lê como rocha incandescente em vez de caixa.
+	#
+	# ⚠️ MESMA ESCALA DE ANTES (raio 7 = os 14 de lado do cubo original), para
+	# não mexer na leitura de tamanho que o `update_charge` e o `omni_range`
+	# pressupõem.
+	var corpo := MERA_BODY.new()
+	corpo.mode = "sun"
+	corpo.body_radius = 7.0
+	corpo.faceted = true
+	corpo.name = "SunVisual"
+	return corpo
+
+# ⚠️ `_procedural_sun_fallback` (abaixo) desenha o Entei COM ROSTO — olhos, boca,
+# dentes e escorrido. Ninguém a chama hoje. Ela NÃO foi apagada de propósito: é
+# arte autorada, e o inventário do que existe desenhado não se joga fora (mesma
+# política das árvores em `TreeAndFruitGenerator._todas_as_definicoes`).
+# GATILHO para decidir: quando o dono escolher entre o sol liso e o sol com cara.
 
 static func _make_unshaded_emissive(node: Node) -> void:
 	if node is MeshInstance3D:

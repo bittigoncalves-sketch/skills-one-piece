@@ -1,5 +1,6 @@
 class_name FirefliesFX
 extends Node
+const VFX := preload("res://src/effects/MeraVfx.gd")
 
 # Controla o spawn e a reação em cadeia dos vagalumes de fogo
 
@@ -80,8 +81,7 @@ class FirefliesController extends Node3D:
 			_scan_for_drift_target()
 
 	func _scan_for_drift_target() -> void:
-		var candidates = get_tree().get_nodes_in_group("enemy")
-		candidates.append_array(get_tree().get_nodes_in_group("player"))
+		var candidates = AlvosDeGolpe.todos(get_tree())
 		candidates.append_array(get_tree().get_nodes_in_group("enemies"))
 		
 		var nearest: Node3D = null
@@ -206,13 +206,13 @@ class FireflyNode extends Area3D:
 		get_parent().add_child(zone)
 		zone.global_position = global_position
 		
-		# Utiliza partículas de fogo do sistema já existente se FireFX estiver disponível
-		if Engine.has_singleton("FireFX") or load("res://src/effects/FireFX.gd"):
-			var FireFX = load("res://src/effects/FireFX.gd")
-			var pm = FireFX._flame_proc(Vector3.UP, 180.0, 3.0, 8.0, Vector3(0, 1.0, 0), 0.5, 1.5, 1.5)
-			var fire = FxUtil.particles(100, 0.8, true, pm, FxUtil.grain(0.8), 0.85)
-			fire.material_override = FxUtil.particle_material(Color(1, 0.4, 0.1), 4.0, true)
-			zone.add_child(fire)
+		# ESTOURO em malha (2026-09-08). Eram 100 partículas por vagalume — e a
+		# cascata detona 45 deles, ou seja 4.500 partículas em 2,25 s, que é o
+		# trecho mais pesado da fruta inteira. O modo "impact" em escala pequena
+		# usa 3 línguas de 6 anéis e dispensa a consulta de chão, então cada
+		# estouro passa a ter silhueta custando menos que a nuvem que substituiu.
+		# ⚠️ Filho do MUNDO, não da zona: a hitbox vive 0,8 s.
+		VFX.impact(get_parent(), global_position, 0.6)
 		
 		# A explosão aplica uma fração do dano total, ou o total, dependendo do balanceamento
 		# Como o dano é UNICO e a spec marca o zone, se um inimigo for pego por várias zonas

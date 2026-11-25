@@ -1,6 +1,13 @@
 extends SceneTree
 # ============================================================================
-#  O CORPO OLHA PARA A MIRA, MESMO ANDANDO PARA OUTRO LADO?
+#  EM COMBATE, O CORPO OLHA PARA A MIRA, MESMO ANDANDO PARA OUTRO LADO?
+#
+#  ⚠️ REGRA ATUALIZADA EM 02/10/2026 (decisão do dono, docs/PARKOUR_MIRRORS_EDGE_PLANO.md):
+#  correndo LIVRE o corpo segue o MOVIMENTO (giro, frenagem e inclinação dependem
+#  disso — medido em tools/dev_tests/test_locomocao_chao.gd, F e G); a frente na MIRA
+#  vale EM COMBATE (atacando, skill, mirando) e por 0,8 s depois. Esta sonda agora soca
+#  em cada medida e cobra a mira nesse intervalo — que é o motivo da regra de 27/08
+#  (o golpe sai para onde o corpo aponta) e continua valendo.
 #
 #  Uso:
 #    DISPLAY=:1 godot --path . -s tools/dev_tests/medir_facing.gd
@@ -70,17 +77,20 @@ func _medir(p: Node3D, yaw: float, teclas: Array) -> float:
 	p._camera.apontar(yaw, -0.2)
 	for k in teclas:
 		_tecla(k, true)
-	# tempo de sobra para a perseguição alcançar: o corpo persegue a mira, não
-	# salta para ela — medir cedo demais mediria a rampa, não o resultado.
-	for i in 70:
+	# Entra em combate (soco) e mede DENTRO do intervalo de combate: o corpo persegue
+	# a mira, não salta para ela — medir cedo demais mediria a rampa.
+	p._request_melee()
+	for i in 40:
 		await process_frame
 		p._yaw = yaw
+		if i == 20:
+			p._request_melee()
 	for k in teclas:
 		_tecla(k, false)
 	var modelo: Node3D = p._char_model
 	var frente_corpo: Vector3 = -modelo.global_transform.basis.z
 	var frente_mira: Vector3 = RosaDosVentos.frente(yaw)
-	for i in 15:
+	for i in 90:                      # deixa o combate expirar antes da próxima medida
 		await process_frame
 	return frente_corpo.normalized().dot(frente_mira.normalized())
 

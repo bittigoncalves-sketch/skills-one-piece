@@ -1,0 +1,439 @@
+{
+  "bpm": 64,
+  "compasso": "4/4",
+  "pecas": {
+    "chegada": [
+      {
+        "t": 0,
+        "d": 1.05,
+        "midi": 69,
+        "vel": 0.6,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 1,
+        "d": 1.05,
+        "midi": 71,
+        "vel": 0.62,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 2,
+        "d": 1.05,
+        "midi": 72,
+        "vel": 0.65,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 3,
+        "d": 1.65,
+        "midi": 74,
+        "vel": 0.68,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 4.5,
+        "d": 1.05,
+        "midi": 72,
+        "vel": 0.64,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 5.5,
+        "d": 1.05,
+        "midi": 71,
+        "vel": 0.61,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 6.5,
+        "d": 1.1,
+        "midi": 69,
+        "vel": 0.58,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 7.75,
+        "d": 1.05,
+        "midi": 67,
+        "vel": 0.55,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 9,
+        "d": 1.05,
+        "midi": 69,
+        "vel": 0.59,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 10,
+        "d": 1.05,
+        "midi": 71,
+        "vel": 0.61,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 11,
+        "d": 1.55,
+        "midi": 72,
+        "vel": 0.64,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 12.5,
+        "d": 1.05,
+        "midi": 71,
+        "vel": 0.58,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 13.5,
+        "d": 1.65,
+        "midi": 69,
+        "vel": 0.56,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 16,
+        "d": 1.05,
+        "midi": 72,
+        "vel": 0.6,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 17,
+        "d": 1.05,
+        "midi": 74,
+        "vel": 0.64,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 18,
+        "d": 1.05,
+        "midi": 76,
+        "vel": 0.67,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 19,
+        "d": 1.6,
+        "midi": 77,
+        "vel": 0.68,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 20.5,
+        "d": 1.05,
+        "midi": 76,
+        "vel": 0.64,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 21.5,
+        "d": 1.05,
+        "midi": 74,
+        "vel": 0.61,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 22.5,
+        "d": 1.1,
+        "midi": 72,
+        "vel": 0.58,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 23.75,
+        "d": 1.05,
+        "midi": 71,
+        "vel": 0.55,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 25,
+        "d": 1.05,
+        "midi": 72,
+        "vel": 0.6,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 26,
+        "d": 1.05,
+        "midi": 71,
+        "vel": 0.58,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 27,
+        "d": 1.55,
+        "midi": 69,
+        "vel": 0.59,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 28.5,
+        "d": 1.05,
+        "midi": 71,
+        "vel": 0.56,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 29.5,
+        "d": 1.7,
+        "midi": 69,
+        "vel": 0.53,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      }
+    ],
+    "copos_loop": [
+      {
+        "t": 0,
+        "d": 1.05,
+        "midi": 69,
+        "vel": 0.56,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 1,
+        "d": 1.05,
+        "midi": 71,
+        "vel": 0.58,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 2,
+        "d": 1.05,
+        "midi": 72,
+        "vel": 0.6,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 3,
+        "d": 1.55,
+        "midi": 74,
+        "vel": 0.61,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 4.5,
+        "d": 1.05,
+        "midi": 72,
+        "vel": 0.59,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 5.5,
+        "d": 1.05,
+        "midi": 71,
+        "vel": 0.57,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 6.5,
+        "d": 1.1,
+        "midi": 69,
+        "vel": 0.55,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 7.75,
+        "d": 1.05,
+        "midi": 67,
+        "vel": 0.53,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 9,
+        "d": 1.05,
+        "midi": 69,
+        "vel": 0.56,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 10,
+        "d": 1.05,
+        "midi": 71,
+        "vel": 0.58,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 11,
+        "d": 1.55,
+        "midi": 72,
+        "vel": 0.59,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 12.5,
+        "d": 1.05,
+        "midi": 71,
+        "vel": 0.56,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      },
+      {
+        "t": 13.5,
+        "d": 1.7,
+        "midi": 69,
+        "vel": 0.53,
+        "vibrato": {
+          "hz": 5.5,
+          "atraso_s": 0.35,
+          "profundidade_cents": 12
+        }
+      }
+    ]
+  }
+}

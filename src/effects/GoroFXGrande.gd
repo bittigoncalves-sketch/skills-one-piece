@@ -1,5 +1,7 @@
 class_name GoroFXGrande
 extends RefCounted
+
+const GoroPoses = preload("res://src/anim/GoroPoses.gd")
 # ============================================================================
 #  GORO GORO — OS DOIS ESPETÁCULOS: X (El Thor) e V (Mamaragan).
 #
@@ -60,12 +62,15 @@ static func el_thor(world: Node, origin: Vector3, dir: Vector3, damage: float, c
 	var alvo := _ponto_de_mira(world, origin, fwd, 60.0, caster)
 
 	# BRAÇO LEVANTADO. `custom_pose` é o canal que Yami e Mera já usam para pedir
-	# uma pose ao ProceduralAnimator. A pose "el_thor" ainda NÃO existe lá (é
-	# preciso registrar o peso e escrever `_el_thor_pose`, e o animator está fora
-	# da minha fronteira) — deixar a marca posta aqui faz o golpe ganhar a pose
-	# no dia em que ela for escrita, sem tocar neste arquivo de novo.
+	# uma pose ao ProceduralAnimator. A pose foi escrita em 2026-09-12 e vive em
+	# `GoroPoses.EL_THOR`: braço à vertical no instante em que o gatilho sai do
+	# `ForeArm_R`, e um tranco no ombro a cada um dos 11 raios que caem.
 	if is_instance_valid(caster):
-		caster.set_meta("custom_pose", "el_thor")
+		# A pose existe desde 2026-09-12 (`GoroPoses.EL_THOR`); o comentário acima
+		# descrevia o tempo em que ela era só uma marca posta à espera.
+		caster.set_meta("custom_pose", GoroPoses.EL_THOR)
+		# Remove, não zera: meta presente e parada congela a pose. Ver GoroFX._sango.
+		caster.remove_meta("goro_pose_t")
 		if caster.has_method("lock_movement"):
 			caster.lock_movement(1.6, "X")
 
@@ -78,11 +83,25 @@ static func el_thor(world: Node, origin: Vector3, dir: Vector3, damage: float, c
 # Para ONDE a mira está apontando: raio de mira até 60 m e, do que ele achar,
 # desce até o chão. Antes o El Thor caía sempre 5 m à frente do peito — o que
 # quer dizer que ele NÃO seguia a mira, só a direção do corpo.
+## ⚠️ O `world` NÃO SERVE DE REFERÊNCIA NO PRIMEIRO GOLPE DE UMA VIDA.
+##
+## Ele é o `Skills_<jogador>` de `Player._get_skills_container()`, que entra na
+## cena por `add_child.call_deferred(...)`: no primeiro cast ainda está FORA da
+## árvore, `get_world_3d()` devolve null e a função caía no fallback — mira
+## ignorada, alvo a `alcance` metros à frente e y = 0. É a mesma armadilha que
+## `FxUtil.autofree` e `YamiFX._find_closest_entity` já documentam.
+##
+## O `caster` está sempre na árvore, então ele é a referência preferida. Medido
+## em 2026-09-12 com o Mamaragan; o El Thor sofria do mesmo defeito em silêncio,
+## porque um alvo "à frente do peito" é plausível demais para denunciar o erro.
 static func _ponto_de_mira(world: Node, origin: Vector3, fwd: Vector3, alcance: float, caster: Node) -> Vector3:
 	var alvo: Vector3 = origin + fwd * alcance
 	var space: PhysicsDirectSpaceState3D = null
-	if world is Node3D and (world as Node3D).is_inside_tree() and (world as Node3D).get_world_3d() != null:
-		space = (world as Node3D).get_world_3d().direct_space_state
+	for referencia in [caster, world]:
+		if referencia is Node3D and (referencia as Node3D).is_inside_tree() \
+				and (referencia as Node3D).get_world_3d() != null:
+			space = (referencia as Node3D).get_world_3d().direct_space_state
+			break
 	if space == null:
 		alvo.y = 0.0
 		return alvo
@@ -363,6 +382,10 @@ class ElThorController extends Node3D:
 			spec.marcar(zona, true)
 			AudioFX.cannon(mundo, global_position, 0.34)
 			AudioFX.impact(mundo, global_position, 0.5)
+			# A assinatura da fruta entra na COLUNA, o clímax do X — não na
+			# abertura: o estalo do `elthor` precisa coincidir com o que a tela
+			# mostra, e o que a tela mostra aqui é a coluna descendo.
+			GoroAudio.play(mundo, global_position, "elthor")
 			GoroFX._screen_flash(mundo, Color(1.0, 1.0, 0.85), 0.75)
 		GoroFX._shake(caster, 0.7)
 
@@ -379,8 +402,7 @@ class ElThorController extends Node3D:
 		if is_instance_valid(_nuvem):
 			tw.tween_property(_nuvem, "scale", Vector3(1.9, 0.25, 1.9), 0.75).set_trans(Tween.TRANS_SINE)
 		for m in _mats:
-			if m is StandardMaterial3D:
-				tw.tween_property(m, "albedo_color:a", 0.0, 0.75)
+			GoroFX.dissipar_material(tw, m, 0.75)
 		if is_instance_valid(_luz):
 			tw.tween_property(_luz, "base_energy", 0.0, 0.7)
 		tw.chain().tween_callback(queue_free)
@@ -417,14 +439,20 @@ static func _novo_mamaragan(world: Node, origin: Vector3, dir: Vector3,
 	if fwd.length_squared() < 0.01:
 		fwd = Vector3(0, 0, -1)
 
+	# ⚠️ NENHUM `lock_movement` DESDE 2026-09-12. O golpe deixou de acontecer em
+	# cima do jogador — ele aponta, a tempestade se junta longe e ele continua
+	# jogando. Decisão do dono na remodelação; travar aqui devolveria o custo que
+	# a remodelação tirou de propósito.
 	if is_instance_valid(caster):
 		caster.set_meta("custom_pose", "mamaragan")
-		if caster.has_method("lock_movement"):
-			# ⚠️ No modo carregável quem solta o travamento é a soltura da tecla,
-			# então o prazo aqui é só a rede de segurança de um cast normal.
-			caster.lock_movement(MamaraganController.LIBERA_EM, "V")
+
+	# ONDE A TEMPESTADE VAI CAIR: o mesmo raycast do El Thor, que segue a mira e
+	# desce até o chão. Sem isto o golpe cairia sempre à frente do peito, que é
+	# justamente o defeito que o El Thor já teve.
+	var alvo := _ponto_de_mira(world, origin, fwd, MamaraganController.ALCANCE_MIRA, caster)
 
 	var ctrl := MamaraganController.new(origin, fwd, damage, caster, spec)
+	ctrl.alvo = alvo
 	# ⚠️ CARGA VINDA DA REDE (2026-08-22). Quando o golpe chega por
 	# `_net_play_cast`, a carga JÁ ACONTECEU na tela de quem conjurou — o
 	# `MamaraganChargeNode` desenhou nuvens, orbe e flutuação lá, e mandou o
@@ -434,6 +462,10 @@ static func _novo_mamaragan(world: Node, origin: Vector3, dir: Vector3,
 	if charge > 0.0:
 		var t_max: float = spec.tempo_de_carga if spec.tempo_de_carga > 0.0 else 3.0
 		ctrl.travar_carga(clampf(charge / t_max, 0.0, 1.0))
+		# A carga JÁ FOI VISTA na tela de quem conjurou: as nuvens deste caminho
+		# nascem prontas. Sem isto elas apareceriam em escala 0,02 no mesmo quadro
+		# em que a bola despenca, e a queda sairia de um céu vazio.
+		ctrl.ceu_imediato = true
 	world.add_child(ctrl)
 	FxUtil.autofree(ctrl, MamaraganController.TOTAL + 1.6)   # rede de segurança
 	return ctrl
@@ -563,43 +595,56 @@ class ThunderOrb extends Node3D:
 # ---------------------------------------------------------------------------
 #  MamaraganController — a cerimônia inteira.
 #
-#  Linha do tempo (≈5,4 s, tudo livre da cena até ~6,4 s):
-#    0,00  7 NUVENS AZUL-ESCURAS se juntam num anel de 12 m sobre o jogador,
-#          cada uma nascendo com atraso próprio; o anel gira devagar
-#    0,15  o jogador COMEÇA A FLUTUAR (sobe 3,4 m e fica balançando no ar)
-#    0,45  as MÃOS VIRAM CORRENTES ELÉTRICAS que sobem até duas das nuvens e
-#          ficam tremendo, ligadas às mãos quadro a quadro
-#    0,70  a BOLA AZUL-ESCURA começa a se formar entre as mãos
-#    3,00  a bola fica COMPLETA -> clarão, anel de choque e trovão
-#    3,30  arremesso: a bola voa na direção da mira e detona no impacto
-#    4,60  o jogador desce e recupera o controle
-#    5,40  as nuvens se abrem; o controlador se liberta
+#  ⚠️ REMODELADO EM 2026-09-12. Antes o golpe era um ARREMESSO HORIZONTAL: as
+#  nuvens nasciam sobre o JOGADOR, ele flutuava preso, a bola crescia entre as
+#  mãos e voava reto na direção da mira (`VEL 27`) até bater em alguma coisa.
+#  Hoje é ARTILHARIA VERTICAL, por decisão do dono: as nuvens se juntam sobre o
+#  PONTO DE MIRA, a bola cresce lá em cima e CAI. O jogador fica livre o tempo
+#  todo — não flutua e não trava.
+#
+#  Linha do tempo (≈4,6 s, tudo livre da cena até ~5,6 s):
+#    0,00  acha o ponto de mira no chão (até 60 m, igual ao El Thor) e abre ali
+#          uma MARCA DE AVISO; 7 nuvens azul-escuras se juntam num anel de 7 m
+#          a 14 m ACIMA dela, cada uma com atraso próprio; o anel gira devagar
+#    0,35  sai do BRAÇO do jogador uma corrente elétrica até as nuvens — o elo
+#          que mostra quem está canalizando, e de onde, para quem estiver perto
+#    0,60  a BOLA AZUL-ESCURA começa a se formar no centro do anel, lá em cima
+#    2,90  a bola fica COMPLETA -> clarão, anel de choque e trovão
+#    3,30  SOLTA: a bola despenca na vertical, acelerando, e detona no chão
+#    4,60  as nuvens se abrem; o controlador se liberta
+#
+#  A carga não mudou de regra: segurar faz a bola crescer (512 -> 768 de dano) e
+#  soltar derruba. Levar dano DISPARA em vez de cancelar — ver PEDIDO_2026-08-12.
 # ---------------------------------------------------------------------------
 class MamaraganController extends Node3D:
-	const NUVENS      := 7
-	const ALT_NUVENS  := 15.0
-	const RAIO_ANEL   := 12.0
-	const SUBIDA      := 3.4      # metros que o jogador flutua
-	const T_FLUTUA    := 0.15
-	const T_CORRENTES := 0.45
-	const T_ORB       := 0.70
-	const T_CARGA     := 2.30     # quanto leva para a bola ficar COMPLETA
-	const T_LANCA     := 3.30
-	const T_DESCE     := 4.05
-	const LIBERA_EM   := 4.60
-	const TOTAL       := 5.40
+	const NUVENS       := 7
+	const ALCANCE_MIRA := 60.0    # o mesmo do El Thor
+	const ALT_NUVENS   := 14.0    # altura das nuvens ACIMA DO ALVO
+	const RAIO_ANEL    := 7.0     # anel concentrado sobre o alvo, não sobre o mapa
+	const T_CORRENTES  := 0.35
+	const T_ORB        := 0.60
+	const T_CARGA      := 2.30    # quanto leva para a bola ficar COMPLETA
+	const T_LANCA      := 3.30
+	const LIBERA_EM    := 3.30    # o jogador nunca é travado; mantido p/ a rede
+	const TOTAL        := 4.60
 
 	var damage: float
 	var caster: Node
 	var fwd: Vector3
+	## Ponto NO CHÃO sobre o qual as nuvens se juntam. É o centro de tudo: o anel
+	## nasce acima dele, a bola cai nele e a marca de aviso fica nele.
+	var alvo := Vector3.ZERO
+	## Caminho de REDE: a carga já foi vista na tela de quem conjurou, então as
+	## nuvens precisam nascer PRONTAS em vez de crescerem de novo do zero.
+	var ceu_imediato := false
 	var _t := 0.0
-	var _y0 := 0.0
-	var _pulou := false
 	var _completou := false
 	var _lancou := false
 	var _fechou := false
-	var _destravou := false
-	var _snap_salvo := -1.0
+	var _marca: Node3D = null
+	var _som_carga: AudioStreamPlayer3D = null
+	var _marca_mat: ShaderMaterial = null
+	var _pose_t := 0.0
 
 	# ---------------------------------------------------- CHARGE-UP (tarefa 5)
 	# `segurando` = a linha do tempo PARA no fim da carga e espera a tecla soltar.
@@ -626,19 +671,18 @@ class MamaraganController extends Node3D:
 		position = origem
 
 	func _ready() -> void:
-		if is_instance_valid(caster) and caster is Node3D:
-			global_position = (caster as Node3D).global_position
-		_y0 = global_position.y
+		# O controlador MORA no alvo, não no jogador: tudo que ele desenha é em
+		# volta do ponto que vai ser atingido, e o jogador pode sair andando.
+		global_position = alvo
 
-		# ---- AS NUVENS SE JUNTANDO NO CÉU AO REDOR DO JOGADOR ----
+		# ---- AS NUVENS SE JUNTANDO NO CÉU, ACIMA DO ALVO ----
 		_ceu = Node3D.new()
 		add_child(_ceu)
 		for i in range(NUVENS):
 			var a: float = (float(i) / float(NUVENS)) * TAU
 			var pivo := Node3D.new()
 			_ceu.add_child(pivo)
-			pivo.position = Vector3(cos(a) * RAIO_ANEL, ALT_NUVENS + randf_range(-1.6, 1.6), sin(a) * RAIO_ANEL)
-			pivo.scale = Vector3(0.02, 0.02, 0.02)
+			pivo.position = Vector3(cos(a) * RAIO_ANEL, ALT_NUVENS + randf_range(-1.2, 1.2), sin(a) * RAIO_ANEL)
 			for camada in range(2):
 				var interna: bool = camada == 0
 				var mm := GoroFX.storm_cloud(
@@ -648,9 +692,13 @@ class MamaraganController extends Node3D:
 					0.5 if interna else 0.4)
 				pivo.add_child(mm)
 				_mats.append(mm.material_override)
-			var tw := pivo.create_tween()
-			tw.tween_interval(float(i) * 0.055)
-			tw.tween_property(pivo, "scale", Vector3.ONE, 0.55).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			if ceu_imediato:
+				pivo.scale = Vector3.ONE
+			else:
+				pivo.scale = Vector3(0.02, 0.02, 0.02)
+				var tw := pivo.create_tween()
+				tw.tween_interval(float(i) * 0.055)
+				tw.tween_property(pivo, "scale", Vector3.ONE, 0.55).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 			if i < 2:
 				_ancoras.append(pivo)
 
@@ -660,12 +708,7 @@ class MamaraganController extends Node3D:
 			_ceu.add_child(luz)
 			luz.position = Vector3(cos(a2) * RAIO_ANEL * 0.8, ALT_NUVENS - 2.0, sin(a2) * RAIO_ANEL * 0.8)
 
-		# O jogador flutua: fora do alcance do encaixe-no-chão do CharacterBody3D,
-		# senão o `move_and_slide` do quadro travado puxa o corpo de volta ao solo
-		# quadro a quadro e o voo nunca sai do lugar.
-		if caster is CharacterBody3D:
-			_snap_salvo = (caster as CharacterBody3D).floor_snap_length
-			(caster as CharacterBody3D).floor_snap_length = 0.0
+		_abrir_marca()
 
 		var mundo := get_tree().current_scene if get_tree() else null
 		if mundo:
@@ -674,12 +717,62 @@ class MamaraganController extends Node3D:
 			GoroFX._screen_flash(mundo, Color(0.3, 0.45, 1.0), 0.35)
 		GoroFX._shake(caster, 0.35)
 
+	## A MARCA DE AVISO no chão. Um golpe que cai de cima sem anunciar onde vai
+	## cair não tem contra-jogo: quem está embaixo precisa poder sair.
+	##
+	## ⚠️ NÃO usa `GoroFX.shock_ring`: aquele anel nasce para SUMIR (tween até
+	## alpha 0 e `queue_free`), e esta marca precisa ficar enquanto a bola
+	## carrega. Passar `grossura = 0.0` para ele ainda degenera o TorusMesh
+	## (`inner_radius == outer_radius`) e suja o log com
+	## "_create_mesh_array must return at least a vertex array".
+	func _abrir_marca() -> void:
+		_marca = Node3D.new()
+		add_child(_marca)
+		_marca.position = Vector3(0, 0.06, 0)
+
+		# Um PLANO no chão, não um torus: o `goro_marca.gdshader` desenha aro,
+		# raias e o pulso a partir da UV, então precisa de uma superfície com UV
+		# 0..1 — e um plano paga 2 triângulos onde o torus pagava centenas.
+		var mi := MeshInstance3D.new()
+		var pm := PlaneMesh.new()
+		pm.size = Vector2(RAIO_ANEL * 2.0, RAIO_ANEL * 2.0)
+		mi.mesh = pm
+		_marca_mat = GoroFX.marca_material()
+		mi.material_override = _marca_mat
+		mi.scale = Vector3(0.05, 1.0, 0.05)
+		_marca.add_child(mi)
+		var tw := mi.create_tween()
+		tw.tween_property(mi, "scale", Vector3.ONE, 0.45) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+		var faisca := GoroFX.sparks(90, 1.2, Vector3.UP, 25.0, 1.0, 3.0, 0.30)
+		faisca.one_shot = false
+		_marca.add_child(faisca)
+
 	func _process(delta: float) -> void:
 		_t += delta
 		if is_instance_valid(_ceu):
 			_ceu.rotation.y += 0.32 * delta
 
-		_flutuar(delta)
+		_seguir_mira(delta)
+
+		# O RELÓGIO DA POSE. Enquanto canaliza, ele PARA no fim do gesto de erguer
+		# (a pose sustenta) — a carga não tem duração prevista, quem decide é o
+		# dedo do jogador. Depois de soltar, ele corre normalmente para o gesto de
+		# derrubar acontecer inteiro.
+		if is_instance_valid(caster):
+			if _lancou:
+				_pose_t += delta
+			else:
+				_pose_t = minf(_pose_t + delta, GoroPoses.DURATIONS[GoroPoses.MAMARAGAN])
+			caster.set_meta("goro_pose_t", _pose_t)
+
+		# `age` alimenta o pulso da marca e o relâmpago interno das nuvens.
+		for m in _mats:
+			if m is ShaderMaterial:
+				(m as ShaderMaterial).set_shader_parameter("age", _t)
+		if is_instance_valid(_marca_mat):
+			_marca_mat.set_shader_parameter("age", _t)
 
 		if _t >= T_CORRENTES and _correntes.is_empty():
 			_ligar_correntes()
@@ -689,10 +782,20 @@ class MamaraganController extends Node3D:
 			_orb = ThunderOrb.new()
 			add_child(_orb)
 			_orb.set_charge(0.0)
+			# O zumbido da carga sai DAS NUVENS, que é onde a bola cresce desde a
+			# remodelação — não mais das mãos do jogador.
+			_som_carga = GoroAudio.play(self, global_position + _pos_bola(), "carga")
 
 		if is_instance_valid(_orb) and not _lancou:
 			_orb.position = _pos_bola()
 			_orb.set_charge(carga_atual())
+			# As nuvens piscam por dentro no ritmo da carga: quem está embaixo lê
+			# no céu quanto falta, sem precisar olhar o HUD de quem conjurou.
+			for m in _mats:
+				if m is ShaderMaterial:
+					(m as ShaderMaterial).set_shader_parameter("charge", carga_atual())
+			if is_instance_valid(_marca_mat):
+				_marca_mat.set_shader_parameter("charge", carga_atual())
 			if _orb.esta_completa() and not _completou:
 				_completou = true
 				_bola_completa()
@@ -703,13 +806,7 @@ class MamaraganController extends Node3D:
 			_t = minf(_t, T_LANCA - 0.01)
 		elif _t >= T_LANCA and not _lancou:
 			_lancou = true
-			_arremessar()
-
-		# Destrava assim que a bola SAI — não no fim do espetáculo. O resto da
-		# animação (nuvens fechando) roda com o jogador já livre.
-		if _lancou and not _destravou:
-			_destravou = true
-			_liberar_jogador()
+			_derrubar()
 
 		if _t >= TOTAL - 0.9 and not _fechou:
 			_fechou = true
@@ -755,29 +852,46 @@ class MamaraganController extends Node3D:
 	func pode_soltar() -> bool:
 		return is_instance_valid(_orb)
 
-	# ---- O JOGADOR FLUTUANDO ----
-	func _flutuar(delta: float) -> void:
-		if not (caster is CharacterBody3D) or not is_instance_valid(caster):
-			return
-		var corpo := caster as CharacterBody3D
-		if _t < T_FLUTUA:
-			return
-		if not _pulou:
-			_pulou = true
-			corpo.global_position.y += 0.5    # arranque: sai da faixa de encaixe de uma vez
-		var alvo := 0.0
-		if _t < T_DESCE:
-			alvo = SUBIDA * minf(1.0, (_t - T_FLUTUA) / 0.9)
-			alvo += sin(_t * 2.4) * 0.18      # balanço de quem está suspenso
-		else:
-			alvo = SUBIDA * maxf(0.0, 1.0 - (_t - T_DESCE) / 0.55)
-		corpo.global_position.y = lerpf(corpo.global_position.y, _y0 + alvo, 1.0 - exp(-9.0 * delta))
+	## ENQUANTO CARREGA, A TEMPESTADE SEGUE A MIRA.
+	##
+	## Sem isto o alvo congelaria no instante do APERTO, e como a soltura manda
+	## para a rede a mira do instante da LIBERAÇÃO, as nuvens carregariam num
+	## lugar e a bola cairia em outro — o jogador veria o golpe mentir sobre onde
+	## vai bater. Depois de soltar o alvo trava: quem está embaixo tem o anel no
+	## chão como aviso, e ele não pode fugir junto com a mira.
+	##
+	## O raycast roda a cada INTERVALO_MIRA, não todo quadro; entre uma medida e
+	## outra o nó desliza, senão a tempestade inteira pularia a cada leitura.
+	const INTERVALO_MIRA := 0.08
+	var _prox_mira := 0.0
 
-	# ---- AS MÃOS VIRANDO CORRENTES ELÉTRICAS ----
+	func _seguir_mira(delta: float) -> void:
+		if not segurando or _lancou:
+			return
+		if not is_instance_valid(caster) or not caster.has_method("mira_do_cast"):
+			return
+		_prox_mira -= delta
+		if _prox_mira <= 0.0:
+			_prox_mira = INTERVALO_MIRA
+			var mira: Dictionary = caster.mira_do_cast()
+			var dir: Vector3 = mira.get("aim", fwd)
+			var org: Vector3 = mira.get("origem", global_position)
+			if dir.length_squared() > 0.01:
+				fwd = dir.normalized()
+				var mundo := get_tree().current_scene if get_tree() else null
+				if mundo:
+					alvo = GoroFXGrande._ponto_de_mira(mundo, org, fwd, ALCANCE_MIRA, caster)
+		global_position = global_position.lerp(alvo, 1.0 - exp(-9.0 * delta))
+
+	# ---- O ELO ELÉTRICO: DO BRAÇO DO JOGADOR ATÉ AS NUVENS ----
+	## Duas correntes ligam as MÃOS do jogador a duas das nuvens. Depois da
+	## remodelação elas atravessam a distância até o alvo (até 60 m, contra os
+	## 15 m verticais de antes), por isso mais segmentos: um raio de 60 m com 20
+	## segmentos vira uma linha reta e perde o tremor que o faz parecer elétrico.
 	func _ligar_correntes() -> void:
 		for i in range(2):
 			var b := GoroFX.Bolt.new(Vector3.ZERO, Vector3(0, ALT_NUVENS, 0),
-				GoroFX.ELECTRIC_YELLOW, 8.0, 20, 1.0, 0.16, 2)
+				GoroFX.ELECTRIC_YELLOW, 8.0, 34, 1.4, 0.16, 2)
 			b.flick = 0.04
 			add_child(b)
 			_correntes.append(b)
@@ -810,10 +924,10 @@ class MamaraganController extends Node3D:
 		var s: float = -0.55 if esquerda else 0.55
 		return base + Vector3(0, 1.45, 0) + lado * s + fwd * 0.15
 
+	## A bola cresce NO CENTRO DO ANEL DE NUVENS, lá em cima — não mais entre as
+	## mãos do jogador. Local, porque o controlador já mora no alvo.
 	func _pos_bola() -> Vector3:
-		if not is_instance_valid(caster) or not (caster is Node3D):
-			return Vector3(0, ALT_NUVENS * 0.2, 0)
-		return to_local((caster as Node3D).global_position + Vector3(0, 1.55, 0) + fwd * 1.9)
+		return Vector3(0, ALT_NUVENS - 1.2, 0)
 
 	func _bola_completa() -> void:
 		var mundo := get_tree().current_scene if get_tree() else null
@@ -824,13 +938,37 @@ class MamaraganController extends Node3D:
 		if is_instance_valid(_orb):
 			GoroFX.shock_ring(self, _orb.position, GoroFX.LIGHTNING_CYAN, 9.0, 0.45, 0.15)
 
-	func _arremessar() -> void:
+	## A QUEDA. Antes isto era `_arremessar()` e mandava a bola na horizontal, na
+	## direção da mira. Agora ela despenca do centro do anel direto no alvo, e o
+	## alvo já estava anunciado no chão desde o começo.
+	func _derrubar() -> void:
 		var mundo := get_tree().current_scene if get_tree() else null
 		var origem: Vector3 = global_position + _pos_bola()
 		if is_instance_valid(_orb):
 			origem = _orb.global_position
 			_orb.queue_free()
 			_orb = null
+		# O braço DESCE junto com a bola: troca do gesto de canalizar para o de
+		# derrubar, com o relógio zerado para o novo gesto sair do início.
+		if is_instance_valid(caster):
+			caster.set_meta("custom_pose", GoroPoses.MAMARAGAN_SOLTA)
+			_pose_t = 0.0
+			caster.set_meta("goro_pose_t", 0.0)
+			FxUtil.limpar_pose(caster, GoroPoses.MAMARAGAN_SOLTA,
+				GoroPoses.DURATIONS[GoroPoses.MAMARAGAN_SOLTA])
+
+		# O zumbido da carga acabou no instante em que a bola saiu: deixá-lo
+		# rolando por cima da queda embola as duas leituras.
+		if is_instance_valid(_som_carga):
+			_som_carga.stop()
+			_som_carga.queue_free()
+			_som_carga = null
+		# A marca cumpriu o papel de avisar; some junto com a queda.
+		if is_instance_valid(_marca):
+			var tw_marca := _marca.create_tween()
+			tw_marca.tween_property(_marca, "scale", Vector3(0.01, 0.01, 0.01), 0.25)
+			FxUtil.autofree(_marca, 0.4)
+			_marca = null
 		for c in _correntes:
 			if is_instance_valid(c) and c is GoroFX.Bolt:
 				(c as GoroFX.Bolt).apagar(0.25)
@@ -845,7 +983,11 @@ class MamaraganController extends Node3D:
 			# `carga_atual()` devolve 0..1 e `valor_do_hit` espera SEGUNDOS, daí a
 			# multiplicação pelo tempo de carga da tabela.
 			var dano_carregado := spec.valor_do_hit(carga_atual() * spec.tempo_de_carga)
-			var bola := MamaraganBall.new(origem, fwd, dano_carregado, caster, spec)
+			# `Vector3.DOWN`: a bola não é mais arremessada, ela CAI. O chão de
+			# destino é o alvo — a bola detona ao alcançar aquela altura, não numa
+			# altura fixa do mapa, senão ela atravessaria plataformas altas.
+			var bola := MamaraganBall.new(origem, Vector3.DOWN, dano_carregado, caster, spec)
+			bola.y_do_alvo = alvo.y
 			mundo.add_child(bola)
 			AudioFX.impact(mundo, origem, 0.55)
 			AudioFX.whoosh(mundo, origem, 0.75)
@@ -856,23 +998,22 @@ class MamaraganController extends Node3D:
 		if is_instance_valid(_ceu):
 			tw.tween_property(_ceu, "scale", Vector3(1.6, 0.3, 1.6), 0.85).set_trans(Tween.TRANS_SINE)
 		for m in _mats:
-			if m is StandardMaterial3D:
-				tw.tween_property(m, "albedo_color:a", 0.0, 0.85)
+			GoroFX.dissipar_material(tw, m, 0.85)
 
-	# Devolve o corpo ao jogador: pose, aderência ao chão e travamento.
-	# Chamado no ARREMESSO (não no fim do espetáculo) e de novo na saída, porque
-	# o golpe pode ser destruído antes da hora.
+	## Limpeza da marca de pose. Desde a remodelação de 2026-09-12 o jogador NÃO
+	## é mais travado nem suspenso por este golpe — não há aderência ao chão nem
+	## `lock_movement` para desfazer, só a `custom_pose` a devolver.
 	func _liberar_jogador() -> void:
 		if not is_instance_valid(caster):
 			return
-		if caster.get_meta("custom_pose", "") == "mamaragan":
+		var atual := str(caster.get_meta("custom_pose", ""))
+		if atual == GoroPoses.MAMARAGAN or atual == GoroPoses.MAMARAGAN_SOLTA:
 			caster.set_meta("custom_pose", "")
-		if caster is CharacterBody3D and _snap_salvo >= 0.0:
-			(caster as CharacterBody3D).floor_snap_length = _snap_salvo
-			_snap_salvo = -1.0
-		# O `lock_movement` foi armado para a duração cheia; solto agora.
-		caster.set("_movement_locked_timer", 0.0)
-		caster.set_meta("active_skill", "")
+		# ⚠️ A META DO RELÓGIO TEM DE SAIR JUNTO. O V é o único golpe que publica
+		# `goro_pose_t`, e quando este controlador morre ninguém mais a atualiza:
+		# deixá-la no ator faria o PRÓXIMO golpe da Goro nascer com o relógio
+		# parado num valor velho — a pose congelaria no quadro errado.
+		caster.remove_meta("goro_pose_t")
 
 	func _exit_tree() -> void:
 		_liberar_jogador()
@@ -882,14 +1023,30 @@ class MamaraganController extends Node3D:
 #  MamaraganBall — a bola COMPLETA voando e o estouro no fim.
 # ---------------------------------------------------------------------------
 class MamaraganBall extends Node3D:
-	const VEL  := 27.0
-	const VIDA := 0.9
+	## A bola CAINDO. Até 2026-09-12 ela era arremessada na horizontal a 27 m/s e
+	## morria por tempo ou ao passar de y = 0,7. Agora despenca acelerando, e o
+	## fim dela é o CHÃO DO ALVO — o `y_do_alvo` que o controlador passa.
+	const VEL_INICIAL := 9.0
+	const GRAVIDADE   := 38.0
+	const VEL_MAX     := 62.0
+	const VIDA        := 2.2      # rede de segurança, não o fim esperado
 
 	var dir: Vector3
 	var damage: float
 	var caster: Node
+	## Altura do chão no ponto visado. A bola detona ao alcançá-la, em vez de uma
+	## altura fixa do mapa: assim o golpe funciona em cima de plataforma também.
+	var y_do_alvo := 0.7
+	var _vel := VEL_INICIAL
 	var _t := 0.0
 	var _morreu := false
+	var _tocou_som := false
+
+	## O `goro_mamaragan.wav` tem o assobio da queda nos primeiros 384 ms e só
+	## então o estalo do impacto (medido no arquivo, não estimado). Tocá-lo ao
+	## SAIR da nuvem adiantaria a batida em ~0,2 s, porque a queda leva ~0,6 s.
+	## Então ele entra quando faltar exatamente esse tempo para o chão.
+	const SOM_ANTES_DO_IMPACTO := 0.384
 
 	var spec: DamageSpec = null
 
@@ -922,8 +1079,19 @@ class MamaraganBall extends Node3D:
 		if _morreu:
 			return
 		_t += delta
-		global_position += dir * VEL * delta
-		if _t >= VIDA or global_position.y <= 0.7:
+		# Acelera enquanto cai: o peso do golpe se lê na velocidade crescendo.
+		_vel = minf(_vel + GRAVIDADE * delta, VEL_MAX)
+		global_position += dir * _vel * delta
+
+		if not _tocou_som:
+			var falta: float = global_position.y - (y_do_alvo + 0.6)
+			if _vel > 0.01 and falta / _vel <= SOM_ANTES_DO_IMPACTO:
+				_tocou_som = true
+				var cena := get_tree().current_scene if get_tree() else null
+				if cena:
+					GoroAudio.play(cena, Vector3(global_position.x, y_do_alvo, global_position.z),
+						"mamaragan")
+		if _t >= VIDA or global_position.y <= y_do_alvo + 0.6:
 			_morreu = true
 			_detonar()
 

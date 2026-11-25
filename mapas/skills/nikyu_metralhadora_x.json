@@ -1,0 +1,511 @@
+{
+	"animacao": {
+		"clipe": "Ataque",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.0
+	},
+	"ativacao": {
+		"andar_segurando": false,
+		"carga": 0.5,
+		"empurrao_carga_max": 1.0,
+		"modo": "Pressionar",
+		"paralisar_segurando": true,
+		"ponto_segurar": 0.5,
+		"repetir": false,
+		"segurar_max": 5.0,
+		"tecla": "X"
+	},
+	"audio": {
+		"som": "Impacto",
+		"tom": 1.0,
+		"volume": -12.0
+	},
+	"camera": {
+		"tremor": 0.2,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 60.0,
+		"exige_alvo": false,
+		"exige_chao": false,
+		"nivel_minimo": 1,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 30.0,
+		"custo": 22.0,
+		"custo_por_segundo": 0.0,
+		"duracao": 1.9,
+		"fim_sobre_alvo": 0.0,
+		"flutuar": false,
+		"inicio_do_fim": -1.0,
+		"intervalo_depois": 0.5,
+		"mirar_no_alvo": false,
+		"parar_no_vazio": false,
+		"recarga": 9.0
+	},
+	"dano": {
+		"atordoamento": 0.1,
+		"congelar": 0.0,
+		"critico": 0.0,
+		"cura_do_dano": 0.0,
+		"duracao_efeito": 1.0,
+		"empurrao": 2.0,
+		"lentidao": 0.0,
+		"multiplicador": 2.0,
+		"tipo": "Físico",
+		"valor": 9.0
+	},
+	"eventos": [
+		{
+			"duracao": 0.35,
+			"habilitado": true,
+			"id": "chamar",
+			"inicio": 0.0,
+			"parametros": {
+				"pose": "pose_1",
+				"transicao": 0.12
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 1.1,
+			"habilitado": true,
+			"id": "anel_de_patas",
+			"inicio": 0.0,
+			"parametros": {
+				"altura": 1.2,
+				"ancora": "Jogador",
+				"escala": 1.6,
+				"estilo": "Anel"
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 1.0,
+			"habilitado": true,
+			"id": "brilho_em_volta",
+			"inicio": 0.05,
+			"parametros": {
+				"altura": 1.2,
+				"ancora": "Jogador",
+				"escala": 1.1,
+				"estilo": "Fótons",
+				"frente": 0.0
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_chamar",
+			"inicio": 0.0,
+			"parametros": {
+				"som": "Vento",
+				"tom": 1.1,
+				"volume": -10.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.17,
+			"habilitado": true,
+			"id": "metralhar_0",
+			"inicio": 0.38,
+			"parametros": {
+				"pose": "pose_2",
+				"transicao": 0.04
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.05,
+			"habilitado": true,
+			"id": "rajada_0",
+			"inicio": 0.4,
+			"parametros": {
+
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "tiro_0",
+			"inicio": 0.4,
+			"parametros": {
+				"som": "Disparo",
+				"tom": 1.3,
+				"volume": -8.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.12,
+			"habilitado": true,
+			"id": "tremor_0",
+			"inicio": 0.4,
+			"parametros": {
+				"tremor": 0.07
+			},
+			"tipo": "camera"
+		},
+		{
+			"duracao": 0.17,
+			"habilitado": true,
+			"id": "metralhar_1",
+			"inicio": 0.58,
+			"parametros": {
+				"pose": "pose_2",
+				"transicao": 0.04
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.05,
+			"habilitado": true,
+			"id": "rajada_1",
+			"inicio": 0.6,
+			"parametros": {
+
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "tiro_1",
+			"inicio": 0.6,
+			"parametros": {
+				"som": "Disparo",
+				"tom": 1.35,
+				"volume": -8.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.12,
+			"habilitado": true,
+			"id": "tremor_1",
+			"inicio": 0.6,
+			"parametros": {
+				"tremor": 0.07
+			},
+			"tipo": "camera"
+		},
+		{
+			"duracao": 0.17,
+			"habilitado": true,
+			"id": "metralhar_2",
+			"inicio": 0.78,
+			"parametros": {
+				"pose": "pose_2",
+				"transicao": 0.04
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.05,
+			"habilitado": true,
+			"id": "rajada_2",
+			"inicio": 0.8,
+			"parametros": {
+
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "tiro_2",
+			"inicio": 0.8,
+			"parametros": {
+				"som": "Disparo",
+				"tom": 1.4,
+				"volume": -8.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.12,
+			"habilitado": true,
+			"id": "tremor_2",
+			"inicio": 0.8,
+			"parametros": {
+				"tremor": 0.07
+			},
+			"tipo": "camera"
+		},
+		{
+			"duracao": 0.17,
+			"habilitado": true,
+			"id": "metralhar_3",
+			"inicio": 0.98,
+			"parametros": {
+				"pose": "pose_2",
+				"transicao": 0.04
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.05,
+			"habilitado": true,
+			"id": "rajada_3",
+			"inicio": 1.0,
+			"parametros": {
+
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "tiro_3",
+			"inicio": 1.0,
+			"parametros": {
+				"som": "Disparo",
+				"tom": 1.45,
+				"volume": -8.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.12,
+			"habilitado": true,
+			"id": "tremor_3",
+			"inicio": 1.0,
+			"parametros": {
+				"tremor": 0.07
+			},
+			"tipo": "camera"
+		},
+		{
+			"duracao": 0.17,
+			"habilitado": true,
+			"id": "metralhar_4",
+			"inicio": 1.18,
+			"parametros": {
+				"pose": "pose_2",
+				"transicao": 0.04
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.05,
+			"habilitado": true,
+			"id": "rajada_4",
+			"inicio": 1.2,
+			"parametros": {
+
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "tiro_4",
+			"inicio": 1.2,
+			"parametros": {
+				"som": "Disparo",
+				"tom": 1.5,
+				"volume": -8.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.12,
+			"habilitado": true,
+			"id": "tremor_4",
+			"inicio": 1.2,
+			"parametros": {
+				"tremor": 0.07
+			},
+			"tipo": "camera"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 3.0,
+		"forma": "Esfera",
+		"largura": 3.0,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 1.5,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": -2.0
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "Conjura patas em volta do corpo e as dispara, em cinco rajadas, para onde o jogador mira.",
+		"dono": "Jogador",
+		"fruta": "nikyu_nikyu",
+		"id": "nikyu_metralhadora_x",
+		"modelo": "Base",
+		"nome": "Metralhadora de Patas"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 2.0,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 6.0
+	},
+	"poses": [
+		{
+			"id": "pose_1",
+			"nome": "Chamar",
+			"ossos": {
+				"ForeArm_L": [
+					30.0,
+					0.0,
+					0.0
+				],
+				"ForeArm_R": [
+					30.0,
+					0.0,
+					0.0
+				],
+				"Shin_L": [
+					-38.0,
+					0.0,
+					0.0
+				],
+				"Shin_R": [
+					-38.0,
+					0.0,
+					0.0
+				],
+				"Thigh_L": [
+					22.0,
+					0.0,
+					-18.0
+				],
+				"Thigh_R": [
+					22.0,
+					0.0,
+					18.0
+				],
+				"Torso": [
+					-8.0,
+					0.0,
+					0.0
+				],
+				"UpperArm_L": [
+					15.0,
+					0.0,
+					-78.0
+				],
+				"UpperArm_R": [
+					15.0,
+					0.0,
+					78.0
+				]
+			}
+		},
+		{
+			"id": "pose_2",
+			"nome": "Metralhar",
+			"ossos": {
+				"ForeArm_L": [
+					6.0,
+					0.0,
+					0.0
+				],
+				"ForeArm_R": [
+					6.0,
+					0.0,
+					0.0
+				],
+				"Shin_L": [
+					-42.0,
+					0.0,
+					0.0
+				],
+				"Shin_R": [
+					-26.0,
+					0.0,
+					0.0
+				],
+				"Thigh_L": [
+					30.0,
+					0.0,
+					-10.0
+				],
+				"Thigh_R": [
+					-12.0,
+					0.0,
+					10.0
+				],
+				"Torso": [
+					14.0,
+					0.0,
+					0.0
+				],
+				"UpperArm_L": [
+					92.0,
+					0.0,
+					-8.0
+				],
+				"UpperArm_R": [
+					92.0,
+					0.0,
+					8.0
+				]
+			}
+		}
+	],
+	"projeteis": {
+		"abertura": 16.0,
+		"area_chuva": 8.0,
+		"direcao_disparo": "Anel",
+		"explosao": 0.0,
+		"giro": 0.0,
+		"gravidade": 0.0,
+		"imunidade_gelo": true,
+		"modelo": "",
+		"perfurar": false,
+		"quantidade": 8,
+		"raio": 0.45,
+		"raio_de_acerto": 0.0,
+		"raio_do_anel": 2.6,
+		"rastro": "Vento",
+		"sai_de": "Corpo",
+		"sem_dano": false,
+		"som_explosao": "Impacto",
+		"velocidade": 34.0,
+		"vida": 1.1,
+		"visual": "Pata"
+	},
+	"transformacao": {
+		"alvo": "Usuário",
+		"cor": "#dce9ff",
+		"escala": 1.0,
+		"modelo": "",
+		"raio": 8.0,
+		"visual": "Fumaça"
+	},
+	"versao": 1,
+	"vfx": {
+		"altura": 1.0,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#ffd9ea",
+		"cor_2": "#ffffff",
+		"escala": 1.0,
+		"estilo": "Impacto",
+		"frente": 1.0,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "Mão direita",
+		"projetil_de": ""
+	}
+}

@@ -1,8 +1,76 @@
 # Estado atual do projeto — briefing para quem chega frio
 
-Atualizado em 2026-08-26. **Todo agente lê este arquivo antes de tocar em
+Atualizado em 2026-09-12. **Todo agente lê este arquivo antes de tocar em
 qualquer coisa.** Ele existe porque o [`AGENTES.md`](AGENTES.md) diz que o agente
 começa frio: o que não estiver escrito, ele redescobre gastando tempo, ou inventa.
+
+
+**Modo História (14/09/2026)** — etapa 1 feita: baseplate lida de
+`mapas/historia/baseplate.json` e jogador Civil (sem combate, dash, pulo duplo nem
+técnicas). Etapa 2 (v1) feita: **editor de mapa** no menu (card JOGAR → ✏️ EDITOR),
+estilo Roblox Studio, com desfazer, Explorer, seleção múltipla, quatro formas e
+"Testar" com o jogador real; loja de .glb com categorias; Ctrl+G agrupa/separa.
+**16/09/2026:** câmera de 3ª pessoa passou de 6 m para **4 m** e desceu para a **altura da cabeça**
+(pivô `CAM_HEIGHT_TPS` 2,2 → 1,0; arena e Modo História), e o
+atalho da área de trabalho voltou a abrir `jogar.sh` — o visual do boss Buggy só por `./jogar_buggy.sh`.
+**Inimigos (16/09/2026):** peça cujo modelo está na categoria "inimigos" da loja tem vida 250,
+pisca vermelho, some ao morrer e dá 5–20 XP ([MODO_HISTORIA.md §6a](MODO_HISTORIA.md)).
+**Status (tecla M, 16/09/2026):** XP, níveis com barreira no 7, pontos, vida, energia,
+skills e ouro do PDF, salvos em `user://historia/progresso.json`. Guia: [MODO_HISTORIA.md](MODO_HISTORIA.md).
+Bateria em 16/09/2026, depois dos inimigos (`./validar.sh rapido`): **89 passam, 8 falham, 1 pulado** —
+exatamente as 8 abaixo. (Mais cedo no mesmo dia foram 87/9/1: `test_sala_publica` depende do
+ROTEADOR, UPnP "código 27", e voltou a passar sem mudança de rede.) Em 14/09 foram 84 / 8 / 1: As 8:
+`test_balance`, `test_compila`, `test_corte_horizontal`, `test_mera_z_saque`,
+`test_ope_animacoes`, `test_studio_playback`, `test_trava_fruta_dano` (as mesmas de
+13/09) e `test_bara_combat` — nova, item 58 da lista de correções, isolada: falha
+igual com as travas do Modo História desfeitas.
+
+Atualização Yoru (09/09/2026): modo 3 com dois M1 e Z/X/C/V, rig base com
+pega dupla, asset novo e servidor validando ações. Ver [implementação e
+validação](YORU_IMPLEMENTACAO.md). `./jogar_yoru.sh` abre a arena equipada.
+
+**Limpeza de 2026-09-12** — 77 arquivos saíram do repositório. O que mudou para
+quem chega agora:
+
+- **A raiz não tem mais scripts soltos de depuração.** Os 23 `test_*.gd`,
+  `check.gd`, `create_arena.gd` e afins eram de sessões de caça a bug de agosto
+  e ninguém chamava. Teste de verdade mora em `tools/dev_tests/` — é de lá que o
+  `validar.sh` descobre a bateria, por glob `test_*.gd`. **Três sondas continuam
+  na raiz de propósito** (`test_peer.gd`, `test_singleplayer.gd`,
+  `test_spawner.gd`): elas não afirmam nada, e em `dev_tests/` o glob as rodaria
+  como teste que "passa" sem verificar coisa alguma. O cabeçalho de cada uma
+  explica isso.
+- **A pasta `data/` não existe mais.** Os três JSON eram dados mortos — nenhum
+  `.gd` carregava `res://data/`. A fonte de verdade está em `SkillSystem.gd`
+  (frutas), `Balance.ESTILOS` (estilos) e `CharacterBuilder.gd` (personagens).
+- **`DOCUMENTACAO.md` (raiz) foi removido.** Era uma segunda visão geral, de
+  2026-08-02, divergente do `README.md` — e ainda mandava apertar `R` para trocar
+  de modo de combate, gesto que morreu em 2026-09-06. Panorama e **controles**
+  agora estão no [`README.md`](../README.md); as regras de quem escreve código,
+  no [`GUIA_DO_PROJETO.md`](GUIA_DO_PROJETO.md).
+- **Os `MUDANCAS_*.md` foram para [`historico/`](historico/).** Nada apagado.
+- **`SkillsOnePiece.desktop` estava quebrado** desde agosto, apontando para
+  `/home/administrador/`. Consertado. Ver [`erros.md`](erros.md).
+
+Os `.blend` e o `tools/anim_editor/studio/` **não** foram tocados: são trabalho
+seu em andamento, não rastreado pelo git.
+
+### Débito da bateria em 2026-09-12 — 70 passam, 11 falham
+
+As 11 falhas são **anteriores à limpeza** e nenhuma vem dela: a limpeza só apagou
+arquivos que ninguém referenciava e editou `.md` — **nenhum `.gd` de jogo foi
+modificado**. Antes de culpar uma mudança sua por qualquer uma delas, confira se
+já está nesta lista.
+
+| Teste | Origem da falha |
+|---|---|
+| `test_compila`, `test_studio_playback` | `tools/anim_editor/studio/` — trabalho **em andamento, não rastreado**: `eased_anim`/`eased_track` sem tipo inferível e um `preload("res://rig_scene.gd")` que não existe |
+| `test_balance` | `pika_pika/Z` alcança 98 de um teto de 200 — detectado em **2026-09-06**, registrado em [`LISTA_DE_CORRECOES.md`](LISTA_DE_CORRECOES.md) |
+| `test_corte_horizontal` | as 3 reprovações do caminho antigo da espada, com os números já documentados em [`erros.md`](erros.md): mão esquerda a 0,84 m do cabo, fio a 37,4°, tronco girando 42,2° |
+| `test_buki_buki`, `test_mera_z_saque`, `test_morte_limpa_cast`, `test_ope_animacoes`, `test_trava_fruta_dano`, `net_mp_probe`, `traco_locomocao` | débito que já existia na árvore suja — ver [`LISTA_DE_CORRECOES.md`](LISTA_DE_CORRECOES.md) |
+
+⚠️ A árvore tem trabalho seu não commitado (`Player.gd` entre outros). Esse
+número de falhas é o da **árvore suja**, não o de um `main` limpo.
 
 ---
 
@@ -29,7 +97,7 @@ BLENDER=/home/gabriel-bitti/opt/blender/blender     # 5.2 — também existe com
 # prova de que o código COMPILA (a única que vale — ver §5)
 "$GODOT" --headless --path . --script tools/dev_tests/test_compila.gd
 
-# a bateria inteira: 34 passam, 0 falham, 1 pulado
+# a bateria inteira — em 2026-09-12: 70 passam, 11 falham (ver §débito abaixo)
 ./validar.sh rapido
 
 # um teste só
@@ -184,3 +252,17 @@ docs/                        planos, erros.md (causa raiz de tudo), este arquivo
 | [`MOVIMENTO.md`](MOVIMENTO.md) | mexer em locomoção, parkour, esquiva ou nas travas de movimento |
 | [`RODADA_E_PLACAR.md`](RODADA_E_PLACAR.md) | rodada, kills, morte, respawn — e o padrão de mandar RPC para a cópia certa |
 | [`ESTILOS_DE_LUTA.md`](ESTILOS_DE_LUTA.md) | o **outro** modo de combate (tecla R), e por que ele custa 60 s |
+
+## Árvores em voxel (2026-11-04)
+- **Arena:** `TreeAndFruitGenerator.create_tree_3d` usa `ArvoreVoxel.malha(forma)` — 6 formas (carvalho, pinheiro, palmeira, acácia, baobá, salgueiro), uma fixa por fruta (`forma_da_arvore`); cores por fruta preservadas.
+- **Modo História:** 58 `.glb` de árvore/toco/bosque em `mapas/modelos/` regerados por `tools/trocar_arvores_por_voxel.gd` (cores naturais por família). Só o visual mudou: caixa, `Colisao*`, `Fruta_*` e catálogo (sha/triângulos) foram mantidos; bosques `trees`/`pine_trees` ganharam colisão em partes nova.
+- **Validação:** `tools/dev_tests/test_arvores_voxel_modelos.gd` (58 modelos) e `test_arvore_voxel.gd` (arena).
+- **Reverter:** originais e catálogo em `art_src/backups/arvores_antes_voxel_2026-11-04/` (copiar de volta + `--import`).
+- **Gatilho:** `art_src/natureza/*.glb` são as fontes antigas; se algum script copiá-las para `mapas/modelos/`, rode a ferramenta de novo.
+
+## Correção de faces + animais em voxel (2026-11-04)
+- **Árvores "transparentes":** o Godot trata a ordem HORÁRIA como face frontal e o gerador emitia a anti-horária (as faces de perto sumiam). Corrigido em `ArvoreVoxel._face`; `ArvoreVoxel.faces_invertidas` guarda isso na ferramenta e nos testes.
+- **Animais:** `tools/voxelizar_animais.gd` grava `mapas/modelos/<id>.voxel.scn` (32 modelos: os 30 com ficha de animal + 2 cavalos; bestas do mar ficam de fora). `BibliotecaDeModelos.instanciar` troca só a malha (`_aplicar_voxel`): esqueleto, Skin, AnimationPlayer e clipes são os do .glb. Cada cubo leva a cor da textura (cor por vértice) e o osso dominante. Reverter = apagar os `*.voxel.scn`.
+- **Validação:** `tools/dev_tests/test_animais_voxel.gd` (32 animais).
+- **Conhecido:** rigs com malha em T-pose (gorila, harpia/águia) mostram cubos inclinados no repouso sem animação; em animação ficam conectados. `test_nado_montaria` trava/falha ("invocar caranguejo") com e sem voxel.
+- **Gatilho:** peixes (`pesca`), `piranha/shark/tentacle/worm` e `mordu` NÃO foram voxelizados (escopo a confirmar); para incluir, estender a seleção em `voxelizar_animais.gd`.

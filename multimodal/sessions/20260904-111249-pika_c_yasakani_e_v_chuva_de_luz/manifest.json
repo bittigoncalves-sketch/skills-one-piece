@@ -1,0 +1,50 @@
+{
+  "id": "20260904-111249-pika_c_yasakani_e_v_chuva_de_luz",
+  "nome": "pika C Yasakani e V Chuva de Luz",
+  "tipo": "skill",
+  "projeto": "/home/gabriel-bitti/dev/skills-one-piece",
+  "pipeline_version": "1.0.0",
+  "criada_em": "2026-09-04T11:12:49",
+  "entradas": [
+    {
+      "arquivo": "entrada/imagens/yasakani_c_storyboard.png",
+      "origem": "docs/references/pika_pika/yasakani_c_storyboard.png",
+      "categoria": "imagens",
+      "papel": "referencia",
+      "sha256": "1fca51b6f8dffb025e3dc2263bbd2db5ea45c52068a1fe196761228348f8ff14",
+      "bytes": 1372906
+    },
+    {
+      "arquivo": "entrada/imagens/chuva_de_luz_v_storyboard.png",
+      "origem": "docs/references/pika_pika/chuva_de_luz_v_storyboard.png",
+      "categoria": "imagens",
+      "papel": "referencia",
+      "sha256": "fc9a017b32c6a653cd18ae9755debbf1f97c9a770001aa27d7c478394d340dec",
+      "bytes": 1466999
+    },
+    {
+      "arquivo": "entrada/especificacao/IMPLEMENTACAO.md",
+      "origem": "docs/references/pika_pika/IMPLEMENTACAO.md",
+      "categoria": "especificacao",
+      "papel": "referencia",
+      "sha256": "abd7870b5b600566ece6632173881969e904a6aeb76cb7dd3c12b4eb5a0ae574",
+      "bytes": 2165
+    }
+  ],
+  "etapas": {
+    "ingest": {
+      "em": "2026-09-04T11:12:49",
+      "videos": 0,
+      "imagens": 2,
+      "falhas": []
+    },
+    "plan": {
+      "em": "2026-09-04T11:12:49",
+      "pacotes": [
+        "arqueologo_skill_pika_c_yasakani_e_v_chuva_de_luz",
+        "arquiteto_skill_pika_c_yasakani_e_v_chuva_de_luz",
+        "qa_skill_pika_c_yasakani_e_v_chuva_de_luz"
+      ]
+    }
+  }
+}

@@ -76,8 +76,12 @@ const BOTOES := [
 	#
 	# `ordem` é a posição na fileira, da esquerda para a direita.
 	{"nome": "PULO", "tecla": KEY_SPACE, "fileira": true, "ordem": 2, "r": 50.0},
-	{"nome": "DASH", "tecla": KEY_Q,     "fileira": true, "ordem": 1, "r": 44.0},
+	{"nome": "ROLL", "tecla": KEY_Q,     "fileira": true, "ordem": 1, "r": 44.0},
 	{"nome": "F",    "tecla": KEY_F,     "fileira": true, "ordem": 0, "r": 44.0},
+	# Agachar (Ctrl, 20/10/2026): manter pressionado; na parede o mesmo Ctrl solta.
+	# Fixo à direita, entre o M1 e a fileira: na fileira, um quarto botão encostava
+	# no Z da coluna de skills (33 px, medido no `test_toque`).
+	{"nome": "AGACHAR", "tecla": KEY_CTRL, "canto": "cima_dir", "x": 0.09, "y": 0.32, "r": 44.0},
 ]
 
 ## As quatro skills, na ORDEM da `SkillBar` — é o que "ordem correta" quer dizer:
@@ -353,15 +357,24 @@ func _draw() -> void:
 		draw_arc(_base, RAIO_BASE, 0, TAU, 48, Color(1, 1, 1, 0.35), 2.0)
 		draw_circle(_manopla, RAIO_MANOPLA, Color(1, 1, 1, 0.28))
 
-	var fonte := ThemeDB.fallback_font
+	var vanilla := GuiMinecraft.disponivel()
+	var fonte: Font = FonteMinecraft.fonte() if vanilla else ThemeDB.fallback_font
 	for i in _total_botoes():
 		var b: Dictionary = _dados_do_botao(i)
 		var c := _centro_do_botao(i)
 		var r := _raio_do_botao(i)
 		var apertado := _dedo_botao.values().has(i)
+		var texto := String(b["nome"])
+		if vanilla:
+			# Tema do Minecraft: botão quadrado vanilla (a textura de "com o mouse" quando apertado), texto pixel com sombra.
+			draw_style_box(GuiMinecraft.botao("hover" if apertado else "normal"), Rect2(c - Vector2(r, r), Vector2(r, r) * 2.0))
+			var larg := fonte.get_string_size(texto, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
+			var pos := c + Vector2(-larg * 0.5, 8)
+			draw_string(fonte, pos + Vector2(2, 2), texto, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, GuiMinecraft.SOMBRA)
+			draw_string(fonte, pos, texto, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, GuiMinecraft.AMARELO if apertado else GuiMinecraft.BRANCO)
+			continue
 		draw_circle(c, r, Color(1, 1, 1, 0.22 if apertado else 0.12))
 		draw_arc(c, r, 0, TAU, 32, Color(1, 1, 1, 0.45), 2.0)
-		var texto := String(b["nome"])
 		var largura := fonte.get_string_size(texto, HORIZONTAL_ALIGNMENT_LEFT, -1, 20).x
 		draw_string(fonte, c + Vector2(-largura * 0.5, 7), texto,
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(1, 1, 1, 0.85))

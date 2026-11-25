@@ -122,6 +122,9 @@ static func pose_knockdown(add: Callable, off: Dictionary, w: float, t: float) -
 # NÃO agenda o desligamento com um timer solto: quem apaga é o próprio contador
 # em `tick()`. Timer solto foi como a morte deixava `is_casting` pendurado para
 # sempre (item 23) — o respawn não tinha como cancelar o que já estava agendado.
+## Segundos sem tranco novo depois que um acaba (o jogador sempre recupera o controle por este tempo).
+const IMUNIDADE_APOS_TRANCO := 0.8
+
 static func aplicar(corpo: Node, duracao: float = DURACAO) -> void:
 	if corpo == null or not is_instance_valid(corpo):
 		return
@@ -131,6 +134,11 @@ static func aplicar(corpo: Node, duracao: float = DURACAO) -> void:
 	# regra própria (janela `is_casting`).
 	var atual: String = str(corpo.get_meta("custom_pose", ""))
 	if atual != "" and atual != POSE:
+		return
+	# ANTI STUN-LOCK (08/11/2026: "o jogador perdeu o controle do awsd" numa luta com vários inimigos): um tranco em curso NÃO é renovado
+	# por outro golpe, e quando acaba vêm `IMUNIDADE_APOS_TRANCO` s em que nenhum tranco novo entra (o dano entra, o controle não é tirado).
+	# Antes cada golpe de um grupo reiniciava o relógio e o jogador ficava preso enquanto apanhasse.
+	if corpo.has_meta("_dano_pose_t") or Time.get_ticks_msec() < int(corpo.get_meta("_dano_pose_imune_ate", 0)):
 		return
 	corpo.set_meta("custom_pose", POSE)
 	corpo.set_meta("_dano_pose_t", maxf(duracao, 0.05))
@@ -145,6 +153,7 @@ static func tick(corpo: Node, delta: float) -> bool:
 	var t: float = float(corpo.get_meta("_dano_pose_t")) - delta
 	if t <= 0.0:
 		corpo.remove_meta("_dano_pose_t")
+		corpo.set_meta("_dano_pose_imune_ate", Time.get_ticks_msec() + int(IMUNIDADE_APOS_TRANCO * 1000.0))
 		var cp: String = str(corpo.get_meta("custom_pose", ""))
 		if cp == POSE or cp == POSE_KNOCKDOWN:
 			corpo.set_meta("custom_pose", "")

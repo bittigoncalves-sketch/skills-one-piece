@@ -73,6 +73,24 @@ corpo, não só o jogador. O `TrainingDummy` também lê `StatusFX`.
 ficou em x = −320, fora da tela, por semanas. Use
 `set_anchors_and_offsets_preset`.
 
+## `src/historia/`, `src/editor_mapa/` e `mapas/` — Modo História (14/09/2026)
+
+- **`src/historia/`** — a cena do Modo História. `ModoHistoria.colocar_civil()` é o
+  único jeito de pôr o jogador do modo no mundo (o editor usa a mesma função).
+  `progressao.gd` é o status do personagem (XP, níveis, atributos) — regra sem nó; a
+  janela (`src/ui/JanelaDeStatus.gd`) só mostra e pede.
+- **`src/editor_mapa/`** — o editor de mapa. Metade é lógica sem nó (documento,
+  histórico, seleção, operações, matemática do gizmo); a outra metade é cena e
+  painéis. **Mudança no mapa passa por `OperacoesDoEditor`**, senão não ganha desfazer.
+- **`mapas/`** — dado de mapa em JSON. **Não é código e não é asset importado**: é
+  lido por `MapaArquivo` e entra no pacote exportado pelo `include_filter`.
+  `mapas/modelos/` guarda as cópias dos .glb da loja do editor e o `catalogo.json`;
+  **não copie modelo para lá à mão** — use a loja, que valida e registra no catálogo.
+- Leitura/montagem de mapa que o jogo e o editor compartilham mora em `src/world/`
+  (`mapa_arquivo.gd`, `mapa_montador.gd`).
+
+Guia completo: [`../MODO_HISTORIA.md`](../MODO_HISTORIA.md).
+
 ## `src/world/`, `src/match/`, `src/entities/`, `src/fx/`, `src/utils/`, `src/audio/`
 
 - **`world/`** — `MapBuilder` (plataforma 200×200 m com buracos em grade),
@@ -115,12 +133,21 @@ animações), `export_rig.gd`, `engrossar_base.gd`, o editor de animação.
 ⚠️ Os `.res` de animação são **assados** por `tools/bake_mixamo.gd`. Não edite à
 mão: reassar é a fonte da verdade.
 
-## `data/`
+## `data/` — **não existe mais** (removida em 2026-09-12)
 
-`characters.json`, `fighting_styles.json`, `akuma_no_mi.json`.
+Guardava `characters.json`, `fighting_styles.json` e `akuma_no_mi.json`. Os três
+eram **dados mortos**: nenhum `.gd` do projeto carregava `res://data/`, e os
+números já estavam errados (`characters.json` dava 120 de vida ao Buggy quando o
+jogo trabalha com 2048).
 
-⚠️ **`akuma_no_mi.json` (20 frutas) não é lido por nenhum `.gd`.** As frutas de
-verdade vêm de `SkillSystem.gd`. Não confie nele como fonte.
+A fonte de verdade de cada assunto:
+
+| Assunto | Onde vive de verdade |
+|---|---|
+| Frutas e suas skills | `SkillSystem.gd` |
+| Definição das árvores/frutas do mapa | `TreeAndFruitGenerator._todas_as_definicoes()` |
+| Estilos de luta | `Balance.ESTILOS` (`src/combat/Balance.gd`) |
+| Personagens | `CharacterBuilder.gd` |
 
 ## A raiz
 

@@ -1,0 +1,20 @@
+{
+  "test_arena": {
+    "exit_code": 1
+  },
+  "test_asas_de_anjo": {
+    "exit_code": 1
+  },
+  "test_ataque_aereo": {
+    "exit_code": 1
+  },
+  "test_ataques_contextuais": {
+    "exit_code": 1
+  },
+  "test_bomu_z_rush": {
+    "exit_code": 1
+  },
+  "test_chute_giratorio": {
+    "exit_code": 1
+  }
+}

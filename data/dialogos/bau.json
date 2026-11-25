@@ -1,0 +1,53 @@
+{
+  "id": "bau",
+  "estados": {
+    "oferta": [
+      {
+        "falante": "Barba Negra",
+        "texto": "Zehahaha! Um baú misterioso apareceu perto da vila."
+      },
+      {
+        "falante": "Barba Negra",
+        "texto": "Traga-o e receberá 20 moedas, 700 XP e a Ushi Ushi no Mi!"
+      }
+    ],
+    "andamento": [
+      {
+        "falante": "Barba Negra",
+        "texto": "A bússola aponta para o baú. Vá até lá e traga-o para mim!"
+      },
+      {
+        "falante": "Barba Negra",
+        "texto": "Zehahaha! Fique de olho: esse baú parece suspeito."
+      }
+    ],
+    "pronta": [
+      {
+        "falante": "Barba Negra",
+        "texto": "Você pegou o baú! Zehahaha, eu sabia que conseguiria."
+      },
+      {
+        "falante": "Barba Negra",
+        "texto": "Entregue-o e receberá 20 moedas, 700 XP e a Ushi Ushi no Mi!"
+      }
+    ],
+    "concluida": [
+      {
+        "falante": "Barba Negra",
+        "texto": "Zehahaha! Obrigado pelo baú! Aproveite a Ushi Ushi no Mi!"
+      }
+    ],
+    "mimico_revela": [
+      {
+        "falante": "Mímico",
+        "texto": "Nham! Você achou que eu era um baú comum?"
+      }
+    ],
+    "mimico_atingido": [
+      {
+        "falante": "Mímico",
+        "texto": "Ai! Dessa vez você me pegou!"
+      }
+    ]
+  }
+}

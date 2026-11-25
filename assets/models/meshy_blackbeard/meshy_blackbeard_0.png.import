@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://2kkyvlwhxna0"
-path="res://.godot/imported/meshy_blackbeard_0.png-cb1b508ad098c61972e3e7c58c4c246e.ctex"
+path.bptc="res://.godot/imported/meshy_blackbeard_0.png-cb1b508ad098c61972e3e7c58c4c246e.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "074c24eeff84241a689db62bf349712b"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/meshy_blackbeard/meshy_blackbeard_0.png"
-dest_files=["res://.godot/imported/meshy_blackbeard_0.png-cb1b508ad098c61972e3e7c58c4c246e.ctex"]
+dest_files=["res://.godot/imported/meshy_blackbeard_0.png-cb1b508ad098c61972e3e7c58c4c246e.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

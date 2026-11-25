@@ -1,0 +1,265 @@
+{
+	"animacao": {
+		"clipe": "Ataque",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.0
+	},
+	"ativacao": {
+		"andar_segurando": false,
+		"carga": 0.5,
+		"empurrao_carga_max": 1.0,
+		"modo": "Sustentar",
+		"ponto_segurar": 0.5,
+		"repetir": false,
+		"segurar_max": 5.0,
+		"tecla": "F"
+	},
+	"audio": {
+		"som": "Impacto",
+		"tom": 1.0,
+		"volume": -12.0
+	},
+	"camera": {
+		"tremor": 0.2,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 30.0,
+		"exige_alvo": false,
+		"exige_chao": false,
+		"nivel_minimo": 1,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 10.0,
+		"custo": 2.0,
+		"custo_por_segundo": 5.0,
+		"duracao": 6.0,
+		"fim_sobre_alvo": 0.0,
+		"flutuar": true,
+		"inicio_do_fim": -1.0,
+		"intervalo_depois": 0.5,
+		"mirar_no_alvo": false,
+		"parar_no_vazio": false,
+		"recarga": 4.0
+	},
+	"dano": {
+		"atordoamento": 0.0,
+		"critico": 0.0,
+		"duracao_efeito": 1.0,
+		"empurrao": 0.0,
+		"lentidao": 0.0,
+		"multiplicador": 2.0,
+		"tipo": "Físico",
+		"valor": 0.0
+	},
+	"eventos": [
+		{
+			"duracao": 0.05,
+			"habilitado": true,
+			"id": "sobe",
+			"inicio": 0.0,
+			"parametros": {
+				"direcao": "Acima",
+				"distancia": 1.5,
+				"so_do_chao": true,
+				"teleporte": true,
+				"velocidade": 100.0
+			},
+			"tipo": "movimento"
+		},
+		{
+			"duracao": 0.12,
+			"habilitado": true,
+			"id": "clarao",
+			"inicio": 0.0,
+			"parametros": {
+				"altura": 1.0,
+				"escala": 0.8,
+				"estilo": "Carga",
+				"frente": 0.0
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 6.0,
+			"habilitado": true,
+			"id": "luz",
+			"inicio": 0.0,
+			"parametros": {
+				"altura": 0.9,
+				"escala": 0.6,
+				"estilo": "Cometa",
+				"frente": 0.0
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 5.95,
+			"habilitado": true,
+			"id": "voo",
+			"inicio": 0.05,
+			"parametros": {
+				"curva": "Linear",
+				"direcao": "Mira",
+				"distancia": 100.0,
+				"velocidade": 30.0
+			},
+			"tipo": "movimento"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_sobe",
+			"inicio": 0.0,
+			"parametros": {
+				"som": "Luz: teleporte",
+				"tom": 1.15,
+				"volume": -8.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.95,
+			"habilitado": true,
+			"id": "som_voo_1",
+			"inicio": 0.05,
+			"parametros": {
+				"som": "Luz: viagem",
+				"tom": 1.0,
+				"volume": -10.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.95,
+			"habilitado": true,
+			"id": "som_voo_2",
+			"inicio": 1.04,
+			"parametros": {
+				"som": "Luz: viagem",
+				"tom": 1.0,
+				"volume": -10.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.95,
+			"habilitado": true,
+			"id": "som_voo_3",
+			"inicio": 2.03,
+			"parametros": {
+				"som": "Luz: viagem",
+				"tom": 1.0,
+				"volume": -10.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.95,
+			"habilitado": true,
+			"id": "som_voo_4",
+			"inicio": 3.02,
+			"parametros": {
+				"som": "Luz: viagem",
+				"tom": 1.0,
+				"volume": -10.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.95,
+			"habilitado": true,
+			"id": "som_voo_5",
+			"inicio": 4.01,
+			"parametros": {
+				"som": "Luz: viagem",
+				"tom": 1.0,
+				"volume": -10.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.95,
+			"habilitado": true,
+			"id": "som_voo_6",
+			"inicio": 5.0,
+			"parametros": {
+				"som": "Luz: viagem",
+				"tom": 1.0,
+				"volume": -10.0
+			},
+			"tipo": "audio"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 3.0,
+		"forma": "Esfera",
+		"largura": 3.0,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 1.5,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": -2.0
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "Segure: o corpo vira luz e voa para onde a câmera aponta (30 m/s, até 6 s). Solte para parar. Gasta energia enquanto voa.",
+		"dono": "Jogador",
+		"fruta": "pika_pika",
+		"id": "pika_voo_f",
+		"modelo": "Base",
+		"nome": "Voo de Luz"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 2.0,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 6.0
+	},
+	"poses": [],
+	"projeteis": {
+		"abertura": 20.0,
+		"area_chuva": 8.0,
+		"direcao_disparo": "Mira",
+		"explosao": 0.0,
+		"giro": 0.0,
+		"gravidade": 0.0,
+		"modelo": "",
+		"perfurar": false,
+		"quantidade": 1,
+		"raio": 0.4,
+		"rastro": "Nenhum",
+		"sem_dano": false,
+		"som_explosao": "Impacto",
+		"velocidade": 12.0,
+		"vida": 2.0,
+		"visual": "Energia"
+	},
+	"versao": 1,
+	"vfx": {
+		"altura": 1.0,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#ffd23f",
+		"cor_2": "#fff1b8",
+		"escala": 1.0,
+		"estilo": "Impacto",
+		"frente": 1.0,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "Mão direita",
+		"projetil_de": ""
+	}
+}

@@ -1,0 +1,12 @@
+{
+  "pacote": "visual_skill_pika_pika_z_yasakani",
+  "agente": "visual",
+  "modelo": "gemini",
+  "motivo": "forçado no comando",
+  "codigo": 0,
+  "duracao_s": 187.0,
+  "imagens": 1,
+  "saida": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260904-084346-pika_pika_z_yasakani/analise/visual/visual_skill_pika_pika_z_yasakani.md",
+  "status": "ok",
+  "erro": null
+}

@@ -1,0 +1,32 @@
+{
+ "entrada": [
+  "Prepare-se! O grande Buggy vai dar um show neste ringue!",
+  "Olhem para mim! Meu adversário veio assistir de perto à minha vitória!",
+  "Suba logo! Quero uma plateia bem barulhenta para a minha luta!"
+ ],
+ "acerta": [
+  "Ha! Viu só a força do espetacular Buggy?",
+  "Esse golpe merece aplausos! Principalmente para mim!",
+  "Mais um acerto! Não tire os olhos da estrela do show!"
+ ],
+ "acertado": [
+  "Ei! Cuidado com o rosto do grande Buggy!",
+  "O quê?! Você estragou a minha pose!",
+  "Foi sorte! Ninguém acerta o magnífico Buggy assim!"
+ ],
+ "defesa": [
+  "Defendeu?! Pare de atrapalhar meu espetáculo!",
+  "Ora, fique parado e deixe o meu golpe brilhar!",
+  "Essa defesa não estava no meu roteiro!"
+ ],
+ "derrota": [
+  "Não pode ser! O grande Buggy perdeu diante de todo mundo?!",
+  "Isso não acaba aqui! Na próxima, o show será meu!",
+  "Minha derrota?! Alguém apagou essa parte do espetáculo, certo?"
+ ],
+ "vitoria": [
+  "Ha ha ha! A vitória espetacular do grande Buggy!",
+  "Aplaudam de pé! A estrela deste ringue sou eu!",
+  "Eu avisei! Ninguém rouba a cena do magnífico Buggy!"
+ ]
+}

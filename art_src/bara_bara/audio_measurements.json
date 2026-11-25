@@ -1,0 +1,42 @@
+{
+  "split": {
+    "duration_seconds": 0.28,
+    "peak_dbfs": -3.000097173025577,
+    "rms_dbfs": -20.604189098442475,
+    "rate_hz": 48000,
+    "channels": 1,
+    "bits": 16
+  },
+  "shot": {
+    "duration_seconds": 0.75,
+    "peak_dbfs": -3.000097173025577,
+    "rms_dbfs": -22.088765904151487,
+    "rate_hz": 48000,
+    "channels": 1,
+    "bits": 16
+  },
+  "impact": {
+    "duration_seconds": 0.32,
+    "peak_dbfs": -3.000097173025577,
+    "rms_dbfs": -20.95143186795479,
+    "rate_hz": 48000,
+    "channels": 1,
+    "bits": 16
+  },
+  "return": {
+    "duration_seconds": 0.25,
+    "peak_dbfs": -3.000097173025577,
+    "rms_dbfs": -22.21630594047945,
+    "rate_hz": 48000,
+    "channels": 1,
+    "bits": 16
+  },
+  "blast": {
+    "duration_seconds": 1.18,
+    "peak_dbfs": -3.000097173025577,
+    "rms_dbfs": -22.66380279842304,
+    "rate_hz": 48000,
+    "channels": 1,
+    "bits": 16
+  }
+}

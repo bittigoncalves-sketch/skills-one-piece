@@ -1,0 +1,536 @@
+{
+  "spec_version": "1.0",
+  "session": "20260904-093047-pika_x",
+  "gerado_em": "2026-09-04T09:30:51",
+  "reference": {
+    "type": "skill",
+    "name": "pika X",
+    "descricao": "",
+    "modulos": []
+  },
+  "inputs": {
+    "videos": [
+      {
+        "arquivo": "skill X pika pika.mp4",
+        "sha256": "6c21fe52f662473e0e87dcb4bc69f1faea60588c3d8d4d6013e9eed0f6fae66b",
+        "duration": 5.167,
+        "fps": 24.0,
+        "resolution": "2944x1248",
+        "frame_count": 124,
+        "codec": "h264",
+        "aspect_ratio": "2944:1248"
+      }
+    ],
+    "images": [],
+    "specifications": [],
+    "code": []
+  },
+  "authority": [
+    "user_spec",
+    "project_rule",
+    "video",
+    "image",
+    "agent"
+  ],
+  "timeline": {
+    "duration": {
+      "value": 5.167,
+      "unit": "s",
+      "source": "video:skill X pika pika.mp4",
+      "method": "OBSERVED",
+      "confidence": "HIGH",
+      "note": "medido por ffprobe"
+    },
+    "phases": [
+      {
+        "time": 0.0,
+        "phase": "start",
+        "evidence": "video:skill X pika pika.mp4@0.000",
+        "origem": "borda",
+        "method": "OBSERVED",
+        "confidence": "HIGH"
+      },
+      {
+        "time": 0.431,
+        "phase": "travel",
+        "evidence": "video:skill X pika pika.mp4@0.431",
+        "origem": "uniforme",
+        "method": "INFERRED",
+        "confidence": "MEDIUM"
+      },
+      {
+        "time": 0.861,
+        "phase": "travel",
+        "evidence": "video:skill X pika pika.mp4@0.861",
+        "origem": "uniforme",
+        "method": "INFERRED",
+        "confidence": "MEDIUM"
+      },
+      {
+        "time": 1.292,
+        "phase": "travel",
+        "evidence": "video:skill X pika pika.mp4@1.292",
+        "origem": "uniforme",
+        "method": "INFERRED",
+        "confidence": "MEDIUM"
+      },
+      {
+        "time": 1.722,
+        "phase": "travel",
+        "evidence": "video:skill X pika pika.mp4@1.722",
+        "origem": "uniforme",
+        "method": "INFERRED",
+        "confidence": "MEDIUM"
+      },
+      {
+        "time": 2.153,
+        "phase": "travel",
+        "evidence": "video:skill X pika pika.mp4@2.153",
+        "origem": "uniforme",
+        "method": "INFERRED",
+        "confidence": "MEDIUM"
+      },
+      {
+        "time": 2.583,
+        "phase": "travel",
+        "evidence": "video:skill X pika pika.mp4@2.583",
+        "origem": "uniforme",
+        "method": "INFERRED",
+        "confidence": "MEDIUM"
+      },
+      {
+        "time": 3.014,
+        "phase": "travel",
+        "evidence": "video:skill X pika pika.mp4@3.014",
+        "origem": "uniforme",
+        "method": "INFERRED",
+        "confidence": "MEDIUM"
+      },
+      {
+        "time": 3.445,
+        "phase": "travel",
+        "evidence": "video:skill X pika pika.mp4@3.445",
+        "origem": "uniforme",
+        "method": "INFERRED",
+        "confidence": "MEDIUM"
+      },
+      {
+        "time": 3.875,
+        "phase": "travel",
+        "evidence": "video:skill X pika pika.mp4@3.875",
+        "origem": "uniforme",
+        "method": "INFERRED",
+        "confidence": "MEDIUM"
+      },
+      {
+        "time": 4.1,
+        "phase": "anticipation",
+        "evidence": "video:skill X pika pika.mp4@4.100",
+        "origem": "curva/joelho",
+        "method": "INFERRED",
+        "confidence": "MEDIUM"
+      },
+      {
+        "time": 4.167,
+        "phase": "release",
+        "evidence": "video:skill X pika pika.mp4@4.167",
+        "origem": "curva/pico_global",
+        "method": "INFERRED",
+        "confidence": "MEDIUM"
+      },
+      {
+        "time": 4.306,
+        "phase": "travel",
+        "evidence": "video:skill X pika pika.mp4@4.306",
+        "origem": "uniforme",
+        "method": "INFERRED",
+        "confidence": "MEDIUM"
+      },
+      {
+        "time": 4.567,
+        "phase": "impact",
+        "evidence": "video:skill X pika pika.mp4@4.567",
+        "origem": "curva/pico_local",
+        "method": "INFERRED",
+        "confidence": "MEDIUM"
+      },
+      {
+        "time": 4.736,
+        "phase": "travel",
+        "evidence": "video:skill X pika pika.mp4@4.736",
+        "origem": "uniforme",
+        "method": "INFERRED",
+        "confidence": "MEDIUM"
+      },
+      {
+        "time": 5.1,
+        "phase": "recovery",
+        "evidence": "video:skill X pika pika.mp4@5.100",
+        "origem": "curva/vale_pos_pico",
+        "method": "INFERRED",
+        "confidence": "MEDIUM"
+      }
+    ]
+  },
+  "animation": {
+    "phases": [],
+    "pose_inicial": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "silhueta": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "overshoot": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "follow_through": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    }
+  },
+  "movement": {
+    "actor": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "trajectory": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "speed_profile": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "distance": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "height": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "direction": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    }
+  },
+  "spatial": {
+    "posicao_relativa": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "escala": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "angulo": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "orientacao": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "ponto_de_impacto": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "relativo_ao_chao": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    }
+  },
+  "combat": {
+    "damage": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "hitbox": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "hurtbox": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "knockback": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "stagger": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "stun": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "invulnerabilidade": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "cooldown": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "interrompivel": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "targeting": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "multiplayer": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    }
+  },
+  "visual": {
+    "geometry": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "escala": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "materiais": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "transparencia": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "particulas": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "trails": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "iluminacao": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "shader": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "cores": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "deformacao": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    }
+  },
+  "camera": {
+    "shake": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "zoom": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "fov": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    },
+    "enquadramento": {
+      "value": null,
+      "unit": null,
+      "source": null,
+      "method": "UNKNOWN",
+      "confidence": "UNKNOWN",
+      "note": null
+    }
+  },
+  "audio": {
+    "cues": []
+  },
+  "engine_mapping": {
+    "states": [],
+    "files": [],
+    "notas": ""
+  },
+  "constraints": [],
+  "separation": {
+    "visual_only": [],
+    "gameplay": []
+  },
+  "open_questions": [],
+  "confidence": {
+    "visual": "UNKNOWN",
+    "temporal": "UNKNOWN",
+    "gameplay": "UNKNOWN",
+    "spatial": "UNKNOWN"
+  }
+}

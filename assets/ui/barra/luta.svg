@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <!-- Estilo de luta: punho fechado -->
+  <g fill="#f2c98f" stroke="#3a2416" stroke-width="2.2" stroke-linejoin="round">
+    <rect x="12" y="14" width="24" height="18" rx="5"/>
+    <path d="M12 20 h24 M12 26 h24" fill="none" stroke-width="1.6"/>
+    <path d="M18 14 v18 M24 14 v18 M30 14 v18" fill="none" stroke-width="1.6"/>
+    <path d="M12 22 q-5 0 -5 6 q0 6 7 6 h6" />
+    <rect x="16" y="32" width="18" height="9" rx="2.5"/>
+  </g>
+</svg>

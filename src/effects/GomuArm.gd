@@ -11,6 +11,9 @@ extends Node3D
 const EXTEND_TIME := 0.09
 const HOLD_TIME := 0.06
 const RETRACT_TIME := 0.15
+const JET_EXTEND_TIME := 0.035
+const JET_HOLD_TIME := 0.04
+const JET_RETRACT_TIME := 0.08
 
 const RUBBER := Color(0.96, 0.60, 0.47)
 const IMPACT_GOLD := Color(1.0, 0.85, 0.35)
@@ -29,6 +32,7 @@ var _on_recover := Callable()
 var _is_main_arm := true
 var _knockback_mult := 1.0
 var _shake_mult := 1.0
+var _is_jet := false
 
 var _ph := Ph.EXTEND
 var _t := 0.0
@@ -46,9 +50,10 @@ var _e_climax: bool = false
 
 func setup(world: Node, caster: Node, shoulder: Node3D, hidden_arm: Node3D,
 		aim: Vector3, max_len: float, radius: float, damage: float, on_recover: Callable, is_main_arm: bool = true, knockback_mult: float = 1.0, shake_mult: float = 1.0, spec: DamageSpec = null,
-		e_climax: bool = false) -> void:
+		e_climax: bool = false, is_jet: bool = false) -> void:
 	_spec = spec if spec != null else DamageSpec.avulso(damage)
 	_e_climax = e_climax
+	_is_jet = is_jet
 	_world = world
 	_caster = caster
 	_shoulder = shoulder
@@ -93,27 +98,38 @@ func setup(world: Node, caster: Node, shoulder: Node3D, hidden_arm: Node3D,
 	add_child(_fist)
 
 	if _is_main_arm:
-		AudioFX.whoosh(_world, _shoulder_pos(), 1.1)   # "fiu" do disparo
+		GomuAudio.play(_world, _shoulder_pos(), "jet_pistol" if _is_jet else "pistol")
+		if _caster:
+			_caster.set_meta("custom_pose", "gomu_jet_pistol" if _is_jet else "gomu_pistol")
+			_caster.set_meta("gomu_pose_t", 0.0)
 	_update_beam()
 
 func _process(delta: float) -> void:
 	_t += delta
+	if _is_main_arm and _caster and is_instance_valid(_caster):
+		var cur_pose_t: float = float(_caster.get_meta("gomu_pose_t", 0.0))
+		_caster.set_meta("gomu_pose_t", cur_pose_t + delta)
+
+	var ext_t := JET_EXTEND_TIME if _is_jet else EXTEND_TIME
+	var hld_t := JET_HOLD_TIME if _is_jet else HOLD_TIME
+	var ret_t := JET_RETRACT_TIME if _is_jet else RETRACT_TIME
+
 	match _ph:
 		Ph.EXTEND:
-			_len = _max_len * _ease_out(clampf(_t / EXTEND_TIME, 0.0, 1.0))
-			if _t >= EXTEND_TIME:
+			_len = _max_len * _ease_out(clampf(_t / ext_t, 0.0, 1.0))
+			if _t >= ext_t:
 				_len = _max_len
 				_do_hit()          # alcance máx -> aplica tudo
 				_ph = Ph.HOLD
 				_t = 0.0
 		Ph.HOLD:
 			_len = _max_len
-			if _t >= HOLD_TIME:
+			if _t >= hld_t:
 				_ph = Ph.RETRACT
 				_t = 0.0
 		Ph.RETRACT:
-			_len = _max_len * (1.0 - _ease_in(clampf(_t / RETRACT_TIME, 0.0, 1.0)))
-			if _t >= RETRACT_TIME:
+			_len = _max_len * (1.0 - _ease_in(clampf(_t / ret_t, 0.0, 1.0)))
+			if _t >= ret_t:
 				_finish()
 				return
 	_update_beam()
@@ -196,7 +212,12 @@ func _finish() -> void:
 		_hidden_arm.visible = true
 	
 	if _is_main_arm:
+		GomuAudio.play(_world, _shoulder_pos(), "stretch", -2.0)
 		AudioFX.snap(_world, _shoulder_pos(), 1.2)   # estalo do retorno ao corpo
+		if _caster and is_instance_valid(_caster):
+			var cur_p = _caster.get_meta("custom_pose", "")
+			if cur_p == "gomu_pistol" or cur_p == "gomu_jet_pistol":
+				_caster.set_meta("custom_pose", "")
 		if _on_recover.is_valid():
 			_on_recover.call()
 			

@@ -1,0 +1,312 @@
+{
+	"bomu_bomu_X": {
+		"cooldown": 10.0,
+		"dano": 192.0,
+		"fps_gravacao": 30,
+		"fruta": "bomu_bomu",
+		"nome": "Detonação Corporal",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/bomu_bomu_X",
+		"quadros": 96,
+		"slot": "X"
+	},
+	"bomu_bomu_Z": {
+		"cooldown": 10.0,
+		"dano": 144.0,
+		"fps_gravacao": 30,
+		"fruta": "bomu_bomu",
+		"nome": "Impacto Detonador",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/bomu_bomu_Z",
+		"quadros": 96,
+		"slot": "Z"
+	},
+	"buki_buki_C": {
+		"cooldown": 10.0,
+		"dano": 76.0,
+		"fps_gravacao": 30,
+		"fruta": "buki_buki",
+		"nome": "Sniper (5 tiros, luneta no Bt Dir)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/buki_buki_C",
+		"quadros": 96,
+		"slot": "C"
+	},
+	"buki_buki_V": {
+		"cooldown": 60.0,
+		"dano": 7.0,
+		"fps_gravacao": 30,
+		"fruta": "buki_buki",
+		"nome": "Minigun (100 balas)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/buki_buki_V",
+		"quadros": 96,
+		"slot": "V"
+	},
+	"buki_buki_X": {
+		"cooldown": 7.0,
+		"dano": 85.0,
+		"fps_gravacao": 30,
+		"fruta": "buki_buki",
+		"nome": "Canhão — corpo inteiro (3 tiros)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/buki_buki_X",
+		"quadros": 96,
+		"slot": "X"
+	},
+	"buki_buki_Z": {
+		"cooldown": 5.0,
+		"dano": 16.0,
+		"fps_gravacao": 30,
+		"fruta": "buki_buki",
+		"nome": "Pistola (12 balas)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/buki_buki_Z",
+		"quadros": 96,
+		"slot": "Z"
+	},
+	"goro_goro_C": {
+		"cooldown": 10.0,
+		"dano": 200.0,
+		"fps_gravacao": 30,
+		"fruta": "goro_goro",
+		"nome": "Shunshin (Teleporte Raio)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/goro_goro_C",
+		"quadros": 96,
+		"slot": "C"
+	},
+	"goro_goro_V": {
+		"cooldown": 60.0,
+		"dano": 512.0,
+		"fps_gravacao": 30,
+		"fruta": "goro_goro",
+		"nome": "Mamaragan (Tempestade)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/goro_goro_V",
+		"quadros": 96,
+		"slot": "V"
+	},
+	"goro_goro_X": {
+		"cooldown": 7.0,
+		"dano": 64.0,
+		"fps_gravacao": 30,
+		"fruta": "goro_goro",
+		"nome": "El Thor (Coluna de Raio)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/goro_goro_X",
+		"quadros": 96,
+		"slot": "X"
+	},
+	"goro_goro_Z": {
+		"cooldown": 5.0,
+		"dano": 84.0,
+		"fps_gravacao": 30,
+		"fruta": "goro_goro",
+		"nome": "Sango (Feixe Elétrico)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/goro_goro_Z",
+		"quadros": 96,
+		"slot": "Z"
+	},
+	"gura_gura_C": {
+		"cooldown": 10.0,
+		"dano": 224.0,
+		"fps_gravacao": 30,
+		"fruta": "gura_gura",
+		"nome": "Kabutsuchi (Erupção)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/gura_gura_C",
+		"quadros": 96,
+		"slot": "C"
+	},
+	"gura_gura_V": {
+		"cooldown": 60.0,
+		"dano": 384.0,
+		"fps_gravacao": 30,
+		"fruta": "gura_gura",
+		"nome": "Tsunamis Duplos",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/gura_gura_V",
+		"quadros": 96,
+		"slot": "V"
+	},
+	"gura_gura_X": {
+		"cooldown": 7.0,
+		"dano": 192.0,
+		"fps_gravacao": 30,
+		"fruta": "gura_gura",
+		"nome": "Shockwave (Onda de Choque)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/gura_gura_X",
+		"quadros": 96,
+		"slot": "X"
+	},
+	"gura_gura_Z": {
+		"cooldown": 5.0,
+		"dano": 96.0,
+		"fps_gravacao": 30,
+		"fruta": "gura_gura",
+		"nome": "Gura Punch (Soco do Tremor)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/gura_gura_Z",
+		"quadros": 96,
+		"slot": "Z"
+	},
+	"hie_hie_C": {
+		"cooldown": 10.0,
+		"dano": 192.0,
+		"fps_gravacao": 30,
+		"fruta": "hie_hie",
+		"nome": "Investida de Gelo",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/hie_hie_C",
+		"quadros": 96,
+		"slot": "C"
+	},
+	"hie_hie_V": {
+		"cooldown": 60.0,
+		"dano": 32.0,
+		"fps_gravacao": 30,
+		"fruta": "hie_hie",
+		"nome": "Ice Age (Era do Gelo)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/hie_hie_V",
+		"quadros": 96,
+		"slot": "V"
+	},
+	"hie_hie_X": {
+		"cooldown": 7.0,
+		"dano": 168.0,
+		"fps_gravacao": 30,
+		"fruta": "hie_hie",
+		"nome": "Iceberg",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/hie_hie_X",
+		"quadros": 96,
+		"slot": "X"
+	},
+	"hie_hie_Z": {
+		"cooldown": 5.0,
+		"dano": 12.0,
+		"fps_gravacao": 30,
+		"fruta": "hie_hie",
+		"nome": "Disparo de Gelo",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/hie_hie_Z",
+		"quadros": 96,
+		"slot": "Z"
+	},
+	"mera_mera_C": {
+		"cooldown": 10.0,
+		"dano": 240.0,
+		"fps_gravacao": 30,
+		"fruta": "mera_mera",
+		"nome": "Vagalumes de Fogo",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/mera_mera_C",
+		"quadros": 96,
+		"slot": "C"
+	},
+	"mera_mera_V": {
+		"cooldown": 60.0,
+		"dano": 512.0,
+		"fps_gravacao": 30,
+		"fruta": "mera_mera",
+		"nome": "Dai Enkai: Entei (Sol Quadrado)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/mera_mera_V",
+		"quadros": 96,
+		"slot": "V"
+	},
+	"mera_mera_X": {
+		"cooldown": 7.0,
+		"dano": 160.0,
+		"fps_gravacao": 30,
+		"fruta": "mera_mera",
+		"nome": "Hiken (Punho de Fogo)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/mera_mera_X",
+		"quadros": 96,
+		"slot": "X"
+	},
+	"mera_mera_Z": {
+		"cooldown": 5.0,
+		"dano": 25.0,
+		"fps_gravacao": 30,
+		"fruta": "mera_mera",
+		"nome": "Tiros de Pistola de Fogo",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/mera_mera_Z",
+		"quadros": 96,
+		"slot": "Z"
+	},
+	"suke_suke_Z": {
+		"cooldown": 5.0,
+		"dano": 0.0,
+		"fps_gravacao": 30,
+		"fruta": "suke_suke",
+		"nome": "Camuflagem Transparente",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/suke_suke_Z",
+		"quadros": 96,
+		"slot": "Z"
+	},
+	"suna_suna_C": {
+		"cooldown": 10.0,
+		"dano": 240.0,
+		"fps_gravacao": 30,
+		"fruta": "suna_suna",
+		"nome": "Desert Girasole (Movediça)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/suna_suna_C",
+		"quadros": 96,
+		"slot": "C"
+	},
+	"suna_suna_V": {
+		"cooldown": 60.0,
+		"dano": 640.0,
+		"fps_gravacao": 30,
+		"fruta": "suna_suna",
+		"nome": "Suna no Sabaku (Deserto Vivo)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/suna_suna_V",
+		"quadros": 96,
+		"slot": "V"
+	},
+	"suna_suna_X": {
+		"cooldown": 7.0,
+		"dano": 64.0,
+		"fps_gravacao": 30,
+		"fruta": "suna_suna",
+		"nome": "Sables (Tornado de Areia)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/suna_suna_X",
+		"quadros": 96,
+		"slot": "X"
+	},
+	"suna_suna_Z": {
+		"cooldown": 5.0,
+		"dano": 92.0,
+		"fps_gravacao": 30,
+		"fruta": "suna_suna",
+		"nome": "Desert Spada (Lâmina de Areia)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/suna_suna_Z",
+		"quadros": 96,
+		"slot": "Z"
+	},
+	"yami_yami_C": {
+		"cooldown": 10.0,
+		"dano": 256.0,
+		"fps_gravacao": 30,
+		"fruta": "yami_yami",
+		"nome": "Black Hole (Vórtice Abissal)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/yami_yami_C",
+		"quadros": 96,
+		"slot": "C"
+	},
+	"yami_yami_V": {
+		"cooldown": 60.0,
+		"dano": 96.0,
+		"fps_gravacao": 30,
+		"fruta": "yami_yami",
+		"nome": "Liberation (Libertação)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/yami_yami_V",
+		"quadros": 96,
+		"slot": "V"
+	},
+	"yami_yami_X": {
+		"cooldown": 7.0,
+		"dano": 64.0,
+		"fps_gravacao": 30,
+		"fruta": "yami_yami",
+		"nome": "Espiral Negra (Kurouzu)",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/yami_yami_X",
+		"quadros": 96,
+		"slot": "X"
+	},
+	"yami_yami_Z": {
+		"cooldown": 5.0,
+		"dano": 24.0,
+		"fps_gravacao": 30,
+		"fruta": "yami_yami",
+		"nome": "Disparo de Pistola",
+		"pasta": "/home/gabriel-bitti/dev/skills-one-piece/multimodal/sessions/20260903-184131-baseline_frutas/validacao/capturas/yami_yami_Z",
+		"quadros": 96,
+		"slot": "Z"
+	}
+}

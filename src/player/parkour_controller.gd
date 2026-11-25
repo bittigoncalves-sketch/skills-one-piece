@@ -1,8 +1,14 @@
 class_name ParkourController
 extends RefCounted
 # ============================================================================
-#  PARKOUR — os 8 movimentos que usam o cenário: vault, salto longo, wall run,
+#  PARKOUR — os movimentos que usam o cenário: vault, salto longo, wall run,
 #  pouso de precisão, geppo (pulo duplo), escalada, mantle e travessia lateral.
+#
+#  03/10/2026 (fatias 2 e 3 de docs/PARKOUR_MIRRORS_EDGE_PLANO.md): o wall run
+#  mora em `corrida_na_parede.gd` (gravidade normal, sustentação pela velocidade)
+#  e a escalada frontal em `escalada.gd` (agarra sozinho, escada, borda sem
+#  teleporte). O "andar na superfície" (parede vira chão, energia, cambalhota de
+#  saída) e a escalada antiga com mantle foram removidos de vez.
 #
 #  Fase 4 de docs/ARQUITETURA_PLAYER.md, segundo corte do ciclo físico. A
 #  medição dizia que dava: `_is_climbing` (14 de 16 usos), `_long_jump_t`
@@ -16,95 +22,46 @@ extends RefCounted
 #
 #  Fluxo de um quadro:
 #
-#      avaliar()      → sonda paredes, decide escalar/correr na parede,
-#                       resolve o pouso de precisão, recarrega o geppo
+#      avaliar()      → decide entrar no wall run ou agarrar a parede, resolve o
+#                       pouso de precisão, recarrega o geppo
 #      assumiu()      → "eu mando na velocidade deste quadro?"
-#      velocidade()   → se assumiu: escalada ou wall run
+#      velocidade()   → se assumiu: wall run ou escalada
 #      aplicar_pulos()→ se não assumiu: vault, salto longo, pulo, geppo
 #
 #  As SONDAS de cenário (raios e colisões) vieram junto: elas só existiam para o
 #  parkour. Usam o corpo do dono, que é passado no `montar_em`.
 # ============================================================================
 
-const CLIMB_SPEED := 4.5
-const CLIMB_STICK_SPEED := 1.0
-const CLIMB_WALL_NORMAL_MAX_Y := 0.2
-
-## ANDAR NA SUPERFÍCIE. `ADERENCIA` é a pressão contra a superfície que mantém o
-## contato de colisão entre quadros — mesma ideia do `CLIMB_STICK_SPEED`, e pelo
-## mesmo motivo: sem ela um quadro sem toque solta o jogador.
-const PAREDE_ADERENCIA := 2.5
-## Alcance do raio que procura chão sob os pés. Generoso de propósito: o corpo
-## flutua um pouco em relação à superfície, e um alcance curto perde o contato.
-const PAREDE_ALCANCE := 2.0
-## Quanto tempo sem achar superfície antes de soltar. Ver a nota da folga.
-const PAREDE_FOLGA := 0.35
-## Duração do rolamento no ar. Curto: é um floreio de saída, não uma acrobacia
-## que tira o controle do jogador.
-const ROLAMENTO_AR_DURACAO := 0.55
-## Abaixo deste comprimento a projeção da frente da câmera no plano da parede não
-## carrega direção confiável — ver a nota da histerese. 0,35 corresponde a ~20°
-## de folga em torno do ponto em que a câmera encara a superfície de frente.
-const LIMIAR_BASE := 0.35
-## Quão depressa a base persegue a candidata boa. Rápido o bastante para o
-## controle não parecer atrasado; suave o bastante para nunca saltar.
-const GIRO_BASE := 8.0
-## Quão vertical a superfície precisa ser para o controle virar "de parede"
-## (W sobe) em vez de "de chão" (W segue a câmera). É o seno do ângulo entre a
-## normal e a vertical, então 0,7 = 45°: acima disso a superfície é uma parede
-## para quem anda nela, abaixo é uma rampa que ainda se comporta como piso.
-const LIMIAR_VERTICAL := 0.7
-const PAREDE_PULO_FORA := 7.0    # empurrão para FORA da superfície ao cancelar
-const PAREDE_PULO_CIMA := 6.0    # e para cima, para o cancelamento ler como pulo
+const CorridaNaParede = preload("res://src/player/corrida_na_parede.gd")
+const Escalada = preload("res://src/player/escalada.gd")
+const SubirDegrau = preload("res://src/player/subir_degrau.gd")
 
 var max_geppo: int = 1      # número de pulos duplos aéreos (Geppo / Técnica do CP9)
+
+## O wall run (fatia 2). Público para o Player ler normal, tangente e lado.
+var parede = CorridaNaParede.new()
+## A escalada frontal (fatia 3). Público para o Player ler normal, estado e topo.
+var escalada = Escalada.new()
 
 var _dono: CharacterBody3D = null
 var _gravidade: float = 32.0
 var _forca_pulo: float = 16.0
 
 # ---- estado que atravessa quadros ----
-var _escalando: bool = false
-
-## ANDAR NA SUPERFÍCIE (2026-08-27) — substitui a escalada.
-##
-## ⚠️ A DIFERENÇA NÃO É COSMÉTICA. A escalada era um estado SEGURADO: soltar o
-## espaço largava a parede. Este é um estado LIGADO: uma vez que entra, fica —
-## o jogador anda pela superfície com WASD como andaria no chão, e cancela
-## PULANDO. É o que o dono pediu ("não precisa ficar segurando as teclas").
-##
-## O preço é ENERGIA, drenada por segundo (o Player cobra; aqui só se declara o
-## estado). Sem preço, andar na parede seria estritamente melhor que andar no
-## chão e o chão deixaria de existir como decisão.
-var _na_parede: bool = false
-var _normal_parede: Vector3 = Vector3.ZERO
-## Trava de um quadro: entrar e sair usam a MESMA tecla (espaço). Sem ela, o
-## mesmo toque que gruda desgruda no quadro seguinte.
-var _carencia_parede: float = 0.0
-## Há quanto tempo o raio não acha superfície sob os pés. Ver a nota da folga.
-var _folga_sem_chao: float = 0.0
-var _base_sup: Basis = Basis.IDENTITY
-## false até a base ter sido montada uma vez nesta grudada. Ver a nota da
-## histerese em `_atualizar_base_da_superficie`.
-var _base_sup_valida: bool = false
-
-## Tempo restante do ROLAMENTO NO AR — a cambalhota que sai ao largar a
-## superfície. Pedido do dono: braços mirando os pés, pernas agachadas, cabeça
-## indo ao joelho, corpo dobrado e GIRANDO.
-var _rolando_no_ar: float = 0.0
-## true no quadro em que o espaço foi usado para largar a superfície. Ver a nota
-## em `aplicar_pulos`.
-var _consumiu_espaco: bool = false
+## BUFFER do Espaço (fatia 4): apertado um pouco ANTES de a parede ficar ao
+## alcance ainda entra no wall run — desde que o toque não tenha virado pulo/geppo.
+const BUFFER_ESPACO := 0.15
+var _buffer_espaco := 0.0
+## Salto da parede pedido pelo coyote; `aplicar_pulos` o entrega no lugar do pulo.
+var _salto_pendente := Vector3.ZERO
+## true no quadro em que o Espaço entrou no wall run: o mesmo toque não pode
+## também saltar para longe.
+var _entrou_agora: bool = false
 var _long_jump_t: float = 0.0   # janela de impulso horizontal (salto longo/vault)
 var _geppo: int = 0             # geppos gastos desde o último apoio
 var _pico_queda: float = 0.0    # maior velocidade de queda acumulada no ar
 var _pouso_armado: bool = false # Espaço no ar armou o pouso de precisão
 var _chao_antes: bool = false   # detecção da BATIDA no chão
-
-# ---- resultado da sondagem DESTE quadro ----
-var _parede_frontal: Vector3 = Vector3.ZERO   # normal da parede escalável
-var _parede_lateral: Vector3 = Vector3.ZERO   # normal da parede do wall run
-var _correndo_parede: bool = false
 
 func montar_em(dono: CharacterBody3D, gravidade: float, forca_pulo: float) -> void:
 	_dono = dono
@@ -112,19 +69,24 @@ func montar_em(dono: CharacterBody3D, gravidade: float, forca_pulo: float) -> vo
 	_forca_pulo = forca_pulo
 
 # ------------------------------------------------------------------ leitura
-func escalando() -> bool:          return _escalando
-func na_parede() -> bool:          return _na_parede
-func normal_da_parede() -> Vector3: return _normal_parede
-func correndo_na_parede() -> bool: return _correndo_parede
-func assumiu() -> bool:            return _escalando or _correndo_parede or _na_parede
+func escalando() -> bool:          return escalada.ativo
+func correndo_na_parede() -> bool: return parede.ativo
+func assumiu() -> bool:            return escalada.ativo or parede.ativo
 func geppos() -> int:              return _geppo
 func janela_impulso() -> float:    return _long_jump_t
-func parede_frontal() -> Vector3:  return _parede_frontal   # o facing usa p/ virar contra a parede
 
 # Impulso horizontal do salto longo / vault. Multiplica a velocidade da etapa —
 # devolver o FATOR em vez de mexer na velocidade mantém a etapa como quem combina.
 func bonus_velocidade() -> float:
 	return 1.5 if _long_jump_t > 0.0 else 1.0
+
+## Larga a parede sem impulso (arremesso, morte, outro sistema tomou o corpo).
+func cancelar() -> void:
+	parede.cancelar()
+	escalada.cancelar()
+	_entrou_agora = false
+	_buffer_espaco = 0.0
+	_salto_pendente = Vector3.ZERO
 
 # ------------------------------------------------------------------ avaliação
 # Uma chamada por quadro, ANTES de qualquer escrita em `velocity`.
@@ -136,7 +98,7 @@ func avaliar(delta: float, q: MoveFrame, no_chao: bool) -> void:
 	# tocar o chão após uma queda real, o player rola e PRESERVA o embalo.
 	if not no_chao:
 		_pico_queda = maxf(_pico_queda, -_dono.velocity.y)
-		if q.espaco_agora and _dono.velocity.y < 3.0 and not _escalando:
+		if q.espaco_agora and _dono.velocity.y < 3.0 and not assumiu():
 			_pouso_armado = true
 	elif not _chao_antes:                       # acabou de tocar o chão
 		if _pouso_armado and _pico_queda > 9.0:
@@ -147,115 +109,49 @@ func avaliar(delta: float, q: MoveFrame, no_chao: bool) -> void:
 		_pouso_armado = false
 	_chao_antes = no_chao
 
-	# ANDAR NA SUPERFÍCIE — no lugar da escalada.
-	#
-	# ENTRA com UM toque de espaço encostando numa parede escalável, no ar.
-	# FICA sem segurar nada. SAI pulando (o mesmo espaço), ou se a energia
-	# acabar, ou se a superfície sumir debaixo dos pés.
-	_carencia_parede = maxf(_carencia_parede - delta, 0.0)
-	_rolando_no_ar = maxf(_rolando_no_ar - delta, 0.0)
-	_parede_frontal = _normal_da_parede_escalavel(q.dir)
-
-	if _na_parede:
-		# ⚠️ O PULO CANCELA. É a única saída voluntária, e é intencional: com a
-		# gravidade da superfície mandando, "soltar a tecla" não significa nada.
-		if q.espaco_agora and _carencia_parede <= 0.0:
-			_soltar_da_parede(true)
-		elif not _dono.tem_energia_de_parede():
-			_soltar_da_parede(false)      # acabou a energia: cai
-		else:
-			# ⚠️ A PERMANÊNCIA NÃO PODE DEPENDER DE TECLA. `_parede_frontal` vem de
-			# `_normal_da_parede_escalavel(q.dir)` — sem direção no teclado ela é
-			# ZERO. Usá-la como fallback obrigava o jogador a seguir segurando W,
-			# que é exatamente o que esta mecânica veio eliminar.
-			#
-			# Agora só o que está SOB OS PÉS decide, e ele não olha para o
-			# teclado.
-			var atual := _superficie_sob_os_pes()
-			if atual != Vector3.ZERO:
-				_normal_parede = atual
-				_folga_sem_chao = 0.0
-			else:
-				# ⚠️ E UMA FOLGA antes de soltar. A superfície some por um quadro
-				# em quina, degrau ou quando a colisão empurra o corpo um dedo
-				# para fora — soltar no primeiro quadro sem raio derrubava o
-				# jogador em situações em que ele claramente ainda estava lá.
-				_folga_sem_chao += delta
-				if _folga_sem_chao > PAREDE_FOLGA:
-					_soltar_da_parede(false)
-	elif q.espaco_agora and not no_chao and _parede_frontal != Vector3.ZERO \
-			and _carencia_parede <= 0.0 and _dono.tem_energia_de_parede():
-		_na_parede = true
-		_normal_parede = _parede_frontal
-		_carencia_parede = 0.25
-		_folga_sem_chao = 0.0
-		_base_sup_valida = false
-		_geppo = 0
-
-	# A escalada antiga fica desligada, mas o campo continua para o wall run e o
-	# mantle, que ainda consultam `_escalando`.
-	_escalando = false
-
-	# WALL RUN: no ar, CORRENDO rente a uma parede LATERAL -> corre por ela.
-	_parede_lateral = _normal_da_parede_lateral(q.dir) if not _escalando else Vector3.ZERO
-	_correndo_parede = not _escalando and not no_chao and q.sprint and q.f > 0.0 \
-		and _parede_lateral != Vector3.ZERO and _dono.velocity.y < 5.0
+	# WALL RUN: Espaço correndo rente a uma parede lateral (no chão OU no ar). Vem
+	# antes do pulo e do geppo — com parede ao lado, o Espaço é dela.
+	parede.passar_tempo(delta)
+	escalada.passar_tempo(delta)
+	_entrou_agora = false
+	_buffer_espaco = BUFFER_ESPACO if q.espaco_agora else maxf(_buffer_espaco - delta, 0.0)
+	# Ctrl + pulo é um pulo agachado: não dispara vault, escalada ou wall run.
+	if q.agachar_segurado and not assumiu():
+		_buffer_espaco = 0.0
+		_salto_pendente = Vector3.ZERO
+		if no_chao:
+			_geppo = 0
+		return
+	if q.espaco_agora and not assumiu():
+		_salto_pendente = parede.salto_coyote(no_chao)
+		if _salto_pendente != Vector3.ZERO:
+			_buffer_espaco = 0.0
+			_pouso_armado = false
+	if _buffer_espaco > 0.0 and _salto_pendente == Vector3.ZERO and not assumiu() \
+			and parede.tentar_entrar(_dono, _dono.velocity):
+		_entrou_agora = true
+		_buffer_espaco = 0.0
+		_pouso_armado = false
+	# ESCALADA: no ar, indo de frente contra parede ESCALÁVEL, agarra sozinho —
+	# inclusive saindo de um wall run (parede → salto → agarrar).
+	elif not no_chao and not assumiu() and _salto_pendente == Vector3.ZERO \
+			and escalada.tentar_agarrar(_dono, _dono.velocity, q.dir):
+		_entrou_agora = true
+		_pouso_armado = false
 
 	# Recarrega as cargas do Geppo assim que apoiar no chão ou em parede/escada.
-	if no_chao or _escalando or _correndo_parede:
+	if no_chao or assumiu():
 		_geppo = 0
 
 # ------------------------------------------------- velocidade quando ASSUMIU
 func velocidade(delta: float, q: MoveFrame, vel: Vector3, vel_efetiva: float) -> Vector3:
-	if _na_parede:
-		# ⚠️ A SUPERFÍCIE VIRA O CHÃO — E ISSO EXIGE UMA BASE PRÓPRIA.
-		#
-		# A primeira versão projetava `q.dir` no plano da parede. `q.dir` é
-		# HORIZONTAL (vem do yaw da câmera), então numa parede vertical o W é
-		# exatamente a componente que aponta PARA DENTRO — e a projeção a
-		# anulava. Resultado medido: só A e D funcionavam, que foi o relato.
-		#
-		# Agora o movimento é montado na base DA SUPERFÍCIE: a normal é o "para
-		# cima", a frente é a da câmera projetada no plano, e a direita sai do
-		# produto vetorial. Aí W anda parede acima e A/D andam de lado, que é o
-		# que "o bloco é o chão" quer dizer.
-		_atualizar_base_da_superficie(q, delta)
-		var n := _normal_parede
-		var frente: Vector3 = -_base_sup.z
-		var direita: Vector3 = _base_sup.x
-
-		var mov := frente * q.f + direita * q.r
-		if mov.length_squared() > 1.0:
-			mov = mov.normalized()
-		# O que sobraria "para dentro" vira pressão de contato: sem ela, um
-		# quadro sem colisão soltaria o jogador.
-		return mov * vel_efetiva + (-n * PAREDE_ADERENCIA)
-	if _escalando:
-		# Uma leve pressão contra a parede preserva o contato de colisão entre
-		# quadros; sem isso, ao mover apenas no eixo Y a escalada terminaria logo.
-		# W sobe / S desce, parado = segura; A/D faz travessia lateral.
-		var tang := _parede_frontal.cross(Vector3.UP).normalized()
-		vel.x = -_parede_frontal.x * CLIMB_STICK_SPEED + tang.x * q.r * CLIMB_SPEED * 0.8
-		vel.z = -_parede_frontal.z * CLIMB_STICK_SPEED + tang.z * q.r * CLIMB_SPEED * 0.8
-		vel.y = CLIMB_SPEED * clampf(q.f, -1.0, 1.0)
-		# MANTLE: chegou ao TOPO (cabeça livre acima da beirada) e empurra pra
-		# cima (W) -> impulso pra cima + pra frente e larga a parede.
-		if q.f > 0.1 and _cabeca_livre_da_parede(_parede_frontal):
-			vel = -_parede_frontal * 6.0 + Vector3.UP * (_forca_pulo * 0.8)
-			_escalando = false
-			_long_jump_t = 0.25
-		return vel
-
-	# WALL RUN: quase sem gravidade + corre ao longo da parede; Espaço = pula pra longe.
-	vel.y = maxf(vel.y - _gravidade * 0.12 * delta, -1.5)   # "cola" e cai devagar
-	var tangente := _parede_lateral.cross(Vector3.UP).normalized()
-	if tangente.dot(q.frente) < 0.0:
-		tangente = -tangente                                 # sentido = pra onde o player olha
-	vel.x = tangente.x * vel_efetiva - _parede_lateral.x * 2.0   # corre + encosta na parede
-	vel.z = tangente.z * vel_efetiva - _parede_lateral.z * 2.0
-	if q.espaco_agora:
-		vel = _parede_lateral * 9.0 + Vector3.UP * (_forca_pulo * 0.85)   # empurra PRA LONGE
-		_long_jump_t = 0.3
+	if parede.ativo:
+		return parede.atualizar(delta, _dono, vel, _gravidade, _dono.is_on_floor(),
+			q.espaco_agora and not _entrou_agora, q.soltar_agora)
+	if escalada.ativo:
+		if _entrou_agora:
+			return -escalada.normal * Escalada.ADERENCIA   # agarrou: para o corpo
+		return escalada.atualizar(delta, _dono, q, vel)
 	return vel
 
 # ------------------------------------------------- pulos, no chão e no ar
@@ -264,30 +160,22 @@ func velocidade(delta: float, q: MoveFrame, vel: Vector3, vel_efetiva: float) ->
 func aplicar_pulos(q: MoveFrame, vel: Vector3, vel_efetiva: float,
 		no_chao: bool, mult_pulo: float) -> Vector3:
 	var salto_explosivo := false
-	# ⚠️ O ESPAÇO QUE LARGOU A SUPERFÍCIE JÁ FOI GASTO. Sem esta saída, o mesmo
-	# toque cancelava a parede E consumia um pulo duplo no mesmo quadro — o
-	# jogador era punido por usar o cancelamento que a mecânica exige. Zerar o
-	# `_geppo` na saída não bastava: `aplicar_pulos` roda DEPOIS e gastava de
-	# novo.
-	if _consumiu_espaco:
-		_consumiu_espaco = false
+	if _salto_pendente != Vector3.ZERO:
+		# Coyote do wall run: o Espaço vira o salto da parede, não pulo/geppo.
+		vel = _salto_pendente
+		_salto_pendente = Vector3.ZERO
 		return vel
 	if no_chao and q.sprint and q.f > 0.0 and _long_jump_t <= 0.0 and _obstaculo_baixo_a_frente(q.dir):
 		# VAULT automático: correndo contra um obstáculo BAIXO -> pula por cima.
 		vel.y = _forca_pulo * 0.7
 		_long_jump_t = 0.35
-	elif q.espaco_agora and no_chao:
-		# Salto longo SÓ na batida do Espaço correndo (evita velocidade infinita).
-		if q.sprint and q.f > 0.0:
-			vel.y = _forca_pulo * 0.95     # SALTO LONGO (Shift+Espaço)
-			_long_jump_t = 0.55
-		else:
-			vel.y = _forca_pulo * mult_pulo   # pulo normal
-			salto_explosivo = true
-	elif q.espaco_segurado and no_chao:
-		vel.y = _forca_pulo * mult_pulo       # segurar Espaço = pulo normal
-	elif q.espaco_agora and not no_chao and not _escalando and not _correndo_parede and _geppo < max_geppo:
+	elif no_chao and (q.espaco_agora or q.espaco_segurado):
+		_buffer_espaco = 0.0              # o pulo (simples e correndo) é do Minecraft: MovimentoMinecraft
+	elif q.espaco_agora and not no_chao and not assumiu() and _geppo < _limite_de_geppo() \
+			and _pode_pagar_pulo_no_ar():
 		# GEPPO (Técnica do CP9 / Pulo Duplo): chuta o ar com anel de ar comprimido!
+		_buffer_espaco = 0.0
+		_pagar_pulo_no_ar()
 		_geppo += 1
 		_pico_queda = 0.0
 		_pouso_armado = false
@@ -304,6 +192,35 @@ func aplicar_pulos(q: MoveFrame, vel: Vector3, vel_efetiva: float,
 		BomuFX.salto_explosivo(_dono.get_tree().current_scene, _dono.global_position, q.dir)
 	return vel
 
+# `max_geppo` é quantos pulos no ar o CORPO aguenta; a capacidade diz se ele já
+# APRENDEU a pular no ar (Modo História, `CapacidadesDoJogador`). Separados para
+# que um estilo que dê +1 geppo não desbloqueie o pulo duplo de um Civil.
+func _limite_de_geppo() -> int:
+	if _dono and "capacidades" in _dono and not _dono.capacidades.can_double_jump:
+		return 0
+	if _dono and "capacidades" in _dono and _dono.capacidades != null and _dono.capacidades.saltos_no_ar >= 0:
+		return maxi(max_geppo, _dono.capacidades.saltos_no_ar)       # técnica Geppo: vários pulos no ar
+	return max_geppo
+
+
+# Energia do pulo no ar (Modo História: 30; na arena é 0 e o pulo é de graça). Sem
+# energia o Espaço no ar simplesmente não faz nada, e o contador de pulos não anda.
+func _custo_do_pulo_no_ar() -> float:
+	if _dono and "capacidades" in _dono and _dono.capacidades != null:
+		return _dono.capacidades.custo_pulo_no_ar
+	return 0.0
+
+
+func _pode_pagar_pulo_no_ar() -> bool:
+	return float(_dono.get("energy")) + 0.001 >= _custo_do_pulo_no_ar()
+
+
+func _pagar_pulo_no_ar() -> void:
+	var custo := _custo_do_pulo_no_ar()
+	if custo > 0.0:
+		_dono.call("gastar_energia", custo)
+
+
 func _efeitos_do_geppo(q: MoveFrame) -> void:
 	var cena := _dono.get_tree().current_scene
 	_dono.add_camera_shake(0.28)
@@ -314,202 +231,8 @@ func _efeitos_do_geppo(q: MoveFrame) -> void:
 		_dono._proc_anim.trigger_recovery("Z")
 
 # ============================================================ SONDAS DO CENÁRIO
-# Vieram do Player junto com o parkour: só existiam para ele.
-
-# Usa as colisões do último movimento. Isso evita RayCast extra e faz a escalada
-# funcionar em qualquer StaticBody3D, inclusive os blocos do mapa.
-## A base da SUPERFÍCIE: `y` = a normal (o "para cima"), `-z` = a frente, `x` = a
-## direita. Uma fonte só, usada pelo movimento E pela animação.
-##
-## ============================================================================
-## ⚠️ A BASE É PERSISTENTE, COM HISTERESE — e isso é o conserto de um bug real.
-##
-## Recalcular a base todo quadro a partir da câmera parece inofensivo e não é. A
-## frente vem de `q.frente` PROJETADA no plano da parede, e essa projeção
-## DEGENERA quando a câmera olha direto para a superfície — que é justamente o
-## que o jogador faz enquanto anda nela. Medido, numa parede de normal −Z:
-##
-##     yaw 175°  |projeção| = 0,087   frente = (−1, 0, 0)
-##     yaw 180°  |projeção| = 0,000   frente =  indefinida
-##     yaw 185°  |projeção| = 0,087   frente = (+1, 0, 0)
-##
-## Cinco graus de mouse INVERTEM o eixo do movimento. O W ia para um lado, para
-## o outro, e para cima quando caía no fallback — e só às vezes, porque depende
-## de a câmera estar perto desse ângulo. Era o bug "difícil de identificar".
-##
-## A saída não é escolher outra fórmula: perto da degeneração, a frente da
-## câmera simplesmente NÃO CARREGA informação sobre o plano da parede. Então a
-## base é GUARDADA, e só se atualiza quando a candidata está bem condicionada
-## (`|projeção| > LIMIAR`). Fora disso ela fica como está — congelar uma base boa
-## é melhor que seguir uma ruim.
-##
-## E a atualização é por `slerp`, nunca por substituição: assim ela nunca salta,
-## mesmo cruzando o limiar.
-## ============================================================================
-## ⚠️ NUMA PAREDE, A FRENTE NÃO PODE VIR DA CÂMERA (2026-08-28).
-##
-## Relato do dono: na parede o W e o S iam para os LADOS e o A e o D para cima e
-## para baixo — "as teclas invertidas" — depois de pular perto da lateral do
-## bloco. Medido em `medir_teclas_parede.gd`, o quadro era pior que o relato: a
-## troca acontecia em TODO ângulo de câmera menos um.
-##
-##     câmera de frente para a parede .. W subida +1,53 | lado +0,00   ✅
-##     câmera a 45 graus ............... W subida +0,07 | lado −1,45   ❌
-##     câmera ao longo da parede ....... W subida +0,08 | lado −1,53   ❌
-##
-## A causa está em `MoveFrame.ler`: `q.frente` sai de
-## `RosaDosVentos.base_do_corpo(yaw)`, que é a base do pivô SÓ COM YAW, sem
-## pitch — de propósito, para o dash ser sempre horizontal. Ou seja, `q.frente`
-## é HORIZONTAL por construção. Projetar um vetor horizontal no plano de uma
-## parede a prumo devolve sempre a tangente horizontal, nunca "subir": o eixo
-## do W virava o lado e o do A/D virava a vertical.
-##
-## O único ângulo que funcionava era a câmera encarando a parede de frente — e
-## funcionava justamente porque ali a projeção DEGENERA e a antiga função caía
-## no fallback "para cima da parede". O caminho principal produzia o bug e o
-## caminho de exceção produzia o acerto.
-##
-## Agora a regra é explícita: em superfície vertical a frente é SUBIR, ponto —
-## que é o que o comentário de `velocidade()` sempre disse ser a intenção. A
-## câmera não entra nessa decisão, então nenhum ângulo de mouse pode torcer os
-## eixos. A direita não é escolhida: com a frente e a normal fixas, ela sai da
-## geometria — e sai concordando com a tela, porque quem gruda está de frente
-## para a parede (conferido: q.direita e a direita da base dão o mesmo −X).
-##
-## Em superfície HORIZONTAL (topo do bloco, teto) "subir a superfície" não quer
-## dizer nada, e aí sim a frente da câmera é bem condicionada: é o controle de
-## chão de sempre, com a histerese que já existia.
-##
-## A atualização segue por `slerp`, nunca por substituição: assim a base nunca
-## salta quando a superfície troca de face por baixo dos pés.
-func _atualizar_base_da_superficie(q: MoveFrame, delta: float) -> void:
-	var n := _normal_parede
-	var alvo := _base_alvo(q, n)
-	if alvo == Basis.IDENTITY and _base_sup_valida:
-		return                      # sem candidata utilizável: guarda a que vale
-	if _base_sup_valida:
-		_base_sup = _base_sup.slerp(alvo, clampf(GIRO_BASE * delta, 0.0, 1.0)).orthonormalized()
-	else:
-		_base_sup = alvo
-		_base_sup_valida = true
-
-
-## A base que a superfície PEDE neste quadro. Devolve `Basis.IDENTITY` quando não
-## há candidata utilizável — o chamador guarda a que já vale.
-func _base_alvo(q: MoveFrame, n: Vector3) -> Basis:
-	# |sobe| é o seno do ângulo entre a normal e a vertical: 1 numa parede a
-	# prumo, 0 num piso ou teto.
-	var sobe := Vector3.UP - n * Vector3.UP.dot(n)
-	if sobe.length() > LIMIAR_VERTICAL:
-		return Basis.looking_at(sobe.normalized(), n)
-
-	# Daqui para baixo a superfície é praticamente horizontal: controle de chão.
-	var proj := q.frente - n * q.frente.dot(n)
-	if proj.length() > LIMIAR_BASE:
-		return Basis.looking_at(proj.normalized(), n)
-	if _base_sup_valida:
-		# Mal condicionada: reancora a frente que já vale na normal ATUAL — a
-		# superfície pode ter virado de face por baixo dos pés.
-		var f_atual: Vector3 = -_base_sup.z
-		var f: Vector3 = f_atual - n * f_atual.dot(n)
-		if f.length() > 0.05:
-			return Basis.looking_at(f.normalized(), n)
-		return Basis.IDENTITY
-	# Primeira vez, superfície horizontal e sem informação da câmera.
-	var alt := Vector3.FORWARD - n * Vector3.FORWARD.dot(n)
-	if alt.length_squared() <= 0.001:
-		alt = Vector3.RIGHT - n * Vector3.RIGHT.dot(n)
-	return Basis.looking_at(alt.normalized(), n)
-
-
-## A última base calculada. O Player usa para traduzir a velocidade da parede
-## para o plano que o animador entende.
-func base_da_superficie() -> Basis:
-	return _base_sup
-
-
-func rolando_no_ar() -> bool:
-	return _rolando_no_ar > 0.0
-
-
-## 0 no começo do rolamento no ar, 1 no fim. É o que o Player usa para girar o
-## corpo — a pose encolhida sozinha pareceria um agachamento no ar.
-func giro_do_rolamento_no_ar() -> float:
-	if _rolando_no_ar <= 0.0:
-		return 0.0
-	return clampf(1.0 - (_rolando_no_ar / ROLAMENTO_AR_DURACAO), 0.0, 1.0)
-
-
-## Solta a superfície. `pulando` = saída voluntária: ganha um empurrão para fora
-## e para cima, que é o que faz o cancelamento PARECER um pulo em vez de um
-## escorregão.
-func _soltar_da_parede(pulando: bool) -> void:
-	if not _na_parede:
-		return
-	_na_parede = false
-	_carencia_parede = 0.25
-	_base_sup_valida = false
-	if pulando and _dono:
-		_dono.velocity = _normal_parede * PAREDE_PULO_FORA + Vector3.UP * PAREDE_PULO_CIMA
-		# ⚠️ NÃO CONSOME PULO DUPLO. Sair da superfície é a saída da mecânica,
-		# não um salto aéreo: gastar o geppo aqui puniria o jogador por usar o
-		# cancelamento que a própria mecânica exige. Zerar (em vez de só não
-		# incrementar) devolve o recurso, como qualquer apoio devolve.
-		_geppo = 0
-		_rolando_no_ar = ROLAMENTO_AR_DURACAO
-		_consumiu_espaco = true
-	_normal_parede = Vector3.ZERO
-
-
-## O que está sob os PÉS enquanto se anda na superfície — permite virar de uma
-## face para outra (parede → teto) sem soltar.
-func _superficie_sob_os_pes() -> Vector3:
-	if _dono == null or _normal_parede == Vector3.ZERO:
-		return Vector3.ZERO
-	var espaco := _dono.get_world_3d().direct_space_state
-	# Parte de um ponto um pouco AFASTADO da superfície: um raio que nasce dentro
-	# do sólido não reporta acerto, e o corpo às vezes encosta.
-	var de: Vector3 = _dono.global_position + _normal_parede * 0.35
-	var par := PhysicsRayQueryParameters3D.create(de, de - _normal_parede * PAREDE_ALCANCE)
-	par.exclude = [_dono.get_rid()]
-	var h := espaco.intersect_ray(par)
-	return h["normal"] if not h.is_empty() else Vector3.ZERO
-
-
-func _normal_da_parede_escalavel(direcao: Vector3) -> Vector3:
-	for i in _dono.get_slide_collision_count():
-		var colisao := _dono.get_slide_collision(i)
-		var normal := colisao.get_normal()
-		if absf(normal.y) <= CLIMB_WALL_NORMAL_MAX_Y and direcao.dot(normal) < -0.15:
-			return normal
-	return Vector3.ZERO
-
-func _normal_da_parede_lateral(direcao: Vector3) -> Vector3:
-	var plano := Vector3(direcao.x, 0.0, direcao.z)
-	if plano.length_squared() < 0.01:
-		return Vector3.ZERO
-	plano = plano.normalized()
-	var lado := plano.cross(Vector3.UP)      # perpendicular horizontal
-	var espaco := _dono.get_world_3d().direct_space_state
-	var base := _dono.global_position
-	for s in [lado, -lado]:
-		var par := PhysicsRayQueryParameters3D.create(base, base + s * 0.85)
-		par.exclude = [_dono.get_rid()]
-		var hit := espaco.intersect_ray(par)
-		if not hit.is_empty():
-			var n: Vector3 = hit["normal"]
-			if absf(n.y) < 0.3:              # parede vertical (não chão/teto)
-				return n
-	return Vector3.ZERO
-
-# Mantle: true quando a CABEÇA já passou do topo da parede (raio à altura da
-# cabeça, em direção à parede, não bate em nada) -> dá pra subir na beirada.
-func _cabeca_livre_da_parede(normal_parede: Vector3) -> bool:
-	var espaco := _dono.get_world_3d().direct_space_state
-	var de := _dono.global_position + Vector3(0, 0.95, 0)
-	var par := PhysicsRayQueryParameters3D.create(de, de - normal_parede * 0.9)  # -normal = pra parede
-	par.exclude = [_dono.get_rid()]
-	return espaco.intersect_ray(par).is_empty()
+# Vieram do Player junto com o parkour: só existiam para ele. As do wall run e da
+# escalada moram em `corrida_na_parede.gd` e `escalada.gd`.
 
 # Vault: obstáculo na altura do joelho E livre acima -> dá pra pular por cima.
 func _obstaculo_baixo_a_frente(direcao: Vector3) -> bool:
@@ -523,9 +246,26 @@ func _obstaculo_baixo_a_frente(direcao: Vector3) -> bool:
 	baixo.exclude = [_dono.get_rid()]
 	if espaco.intersect_ray(baixo).is_empty():
 		return false                       # nada na altura do joelho -> não é vault
+	# Relevo em blocos (23/10/2026, pedido do dono): correndo contra um meio bloco o
+	# jogador SOBE como andando, sem pulo. Livre na altura do degrau que o `SubirDegrau`
+	# sobe sozinho (só com a cápsula, Modo História) = é degrau, não obstáculo de vault.
+	if _dono.get("colisor_capsula") and _livre_acima_do_degrau(plano, espaco):
+		return false
 	var alto := PhysicsRayQueryParameters3D.create(base + Vector3(0, 0.7, 0), base + Vector3(0, 0.7, 0) + plano * 1.2)
 	alto.exclude = [_dono.get_rid()]
 	return espaco.intersect_ray(alto).is_empty()   # livre em cima -> obstáculo é baixo
+
+
+## Nada à frente logo acima da altura que o `SubirDegrau` sobe (a partir dos PÉS).
+func _livre_acima_do_degrau(plano: Vector3, espaco: PhysicsDirectSpaceState3D) -> bool:
+	var forma := _dono.get("_colisor") as CollisionShape3D
+	if forma == null or not (forma.shape is CapsuleShape3D):
+		return false
+	var pes := forma.global_position.y - (forma.shape as CapsuleShape3D).height * 0.5
+	var de := Vector3(_dono.global_position.x, pes + SubirDegrau.ALTURA + 0.02, _dono.global_position.z)
+	var raio := PhysicsRayQueryParameters3D.create(de, de + plano * 1.2)
+	raio.exclude = [_dono.get_rid()]
+	return espaco.intersect_ray(raio).is_empty()
 
 func _poeira_do_pouso() -> void:
 	var mundo := _dono.get_tree().current_scene

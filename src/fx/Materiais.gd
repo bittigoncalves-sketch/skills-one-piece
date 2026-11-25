@@ -15,7 +15,7 @@ extends RefCounted
 #  a tela:
 #    `MapBuilder._gray`               o chão e todos os blocos do mapa
 #    `VoxelMeshes.voxel_material`     o corpo dos personagens
-#    `TreeAndFruitGenerator._material_tingido`  as árvores
+#    `TreeAndFruitGenerator.create_tree_3d`  as árvores
 #
 #  Quatro funções cobrem mais pixel que os outros 54 sítios somados. O resto
 #  migra quando encostar nele, não numa varredura.
@@ -107,6 +107,22 @@ static func chao(cor: Color, celula: float) -> Material:
 		g.set_shader_parameter("variacao_escala", 12.0)
 		g.set_shader_parameter("variacao_forca", 0.055)
 		return g
+	return m
+
+## TERRENO (30/09/2026): a cor vem de cada face (o solo pintado no vértice) e a luz
+## ganha uma faixa a mais — o relevo facetado tem faces em muitos ângulos, e com só
+## duas faixas metade de um morro ficava no escuro de uma vez.
+static func terreno() -> Material:
+	var m := superficie(Color.WHITE)
+	if m is ShaderMaterial:
+		var t := (m as ShaderMaterial).duplicate() as ShaderMaterial
+		t.set_shader_parameter("usar_cor_vertice", true)
+		t.set_shader_parameter("faixas", 3)
+		t.set_shader_parameter("usar_variacao_chao", true)
+		t.set_shader_parameter("variacao_escala", 9.0)
+		t.set_shader_parameter("variacao_forca", 0.045)
+		return t
+	(m as StandardMaterial3D).vertex_color_use_as_albedo = true
 	return m
 
 ## Famílias da arena. Os nomes carregam a intenção de arte; o cel shader mantém

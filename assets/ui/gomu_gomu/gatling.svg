@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <!-- Motion streaks of multiple punches -->
+  <path d="M4 16h14M8 28h16M4 40h12M6 52h16" stroke="#ffab91" stroke-width="2" stroke-linecap="round"/>
+  <!-- Staggered barrage fists -->
+  <rect x="22" y="8" width="13" height="15" rx="3" fill="#ff5722" stroke="#ff8a65" stroke-width="1.5"/>
+  <rect x="36" y="16" width="15" height="17" rx="3" fill="#ff7043" stroke="#ffab91" stroke-width="1.8"/>
+  <rect x="18" y="32" width="14" height="16" rx="3" fill="#ff5722" stroke="#ff8a65" stroke-width="1.5"/>
+  <rect x="38" y="38" width="16" height="18" rx="4" fill="#ff7043" stroke="#ffd54f" stroke-width="2"/>
+  <rect x="26" y="24" width="14" height="15" rx="3" fill="#e64a19" stroke="#ff7043" stroke-width="1.5"/>
+  <!-- Speed lines bursting forward -->
+  <path d="M54 14l6-3M56 26h6M54 36l6 2M52 48l8 5" stroke="#ffe082" stroke-width="2" stroke-linecap="round"/>
+</svg>

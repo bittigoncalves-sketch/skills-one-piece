@@ -10,6 +10,10 @@ func _init() -> void:
 		print("❌ Trava fruta: jogador ausente")
 		quit(1)
 		return
+	# A prova de que o Z voltou a funcionar é a camuflagem (`_invisivel`): só a Suke Suke a faz. A fruta INICIAL da arena já não é ela (hoje é a do atalho de desenvolvimento), então equipa-se explicitamente.
+	p.call("equip_fruit", "suke_suke")
+	await _esperar(0.5)
+	p.set("energy", p.get("max_energy"))
 	p.take_damage(24.0)
 	await process_frame
 	var hud := get_first_node_in_group("hud")
@@ -18,7 +22,8 @@ func _init() -> void:
 	var bloqueou: bool = float(p.get("_fruit_damage_lock_timer")) > 0.8 \
 		and not bool(p.get("_invisivel")) and painel != null and painel.visible \
 		and String(painel.get_node("Bloco/Tempo").text).contains("s")
-	await _esperar(1.08)
+	for i in 72:                        # 1,2 s de tempo de JOGO (a trava de 1,0 s conta física): esperar 1,08 s de relógio de parede deixava sobrar 0,05 s quando a física rodava abaixo de 60 Hz
+		await physics_frame
 	p.call("begin_charge", "Z")
 	var liberou: bool = float(p.get("_fruit_damage_lock_timer")) <= 0.0 and bool(p.get("_invisivel"))
 	print("%s dano bloqueia fruta e mostra o quadrado de recuperação" % ("✅" if bloqueou else "❌"))
