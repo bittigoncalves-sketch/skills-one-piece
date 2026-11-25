@@ -1,0 +1,36 @@
+{
+  "visual_checks": 52,
+  "visual_failures": 0,
+  "quick_suite": {
+    "passed": 71,
+    "failed": 10,
+    "skipped": 1,
+    "failures": [
+      "test_balance",
+      "test_buki_buki",
+      "test_compila",
+      "test_corte_horizontal",
+      "test_mera_z_saque",
+      "test_morte_limpa_cast",
+      "test_ope_animacoes",
+      "test_studio_playback",
+      "test_trava_fruta_dano",
+      "net_mp_probe"
+    ]
+  },
+  "compile_failures": [
+    "tools/anim_editor/studio/rig_scene.gd",
+    "tools/anim_editor/studio/main.gd",
+    "tools/anim_editor/studio/timeline.gd",
+    "tools/anim_editor/studio/test_selection.gd",
+    "tools/anim_editor/studio/test_studio.gd",
+    "tools/anim_editor/studio/view.gd"
+  ],
+  "network_override": {
+    "host_exit": 0,
+    "client_exit": 0,
+    "probe": "net_dano_host_probe + net_dano_client_probe"
+  },
+  "source_original_preserved": true,
+  "boss_abilities_implemented": false
+}

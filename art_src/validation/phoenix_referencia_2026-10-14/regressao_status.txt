@@ -1,0 +1,1 @@
+Bateria geral interrompida após 41 testes aprovados e 12 reprovados. Não é execução completa. Reproduziu falhas de arena/AutoDummy, Pika Z, bestas e seis scripts do editor de animação já mencionadas em docs/LISTA_DE_CORRECOES.md (13/10). O escopo desta tarefa é o modelo da fênix; testes específicos concluídos separadamente.

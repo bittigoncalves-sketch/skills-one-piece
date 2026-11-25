@@ -87,7 +87,7 @@ var _pos_scale := 1.0              # escala do esqueleto vs. rig voxel de refer�
 # Monta os proxies e o mapa de ossos. `holder` é quem adota os proxies (eles
 # precisam existir na árvore pra terem global_position válido nas métricas).
 # Devolve o dicionário {papel -> Node3D} pro BodyScanner.
-func setup(skel: Skeleton3D, holder: Node3D) -> Dictionary:
+func setup(skel: Skeleton3D, holder: Node3D, bone_map: Dictionary = {}) -> Dictionary:
 	_skel = skel
 
 	# Cadeia de transformações do ESQUELETO até o holder, percorrida UMA vez.
@@ -118,7 +118,8 @@ func setup(skel: Skeleton3D, holder: Node3D) -> Dictionary:
 
 	for role in BONE_ALIASES:
 		var idx := -1
-		for alias in BONE_ALIASES[role]:
+		var aliases: Array = [bone_map[role]] if bone_map.has(role) else BONE_ALIASES[role]
+		for alias in aliases:
 			idx = skel.find_bone(alias)
 			if idx >= 0:
 				break

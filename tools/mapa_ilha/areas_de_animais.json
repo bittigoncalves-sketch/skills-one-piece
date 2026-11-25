@@ -1,0 +1,40 @@
+{
+	"_leia": "Áreas INICIAIS de animais da Ilha Inicial (01/10/2026). FONTE de tools/mapa_ilha/colocar_areas_de_animais.gd, que as SOMA ao mapa vivo (nunca regenera a ilha). centro = [x, z] em metros (+X leste, -Z norte); tamanho = [largura X, comprimento Z]; a altura e o Y saem do relevo. Posições escolhidas sobre o mapa vivo de 01/10 14:16 (vista de cima), não sobre a planta antiga: as fazendas ficam no NORDESTE, a vila a LESTE, o porto na costa leste, o coliseu no sudoeste, os morros (com o modelo de montanha) no noroeste. Pedido do dono: ~70 animais, poucos por espécie, chefes presos nos morros.",
+	"areas": [
+		{"id": "vila_beagle", "especie": "beagle", "quantidade": 2, "centro": [120.0, 30.0], "tamanho": [50.0, 50.0]},
+		{"id": "vila_corgi", "especie": "corgi", "quantidade": 1, "centro": [160.0, 0.0], "tamanho": [40.0, 40.0]},
+		{"id": "vila_cao", "especie": "dog", "quantidade": 2, "centro": [150.0, 50.0], "tamanho": [50.0, 40.0]},
+		{"id": "vila_cao_de_guarda", "especie": "dog-9bqpcxoyrk", "quantidade": 1, "centro": [172.0, -14.0], "tamanho": [30.0, 30.0]},
+		{"id": "vila_vira_lata", "especie": "dog_final_", "quantidade": 1, "centro": [98.0, 0.0], "tamanho": [40.0, 50.0]},
+		{"id": "vila_gato", "especie": "cat", "quantidade": 2, "centro": [135.0, 22.0], "tamanho": [70.0, 70.0]},
+		{"id": "vila_pardal", "especie": "bird_2", "quantidade": 2, "centro": [140.0, 20.0], "tamanho": [100.0, 100.0]},
+
+		{"id": "fazenda_vaca", "especie": "cow", "quantidade": 4, "centro": [110.0, -150.0], "tamanho": [60.0, 50.0]},
+		{"id": "fazenda_cavalo", "especie": "horse", "quantidade": 3, "centro": [150.0, -92.0], "tamanho": [50.0, 30.0]},
+		{"id": "fazenda_ovelha", "especie": "sheep", "quantidade": 3, "centro": [82.0, -178.0], "tamanho": [40.0, 50.0]},
+		{"id": "fazenda_carneiro", "especie": "sheep_-_animated_low_poly", "quantidade": 3, "centro": [178.0, -150.0], "tamanho": [40.0, 60.0]},
+		{"id": "fazenda_galinha", "especie": "chicken", "quantidade": 5, "centro": [125.0, -138.0], "tamanho": [40.0, 30.0]},
+		{"id": "fazenda_pintinho", "especie": "chick", "quantidade": 3, "centro": [125.0, -138.0], "tamanho": [30.0, 24.0]},
+		{"id": "fazenda_andorinha", "especie": "bird-h5izaudltz", "quantidade": 2, "centro": [125.0, -155.0], "tamanho": [90.0, 80.0]},
+		{"id": "rio_pato", "especie": "duck", "quantidade": 3, "centro": [-34.0, -150.0], "tamanho": [24.0, 40.0]},
+
+		{"id": "porto_pelicano", "especie": "pelican_-_animated_low_poly", "quantidade": 3, "centro": [238.0, 100.0], "tamanho": [30.0, 40.0]},
+		{"id": "praia_caranguejo", "especie": "caranguejo_grande", "quantidade": 3, "centro": [90.0, 247.0], "tamanho": [120.0, 12.0]},
+
+		{"id": "planicie_bufalo", "especie": "bufalo", "quantidade": 2, "centro": [100.0, 165.0], "tamanho": [70.0, 60.0]},
+		{"id": "planicie_bisao", "especie": "bizon", "quantidade": 2, "centro": [180.0, 175.0], "tamanho": [60.0, 50.0]},
+
+		{"id": "floresta_coelho", "especie": "rabbit", "quantidade": 4, "centro": [-100.0, 20.0], "tamanho": [60.0, 60.0]},
+		{"id": "floresta_cervo", "especie": "deer", "quantidade": 3, "centro": [-120.0, -30.0], "tamanho": [70.0, 50.0]},
+		{"id": "floresta_alce", "especie": "deer-blt2gjhppt", "quantidade": 2, "centro": [-200.0, 20.0], "tamanho": [50.0, 60.0]},
+		{"id": "floresta_raposa", "especie": "fox", "quantidade": 2, "centro": [-95.0, 95.0], "tamanho": [50.0, 40.0]},
+		{"id": "rio_sapo", "especie": "frog", "quantidade": 3, "centro": [4.0, 20.0], "tamanho": [16.0, 34.0]},
+		{"id": "coliseu_lagarto", "especie": "lizard", "quantidade": 3, "centro": [-100.0, 195.0], "tamanho": [60.0, 40.0]},
+		{"id": "floresta_macaco", "especie": "monkey_-_animated_low_poly", "quantidade": 3, "centro": [-205.0, -40.0], "tamanho": [50.0, 50.0]},
+		{"id": "floresta_urso", "especie": "bear", "quantidade": 1, "centro": [-205.0, 110.0], "tamanho": [50.0, 60.0]},
+		{"id": "floresta_aguia", "especie": "eagle_-_animated_low_poly", "quantidade": 1, "centro": [-80.0, 140.0], "tamanho": [80.0, 80.0]},
+
+		{"id": "morros_gorila", "especie": "gorilla_-_animated_low_poly", "quantidade": 1, "centro": [-205.0, -118.0], "tamanho": [40.0, 44.0], "boss": true},
+		{"id": "morros_harpia", "especie": "harpia_-_animated_low_poly", "quantidade": 1, "centro": [-142.0, -160.0], "tamanho": [80.0, 70.0], "boss": true}
+	]
+}

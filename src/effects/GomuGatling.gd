@@ -35,8 +35,16 @@ func setup(world: Node, caster: Node, arm_r: Node3D, arm_l: Node3D, fwd: Vector3
 	if _caster and _caster.has_method("lock_movement"):
 		_caster.lock_movement(_duration + 0.3, "C")
 
+	if _caster:
+		_caster.set_meta("custom_pose", "gomu_gatling")
+		_caster.set_meta("gomu_pose_t", 0.0)
+	GomuAudio.play(_world, (_arm_r.global_position if _arm_r else _fwd), "gatling", 1.0)
+
 func _process(delta: float) -> void:
 	_t += delta
+	if _caster and is_instance_valid(_caster):
+		var cur_pose_t: float = float(_caster.get_meta("gomu_pose_t", 0.0))
+		_caster.set_meta("gomu_pose_t", cur_pose_t + delta)
 	
 	if _t >= _next_punch_t and _punch_count < _max_punches:
 		_fire_punch()
@@ -95,6 +103,10 @@ func _finish() -> void:
 	if _arm_r: _arm_r.visible = true
 	if _arm_l: _arm_l.visible = true
 	
+	if _caster and is_instance_valid(_caster):
+		if _caster.get_meta("custom_pose", "") == "gomu_gatling":
+			_caster.set_meta("custom_pose", "")
+
 	if _on_recover.is_valid():
 		_on_recover.call()
 		
@@ -103,5 +115,8 @@ func _finish() -> void:
 func abort() -> void:
 	_max_punches = _punch_count
 	_t = _next_punch_t + 0.3
-	if _caster and _caster.has_method("lock_movement"):
-		_caster.lock_movement(0.0, "")
+	if _caster and is_instance_valid(_caster):
+		if _caster.get_meta("custom_pose", "") == "gomu_gatling":
+			_caster.set_meta("custom_pose", "")
+		if _caster.has_method("lock_movement"):
+			_caster.lock_movement(0.0, "")

@@ -1,5 +1,14 @@
 class_name Player
 extends CharacterBody3D
+# Gatilho de extração: novas regras de locomoção ficam em componentes; agachar
+# é dono de colisão/apoio em src/player/agachar.gd, sem ampliar esta casca.
+
+var _rocket: Node
+
+const BARA := preload("res://src/combat/BaraController.gd")
+const BARA_NET := preload("res://src/player/BaraNetwork.gd")
+const OPE := preload("res://src/combat/OpeController.gd")
+const OPE_VFX := preload("res://src/effects/OpeVfx.gd")
 
 signal player_damaged(amount: float, hp: float, mhp: float)
 signal aim_assist_changed(on: bool)
@@ -14,6 +23,9 @@ signal anim_name_shown(text: String)
 # ============================================================================
 
 const SPEED := 4.2
+
+## Movimentação do Minecraft (andar, correr, agachar, pular, cair): ver MovimentoMinecraft.
+var _mc_mov := MovimentoMinecraft.new()
 const JUMP_VELOCITY := 16.0
 
 ## Quão depressa o corpo alcança a mira. Alto o bastante para não haver atraso
@@ -22,45 +34,48 @@ const JUMP_VELOCITY := 16.0
 ## em movimento — dois números para a mesma coisa, agora um só.
 const VELOCIDADE_FACING := 26.0
 
-## Altura do eixo do rolamento de costas, a partir dos pés. É a cintura: uma
-## cambalhota gira em torno do centro de massa, não do chão nem da cabeça.
+## Altura da CINTURA a partir dos pés: o pivô de quem gira o corpo inteiro (aú,
+## inclinação do wall run) — gira-se em torno do centro de massa, não do chão.
 const ALTURA_DO_ROLAMENTO := 0.55
 
-## ANDAR NA SUPERFÍCIE (a mecânica que substituiu a escalada). O custo por
-## segundo é o que impede a mecânica de tornar o chão irrelevante: ela é um
-## RECURSO, não um modo de locomoção grátis.
-const CUSTO_PAREDE_POR_SEG := 22.0
+## WALL RUN (fatia 2, 03/10/2026): o corpo inteiro inclina para LONGE da parede,
+## girando em volta da cintura (ALTURA_DO_ROLAMENTO) — é o que põe os PÉS na
+## parede, como pediu o dono ("os dois pés permanecem próximos ou apoiados").
+const INCLINACAO_WALL_RUN := deg_to_rad(26.0)
 
-## Gira o modelo para uma base ALVO preservando a ESCALA MUNDIAL dele.
+## Inclinação do wall run (rad, + = para a esquerda) e o repouso guardado dela.
+var _incl_parede := 0.0
+var _inclinado_na_parede := false
+var _pose_repouso_parede := Vector3.ZERO
+
+
+## WALL RUN: o corpo inteiro inclina para longe da parede girando em volta do eixo
+## da FRENTE, com o pivô na CINTURA — a cintura fica onde está, os pés vão para a
+## parede e a cabeça para longe dela (é a postura de quem corre apoiado na parede).
+## Mesmo cuidado do rolamento de costas: o repouso do modelo é GUARDADO no começo e
+## devolvido no fim, nunca suposto.
 ##
-## ⚠️ `global_basis = ...orthonormalized()` DESTRÓI A ESCALA. Uma base
-## ortonormalizada tem escala 1, e o modelo do jogador está em **0,4167** — o
-## personagem ficava 2,4× MAIOR ao encostar na parede. Com a Gura Gura, que
-## escala o Player em 2×, preservar somente a escala local encolhe o modelo ao
-## escrever no espaço global. Base carrega rotação E escala juntas; elas devem
-## ser lidas e repostas no mesmo espaço.
-func _girar_modelo(alvo: Basis, delta: float) -> void:
+## `lado`: +1/−1 no wall run (parede à direita/esquerda), 0 fora dele. O dono passa
+## o do parkour; a cópia remota, o replicado (`net_parede_lado`).
+func _inclinar_no_wall_run(delta: float, lado: int) -> void:
 	if _char_model == null:
 		return
-	var escala_global: Vector3 = _char_model.global_transform.basis.get_scale()
-	var atual := _char_model.global_basis.orthonormalized()
-	var nova := atual.slerp(alvo.orthonormalized(), clampf(VELOCIDADE_FACING * delta, 0.0, 1.0))
-	_char_model.global_basis = nova.orthonormalized().scaled(escala_global)
-
-
-## true enquanto o corpo ainda está inclinado por ter andado numa superfície e
-## precisa voltar a ficar em pé. Não vale durante o rolamento de costas, que
-## inclina de propósito e tem o próprio desfazer.
-func _endireitando() -> bool:
-	if _char_model == null or _rolando_de_costas:
-		return false
-	return _char_model.global_transform.basis.y.normalized().dot(Vector3.UP) < 0.999
-
-
-## Estado do rolamento de costas. `_pose_repouso` é a posição do modelo ANTES do
-## giro — guardada, nunca suposta.
-var _rolando_de_costas := false
-var _pose_repouso := Vector3.ZERO
+	var alvo := INCLINACAO_WALL_RUN * float(lado)
+	_incl_parede = lerpf(_incl_parede, alvo, 1.0 - exp(-14.0 * delta))
+	if alvo == 0.0 and absf(_incl_parede) < 0.0005:
+		if _inclinado_na_parede:
+			_inclinado_na_parede = false
+			_incl_parede = 0.0
+			_char_model.rotation.z = 0.0
+			_char_model.position = _pose_repouso_parede
+		return
+	if not _inclinado_na_parede:
+		_inclinado_na_parede = true
+		_pose_repouso_parede = _char_model.position
+	_char_model.rotation.z = _incl_parede
+	var cintura := Vector3(0.0, ALTURA_DO_ROLAMENTO, 0.0)
+	var giro := Basis.from_euler(Vector3(0.0, _char_model.rotation.y, _incl_parede))
+	_char_model.position = _pose_repouso_parede + cintura - giro * cintura
 const GRAVITY := 32.0        # gravidade reforcada (Godot padrao ~9.8)
 
 ## A altura que um pulo simples alcança: v²/2g. Com 16 e 32, exatamente 4,00 m.
@@ -91,7 +106,75 @@ const MOUSE_SENS := 0.0035
 # disputar o fruto e perdê-lo ao morrer (ver `docs/frutas/README.md`). Se este
 # atalho chegar ao jogador final, essa economia deixa de existir.
 # GATILHO para apagar: quando houver escolha de fruta/personagem no menu.
-const FRUTA_INICIAL := "pika_pika"   # era "suke_suke" — trocado a pedido do dono (2026-09-04)
+# A fruta com que todo jogador entra na partida.
+#   suke_suke → pika_pika (2026-09-04) → ope_ope (2026-09-08), sempre a pedido do dono.
+#
+# ⚠️ TROCAR ESTA LINHA MEXE EM MAIS COISA DO QUE PARECE:
+#
+#   1. A PASSIVA multiplica a velocidade, e o `traco_locomocao` compara o
+#      movimento com uma linha de base gravada — byte a byte, com `diff -q`,
+#      tolerância ZERO. Medido em `FruitPassiveSystem.gd`: `SPEED` é 4,2 e o
+#      `speed_mod` multiplica — pika_pika 1,25 = 5,25; **ope_ope 1,00 = 4,20**,
+#      que é o `SPEED` cru. Qualquer troca de fruta reprova o traço inteiro.
+#      Ver o item 52 de `docs/LISTA_DE_CORRECOES.md`.
+#
+#   2. A fruta inicial precisa ter ÁRVORE no mapa, senão quem trocar de fruta
+#      numa partida não a recupera. Era o item 51 da lista de correções, e a
+#      `pika_pika` era a única jogável sem árvore. A `ope_ope` tem — então esta
+#      troca resolve aquele item de lado.
+const FRUTA_INICIAL := "ope_ope"
+
+# O que este corpo tem PERMISSÃO de fazer (combate, dash, pulo duplo, técnicas).
+# A arena usa tudo liberado; o Modo História troca por `civil()` antes do
+# `add_child`. A trava fica na entrada de cada pedido — ver `capacidades.gd`.
+var capacidades := CapacidadesDoJogador.completas()
+# Combate direcional do Modo História (docs/PLANO_COMBATE_HISTORIA.md). NULO fora
+# dele: quem instala é `ModoHistoria.instalar_combate_direcional`, e com ele nulo
+# todo desvio que o consulta é inerte — a arena não passa por nenhum.
+var combate_direcional: ExecutorCorpoACorpo = null
+# A entrada do jogador para esse combate (clique + direção pelo mouse). Nula junto.
+var entrada_combate_direcional: EntradaCorpoACorpo = null
+## O clique do Minecraft (V5, `CliqueDeBlocos`): quebra/coloca blocos e bate com recarga no lugar do soco direcional. Nulo = o soco de sempre.
+var clique_de_blocos: CliqueDeBlocos = null
+# Números da fruta NESTE modo (custo de energia, recarga, dano). NULO na arena, e nulo
+# quer dizer "faz o de sempre": `Balance`, `SkillSystem` e `ENERGY_SKILL`. Quem instala é
+# o `ModoHistoria` — a história tem energia 10, onde o custo de 180 da arena travaria tudo.
+var perfil_de_frutas: PerfilDeFrutas = null
+# O voo curto da fruta (F no Modo História). Como o dash: ele devolve a velocidade e
+# quem escreve é a etapa de locomoção. Parado, é inerte.
+var _voo := VooFoguete.new()
+var _phoenix: Node3D
+
+# A malha do foguete que o jogador VIRA durante o voo (decisão do dono, 30/09/2026).
+# Existe enquanto `_voo.forma_de_foguete()` for verdade — ver `_sincronizar_forma_de_foguete`.
+const FORMA_DE_FOGUETE := preload("res://src/effects/forma_de_foguete.gd")
+var _forma_de_foguete: Node3D = null
+# O indicador de mira da fruta (linha no Z, pontos no X, ponto de queda no C). Nasce na
+# primeira tecla segurada e só no corpo de quem joga; na arena nunca aparece, porque lá
+# não existe `perfil_de_frutas`.
+const MIRA_DE_FRUTA := preload("res://src/player/mira_de_fruta.gd")
+var _mira_fruta: Node3D = null
+# Onde o corpo reaparece sem placar (queda no vazio). A arena mantém o centro da
+# plataforma; o Modo História passa o spawn do arquivo de mapa.
+var ponto_de_renascimento: Vector3 = Scoreboard.RESPAWN
+## Modo História (27/10/2026, `MorteDoJogador`): quem trata a morte (câmera lenta, texto, fade) e DEPOIS pede o respawn.
+## Vazio na arena: lá o placar manda o respawn na hora, como sempre.
+var ao_morrer := Callable()
+var morrendo := false
+# Os "clones" translúcidos que ficam para trás na corrida (`AfterimageTrail`). É
+# efeito de poder da arena; o Civil do Modo História corre sem eles (pedido do
+# dono, 14/09/2026). Desligado, o rastro que já existia some sozinho.
+var ecos_de_movimento_ligados := true
+# COLISOR EM CÁPSULA (01/10/2026, decisão do dono: SÓ no Modo História). A caixa de
+# fundo reto apoia numa quina em qualquer encosta e o centro (onde estão os pés)
+# fica no ar — medido na Ilha Inicial: +11 cm a 4,6°, +27 cm a 21° —, e ela não
+# sobe degrau nenhum. A cápsula toca a encosta embaixo do centro (≈4 cm a 21°) e
+# passa por cima de beirada baixa. A arena continua com a caixa. Definir ANTES do
+# `add_child` (o colisor nasce no `_ready`); quem liga é `ModoHistoria.colocar_civil`.
+var colisor_capsula := false
+## Knockback no estilo Minecraft (23/10/2026): só o jogador do Modo História
+## (`ModoHistoria.instalar_combate_direcional`). Nulo = o empurrão da arena.
+var knockback_minecraft: KnockbackMinecraft = null
 
 var current_fruit_id: String = FRUTA_INICIAL
 var active_style: String = "basic"
@@ -100,19 +183,31 @@ var active_style: String = "basic"
 #
 #     1 -> fruit   Akuma no Mi (Z/X/C/V da fruta)
 #     2 -> style   estilo de luta (Z/X/C/V do estilo)
-#     3 -> sword   a Yoru na mão; quem golpeia é o clique, não os slots
+#     3 -> sword   Yoru: dois M1 e técnicas próprias Z/X/C/V
 #
 # Quem escolhe QUAL fruta / QUAL estilo continua sendo o menu do M.
 #
-# ⚠️ NO MODO `sword` OS SLOTS FICAM MUDOS, de propósito. Todo consumidor de
-# `combat_mode` neste arquivo é um `if == "style" ... else` — com um terceiro
-# valor eles cairiam no ramo da fruta e o jogador conjuraria a Akuma no Mi de
-# espada na mão. Em vez de espalhar `elif == "sword"` por seis lugares, o cast
-# inteiro é barrado na porta de entrada (`pode_conjurar`), que é uma verdade só
-# e não precisa ser lembrada em cada ponto novo.
+# No modo espada o cast de fruta/estilo segue barrado por pode_conjurar.
+# As técnicas Yoru possuem entrada própria, validada pelo servidor.
 var combat_mode: String = "fruit" # "fruit", "style" ou "sword"
 var speed_multiplier: float = 1.0
+## Água rasa (Modo História, 01/10/2026): quem calcula é o `JogadorNaAgua`; 1,0 = seco.
+var fator_da_agua: float = 1.0
+## Na água funda (`JogadorNaAgua`, docs/AGUA_PLANO.md): "" = fora; "nadando" = flutua e
+## nada; "afundando" = usuário de Akuma no Mi totalmente submerso (não nada, afunda).
+## Nesses modos a gravidade dá lugar a `agua_vertical` (velocidade vertical pedida) e o
+## pulo do parkour não age — o Espaço sobe, o Ctrl desce.
+var modo_na_agua: String = ""
+var agua_vertical: float = 0.0
+var controle_da_agua: Node = null
+## Controlador da montaria do modo história; null fora da sela.
+var montaria: Node = null
+## Posto de comando de barco da campanha; null enquanto anda/nada normalmente.
+var navegacao: Node = null
 var jump_multiplier: float = 1.0
+## Velocidade e Pulo do Mine Piece na história (`VelocidadeMinePiece`, A6b): efeitos que sobem ao correr/agachar. 1 fora dela.
+var velocidade_mod: float = 1.0
+var pulo_mod: float = 1.0
 
 # Vida (barra verde, HUD) — máx 2048. Foco continua no knockback pra fora do mapa,
 # mas agora o dano importa e é mostrado.
@@ -124,6 +219,8 @@ var jump_multiplier: float = 1.0
 # não quebra. A regra "vista sem setter" vale para campo cujo write de fora é
 # bug — não é o caso destes.
 var _vida := HealthController.new()
+## Arremesso com derrubada (4º soco do Boss): voa, cai deitado, levanta.
+var _arremesso := PlayerArremesso.new()
 var _mira := Mira.new()
 var health: float:
 	get: return _vida.vida
@@ -162,6 +259,10 @@ func _add_input_to_buffer(action: String) -> void:
 		_input_buffer.pop_front()
 
 func _consume_input(action: String) -> bool:
+	if esta_capturado_pelo_vento():
+		return false
+	if _arremesso.ativo():
+		return false
 	if has_meta("custom_pose") and get_meta("custom_pose") == "knockdown":
 		return false
 	if has_meta("is_frozen") and get_meta("is_frozen"):
@@ -191,6 +292,9 @@ const ESTADOS_TRAVADOS := ["AttackStartup", "AttackActive", "AttackRecovery", "C
 
 # Está no meio de um golpe do combo (qualquer das três fases)?
 func esta_atacando() -> bool:
+	# No Modo História o golpe é do executor e a FSM fica em Idle.
+	if combate_direcional != null:
+		return combate_direcional.atacando()
 	return _fsm != null and _fsm.state != null and _fsm.state.name in ESTADOS_DE_ATAQUE
 
 # O cast vive em src/player/cast_controller.gd (passo 6c). Aqui só as VISTAS —
@@ -215,9 +319,32 @@ var _cast_token: int:
 # à velocidade logo antes do move_and_slide.
 
 var _yaw := 0.0     # rotacao horizontal da camera
-var _pitch := -0.25 # rotacao vertical da camera
+var _pitch := PITCH_DE_DESCANSO # rotacao vertical da camera
+## A câmera de 3ª pessoa DESCANSA olhando ~14° para baixo. O voo da Rocket trata esse
+## ângulo como NIVELADO: sem isso o foguete mergulharia sozinho com o mouse parado.
+const PITCH_DE_DESCANSO := -0.25
 # PARKOUR -> src/player/parkour_controller.gd (Fase 4). Aqui só as VISTAS.
 var _parkour := ParkourController.new()
+# LOCOMOÇÃO NO CHÃO -> src/player/locomocao_chao.gd (02/10/2026, fatia 1 de
+# docs/PARKOUR_MIRRORS_EDGE_PLANO.md): arrancada, frenagem, giro, curva e inclinação.
+const LocomocaoChao = preload("res://src/player/locomocao_chao.gd")
+var _loco_chao = LocomocaoChao.new()
+## Deslize legado: Ctrl passou a agachar em 20/10/2026.
+const Deslize = preload("res://src/player/deslize.gd")
+var _deslize = Deslize.new()
+var _agachar = preload("res://src/player/agachar.gd").new()
+const SubirDegrau := preload("res://src/player/subir_degrau.gd")
+var _encolhido := false
+var _colisor_inteiro := {}
+## A FRENTE (decisão do dono, 02/10/2026): correndo livre o corpo segue o
+## MOVIMENTO; atacando, usando skill ou mirando ele vira para a MIRA e fica assim
+## por COMBATE_SEGURA segundos depois da última ação. Substitui a regra de 27/08
+## ("sempre a mira") fora do combate — o golpe continua saindo para onde o corpo
+## aponta, porque em combate o corpo aponta para a mira.
+const COMBATE_SEGURA := 0.8
+const VELOCIDADE_FACING_LIVRE := 16.0
+const VELOCIDADE_FACING_GIRO := 34.0
+var _combate_t := 0.0
 var _is_climbing: bool:
 	get: return _parkour.escalando()
 var max_geppo: int:
@@ -233,8 +360,13 @@ var _cam: Camera3D            # atalho para `_camera.camera()` — a mira usa mu
 
 # Sprint = Shift segurado com direção. Usado pela câmera e pelos efeitos de tela;
 # o movimento tem a própria checagem em _physics_process.
+## Público para o combate direcional (golpe de corrida do Epic Fight).
+func esta_correndo() -> bool:
+	return _is_sprinting() or get_meta("forcar_corrida", false)      # meta: sonda de teste (o Shift real não existe em headless)
+
+
 func _is_sprinting() -> bool:
-	return Input.is_key_pressed(KEY_SHIFT) and velocity.length_squared() > 0.5
+	return not _agachar.ativo and Input.is_key_pressed(KEY_SHIFT) and velocity.length_squared() > 0.5
 var _long_jump_t: float:
 	get: return _parkour.janela_impulso()
 # O PEDIDO do jogador neste quadro (teclas + base da câmera) -> move_frame.gd.
@@ -266,6 +398,11 @@ var _roll_t: float = 0.0
 # Os números e o estado da esquiva moram em src/player/dash_controller.gd
 # (Fase 4). Aqui ficam só as VISTAS, para quem observa de fora.
 var _dash := DashController.new()
+# O Q no ar é outro componente (15/10/2026): habilidade comprada, com energia e recarga.
+var _dash_ar := DashNoAr.new()
+## Alguma das duas esquivas (roll no chão, dash no ar) está andando com o corpo.
+func esquivando() -> bool:
+	return _dash.ativo() or _dash_ar.ativo()
 var _dash_t: float:
 	get: return _dash.tempo()
 var _dash_dir: Vector3:
@@ -277,7 +414,6 @@ var _dash_cooldown: float:
 # Aqui só as VISTAS.
 var _disparo := DisparoSustentado.new()
 const FootDustController = preload("res://src/player/foot_dust_controller.gd")
-const RunAccelerationController = preload("res://src/player/run_acceleration_controller.gd")
 const FallImpactController = preload("res://src/player/fall_impact_controller.gd")
 const AirSlamFXClass = preload("res://src/effects/AirSlamFX.gd")
 const SpinKickFXClass = preload("res://src/effects/SpinKickFX.gd")
@@ -286,7 +422,6 @@ const ContextualMeleeFXClass = preload("res://src/effects/contextual_melee_fx.gd
 const AfterimageTrail = preload("res://src/player/afterimage_trail.gd")
 const IronBodyController = preload("res://src/player/iron_body_controller.gd")
 var _poeira_dos_pes := FootDustController.new()
-var _aceleracao_da_corrida := RunAccelerationController.new()
 var _impacto_de_queda := FallImpactController.new()
 var _ecos_de_movimento := AfterimageTrail.new()
 var _corpo_de_ferro := IronBodyController.new()
@@ -337,7 +472,11 @@ var _buki_pivot: Node3D:            # pivô do canhão-corpo (X): gira com a mir
 var _fruit_cooldowns: Dictionary = {"Z": 0.0, "X": 0.0, "C": 0.0, "V": 0.0}
 var _style_cooldowns: Dictionary = {"Z": 0.0, "X": 0.0, "C": 0.0, "V": 0.0}
 var _skill_cooldowns: Dictionary:
-	get: return _fruit_cooldowns if combat_mode == "fruit" else _style_cooldowns
+	get:
+		if combat_mode == "sword" and _yoru_combat:
+			return {"Z": _yoru_combat.cooldown("Z"), "X": _yoru_combat.cooldown("X"),
+				"C": _yoru_combat.cooldown("C"), "V": _yoru_combat.cooldown("V")}
+		return _fruit_cooldowns if combat_mode == "fruit" else _style_cooldowns
 ## ============================================================================
 ##  TRAVA PÓS-FRUTA (pedido do dono, 2026-09-01)
 ##
@@ -352,12 +491,29 @@ var _skill_cooldowns: Dictionary:
 ##  em série, cada golpe custa 5 s a mais, e o ritmo do combate de fruta muda de
 ##  verdade.
 ## ============================================================================
-const TRAVA_POS_FRUTA := 5.0
+## ⚠️ DESLIGADA em 2026-09-13 (pedido do dono: "vai ser refeito de outra forma
+## mais tarde"). Era 5,0. Com 0 nada arma: os poderes não travam, as recargas não
+## pausam e o contador (`TravaFrutaHud`) fica escondido. O mecanismo continua
+## inteiro — religar é trocar este número. GATILHO: quando a trava nova for
+## desenhada, substituir esta constante e o `test_trava_pos_fruta` junto.
+const TRAVA_POS_FRUTA := 0.0
 var _trava_pos_fruta: float = 0.0
+## INTERVALO ENTRE GOLPES DE FRUTA (pedido do dono, 07/10/2026): "um ataque só pode ser
+## lançado 0,5 segundos após o outro". Todas as frutas, arena e história. Só espaça os
+## golpes: NÃO pausa recarga nenhuma (a trava acima pausava). A skill do Builder escolhe
+## o seu no editor (`configuracoes.intervalo_depois`). O servidor confere com folga.
+const INTERVALO_ENTRE_GOLPES := 0.5
+var _intervalo_golpe: float = 0.0
 
 var _combo_breaker_cooldown: float = 0.0
 var aim_assist: bool = false   # Haki da Observação (liga/desliga no E)
 var _gura_rush_active := false
+# Movimento pedido por uma skill do Builder (`ExecutorDeSkill`), renovado a cada quadro
+# de física: se o executor some, o pedido expira sozinho em 2 quadros.
+var _mov_skill_vel := Vector3.ZERO
+var _mov_skill_vertical := false
+var _flutuar_por_skill := false
+var _mov_skill_quadro := -100
 var _gura_rush_timer := 0.0
 var _gura_rush_dir := Vector3.ZERO
 var _gura_rush_target: Node3D = null
@@ -481,7 +637,143 @@ const RECARGA_POR_SLOT := {"Z": 5.0, "X": 7.0, "C": 10.0, "V": 25.0}
 # ("para todos os ataques de skills que não sejam frutas").
 const RECARGA_ESTILO := 60.0
 
+## Custo de energia de uma técnica: o perfil do modo manda; sem perfil, a constante da
+## arena. Um ponto só, para o custo não virar número solto espalhado pelos controladores.
+## F no Modo História: o voo curto da fruta. Trava por capacidade, ficha, energia e
+## recarga — as mesmas portas das técnicas, no mesmo lugar. Devolve `true` se decolou.
+func pedir_voo_de_fruta() -> bool:
+	if not capacidades.can_fly or perfil_de_frutas == null or _voo.ativo():
+		return false
+	var t := perfil_de_frutas.tecnica("F")
+	if t == null or t.comportamento != "voo" or not corpo_livre_para_golpe():
+		return false
+	if float(_fruit_cooldowns.get("F", 0.0)) > 0.0 or float(energy) + 0.001 < t.custo_de_energia:
+		return false
+	gastar_energia(t.custo_de_energia)
+	_fruit_cooldowns["F"] = recarga_do_cast("F")
+	_voo.comecar(_mira_do_voo(), t.duracao)
+	return true
+
+
+## Para onde o foguete do F quer ir: o yaw e o pitch da CÂMERA (o mouse pilota em 3D —
+## decisão do dono, 30/09/2026), com o pitch de descanso valendo como voo nivelado. O
+## `VooFoguete` limita a inclinação e a curva.
+func _mira_do_voo() -> Vector3:
+	var inclinacao := _pitch - PITCH_DE_DESCANSO
+	return RosaDosVentos.frente(_yaw) * cos(inclinacao) + Vector3.UP * sin(inclinacao)
+
+
+## O dash usa toda a faixa real da câmera: os extremos são vertical puro para
+## cima/baixo, inclusive com limites assimétricos. Não altera o voo nem o Geppo.
+func _mira_do_dash() -> Vector3:
+	var limite := limites_de_pitch()
+	var desvio := _pitch - PITCH_DE_DESCANSO
+	var faixa := limite.y - PITCH_DE_DESCANSO if desvio >= 0.0 else PITCH_DE_DESCANSO - limite.x
+	var angulo := clampf(desvio / maxf(faixa, 0.01), -1.0, 1.0) * PI * 0.5
+	return RosaDosVentos.frente(_yaw) * cos(angulo) + Vector3.UP * sin(angulo)
+
+
+## A forma de foguete segue o voo — estado DERIVADO, conferido todo quadro: não existe
+## caminho em que o corpo fique escondido porque ninguém avisou o fim. Golpe (Z/X/C ou
+## clique), dano, morte ou perder a fruta desfazem a forma; o corpo desce pelo pouso suave.
+func _sincronizar_forma_de_foguete(delta: float) -> void:
+	if _voo.forma_de_foguete() and (esta_atacando() or not corpo_livre_para_golpe() \
+			or not capacidades.can_fly or (_rocket != null and _rocket.ocupado())):
+		_voo.desfazer_forma()
+	var quer := _voo.forma_de_foguete()
+	if quer and not is_instance_valid(_forma_de_foguete):
+		_forma_de_foguete = FORMA_DE_FOGUETE.new()
+		_forma_de_foguete.name = "FormaDeFoguete"
+		add_child(_forma_de_foguete)
+		_atualizar_visibilidade_corpo()
+	elif not quer and is_instance_valid(_forma_de_foguete):
+		_forma_de_foguete.encerrar()
+		_forma_de_foguete = null
+		_atualizar_visibilidade_corpo()
+	if is_instance_valid(_forma_de_foguete):
+		# Em 1ª pessoa a câmera ficaria DENTRO do casco: lá o foguete não se desenha.
+		_forma_de_foguete.visible = _camera == null or not _camera.em_primeira_pessoa()
+		_forma_de_foguete.atualizar(delta, velocity, _voo.fase() == "pousando")
+
+
+func voando() -> bool:
+	return _voo.ativo()
+
+
+func custo_de_energia_do_cast(slot: String) -> float:
+	if current_fruit_id == "tori_tori_phoenix" and _phoenix != null and _phoenix.desligando(slot):
+		return 0.0 # Reverter e pousar nunca exigem energia.
+	# Kit e frutas do Builder (06/10/2026): o custo do Builder é uma fração da energia
+	# máxima.
+	if KitDoBuilder.e_do_builder(current_fruit_id):
+		return KitDoBuilder.custo(slot, KitDoBuilder.BARRA_DA_PREVIA if perfil_de_frutas != null else float(max_energy), current_fruit_id)
+	# Fruta da arena refeita no Builder (a Pika, 07/10/2026): na história a economia é a
+	# da FICHA da fruta (a fração do Builder dava 0,4 onde a ficha cobra 4 — medido no
+	# `test_frutas_na_historia`); na arena, a fração (4,4 % de 4096 = os 180 de sempre).
+	# Só a tecla que a ficha TEM: o F do Builder (voo da Pika) não está na ficha e cobra a
+	# fração dele (sem isto cobrava os 180 da arena numa barra de 10).
+	if perfil_de_frutas != null and perfil_de_frutas.fruta == current_fruit_id and perfil_de_frutas.tem(slot):
+		return perfil_de_frutas.custo_de_energia(slot, ENERGY_SKILL) * _fator_de_custo_fora_do_mod()
+	if KitDoBuilder.pelo_builder(current_fruit_id, slot):
+		return KitDoBuilder.custo(slot, KitDoBuilder.BARRA_DA_PREVIA if perfil_de_frutas != null else float(max_energy), current_fruit_id)
+	return ENERGY_SKILL
+
+
+## Custos de energia que NÃO são o da técnica (bala da rajada, dreno por segundo): na
+## arena, o número de sempre; com ficha (Modo História), na MESMA proporção do custo da
+## técnica Z — a ficha cobra 2 onde a arena cobra 180 (03/10/2026).
+func energia_do_modo(valor_da_arena: float) -> float:
+	if perfil_de_frutas != null and perfil_de_frutas.fruta == current_fruit_id:
+		return valor_da_arena * perfil_de_frutas.custo_de_energia("Z", ENERGY_SKILL) / ENERGY_SKILL * _fator_de_custo_fora_do_mod()
+	return valor_da_arena
+
+
+## A proporção de custo das frutas que não são do mod com a energia do mod (1 fora da história e nas do mod).
+func _fator_de_custo_fora_do_mod() -> float:
+	if perfil_de_frutas == null or perfil_de_frutas.fiel_ao_mod or not has_meta("nivel_historia"):
+		return 1.0
+	return preload("res://src/historia/atributos_mine_piece.gd").fator_de_custo_fora_do_mod(int(get_meta("nivel_historia")))
+
+
+## Dreno da invisibilidade da Suke. Na história a regeneração (1/s) venceria o dreno
+## proporcional e a camuflagem nunca acabaria: soma-se a regeneração do modo, e ela
+## dura ~16 s com a energia cheia (na arena, ~2 min com a regeneração de lá).
+func dreno_da_invisibilidade() -> float:
+	return energia_do_modo(ENERGIA_INVISIBILIDADE_POR_SEG) + _vida.regen_energia_do_modo
+
+
+## Escala do dano das técnicas de `fruta` NESTE modo: 1 na arena; no Modo História,
+## a do perfil (o kit da arena na escala da história — `PerfilDeFrutas.da_arena`).
+func escala_de_dano_da_fruta(fruta: String, tecnica := true) -> float:
+	if perfil_de_frutas != null and perfil_de_frutas.fruta == fruta:
+		# Modo História (23/10/2026): técnicas +50 %, soco −50 % (`Balance.HISTORIA_*`).
+		if perfil_de_frutas.fiel_ao_mod:
+			return perfil_de_frutas.escala_de_dano
+		return perfil_de_frutas.escala_das_tecnicas() if tecnica \
+			else perfil_de_frutas.escala_de_dano * Balance.HISTORIA_SOCO
+	return 1.0
+
+
+## Recarga de uma técnica, pela mesma regra do custo.
+func recarga_do_cast(slot: String) -> float:
+	if KitDoBuilder.pelo_builder(current_fruit_id, slot):
+		return KitDoBuilder.recarga(slot, current_fruit_id)
+	var padrao := SkillSystem.get_slot_cooldown(slot, current_fruit_id)
+	if perfil_de_frutas != null and perfil_de_frutas.fruta == current_fruit_id:
+		return perfil_de_frutas.recarga(slot, padrao)
+	return padrao
+
+
 func trigger_skill_cooldown(slot: String) -> void:
+	if combat_mode == "fruit" and current_fruit_id != "":
+		armar_intervalo_de_golpe(slot)
+	# Kit do Builder: a recarga da skill, também na tecla F (fora de RECARGA_POR_SLOT).
+	if combat_mode == "fruit" and KitDoBuilder.pelo_builder(current_fruit_id, slot):
+		_fruit_cooldowns[slot] = recarga_do_cast(slot)
+		return
+	if combat_mode == "fruit" and current_fruit_id in ["ope_ope", "bara_bara", "rocket", "tori_tori_phoenix"]:
+		_fruit_cooldowns[slot] = recarga_do_cast(slot)
+		return # a janela de compromisso é a animação da técnica
 	if not RECARGA_POR_SLOT.has(slot):
 		return
 	if combat_mode == "style":
@@ -489,6 +781,10 @@ func trigger_skill_cooldown(slot: String) -> void:
 	else:
 		if current_fruit_id == "":
 			_fruit_cooldowns[slot] = 0.0
+		elif perfil_de_frutas != null and perfil_de_frutas.fruta == current_fruit_id:
+			# Modo História (fruta da arena vendida no vendedor): a ficha manda — é o
+			# número que o menu de técnicas mostra (03/10/2026).
+			_fruit_cooldowns[slot] = recarga_do_cast(slot)
 		elif current_fruit_id == "bomu_bomu" or current_fruit_id == "suke_suke":
 			_fruit_cooldowns[slot] = 10.0
 		else:
@@ -497,6 +793,15 @@ func trigger_skill_cooldown(slot: String) -> void:
 		_trava_pos_fruta = TRAVA_POS_FRUTA
 var _mesh: MeshInstance3D
 var _crosshair: Control
+
+## O golpe de fruta da tecla saiu: o próximo só daqui a `INTERVALO_ENTRE_GOLPES` (ou o
+## intervalo da skill do Builder). Chamado de novo quando "Carregar e soltar" dispara.
+func armar_intervalo_de_golpe(slot: String) -> void:
+	var s := INTERVALO_ENTRE_GOLPES
+	if KitDoBuilder.pelo_builder(current_fruit_id, slot):
+		s = KitDoBuilder.intervalo_depois(slot, current_fruit_id)
+	_intervalo_golpe = maxf(_intervalo_golpe, s)
+
 
 # ELENCO TRANCADO: só o "base" (decisão do usuário) — é nele que a animação está
 # sendo feita. Os outros modelos continuam no projeto, mas não são selecionáveis:
@@ -514,6 +819,8 @@ const ELENCO_LIBERADO: Array[String] = ["base", "bluebuddy"]
 # duplicado, sem precisar reescrever nada disso. Escrever nesses campos era o
 # que o relatório chamava de conflito — e agora é impossível: não têm setter.
 var _rig: PlayerRig = null
+var _yoru_combat: Node = null
+var _yoru_network: Node = null
 
 var character_id: String:
 	get: return _rig.character_id if _rig else "base"
@@ -568,6 +875,18 @@ var _hitstop_timer: float = 0.0
 # apresentação: o servidor continua sendo a autoridade que cria o golpe final.
 @export var net_charge_pose: String = ""
 @export var net_charge_progress: float = 0.0
+# Parkour e locomoção (fatia 4 de docs/PARKOUR_MIRRORS_EDGE_PLANO.md, 03/10/2026):
+# o que os outros precisam para VER o wall run, a escalada e a inclinação de curva.
+# Só apresentação — a física é de quem tem autoridade.
+@export var net_parkour: String = ""          # token de pose ("wall_run", "borda", "roll"…)
+@export var net_agachado: bool = false
+@export var net_escalando: bool = false       # na escada (pose de escalada)
+@export var net_parede_lado: int = 0          # wall run: +1 parede à direita, −1 à esquerda
+@export var net_subida: float = 0.0           # 0..1 subindo a borda
+@export var net_inclinacao: Vector2 = Vector2.ZERO   # (lateral, frente) da locomoção
+@export var net_acao_clipe: String = ""       # clipe de ação (roll, deslize) — "" = nenhum
+@export var net_acao_tempo: float = 0.0       # tempo desse clipe neste quadro
+var _parkour_anim := ""                       # o token que o animador recebeu neste quadro
 
 func _ready() -> void:
 	add_to_group("player")
@@ -582,6 +901,11 @@ func _ready() -> void:
 	add_child(_rig)
 	_rig.montar_em(self)
 	_dash.montar_em(self)
+	_dash_ar.montar_em(self)
+	_voo.montar_em(self)
+	_phoenix = preload("res://src/player/phoenix_controller.gd").new()
+	_phoenix.name = "Phoenix"
+	add_child(_phoenix)
 
 	_fsm = PlayerStateMachine.new()
 	_fsm.name = "CombatFSM"
@@ -627,20 +951,37 @@ func _ready() -> void:
 	_corpo_de_ferro.montar_em(self)
 	_cast.montar_em(self)
 	_melee.montar_em(self)
+	_rocket = preload("res://src/combat/rocket_controller.gd").new()
+	_rocket.name = "RocketController"
+	add_child(_rocket)
 	_vida.montar_em(self)
 	_mira.montar_em(self)
 	_parkour.montar_em(self, GRAVITY, JUMP_VELOCITY)
+	_loco_chao.rumo = rotation.y
 
 	# Substitui o quadrado cinza pelo modelo 3D Voxel e equipa a Akuma no Mi correspondente
 	set_character(character_id)
+	var ope_weapon := preload("res://src/player/OpeWeapon.gd").new()
+	ope_weapon.setup(self)
+	add_child(ope_weapon)
 
-	# Colisor do jogador.
+	# Colisor do jogador: caixa na arena, cápsula no Modo História (ver `colisor_capsula`).
 	var col := CollisionShape3D.new()
-	var shape := BoxShape3D.new()
-	shape.size = COLISOR_BASE
-	col.shape = shape
+	if colisor_capsula:
+		var capsula := CapsuleShape3D.new()
+		capsula.radius = RAIO_DA_CAPSULA
+		capsula.height = COLISOR_BASE.y
+		col.shape = capsula
+		# O combate continua acertando a CAIXA de antes (golpes afinados contra ela):
+		# hurtbox separada, que não interfere no movimento (ver HurtboxDeCombate).
+		HurtboxDeCombate.instalar(self, COLISOR_BASE)
+	else:
+		var shape := BoxShape3D.new()
+		shape.size = COLISOR_BASE
+		col.shape = shape
 	add_child(col)
 	_colisor = col
+	_agachar.montar(self, col)
 
 	# CÂMERA — componente próprio desde a Fase 2. Ele monta a cadeia
 	# (pivô → ombro → SpringArm → Camera3D) e é dono de tremor, FOV e balanço.
@@ -650,6 +991,10 @@ func _ready() -> void:
 	add_child(_camera)
 	_camera.montar(self, _is_authority)
 	_cam = _camera.camera()
+	# O rig é montado ANTES do colisor e da câmera (a aplicação da escala do corpo no `montar` não os achou): o fator do modo (Modo História, 19/11/2026)
+	# tem de chegar à cápsula, à hurtbox e à câmera também — os três ou nenhum.
+	if not is_equal_approx(escala_de_modo, 1.0):
+		_aplicar_escala_de_raca()
 
 	# Gear 2: a primeira TRANSFORMAÇÃO. Componente próprio porque tem estado com
 	# entrada, duração e quatro saídas distintas (relógio, morte, troca de fruta,
@@ -676,6 +1021,31 @@ func _ready() -> void:
 
 	_apply_perspective()
 	_update_pivot()
+	# Montado em TODAS as cópias, depois do rig e dos controladores de estado.
+	var yoru_script = load("res://src/combat/YoruController.gd") if ResourceLoader.exists("res://src/combat/YoruController.gd") else null
+	if yoru_script:
+		_yoru_combat = yoru_script.new()
+		_yoru_combat.name = "YoruCombat"
+		add_child(_yoru_combat)
+		_yoru_combat.setup(self)
+	_yoru_network = load("res://src/player/YoruNetwork.gd").new()
+	_yoru_network.name = "YoruNetwork"
+	add_child(_yoru_network)
+	_yoru_network.setup(self, _yoru_combat)
+
+## Até onde a mira sobe e desce (radianos; x = para baixo, y = para cima). Com o clique de blocos nas mãos vai quase à vertical, como no Minecraft:
+## é o que permite quebrar o bloco SOB os pés e o de CIMA da cabeça. Fora disso, −1,2 / 1,25 (≈ −69° / +72°).
+const PITCH_DE_BLOCOS := Vector2(-1.5, 1.5)
+func limites_de_pitch() -> Vector2:
+	if clique_de_blocos != null and clique_de_blocos.assume_as_maos():
+		return PITCH_DE_BLOCOS
+	return Vector2(-1.2, 1.25)          # olhar mais para CIMA (12/11/2026: era 0,5 rad = 29°; agora ~72°) — o tronco acompanha (`ProceduralAnimator._lookat`)
+
+
+## O rig da câmera (para a mira do clique de blocos: de frente a câmera olha PARA o personagem, e a mira é `direcao_da_mira()`).
+func rig_da_camera() -> CameraRig:
+	return _camera
+
 
 func _apply_perspective() -> void:
 	if _camera:
@@ -694,18 +1064,43 @@ func _input(event: InputEvent) -> void:
 		# LUNETA DA SNIPER: com o zoom ligado a mira anda mais devagar. Sem isso o
 		# zoom só aumenta a imagem e piora a pontaria (o mesmo movimento de mouse
 		# varre 3x mais mundo).
-		var sens := MOUSE_SENS * (0.38 if _buki_scope else 1.0)
+		var fluxo := get_node_or_null("/root/GameFlow")
+		var sens := MOUSE_SENS * (float(fluxo.get("sensibilidade")) if fluxo != null else 1.0) * (0.38 if _buki_scope else 1.0)
 		_yaw -= event.relative.x * sens
-		_pitch = clamp(_pitch - event.relative.y * sens, -1.2, 0.5)
+		var lim := limites_de_pitch()
+		_pitch = clamp(_pitch - event.relative.y * sens, lim.x, lim.y)
 		_update_pivot()
-	elif event is InputEventMouseButton and _camera and not _camera.em_primeira_pessoa():
+	elif event is InputEventMouseButton and _camera and not _camera.em_primeira_pessoa() and not zoom_por_teclas:
+		# Menu aberto (M, N, B, loja...): a roda rola a lista, e não aproxima a câmera.
+		# (`zoom_por_teclas`: no Modo História a roda é da hotbar e o zoom é I/O.)
+		if _menu_de_tela_aberto():
+			return
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
 			_camera.ajustar_distancia(-0.5)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
 			_camera.ajustar_distancia(0.5)
 
+## Algum menu da HUD (história ou arena) está aberto? A câmera não deve reagir à roda.
+func _menu_de_tela_aberto() -> bool:
+	var hud := get_tree().get_first_node_in_group("hud") if is_inside_tree() else null
+	return hud != null and hud.has_method("is_menu_open") and hud.is_menu_open()
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not _is_authority:
+		return
+	if esta_capturado_pelo_vento():
+		return
+	# ARENA, Kit do Builder com skill no F (06/10/2026): o F é dela, e não do Corpo de
+	# Ferro. Na história quem roteia o F é a `HistoriaHud` (lá `can_use_skills` é falso).
+	# 07/10/2026: também a fruta da arena refeita com skill no F (o voo da Pika).
+	if event is InputEventKey and not event.echo and event.keycode == KEY_F \
+			and capacidades.can_use_skills and combat_mode == "fruit" \
+			and (KitDoBuilder.pelo_builder(current_fruit_id, "F") or current_fruit_id == "tori_tori_phoenix"):
+		if event.pressed:
+			begin_charge("F")
+		else:
+			release_charge("F")
+		get_viewport().set_input_as_handled()
 		return
 		
 	# Se clicar na tela com o mouse solto (ex: após alt-tab), recaptura ele.
@@ -714,6 +1109,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 			return
+
+	# Modo História: clique e direção do combate direcional. Ponte EXPLÍCITA (e não
+	# ordem de propagação de input) para que entregar o evento ao Player — como os
+	# testes fazem — passe pelo mesmo caminho do jogo.
+	# O clique do Minecraft vem ANTES: com as mãos dele, o mouse não vira soco nem guarda (a guarda cede o botão direito).
+	if clique_de_blocos != null and clique_de_blocos.tratar(event):
+		return
+	if entrada_combate_direcional != null and entrada_combate_direcional.tratar(event):
+		return
 
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F5:
 		# Alterna 1a <-> 3a pessoa.
@@ -730,14 +1134,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			print("[Personagem] elenco trancado em: ", ELENCO_LIBERADO[0])
 	elif event is InputEventKey and event.pressed and not event.echo \
-			and event.keycode in [KEY_1, KEY_2, KEY_3]:
+			and event.keycode in [KEY_1, KEY_2, KEY_3] and capacidades.can_use_skills:
 		# 1/2/3 escolhem o modo de combate (2026-09-06, pedido do dono). Antes
 		# era o R alternando entre dois; a espada virou o terceiro e alternar
 		# deixou de servir. Escolher QUAL fruta/estilo continua no menu do M.
 		set_combat_mode({KEY_1: "fruit", KEY_2: "style", KEY_3: "sword"}[event.keycode])
-	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_T:
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_T \
+			and capacidades.can_use_skills:
 		_cycle_fruit()   # DEBUG: cicla entre as frutas pra testar as skills
-	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E:
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E \
+			and capacidades.can_use_skills and not _e_e_do_inventario():
 		aim_assist = not aim_assist   # liga/desliga a assistência de mira
 		# 2026-08-22: o E deixou de ser só assistência de mira. Com ele ligado, os
 		# corpos e os ATAQUES EM VOO dos outros passam a ser desenhados através das
@@ -749,9 +1155,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			hud.set_aim_assist(aim_assist)
 		if Engine.has_singleton("ScreenFX") or get_node_or_null("/root/ScreenFX"):
 			get_node("/root/ScreenFX").set_aim_assist(aim_assist, self)
-	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_G:
+	# Teclas de técnica/combate: sem a capacidade o `elif` não casa e a tecla
+	# simplesmente não faz nada (as teclas abaixo são outras, não há desvio).
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_G \
+			and capacidades.can_attack:
 		_request_combo_breaker()
-	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F:
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F \
+			and capacidades.can_use_skills:
 		_pedir_corpo_de_ferro()
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		if not event.echo:
@@ -777,10 +1187,20 @@ func _unhandled_input(event: InputEvent) -> void:
 ## — com três modos exigiria saber em qual você está para prever onde vai parar,
 ## e o dono pediu seleção direta justamente por isso.
 func set_combat_mode(modo: String) -> void:
+	if _yoru_network:
+		_yoru_network.request_mode(modo)
+	elif _is_authority:
+		_apply_combat_mode(modo)
+
+
+func _apply_combat_mode(modo: String) -> void:
 	if modo == combat_mode:
 		return
 	if not modo in ["fruit", "style", "sword"]:
 		return
+	_cancel_yoru_action("mode")
+	_cast.abortar()
+	_melee.cancelar_golpe()
 	# Sair do modo fruta com arma da Buki na mão faz a arma cair, como sempre.
 	_buki_guardar()
 	_buki_mostrar_arma("")
@@ -789,21 +1209,20 @@ func set_combat_mode(modo: String) -> void:
 	# a guarda. `_yoru` é a fonte da verdade, então basta pedir o estado certo.
 	var quer_espada := modo == "sword"
 	if quer_espada != (_yoru != null and is_instance_valid(_yoru)):
-		sacar_ou_guardar_espada()
+		_toggle_yoru_visual()
 
 	combat_mode = modo
 	var active_style: String = STYLES_LIST[current_style_idx]
 	print("⚔️ Modo de combate: %s%s" % [combat_mode.to_upper(),
 		(" - Estilo: " + active_style) if combat_mode == "style" else ""])
 	var hud := get_tree().get_first_node_in_group("hud")
-	if hud and hud.has_method("update_combat_mode"):
+	if _is_authority and hud and hud.has_method("update_combat_mode"):
 		hud.update_combat_mode(combat_mode, active_style, current_fruit_id)
 
 
-## Portão único do cast. No modo espada as quatro teclas de skill ficam mudas —
-## quem está de espada na mão corta, não conjura.
+## Portão do cast de frutas/estilos; a espada tem técnicas próprias.
 func pode_conjurar() -> bool:
-	return combat_mode != "sword"
+	return combat_mode != "sword" and not esta_capturado_pelo_vento()
 
 
 func set_fighting_style(style_id: String) -> void:
@@ -829,6 +1248,17 @@ func set_fighting_style(style_id: String) -> void:
 func play_style_anim(anim_name: String) -> void:
 	if _proc_anim == null:
 		return
+	var previous_studio := get_node_or_null("StudioPlayback")
+	if previous_studio:
+		previous_studio.finish()
+		remove_child(previous_studio)
+	var studio_path := "res://assets/animations/%s.tres" % anim_name
+	if ResourceLoader.exists(studio_path):
+		var studio_clip = ResourceLoader.load(studio_path, "Animation", ResourceLoader.CACHE_MODE_IGNORE)
+		if studio_clip is Animation and studio_clip.has_meta("studio_version"):
+			if preload("res://src/anim/StudioPlayback.gd").play(self, studio_clip):
+				lock_movement(studio_clip.length + 0.1, anim_name)
+				return
 	# .res = assado do Mixamo (binário). .tres = autorado no editor de animação
 	# em Python (texto) — o Godot carrega os dois igual.
 	var path := "res://assets/animations/%s.res" % anim_name
@@ -885,6 +1315,9 @@ func _update_pivot() -> void:
 # ------------------------------------------------------- PEDIDO DO CORPO A CORPO
 # O golpe tem que NASCER NO SERVIDOR: a `DamageZone` só machuca lá.
 func pedir_golpe_no_servidor(passo: int, origem: Vector3, fwd: Vector3) -> void:
+	if equipped_weapon == "sword":
+		request_yoru_action("M1")
+		return
 	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
 		_do_server_melee(passo, origem, fwd)
 	else:
@@ -904,6 +1337,11 @@ func mira_do_cast() -> Dictionary:
 	var ate := de + frente * 150.0
 	var par := PhysicsRayQueryParameters3D.create(de, ate)
 	par.exclude = [get_rid()]
+	# Ignora as HURTBOXES do combate da história (camada própria): a do PRÓPRIO jogador
+	# é outro corpo, e com o corpo grande da Gura (escala 2) a câmera alta enxergava
+	# através dela — o retículo "acertava" o próprio jogador e todo golpe saía torto
+	# (medido em 05/10/2026). O alvo continua sendo achado pelo corpo dele.
+	par.collision_mask = ~HurtboxDeCombate.CAMADA & 0xFFFFFFFF
 	# Ignora ÁREAS (triggers e a própria DamageZone) para a mira não bater no ar.
 	par.collide_with_areas = false
 	par.collide_with_bodies = true
@@ -941,9 +1379,6 @@ func _net_start_hold(slot: String, fruit: String) -> void:
 			set_meta("yami_black_hole_active", true)
 		elif slot == "X":
 			set_meta("yami_kurouzu_active", true)
-	elif fruit == "bara_bara":
-		if slot == "C":
-			set_meta("bara_cleave_active", true)
 	elif fruit == "pika_pika" and slot == "C":
 		set_meta("pika_c_active", true)
 
@@ -1025,9 +1460,6 @@ func _net_cancel_hold(slot: String, fruit: String, cast_token: int = 0,
 			set_meta("yami_black_hole_active", false)
 		elif slot == "X":
 			set_meta("yami_kurouzu_active", false)
-	elif fruit == "bara_bara":
-		if slot == "C":
-			set_meta("bara_cleave_active", false)
 	elif fruit == "pika_pika" and slot == "C":
 		var atual := int(get_meta("pika_c_token", 0))
 		if cast_token <= 0 or atual <= 0 or cast_token >= atual:
@@ -1086,10 +1518,8 @@ func aplicar_mira(novo_yaw: float, novo_pitch: float, delta: float, forca_corpo:
 	_pitch = novo_pitch
 	_update_pivot()
 	if _char_model:
-		# ⚠️ Enquanto anda na superfície, o corpo é orientado pela NORMAL dela
-		# (ver o bloco da frente). Escrever `rotation.y` aqui zeraria a
-		# inclinação e o personagem voltaria a ficar em pé no ar.
-		if not _parkour.na_parede():
+		# Na parede (wall run) o corpo é da parede: segue a tangente dela.
+		if not _parkour.assumiu():
 			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw, forca_corpo * delta)
 
 # ---------------------------------------------------------- PEDIDOS DA BUKI
@@ -1107,6 +1537,28 @@ func pedir_recuo(direcao: Vector3, forca: float) -> void:
 # compartilhado com a rajada Z e a pistola da Yami — por isso continua aqui.
 func pedir_coice_de_arma() -> void:
 	_gun_recoil = 1.0
+	if buki_viewmodel != null and is_instance_valid(buki_viewmodel):
+		buki_viewmodel.coice(1.0)
+
+# ---- FPS DA BUKI (22/11/2026): arma na mão = câmera em 1ª pessoa + cópia da arma na frente da tela ----
+var buki_viewmodel: BukiViewmodel = null
+func buki_fps(sim: bool, slot: String) -> void:
+	if not _is_authority or _camera == null:
+		return
+	_camera.forcar_primeira_pessoa(sim)
+	if sim:
+		if buki_viewmodel == null or not is_instance_valid(buki_viewmodel):
+			buki_viewmodel = BukiViewmodel.new()
+			buki_viewmodel.name = "BukiViewmodel"
+			_cam.add_child(buki_viewmodel)
+		buki_viewmodel.mostrar(slot)
+	elif buki_viewmodel != null and is_instance_valid(buki_viewmodel):
+		buki_viewmodel.esconder()
+	_apply_perspective()
+
+func buki_luneta(sim: bool) -> void:
+	if buki_viewmodel != null and is_instance_valid(buki_viewmodel):
+		buki_viewmodel.luneta(sim)
 
 # MIRA ASSISTIDA: puxa devagar (não trava) para um ponto. Quem escolhe o ALVO é
 # quem tem a arma; quem é dono de `_yaw`/`_pitch` é o Player — decisão da Fase 2,
@@ -1115,13 +1567,11 @@ func mirar_suave_para(ponto: Vector3, delta: float, forca: float) -> void:
 	var para: Vector3 = ponto - _cam.global_position
 	var h := Vector2(para.x, para.z).length()
 	_yaw = lerp_angle(_yaw, atan2(-para.x, -para.z), forca * delta)
-	_pitch = lerpf(_pitch, clampf(atan2(para.y, h), -1.2, 0.5), forca * delta)
+	_pitch = lerpf(_pitch, clampf(atan2(para.y, h), -1.2, 1.25), forca * delta)
 	_update_pivot()
 	if _char_model:
-		# ⚠️ Enquanto anda na superfície, o corpo é orientado pela NORMAL dela
-		# (ver o bloco da frente). Escrever `rotation.y` aqui zeraria a
-		# inclinação e o personagem voltaria a ficar em pé no ar.
-		if not _parkour.na_parede():
+		# Na parede (wall run) o corpo é da parede: segue a tangente dela.
+		if not _parkour.assumiu():
 			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw, 14.0 * delta)
 
 # ⚠️ A BALA TEM QUE NASCER NO SERVIDOR, senão a `DamageZone` do cliente não fere
@@ -1150,10 +1600,10 @@ func avisar_servidor_do_guardar() -> void:
 
 # Pede a janela de ROLAMENTO. O maior pedido vence — dois gatilhos no mesmo
 # quadro (pousar em cima de um dash) não devem encurtar a animação.
-## O parkour pergunta antes de grudar e a cada quadro: sem energia, não anda na
-## superfície. Fica aqui porque `energy` é do Player.
-func tem_energia_de_parede() -> bool:
-	return energy > 0.0
+## O Q segue a esquiva do Epic Fight quando há uma arma do mod na mão (ver `DashController`).
+func _esquiva_do_epic_fight() -> bool:
+	var e := get_node_or_null("EspadaDaHistoria")
+	return e != null and e.get("ativa") == true and str(e.get("lamina_ef")) != ""
 
 
 func pedir_rolamento(duracao: float) -> void:
@@ -1163,18 +1613,57 @@ func add_camera_shake(amount: float) -> void:
 	if _is_authority and _camera:
 		_camera.pedir_shake(amount)
 
+## Modo História: I aproxima e O afasta a câmera (segurando), e a roda do mouse fica com a hotbar (`HistoriaHud`). Falso na arena.
+var zoom_por_teclas := false
+const VELOCIDADE_DO_ZOOM := 6.0        # m/s de distância da câmera
+
+
+func _zoom_por_teclas(delta: float) -> void:
+	if not zoom_por_teclas or not _is_authority or _camera == null or _camera.em_primeira_pessoa() or _menu_de_tela_aberto():
+		return
+	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not ToqueHud.ativo():
+		return
+	aplicar_zoom((1.0 if Input.is_physical_key_pressed(KEY_O) else 0.0) - (1.0 if Input.is_physical_key_pressed(KEY_I) else 0.0), delta)
+
+
+## `sentido` +1 afasta (O), −1 aproxima (I). Separado da leitura das teclas para o teste dirigir sem teclado.
+func aplicar_zoom(sentido: float, delta: float) -> void:
+	if sentido != 0.0 and _camera != null and not _camera.em_primeira_pessoa():
+		_camera.ajustar_distancia(sentido * VELOCIDADE_DO_ZOOM * delta)
+
+
 func _process(delta: float) -> void:
+	_zoom_por_teclas(delta)
 	if not _is_authority or _camera == null:
 		return
 	# O rig recebe o estado de que precisa em vez de ir buscá-lo no Player —
 	# é o que mantém a fronteira honesta e permite testá-lo sozinho.
-	_camera.atualizar(delta, velocity, SPEED, is_on_floor(), _is_sprinting(), _yaw, _buki_scope)
+	_camera.atualizar(delta, velocity, SPEED, is_on_floor(), _is_sprinting(), _yaw, _buki_scope,
+		_parando_por_vontade())
+	_camera.atualizar_agachar(delta, _agachar.queda_da_camera())
 	if _gear2:
 		_gear2.atualizar(delta)
 
 # (Antiga função _processar_estados_de_combate removida, lógica movida para os States)
 
 func _physics_process(delta: float) -> void:
+	if _is_authority and _agachar.ativo and (not corpo_livre_para_golpe() \
+			or not modo_na_agua.is_empty() or _voo.ativo()):
+		_agachar.atualizar(false, false)
+		net_agachado = _agachar.ativo
+	# O vendaval é dono do movimento; câmera continua no _process. Este portão
+	# vem antes de Rocket/FSM/parkour para nenhum deles sobrescrever a órbita.
+	if esta_capturado_pelo_vento():
+		if _is_authority:
+			_etapa_vida(delta)
+			_etapa_publicar_rede()
+		return
+	if _rocket != null and _rocket.tick(delta):
+		# Golpe da Rocket no meio do voo: a forma de foguete se desfaz AQUI também,
+		# porque este caminho pula a locomoção inteira.
+		_sincronizar_forma_de_foguete(delta)
+		return
+	_sincronizar_forma_de_foguete(delta)
 	# HITSTOP LOCAL: Personagem congela e treme após um golpe, segurando o knockback
 	if _hitstop_timer > 0.0:
 		if _animator and _animator.animation_player:
@@ -1222,9 +1711,20 @@ func _physics_process(delta: float) -> void:
 		velocity.z = 0.0
 		velocity.y -= GRAVITY * delta
 		move_and_slide()
+		if _morte_corpo_baixado and _proc_anim != null:     # o clipe `dying` anda e segura a pose final
+			_proc_anim.update(Vector3.ZERO, is_on_floor(), false, delta, 0.0)
+			_pousar_corpo_morto(delta)
 		_etapa_publicar_rede()
 		return
 	_etapa_estado_de_combate(delta)
+	if is_instance_valid(navegacao) and navegacao.atualizar(delta):
+		_etapa_publicar_rede()
+		_etapa_vida(delta)
+		return
+	if is_instance_valid(montaria) and montaria.atualizar(delta):
+		_etapa_publicar_rede()
+		_etapa_vida(delta)
+		return
 	# ⚠️ ANTES DO PORTÃO DE TRAVAMENTO, e isto NÃO é detalhe de ordem.
 	# O tranco de dano estava depois, e a paralisia (que ESTE contador desliga)
 	# faz `_etapa_travamento` devolver true — ou seja, o mecanismo que congela
@@ -1235,6 +1735,10 @@ func _physics_process(delta: float) -> void:
 	var _hitstun_ativo = RecepcaoDeDano.tick(self, delta)
 	if not _hitstun_ativo and _fsm and _fsm.state and _fsm.state.name == "Stunned":
 		_fsm.transition_to("Idle")
+	# Arremessado (voo, chão, levantar): o corpo não obedece input nenhum.
+	if _arremesso.ativo():
+		_etapa_arremesso(delta)
+		return
 	if _etapa_travamento(delta):
 		return
 	_etapa_locomocao(delta)
@@ -1256,7 +1760,7 @@ func _etapa_estado_de_combate(delta: float) -> void:
 			g.visible = _rapid_fire or _yami_pistol_active or _rig.pistolas_em_saque()
 	_vida.regenerar(delta)     # regen contínua de energia
 	if _invisivel:
-		energy = maxf(energy - ENERGIA_INVISIBILIDADE_POR_SEG * delta, 0.0)
+		energy = maxf(energy - dreno_da_invisibilidade() * delta, 0.0)
 		if energy <= 0.0:
 			revelar_invisibilidade()
 	# RECARGA CONGELA DURANTE UMA HABILIDADE (regra do dono do projeto).
@@ -1266,6 +1770,8 @@ func _etapa_estado_de_combate(delta: float) -> void:
 	# recarregada de graça: o tempo de um golpe pagava o tempo de todos.
 	if _trava_pos_fruta > 0.0:
 		_trava_pos_fruta = maxf(_trava_pos_fruta - delta, 0.0)
+	if _intervalo_golpe > 0.0:
+		_intervalo_golpe = maxf(_intervalo_golpe - delta, 0.0)
 
 	var em_uso := _slot_em_uso()
 	# ⚠️ AS RECARGAS DE FRUTA PARAM enquanto a trava corre — ver a nota dela.
@@ -1310,7 +1816,52 @@ func _etapa_estado_de_combate(delta: float) -> void:
 
 # O personagem está preso a alguma coisa? Devolve `true` quando consumiu o
 # quadro — quem chama tem que devolver na hora, sem seguir para a locomoção.
+func _etapa_arremesso(delta: float) -> void:
+	_parkour.cancelar()   # arremessado larga a parede
+	_deslize.cancelar()   # e o deslize
+	_encolher_colisor(false)
+	_arremesso.tick_dono(self, delta)
+	if _skel_anim:
+		_skel_anim.update(velocity, is_on_floor(), false, delta, false)
+	elif _proc_anim:
+		_proc_anim.update(velocity, is_on_floor(), false, delta, _pitch, false,
+			false, "", "", false, 0.0, 0.0, -1, 0.0, _arremesso.pose_de_membros())
+	_arremesso.apresentar(_char_model, delta)
+	_etapa_publicar_rede()
+
 func _etapa_travamento(delta: float) -> bool:
+	# MAGU X (14/10/2026): o jogador SURFA a onda de lava. A técnica grava em `magu_surf`
+	# a velocidade horizontal da onda; aqui o corpo a acompanha, de lado (pés ao longo
+	# da prancha), sem ler teclas. Termina quando a técnica remove o meta.
+	if has_meta("magu_surf"):
+		var surf: Dictionary = get_meta("magu_surf")
+		var rumo_surf: Vector3 = surf["rumo"]
+		var pes: Vector3 = surf["pes"]
+		velocity = Vector3.ZERO
+		# Horizontal preso à crista; vertical sobe suave até ela (subida na prancha).
+		global_position.x = pes.x
+		global_position.z = pes.z
+		global_position.y = lerpf(global_position.y, pes.y + float(surf["base"]), 1.0 - exp(-10.0 * delta))
+		if _char_model:
+			# O corpo olha para a DIREITA do rumo da onda (pé esquerdo à frente).
+			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, atan2(-rumo_surf.x, -rumo_surf.z) - PI * 0.5, 12.0 * delta)
+		if _proc_anim:
+			_proc_anim.update(velocity, true, false, delta, _pitch, false,
+				false, "", "", false, 0.0, 0.0, -1, 0.0, str(get_meta("custom_pose", "")))
+		return true
+	var ope_action = (get_meta("ope_action") if has_meta("ope_action") else null)
+	if is_instance_valid(ope_action) and get_meta("is_casting", false):
+		velocity.x = 0.0
+		velocity.z = 0.0
+		if not is_on_floor():
+			velocity.y -= GRAVITY * delta
+		if _char_model:
+			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw, 18.0 * delta)
+		if _proc_anim:
+			_proc_anim.update(velocity, is_on_floor(), false, delta, _pitch, false,
+				false, "", "", false, 0.0, 0.0, -1, 0.0, str(get_meta("custom_pose", "")))
+		move_and_slide()
+		return true
 	# HOLD-TO-CAST / RAJADA Z: enquanto a tecla está SEGURADA (ou a rajada Z ativa), o
 	# personagem fica PARADO — inclusive NO AR, sem gravidade — até soltar a tecla ou
 	# as balas acabarem. Só a câmera continua livre (mira). A rajada dispara aqui.
@@ -1324,7 +1875,7 @@ func _etapa_travamento(delta: float) -> bool:
 				_breath.set_running(false)
 			# Rajada Z: vira o corpo p/ a direção da mira (pose de pistoleiro) + coice decai.
 			if _rapid_fire and _char_model:
-				if not _parkour.na_parede():
+				if not _parkour.assumiu():
 					_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw, 18.0 * delta)
 			if _gun_recoil > 0.0:
 				_gun_recoil = maxf(_gun_recoil - delta * 7.0, 0.0)
@@ -1341,7 +1892,7 @@ func _etapa_travamento(delta: float) -> bool:
 				net_charge_progress = mera_x_progress if pose_custom == "mera_x_charge" else mera_z_progress if pose_custom == "mera_z_charge" else 0.0
 				_proc_anim.update(velocity, is_on_floor(), false, delta, _pitch, false, _charging, slot_to_pass, "", _pose_de_arma(), _gun_recoil, mera_z_progress, _disparo.lado_do_ultimo_tiro(), mera_x_progress, pose_custom)
 			move_and_slide()
-			_disparo.tick_rajada(delta, ENERGY_BULLET)    # dispara as balas de fogo/gelo enquanto a rajada dura
+			_disparo.tick_rajada(delta, energia_do_modo(ENERGY_BULLET))    # dispara as balas de fogo/gelo enquanto a rajada dura
 			
 			# ⚠️ Quem chegou aqui está travado por definição. O quadro
 			# acaba aqui para TODOS os motivos de trava.
@@ -1365,6 +1916,87 @@ func _etapa_travamento(delta: float) -> bool:
 #
 # Sobraram 7 locais de quadro (eram 16). Continuam aqui de propósito: são o
 # RESULTADO das decisões, e é justamente combiná-los que esta etapa faz.
+## Em combate: atacando, carregando/usando skill, mirando arma, voando pilotado
+## ou com golpe contextual — e por COMBATE_SEGURA s depois disso. O roll (Q) NÃO
+## conta: ele tem frente própria — o corpo vira para onde rola.
+func _em_combate() -> bool:
+	return _combate_t > 0.0
+
+
+## DESLIZE: colisão (e hurtbox) pela METADE, com os pés no mesmo lugar — o centro
+## desce um quarto da altura. Guarda o tamanho inteiro (pode ter escala de raça) e o
+## devolve EXATO. Chamado todo quadro; só age quando o estado muda.
+func _encolher_colisor(sim: bool) -> void:
+	if sim == _encolhido or not is_instance_valid(_colisor):
+		return
+	_encolhido = sim
+	var caixa := _colisor.shape as BoxShape3D
+	var capsula := _colisor.shape as CapsuleShape3D
+	if sim:
+		var alt: float = caixa.size.y if caixa else (capsula.height if capsula else COLISOR_BASE.y)
+		_colisor_inteiro = {"pos": _colisor.position, "alt": alt, "raio": capsula.radius if capsula else 0.0}
+		if caixa:
+			caixa.size.y = alt * 0.5
+		elif capsula:
+			# Cápsula não fica mais baixa que o próprio diâmetro: o raio encolhe junto
+			# (com raio 0,5 m ela parava em 1,01 m, a base afundava no chão e a
+			# física a empurrava para cima — a barra baixa bloqueava; medido 03/10).
+			capsula.radius = minf(capsula.radius, alt * 0.25)
+			capsula.height = alt * 0.5
+		_colisor.position.y = float((_colisor_inteiro["pos"] as Vector3).y) - alt * 0.25
+		if colisor_capsula:
+			var e := escala_do_corpo()
+			HurtboxDeCombate.redimensionar(self, Vector3(COLISOR_BASE.x * e, alt * 0.5, COLISOR_BASE.z * e), _colisor.position.y)
+	else:
+		var alt: float = _colisor_inteiro.get("alt", COLISOR_BASE.y)
+		if caixa:
+			caixa.size.y = alt
+		elif capsula:
+			capsula.radius = float(_colisor_inteiro.get("raio", capsula.radius))
+			capsula.height = alt
+		_colisor.position = _colisor_inteiro.get("pos", Vector3.ZERO)
+		if colisor_capsula:
+			var e := escala_do_corpo()
+			HurtboxDeCombate.redimensionar(self, COLISOR_BASE * e, _colisor.position.y)
+
+
+## Cabe de pé aqui? Raios do centro do corpo até o topo da colisão INTEIRA (no
+## centro e a 0,25 m para os quatro lados). Fora do deslize, sempre cabe.
+func _teto_livre() -> bool:
+	if not _encolhido:
+		return true
+	var alt: float = _colisor_inteiro.get("alt", COLISOR_BASE.y)
+	var centro := global_position + Vector3.UP * float((_colisor_inteiro.get("pos", Vector3.ZERO) as Vector3).y)
+	var espaco := get_world_3d().direct_space_state
+	for desvio in [Vector3.ZERO, Vector3(0.25, 0, 0), Vector3(-0.25, 0, 0), Vector3(0, 0, 0.25), Vector3(0, 0, -0.25)]:
+		var de: Vector3 = centro + desvio
+		var par := PhysicsRayQueryParameters3D.create(de, de + Vector3.UP * (alt * 0.5 + 0.02))
+		par.exclude = [get_rid()]
+		# Sem a camada da HURTBOX: ela é filha do jogador e, encolhida, tem o topo
+		# exatamente na origem do raio — acusava teto em campo aberto (medido 03/10).
+		par.collision_mask = ~HurtboxDeCombate.CAMADA & 0xFFFFFFFF
+		if not espaco.intersect_ray(par).is_empty():
+			return false
+	return true
+
+
+## Soltou as teclas no chão e o corpo está freando: para a câmera isso já é parar
+## (ela obedece à decisão do jogador, não ao fim da frenagem).
+func _parando_por_vontade() -> bool:
+	return is_on_floor() and _quadro.dir == Vector3.ZERO \
+		and _loco_chao.estado in ["freando", "derrapando", "parado"]
+
+
+func _atualizar_combate(delta: float) -> void:
+	var agora: bool = (_fsm != null and _fsm.state != null and _fsm.state.name != "Idle") \
+		or (combate_direcional != null and combate_direcional.ocupado()) \
+		or _charging or _rapid_fire or _yami_pistol_active or _buki_scope or _pose_de_arma() \
+		or not _contextual_attack_id.is_empty() or _voo.ativo() \
+		or (_yoru_combat != null and not String(_yoru_combat.action_id).is_empty()) \
+		or (has_meta("custom_pose") and not str(get_meta("custom_pose")).is_empty())
+	_combate_t = COMBATE_SEGURA if agora else maxf(_combate_t - delta, 0.0)
+
+
 func _etapa_locomocao(delta: float) -> void:
 	# LEITURA do quadro: teclas + base da câmera -> src/player/move_frame.gd.
 	# A etapa passou a DECIDIR sobre um pedido já lido, em vez de ler e decidir
@@ -1378,10 +2010,23 @@ func _etapa_locomocao(delta: float) -> void:
 		menu_aberto = hud.is_menu_open()
 		
 	q.ler(_yaw, not menu_aberto)
+	var pode_agachar: bool = modo_na_agua.is_empty() and not _parkour.assumiu() \
+		and not esquivando() and not _voo.ativo() and not _movimento_de_skill_ativo() \
+		and not _flutuar_por_skill and corpo_livre_para_golpe()
+	_agachar.atualizar(q.agachar_segurado, pode_agachar)
+	if _agachar.ativo:
+		q.sprint = false
+	_atualizar_combate(delta)
+	# Modo História (03/10/2026): arma de fruta sacada (Yami, Buki) fica com os botões
+	# do mouse, como na arena — o combate direcional não soca nem ergue guarda.
+	if entrada_combate_direcional != null:
+		entrada_combate_direcional.suspensa = _yami_pistol_active or _buki_weapon != ""
 	# Rajada (Mera/Hie Z): fica PARADO enquanto atira; só a câmera gira. Volta a
 	# andar ao soltar o botão ou acabar as balas (release_charge zera _rapid_fire).
 	if _rapid_fire or (has_meta("custom_pose") and get_meta("custom_pose") == "knockdown"):
 		q.congelar()
+	elif _cast.kit_prende_o_andar() or habilidade_segurada_prende():
+		q.travar_por_skill()           # segurando skill do Builder: não anda, não pula, não esquiva
 
 	# PARKOUR -> src/player/parkour_controller.gd. Uma chamada resolve pouso de
 	# precisão, sondagem de parede, decisão de escalar/correr na parede e recarga
@@ -1403,15 +2048,29 @@ func _etapa_locomocao(delta: float) -> void:
 	#
 	# Quem responde é o próprio estado (`pode_cancelar_para_dash`), não um `if`
 	# aqui: a regra do cancelamento é do estado que a sofre.
-	var dash_bloqueado := _charging or _rapid_fire or _yami_pistol_active
+	var dash_bloqueado := _charging or _rapid_fire or _yami_pistol_active or (_yoru_combat != null and not String(_yoru_combat.action_id).is_empty())
+	# Combate direcional: mesmo molde da Yoru — golpe em curso é do executor, e a
+	# esquiva não o corta (o Roll em si não muda).
+	if combate_direcional != null and combate_direcional.ocupado():
+		dash_bloqueado = true
 	if _fsm and _fsm.state and _fsm.state.name != "Idle":
 		dash_bloqueado = true
 		if _fsm.state.name == "AttackRecovery" and _fsm.state.pode_cancelar_para_dash():
 			dash_bloqueado = false # Dash cancel liberado!
+	# O roll (Q) NÃO depende mais da capacidade `can_dash` — decisão do dono
+	# (03/10/2026): "liberar o uso do Q", roll sempre liberado. O desbloqueio
+	# "dash" da progressão continua existindo no save, só não trava o Q.
 
+	dash_bloqueado = dash_bloqueado or (_agachar.ativo and not _agachar.pode_levantar())
+	_dash.modo_ef = _esquiva_do_epic_fight()
 	_dash.atualizar(delta, q, dash_bloqueado)
+	_dash_ar.atualizar(delta, q, dash_bloqueado, _mira_do_dash())
+	if esquivando() and _agachar.ativo:
+		_agachar.cancelar()
+	if esquivando():
+		_cancel_yoru_action("dash")
 
-	if _dash.ativo() and _fsm and _fsm.state and _fsm.state.name != "Idle":
+	if esquivando() and _fsm and _fsm.state and _fsm.state.name != "Idle":
 		# O golpe em voo morre junto com o estado. Sem isso o `MeleeController`
 		# seguiria contando as fases de um golpe que a esquiva já cancelou, e a
 		# `fase()` mentiria para a FSM no quadro seguinte.
@@ -1422,7 +2081,7 @@ func _etapa_locomocao(delta: float) -> void:
 	# M1 normal não prende mais o deslocamento: o jogador pode andar enquanto
 	# soca/chuta. As exceções são estilos especiais que controlam a própria
 	# velocidade (hoje, a mordida Mink ao segurar alguém).
-	var golpe_prende := _mink_hold_timer > 0.0
+	var golpe_prende := _mink_hold_timer > 0.0 or (_yoru_combat != null and not String(_yoru_combat.action_id).is_empty())
 	if golpe_prende:
 		q.travar_golpe()
 
@@ -1431,24 +2090,47 @@ func _etapa_locomocao(delta: float) -> void:
 	# velocidade dos outros.
 	# A corrida começa em 1,5× a caminhada e, mantida no chão por 3 segundos,
 	# chega ao dobro dela (3× a caminhada). Qualquer interrupção zera o embalo.
-	var impulso_corrida := _aceleracao_da_corrida.atualizar(delta,
-		q.sprint and is_on_floor() and not _parkour.assumiu() and not golpe_prende)
-	var effective_speed := SPEED * speed_multiplier * (1.5 if q.sprint else 1.0) * impulso_corrida * _parkour.bonus_velocidade()
-
-	# ⚠️ O CUSTO DA SUPERFÍCIE É COBRADO AQUI, e não junto da velocidade. Andar
-	# na parede entra por `_parkour.assumiu()` (a mesma porta da escalada e do
-	# wall run), então um `elif` no bloco do dash NUNCA rodava — a energia não
-	# saía e a mecânica ficava de graça. Um ponto só, que roda todo quadro.
-	if _parkour.na_parede():
-		energy = maxf(energy - CUSTO_PAREDE_POR_SEG * delta, 0.0)
+	# CORRER = 1,5× ANDAR, e só (decisão do dono, 03/10/2026: "retirar o ganho de
+	# velocidade ao correr"). Até então a corrida crescia até 2× em 3 s no chão.
+	# O buff de aceleração da Rocket (V) passou para a arrancada da locomoção.
+	var fator_nado: float = controle_da_agua.fator_de_movimento(self, q, delta) if is_instance_valid(controle_da_agua) else (1.5 if q.sprint else 1.0) * fator_da_agua
+	var effective_speed := SPEED * speed_multiplier * velocidade_mod * (float(_rocket.fator_velocidade()) if _rocket != null else 1.0) * fator_nado * _parkour.bonus_velocidade() \
+		* ExecutorDeSkill.fator_de_lentidao(self) \
+		* float(get_meta("arco_fator_velocidade", 1.0)) * float(get_meta("ef_fator_velocidade", 1.0))      # lentidão das skills do Builder; e puxando a pokébola (×0,2, como o arco)
+	if _agachar.ativo:
+		effective_speed *= _agachar.FATOR_VELOCIDADE
+	# Combate direcional: o golpe TIRA mobilidade sem congelar — o fator por fase
+	# vem da ficha do golpe (1,0 fora de ação).
+	if combate_direcional != null:
+		effective_speed *= combate_direcional.fator_de_movimento()
+	if get_meta("magu_cao_ativo", false):
+		# C: exatamente duas vezes a corrida, com ou sem Shift. Desde a locomoção do Minecraft (31/10/2026) a corrida é ×1,3 sobre andar, aplicada pelo `McMovimento`
+		# (o `mult_mc` abaixo desconta o `fator_nado` 1,5 do Shift): com Shift a conta é 3,0/1,5 × 1,3 = 2,6; sem Shift não há ×1,3 e o fator é 2,6 direto.
+		# Com o 1,5 antigo o cão saía 2,3× a corrida (medido em 15/11/2026: 11,40 contra 4,94 m/s).
+		effective_speed = SPEED * speed_multiplier * (3.0 if q.sprint else 2.6)
+	if _dash_ar.acabou():
+		# Fim do dash do ar (pedido do dono, 08/10/2026): o impulso não continua — a
+		# velocidade horizontal volta à de andar, senão o corpo seguia a 18 m/s no ar.
+		var horizontal := Vector3(velocity.x, 0.0, velocity.z)
+		if horizontal.length() > effective_speed:
+			horizontal = horizontal.normalized() * effective_speed
+			velocity.x = horizontal.x
+			velocity.z = horizontal.z
+		if absf(_dash_ar.direcao().y) > 0.001:
+			velocity.y = 0.0
 
 	# QUEM MANDA NA VELOCIDADE DESTE QUADRO.
+	var mc_usado := false
 	# Escalada e wall run são exclusivos: enquanto valem, o parkour manda sozinho.
 	if _parkour.assumiu():
 		velocity = _parkour.velocidade(delta, q, velocity, effective_speed)
 	else:
-		# Gravidade.
-		if not is_on_floor():
+		# Gravidade — na água funda, flutuação (ou o afundar do usuário de fruta).
+		if modo_na_agua == "nadando" and is_instance_valid(controle_da_agua):
+			pass   # nado livre: o vertical sai da mira e do teclado, mais abaixo
+		elif not modo_na_agua.is_empty():
+			velocity.y = lerpf(velocity.y, agua_vertical, 1.0 - exp(-6.0 * delta))
+		elif not is_on_floor():
 			velocity.y -= GRAVITY * delta
 			# A queda esmagadora usa exatamente 3× a aceleração da gravidade. A
 			# velocidade do clique já foi triplicada na ativação; esta linha mantém
@@ -1458,11 +2140,55 @@ func _etapa_locomocao(delta: float) -> void:
 
 		# Vault, salto longo, pulo normal e geppo: o parkour recebe a velocidade
 		# e devolve a velocidade — não escreve nela.
-		velocity = _parkour.aplicar_pulos(q, velocity, effective_speed, is_on_floor(), jump_multiplier)
+		if modo_na_agua.is_empty():
+			velocity = _parkour.aplicar_pulos(q, velocity, effective_speed, is_on_floor(), jump_multiplier * pulo_mod)
 
-		if _dash.passo() > 0.0:
+		var goro_mp := GoroGoroMinePiece.de(self)
+		var fruta_mp := ControladorFrutaMinePiece.de(self)
+		if _phoenix != null and _phoenix.controla_movimento():
+			velocity = _phoenix.velocidade(delta, velocity, q, _mira_do_voo())
+		elif goro_mp != null and goro_mp.controla_movimento():
+			# Goro Goro (Mine Piece): técnica em curso prende o corpo; transformado, voa.
+			velocity = goro_mp.velocidade(delta, velocity, q)
+		elif fruta_mp != null and fruta_mp.controla_movimento():
+			# Demais frutas Mine Piece: Lentidão X da técnica prende; logia transformada voa.
+			velocity = fruta_mp.velocidade(delta, velocity, q)
+		elif _voo.ativo():
+			# Voo da fruta (Blast Off). Dano, morte ou perder a fruta encerram PELO
+			# POUSO: acabar o voo não pode matar de queda.
+			if not corpo_livre_para_golpe() or not capacidades.can_fly:
+				_voo.desfazer_forma()
+			velocity = _voo.velocidade(delta, _mira_do_voo(), is_on_floor())
+			set_meta("custom_pose", "rocket_voo" if _voo.no_ar() else "")
+		elif _dash.passo() > 0.0:
 			velocity = _dash.velocidade(delta)
+		elif _dash_ar.passo() > 0.0:
+			velocity = _dash_ar.velocidade(delta)
+		elif _deslize.ativo():
+			var livre := _teto_livre()
+			var hv: Vector3 = _deslize.atualizar(delta, is_on_floor(), livre, q.espaco_agora)
+			velocity.x = hv.x
+			velocity.z = hv.z
+			if not livre:
+				velocity.y = minf(velocity.y, 0.0)    # sob teto baixo não há pulo
 
+		elif _movimento_de_skill_ativo():
+			# Skill do Builder com bloco de Movimento: quem escreve é o executor, a
+			# colisão é a do próprio corpo (`move_and_slide`). Andando no chão, a
+			# gravidade continua; "Acima" manda também no vertical.
+			velocity.x = _mov_skill_vel.x
+			velocity.z = _mov_skill_vel.z
+			if _mov_skill_vertical:
+				velocity.y = _mov_skill_vel.y
+			elif _flutuar_por_skill:
+				velocity.y = 0.0
+		elif _flutuar_por_skill:
+			# Skill que flutua, entre um movimento e outro: parado no ar.
+			velocity = Vector3.ZERO
+		elif (_cast.kit_paralisa() or habilidade_segurada_paralisa()) and corpo_livre_para_golpe():
+			# Segurando o Z da Pika no Modo História (10/10/2026): parado onde está, até no
+			# ar. Golpe, captura ou congelamento (corpo não livre) continuam mandando.
+			velocity = Vector3.ZERO
 		elif _bomu_rush_active:
 			velocity.x = _bomu_rush_dir.x * effective_speed * 4.6
 			velocity.z = _bomu_rush_dir.z * effective_speed * 4.6
@@ -1485,85 +2211,104 @@ func _etapa_locomocao(delta: float) -> void:
 			var giro_frente := RosaDosVentos.frente(_spin_kick_yaw)
 			velocity.x = giro_frente.x * 8.0
 			velocity.z = giro_frente.z * 8.0
-		else:
+		elif modo_na_agua == "nadando" and is_instance_valid(controle_da_agua):
+			# Nado livre (14/10/2026): mouse + W/A/S/D dão a direção em 3D, sem boiar sozinho.
+			var nado: Vector3 = controle_da_agua.velocidade_de_nado(global_position, q, _mira_do_voo(), effective_speed)
+			velocity.x = nado.x
+			velocity.z = nado.z
+			velocity.y = lerpf(velocity.y, nado.y, 1.0 - exp(-6.0 * delta))
+			_loco_chao.acompanhar(delta, velocity, q.dir)
+		elif not modo_na_agua.is_empty():
+			# Na água o nado tem controle próprio (jogador_na_agua.gd); sem
+			# arrancada/frenagem de corrida.
 			velocity.x = q.dir.x * effective_speed
 			velocity.z = q.dir.z * effective_speed
+			_loco_chao.acompanhar(delta, velocity, q.dir)
+		else:
+			# ARRANCADA, FRENAGEM, GIRO E CURVA -> src/player/locomocao_chao.gd.
+			# No impulso do salto longo/vault o controle no ar fica firme (como
+			# combate), senão o bônus de velocidade não chegaria a valer.
+			# MOVIMENTAÇÃO DO MINECRAFT (31/10/2026) -> src/player/movimento_minecraft.gd. É a ÚNICA
+			# locomoção de chão/ar. O que sobra do multiplicador depois de tirar a corrida e o
+			# agachar (que o Minecraft faz sozinho: ×1,3 e ×0,3) vira o atributo de velocidade.
+			var mult_mc := effective_speed / (SPEED * maxf(fator_nado, 0.001))
+			if _agachar.ativo:
+				mult_mc /= _agachar.FATOR_VELOCIDADE
+			mc_usado = true
+			velocity = _mc_mov.velocidade(delta, self, q, velocity, mult_mc, _agachar.ativo, GRAVITY,
+				jump_multiplier * pulo_mod)
+			_loco_chao.observar(delta, velocity, q.dir, is_on_floor(), _agachar.ativo or _em_combate())
+
+	if not mc_usado:
+		_mc_mov.soltar()       # outro ramo mandou neste quadro: o Minecraft reentra do que o corpo fez
+
+	# Deslize: colisão pela metade enquanto o corpo está baixo (só age na troca).
+	_encolher_colisor(_deslize.encolhido())
 
 	# ============================================================ A FRENTE
-	# ⚠️ O CORPO OLHA PARA A MIRA, SEMPRE. Decisão do dono (2026-08-27).
+	# ⚠️ LIVRE o corpo olha para onde ANDA; EM COMBATE, para a MIRA. Decisão do
+	# dono (2026-10-02, docs/PARKOUR_MIRRORS_EDGE_PLANO.md), que substitui a de
+	# 2026-08-27 ("olha para a mira, sempre") fora do combate.
 	#
-	# Antes a frente seguia o MOVIMENTO: andar para o lado virava o corpo para o
-	# lado, e a mira só mandava quando o jogador estava parado. Isso faz sentido
-	# num jogo de aventura, e é o oposto do que um jogo de luta/tiro precisa —
-	# ali o que importa é para onde o golpe sai, e o golpe sai para onde a MIRA
-	# aponta (`melee_controller` e as skills usam `_yaw`, não `q.dir`).
+	# A regra de 27/08 continua valendo onde nasceu: o golpe sai para onde a MIRA
+	# aponta (`melee_controller` e as skills usam `_yaw`, não `q.dir`), e um corpo
+	# de costas para quem ele vai acertar lê errado. Por isso atacar, usar skill,
+	# mirar ou dar dash vira o corpo para a mira e o mantém lá por COMBATE_SEGURA s
+	# (`_em_combate`). Correndo livre, a frente é a do movimento — é ela que faz a
+	# arrancada, o giro e a inclinação de curva lerem (`src/player/locomocao_chao.gd`).
 	#
-	# Com o corpo seguindo o movimento, o adversário lia a direção ERRADA: via as
-	# costas de quem ia acertá-lo de lado. Agora corpo e golpe apontam junto.
-	#
-	# ⚠️ UMA EXCEÇÃO, e ela não é negociável: ESCALANDO. A frente vira para
-	# DENTRO da parede porque é isso que faz a escalada ler — um personagem
-	# grudado numa parede de costas para ela seria pior que o problema original.
-	# Aqui a mira não manda porque o corpo está preso à geometria.
+	# ⚠️ DUAS EXCEÇÕES, e elas não são negociáveis: NA PAREDE. Escalando, a frente
+	# vira para DENTRO da parede porque é isso que faz a escalada ler — um
+	# personagem grudado numa parede de costas para ela seria pior que o problema
+	# original. No wall run, a frente segue a TANGENTE da parede (para onde ele
+	# corre). Aqui a mira não manda porque o corpo está preso à geometria.
 	if _char_model:
-		if _parkour.na_parede() and _parkour.normal_da_parede() != Vector3.ZERO:
-			# ⚠️ O "PARA CIMA" DO CORPO VIRA A NORMAL DA SUPERFÍCIE. É isso que
-			# faz o jogador ANDAR na parede em vez de escalá-la — a orientação do
-			# que é o chão muda, que foi o pedido.
-			#
-			# A frente sai da direção do movimento projetada no plano; parado,
-			# mantém a que já tinha, para o corpo não girar sozinho.
-			var n := _parkour.normal_da_parede()
-			# ⚠️ A FRENTE VEM DA MESMA BASE QUE O MOVIMENTO. Antes ela era `q.dir`
-			# — a direção HORIZONTAL do mundo — projetada no plano da parede. Numa
-			# parede vertical o W é justamente a componente que a projeção anula,
-			# então só A e D sobravam: o corpo ficava sempre virado para a
-			# direita ou para a esquerda, nunca para onde ele estava subindo.
-			#
-			# Movimento e olhar são a MESMA decisão; tirá-los de fontes
-			# diferentes é como as cinco cópias da direção da frente que já
-			# custaram caro aqui.
-			var b_sup := _parkour.base_da_superficie()
-			var frente_alvo := _char_model.global_transform.basis.z * -1.0
-			if absf(q.f) > 0.01 or absf(q.r) > 0.01:
-				frente_alvo = (-b_sup.z) * q.f + b_sup.x * q.r
-			frente_alvo = frente_alvo - n * frente_alvo.dot(n)
-			# ⚠️ QUANDO A PROJEÇÃO DEGENERA. Ao grudar, o corpo está ENCARANDO a
-			# parede — a frente dele é anti-paralela à normal, e projetá-la no
-			# plano da superfície dá ZERO. Sem esta saída o `if` abaixo falhava e
-			# a orientação nunca mudava: o personagem grudava na parede em pé,
-			# como se nada tivesse acontecido.
-			#
-			# A saída é "para cima da parede": a vertical do MUNDO projetada no
-			# plano. Numa parede vertical isso aponta para o topo dela, que é a
-			# direção que alguém andando nela naturalmente encara.
-			if frente_alvo.length_squared() <= 0.001:
-				frente_alvo = Vector3.UP - n * Vector3.UP.dot(n)
-			if frente_alvo.length_squared() <= 0.001:
-				frente_alvo = Vector3.FORWARD - n * Vector3.FORWARD.dot(n)
-			if frente_alvo.length_squared() > 0.001:
-				var alvo := Basis.looking_at(frente_alvo.normalized(), n)
-				_girar_modelo(alvo, delta)
-		elif _endireitando():
-			# ⚠️ DESENTORTAR AO SAIR DA SUPERFÍCIE. Largar a parede não bastava:
-			# o resto do código escreve só `rotation.y`, e escrever yaw numa base
-			# INCLINADA preserva a inclinação — o personagem saía andando de lado
-			# no ar para sempre. Aqui a base volta inteira para "em pé olhando
-			# para a mira", e só então os escritores de yaw voltam a mandar.
-			_girar_modelo(Basis.from_euler(Vector3(0.0, _char_model.rotation.y, 0.0)), delta)
-		elif _parkour.escalando() and _parkour.parede_frontal() != Vector3.ZERO:
-			# Convenção do projeto: FRENTE = -Z. Ao escalar, o -Z do modelo aponta
-			# ao longo de -wall_normal (que aponta da parede para o jogador).
-			var target_rot := atan2(_parkour.parede_frontal().x, _parkour.parede_frontal().z)
-			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, target_rot,
-				VELOCIDADE_FACING * delta)
+		if _parkour.correndo_na_parede():
+			var rumo_parede := LocomocaoChao.yaw_de(_parkour.parede.tangente)
+			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, rumo_parede,
+				VELOCIDADE_FACING_GIRO * delta)
+			_loco_chao.rumo = _char_model.rotation.y   # sai da parede de onde está
+		elif esquivando() or _deslize.ativo():
+			# Roll e deslize seguem o rumo; o dash aéreo mantém a frente da câmera.
+			var rumo_esquiva := _dash.rumo_do_corpo() if _dash.ativo() else (_dash_ar.frente_do_corpo() if _dash_ar.ativo() else _deslize.direcao())
+			var rumo_roll := LocomocaoChao.yaw_de(rumo_esquiva)
+			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, rumo_roll,
+				clampf(VELOCIDADE_FACING_GIRO * 2.0 * delta, 0.0, 1.0))
+			_loco_chao.rumo = _char_model.rotation.y
+		elif _parkour.escalando():
+			# Convenção do projeto: FRENTE = −Z. Escalando, a frente aponta PARA
+			# DENTRO da parede (−normal; a normal aponta da parede para o jogador).
+			var rumo_escalada := LocomocaoChao.yaw_de(-_parkour.escalada.normal)
+			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, rumo_escalada,
+				VELOCIDADE_FACING_GIRO * delta)
+			_loco_chao.rumo = _char_model.rotation.y
 		elif not _contextual_attack_id.is_empty():
 			# W/A/S/D fixa a direção no clique. A câmera ainda gira para mirar o
 			# próximo golpe, mas não altera a silhueta do corpo comprometido.
 			_char_model.rotation.y = _contextual_attack_yaw
-		else:
+		elif combate_direcional != null and combate_direcional.ocupado():
+			# Combate direcional: o corpo continua seguindo a mira, mas com TETO de
+			# giro por fase (ficha do golpe). Sem ele, girar a câmera no ativo
+			# arrastaria o golpe em volta do corpo inteiro.
+			var atual := _char_model.rotation.y
+			var passo := wrapf(lerp_angle(atual, _yaw, VELOCIDADE_FACING * delta) - atual, -PI, PI)
+			var teto := combate_direcional.giro_maximo() * delta
+			_char_model.rotation.y = atual + clampf(passo, -teto, teto)
+		elif has_meta("frente_forcada"):
+			# Quem segura o corpo virado para um ponto (a PESCA, para a boia — 03/10/2026)
+			# grava o yaw nesta meta e a apaga ao soltar.
+			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, float(get_meta("frente_forcada")),
+				VELOCIDADE_FACING * delta)
+			_loco_chao.rumo = _char_model.rotation.y
+		elif _em_combate() or _agachar.ativo:
+			# EM COMBATE o corpo olha para a MIRA (o golpe sai por `_yaw`).
 			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _yaw,
 				VELOCIDADE_FACING * delta)
+			_loco_chao.rumo = _char_model.rotation.y   # sai do combate de onde está
+		else:
+			# LIVRE o corpo segue o MOVIMENTO; no giro, o pivô é rápido.
+			var taxa := VELOCIDADE_FACING_GIRO if _loco_chao.estado in ["girando", "freando_giro"] else VELOCIDADE_FACING_LIVRE
+			_char_model.rotation.y = lerp_angle(_char_model.rotation.y, _loco_chao.rumo, taxa * delta)
 
 	# A mira normalmente reescreve a orientação do modelo a cada quadro. Na aú,
 	# isso mudaria o eixo da rotação no meio do movimento: captura-se o yaw no
@@ -1579,110 +2324,76 @@ func _etapa_locomocao(delta: float) -> void:
 		_char_model.position.x = _spin_kick_rest_position.x + ALTURA_DO_ROLAMENTO * sin(angulo_au)
 		_char_model.position.y = _spin_kick_rest_position.y + ALTURA_DO_ROLAMENTO * (1.0 - cos(angulo_au))
 
-	# ⚠️ O GIRO DO ROLAMENTO DE COSTAS mora aqui, e não no animador, porque quem
-	# tem a raiz do modelo é o Player. A pose encolhida sozinha pareceria um
-	# agachamento; é o giro que faz virar cambalhota.
-	#
-	# Gira em X (para TRÁS = negativo, pela convenção frente = −Z) uma volta
-	# inteira ao longo da esquiva. E compensa a POSIÇÃO: a origem do modelo está
-	# nos PÉS, então girar ali jogaria o corpo através do chão. Deslocando por
-	# `meia_altura·(1−cos)` em Y e `meia_altura·sin` em Z, o giro acontece em
-	# torno da CINTURA, que é onde uma cambalhota gira de verdade.
-	if _char_model:
-		# A cambalhota de saída da superfície gira pelo MESMO mecanismo do
-		# rolamento de costas — inclusive a compensação de posição, que é o que
-		# faz girar em torno da cintura e não dos pés.
-		var g := _dash.giro_do_rolamento() if _dash.ativo() and _dash.rumo_nome() == "tras" else 0.0
-		if g <= 0.0 and _parkour.rolando_no_ar():
-			g = _parkour.giro_do_rolamento_no_ar()
-		if g > 0.0:
-			# ⚠️ GUARDA O REPOUSO NO PRIMEIRO QUADRO DO GIRO, e soma o arco A
-			# PARTIR dele. A primeira versão devolvia a posição para ZERO no fim —
-			# mas o repouso do modelo NÃO é zero: é `y = −0,80` (o rig o abaixa
-			# para os pés encostarem no chão). Resultado medido: o personagem
-			# SUBIA 0,8 m no primeiro dash de costas e ficava lá.
-			#
-			# Assumir "o repouso é a origem" é o mesmo erro que a escala das
-			# raças, onde devolver `Vector3.ONE` deformaria um rig que nasce com
-			# 1,8. Repouso se GUARDA, não se supõe.
-			if not _rolando_de_costas:
-				_rolando_de_costas = true
-				_pose_repouso = _char_model.position
-			var ang := -TAU * g
-			_char_model.rotation.x = ang
-			_char_model.position.y = _pose_repouso.y + ALTURA_DO_ROLAMENTO * (1.0 - cos(ang))
-			_char_model.position.z = _pose_repouso.z + ALTURA_DO_ROLAMENTO * sin(ang)
-		elif _rolando_de_costas:
-			# Volta ao REPOUSO GUARDADO assim que a esquiva acaba. Sem isto o
-			# personagem ficaria de cabeça para baixo para sempre — `rotation.x`
-			# não é escrito por mais ninguém, então ninguém o consertaria.
-			_rolando_de_costas = false
-			_char_model.rotation.x = 0.0
-			_char_model.position.y = _pose_repouso.y
-			_char_model.position.z = _pose_repouso.z
+	_inclinar_no_wall_run(delta, _parkour.parede.lado if _parkour.correndo_na_parede() else 0)
+
+	# Fim do arremesso: o corpo termina de voltar de pé suavemente.
+	_arremesso.apresentar(_char_model, delta)
 
 	# Animação: rig procedural (por-nós) OU esqueletal (skinnado).
 	if _skel_anim:
 		_skel_anim.update(velocity, is_on_floor(), _parkour.escalando(), delta, q.sprint)
 	elif _proc_anim:
 		var parkour := ""
-		if _parkour.rolando_no_ar():
-			# ⚠️ ANTES do wall_run e do roll: a cambalhota de saída é o estado
-			# mais recente e tem de vencer o que estava tocando.
-			parkour = "roll_ar"
+		var estado_escalada: String = _parkour.escalada.estado
+		if estado_escalada == "borda":
+			parkour = "borda"
+		elif estado_escalada == "subindo":
+			parkour = "subindo_borda"
 		elif _parkour.correndo_na_parede():
 			parkour = "wall_run"
 		elif _roll_t > 0.0:
-			# ⚠️ A pose depende do RUMO da esquiva. O dash já saía para os lados e
-			# para trás (a direção vem da tecla), mas todos usavam a MESMA
-			# animação: dar um passo para trás e mergulhar para a frente ficavam
-			# iguais na tela. O rolamento de pouso, que não é dash, continua no
-			# "roll" de frente.
-			if _dash.ativo():
-				match _dash.rumo_nome():
-					"tras":     parkour = "roll_tras"
-					"esquerda": parkour = "roll_lado_e"
-					"direita":  parkour = "roll_lado_d"
-					_:          parkour = "roll"
-			else:
-				parkour = "roll"
+			# Roll do Q e rolamento de pouso. O do Q toca o clipe do Mixamo (ver
+			# `acao_clipe` logo abaixo); o de pouso fica na pose procedural.
+			parkour = "roll"
 		elif _parkour.janela_impulso() > 0.0 and not on_floor_now:
 			parkour = "long_jump"
-		# ⚠️ NA SUPERFÍCIE, O ANIMADOR PRECISA ACHAR QUE ESTÁ NO CHÃO. Ele decide
-		# entre ciclo de caminhada e pose de ar por `on_floor` — e andando na
-		# parede o jogador NÃO está no chão do mundo, então tocava a pose de
-		# queda e parecia que não havia animação nenhuma. Para o animador, a
-		# superfície É o chão.
-		#
-		# E a velocidade vai SEM a componente de aderência: aquele empurrão
-		# contra a parede é contato, não deslocamento, e faria o ciclo de
-		# caminhada rodar com o jogador parado.
-		var no_chao_anim: bool = is_on_floor() or _parkour.na_parede()
+		if _agachar.ativo:
+			parkour = "agachar"
+		# No wall run o animador recebe a corrida AO LONGO da parede (sem a pressão
+		# de contato contra ela) e o lado da parede, para a mão de apoio.
 		var vel_anim: Vector3 = velocity
-		if _parkour.na_parede():
-			# ⚠️ TRADUZIR A VELOCIDADE PARA O PLANO QUE O ANIMADOR ENTENDE.
-			# Ele mede a caminhada com `Vector2(velocity.x, velocity.z)` — só o
-			# plano horizontal do MUNDO. Subir a parede é movimento em Y, que
-			# ele não enxerga: andar para cima e para baixo não animava nada,
-			# enquanto andar de lado animava.
-			#
-			# A saída é decompor a velocidade na base da SUPERFÍCIE (quanto é
-			# "para frente", quanto é "para o lado") e reemitir isso na base
-			# horizontal do corpo. O animador recebe uma caminhada com a
-			# magnitude e a repartição certas, sem saber que há uma parede.
-			var n_sup := _parkour.normal_da_parede()
-			var no_plano := velocity - n_sup * velocity.dot(n_sup)
-			var b_sup := _parkour.base_da_superficie()
-			var v_frente: float = no_plano.dot(-b_sup.z)
-			var v_lado: float = no_plano.dot(b_sup.x)
-			vel_anim = RosaDosVentos.frente(_yaw) * v_frente \
-				+ RosaDosVentos.direita(_yaw) * v_lado
-		_proc_anim.update(vel_anim, no_chao_anim, _parkour.escalando(), delta, _pitch, q.sprint, false, "", parkour, _pose_de_arma(), _gun_recoil)
+		if _parkour.correndo_na_parede():
+			vel_anim = _parkour.parede.tangente * _parkour.parede.velocidade_ao_longo() + Vector3.UP * velocity.y
+		elif _parkour.escalando():
+			# Sem a pressão contra a parede: é contato, não deslocamento.
+			var n_esc: Vector3 = _parkour.escalada.normal
+			vel_anim = velocity - n_esc * velocity.dot(n_esc)
+		_proc_anim.parede_lado = _parkour.parede.lado if _parkour.correndo_na_parede() else 0
+		_proc_anim.subida_borda = _parkour.escalada.progresso_subida
+		_proc_anim.loco_inclinacao = _loco_chao.inclinacao
+		_proc_anim.loco_inclinacao_frente = _loco_chao.inclinacao_frente
+		_proc_anim.loco_estado = _loco_chao.estado
+		_parkour_anim = parkour
+		# CLIPE DE AÇÃO (03/10/2026): o roll do Q toca o "Sprinting Forward Roll" no
+		# tempo que a física do roll manda — o corpo inteiro segue o clipe.
+		if _dash.rolando():
+			_proc_anim.acao_clipe = _dash.clipe()
+			_proc_anim.acao_tempo = _dash.tempo_do_clipe()
+			_parkour_anim = "roll_q"
+		elif _dash_ar.ativo():
+			# Dash no ar: impulso com o pé, diferente para cada direção.
+			_proc_anim.acao_clipe = _dash_ar.clipe()
+			_proc_anim.acao_tempo = _dash_ar.tempo_do_clipe()
+			_parkour_anim = "roll_q"
+		elif _deslize.ativo():
+			_proc_anim.acao_clipe = Deslize.CLIPE
+			_proc_anim.acao_tempo = _deslize.tempo_do_clipe()
+			_parkour_anim = "deslize"
+		elif _clipe_de_skill != "":
+			# Bloco Animação do Skills Builder (07/10/2026): o clipe no tempo do bloco.
+			_proc_anim.acao_clipe = _clipe_de_skill
+			_proc_anim.acao_tempo = _tempo_clipe_de_skill
+		else:
+			_proc_anim.acao_clipe = ""
+		var do_builder := _proc_anim.acao_clipe == _clipe_de_skill and _clipe_de_skill != ""
+		_proc_anim.acao_peso = _peso_clipe_de_skill if do_builder else 1.0
+		# Só o "escalando" (escada) usa a pose de escalada; borda e subida têm as suas.
+		_proc_anim.update(vel_anim, is_on_floor(), estado_escalada == "escalando", delta, _pitch, q.sprint, false, "", parkour, _pose_de_arma(), _gun_recoil)
 
 # Fôlego, rajada Z e a janela do combo de corpo a corpo.
 func _etapa_ticks_de_combate(delta: float) -> void:
 	_update_breath()
-	_disparo.tick_rajada(delta, ENERGY_BULLET)   # Mera Z: dispara as balas de fogo enquanto a rajada está ativa
+	_disparo.tick_rajada(delta, energia_do_modo(ENERGY_BULLET))   # Mera Z: dispara as balas de fogo enquanto a rajada está ativa
 	_melee.tick(delta, _yaw)  # corpo a corpo: janela do combo + recuperação
 
 # A autoridade publica seu estado para os outros clientes replicarem.
@@ -1691,6 +2402,14 @@ func _etapa_publicar_rede() -> void:
 	# Rede (Fase 4): a autoridade publica seu estado p/ os outros clientes replicarem.
 	net_velocity = velocity
 	net_on_floor = is_on_floor()
+	net_parkour = "agachar" if _agachar.ativo else ("" if _parkour_anim == "agachar" else _parkour_anim)
+	net_agachado = _agachar.ativo
+	net_escalando = _parkour.escalada.estado == "escalando"
+	net_parede_lado = _parkour.parede.lado if _parkour.correndo_na_parede() else 0
+	net_acao_clipe = _proc_anim.acao_clipe if _proc_anim else ""
+	net_acao_tempo = _proc_anim.acao_tempo if _proc_anim else 0.0
+	net_subida = _parkour.escalada.progresso_subida
+	net_inclinacao = Vector2(_loco_chao.inclinacao, _loco_chao.inclinacao_frente)
 	# A cópia local acabou a carga; limpa o estado visual que foi replicado no
 	# caminho de trava. O golpe final continua viajando pelo RPC de cast normal.
 	net_charge_pose = ""
@@ -1700,6 +2419,8 @@ func _etapa_publicar_rede() -> void:
 
 # Supressão de poderes e morte por queda. Devolve `true` se o quadro acabou aqui.
 func _etapa_vida(delta: float) -> bool:
+	if knockback_minecraft != null:
+		knockback_minecraft.passar_tempo(delta)
 
 	# Processamento de Supressão da Passiva Yami Yami
 	_cast.tick_silencio(delta)
@@ -1713,6 +2434,7 @@ func _etapa_vida(delta: float) -> bool:
 # knockback tem que entrar DEPOIS de a locomoção escrever `velocity`, senão ela
 # o sobrescreve (foi exatamente esse o bug do empurrão que não funcionava).
 func _etapa_mover(delta: float) -> void:
+	velocity = _agachar.limitar_borda(velocity, delta)
 
 	# Empurrão externo: somado DEPOIS da locomoção ter escrito velocity, e antes
 	# de mover. Decai sozinho, então o controle volta ao jogador em ~1 s.
@@ -1725,14 +2447,37 @@ func _etapa_mover(delta: float) -> void:
 	var empurrao := _vida.impulso_do_quadro(delta)
 	if empurrao != Vector3.ZERO:
 		velocity += empurrao
+	# Knockback Minecraft (Modo História): o mesmo molde, com o atrito do Minecraft.
+	if knockback_minecraft != null:
+		var empurrao_mc := knockback_minecraft.impulso_do_quadro(delta, is_on_floor())
+		if empurrao_mc != Vector3.ZERO:
+			velocity += empurrao_mc
+	# Combate direcional: o avanço do golpe é outro dono somando por cima, no mesmo
+	# molde (e com o mesmo `if` contra o −0,0).
+	if combate_direcional != null:
+		var avanco := combate_direcional.impulso_do_quadro()
+		if avanco != Vector3.ZERO:
+			velocity += avanco
 	var velocidade_y_antes_do_pouso := velocity.y
-	move_and_slide()
+	# Relevo em blocos (22/10/2026): sobe meio bloco andando. Subiu = o passo horizontal
+	# do quadro foi dado; o `move_and_slide` só cuida do vertical.
+	if colisor_capsula and modo_na_agua.is_empty() and SubirDegrau.tentar(self, delta,
+			(_colisor.shape as CapsuleShape3D).radius if _colisor.shape is CapsuleShape3D else 0.0):
+		var horizontal := Vector3(velocity.x, 0.0, velocity.z)
+		velocity -= horizontal
+		move_and_slide()
+		velocity += horizontal
+	else:
+		move_and_slide()
+	_mc_mov.registrar(velocity)
+	if colisor_capsula:
+		HurtboxDeCombate.sincronizar(self)   # hurtbox no lugar NESTE quadro (ver a classe)
 	if _air_slam_active and is_on_floor():
 		_finalizar_ataque_aereo()
 	_impacto_de_queda.atualizar(self, is_on_floor(), velocidade_y_antes_do_pouso)
-	_ecos_de_movimento.atualizar(delta, _char_model, _is_sprinting() and is_on_floor())
+	_ecos_de_movimento.atualizar(delta, _char_model, ecos_de_movimento_ligados and _is_sprinting() and is_on_floor())
 	_poeira_dos_pes.atualizar(delta, velocity, is_on_floor(),
-		_dash.ativo() or _parkour.escalando() or _parkour.correndo_na_parede() or _charging or _rapid_fire)
+		esquivando() or _parkour.escalando() or _parkour.correndo_na_parede() or _charging or _rapid_fire)
 	
 	if _fsm and _fsm.state and _fsm.state.name == "Stunned":
 		if is_on_wall() and empurrao.length_squared() > 4.0:
@@ -1806,6 +2551,10 @@ func _do_tame(enemy_name: String, owner_peer: int) -> void:
 ## replicada). Só reproduz a animação a partir do estado replicado e vira o modelo
 ## pelo facing replicado, pra parecer vivo na tela dos outros.
 func _remote_process(delta: float) -> void:
+	if current_fruit_id in ["ope_ope", "rocket"] and multiplayer.is_server():
+		var factor := HealthController.PENALIDADE_DANO if _vida.em_combate() else 1.0
+		energy = minf(max_energy, energy + HealthController.regen_energia_por_s(
+			max_energy, _vida.com_bonus_de_kill()) * factor * delta)
 	# O servidor também costuma ver jogadores de clientes por este caminho;
 	# portanto o relógio autoritativo do Corpo de Ferro não pode depender da
 	# autoridade local.
@@ -1816,23 +2565,38 @@ func _remote_process(delta: float) -> void:
 	if _fruit_damage_lock_timer > 0.0:
 		_fruit_damage_lock_timer = maxf(_fruit_damage_lock_timer - delta, 0.0)
 	velocity = net_velocity
+	_agachar.aplicar(net_agachado)
 	_buki_apontar_canhao()   # canhão-corpo da Buki acompanha o facing replicado
 	if _char_model:
 		_char_model.rotation.y = lerp_angle(_char_model.rotation.y, net_facing, 18.0 * delta)
+	_arremesso.tick_remoto(delta, net_on_floor)
+	_inclinar_no_wall_run(delta, net_parede_lado)
+	_arremesso.apresentar(_char_model, delta)
 	if _skel_anim:
-		_skel_anim.update(net_velocity, net_on_floor, false, delta, false)
+		_skel_anim.update(net_velocity, net_on_floor, net_escalando, delta, false)
 	elif _proc_anim:
 		var charge_x := net_charge_progress if net_charge_pose == "mera_x_charge" else 0.0
-		_proc_anim.update(net_velocity, net_on_floor, false, delta, _pitch, false,
-			net_charge_pose != "", "", "", false, 0.0, 0.0, -1, charge_x, net_charge_pose)
+		var pose_remota := _arremesso.pose_de_membros() if _arremesso.ativo() else net_charge_pose
+		_proc_anim.parede_lado = net_parede_lado
+		_proc_anim.subida_borda = net_subida
+		_proc_anim.loco_inclinacao = net_inclinacao.x
+		_proc_anim.acao_clipe = net_acao_clipe
+		_proc_anim.acao_tempo = net_acao_tempo
+		_proc_anim.loco_inclinacao_frente = net_inclinacao.y
+		var vel_anim_remota := net_velocity
+		if net_escalando:
+			# A frente aponta para a parede: tira a pressão de contato (não é passo).
+			var para_parede := RosaDosVentos.frente(net_facing)
+			vel_anim_remota -= para_parede * net_velocity.dot(para_parede)
+		_proc_anim.update(vel_anim_remota, net_on_floor, net_escalando, delta, _pitch, false,
+			net_charge_pose != "", "", "agachar" if net_agachado else net_parkour, false, 0.0, 0.0, -1, charge_x, pose_remota)
 	_poeira_dos_pes.atualizar(delta, net_velocity, net_on_floor, false)
 	_impacto_de_queda.atualizar(self, net_on_floor, net_velocity.y)
-	_ecos_de_movimento.atualizar(delta, _char_model, net_on_floor and Vector2(net_velocity.x, net_velocity.z).length() > SPEED * 1.35)
+	_ecos_de_movimento.atualizar(delta, _char_model, ecos_de_movimento_ligados and net_on_floor and Vector2(net_velocity.x, net_velocity.z).length() > SPEED * 1.35)
 
 # Corpo de Ferro (F): o pedido do cliente nunca escreve imunidade diretamente.
 # O servidor valida dono + recarga e só então replica o efeito de um segundo.
 func _pedir_corpo_de_ferro() -> void:
-	_resetar_impulso_de_corrida()
 	if multiplayer.is_server() or not multiplayer.has_multiplayer_peer():
 		_do_server_corpo_de_ferro()
 	else:
@@ -1927,6 +2691,12 @@ var cor_idx: int = -1
 ## O colisor e o tamanho de referência dele. Guardados porque o Gigante os
 ## redimensiona — ver `_aplicar_escala_de_raca`.
 const COLISOR_BASE := Vector3(1.0, 1.6, 1.0)
+## Raio da cápsula do Modo História: 0,5 m = a meia largura da caixa antiga. Assim dois
+## lutadores frente a frente param à MESMA distância (1,0 m) para a qual o combate
+## direcional foi afinado — com 0,4 eles chegavam a 0,8 m, quem processava primeiro
+## avançava e acertava antes, e a troca simultânea de jabs deixou de existir
+## (test_contato_historia, 01/10/2026). Sobe beirada de ~15 cm (r × (1 − cos 45°)).
+const RAIO_DA_CAPSULA := 0.5
 
 # ---------------------------------------------------------------- ENCHENTE
 # Eliminado pela água no fim da rodada: o corpo continua na arena (afundando),
@@ -1961,14 +2731,45 @@ func aplicar_cor_do_jogador(idx: int) -> void:
 ## cápsula e ele empacaria em porta nenhuma sem motivo visível. A câmera entra
 ## porque a altura do pivô é fixa em metros: sem ajustar, o gigante enxerga a
 ## partir do próprio peito.
+## O tamanho do corpo = o da RAÇA (Gigante) × o da FORMA do Mine Piece (`scale pehkui:height`, formas gigantes do mod).
+var escala_forma := 1.0
+## Altura medida (19/11/2026) dos piratas e marinheiros básicos do Modo História (`mp_pirate_pirate1`, `mp_bandit`: 2,05 m; o `mp_marine` tem 2,14 m com o capacete).
+## O jogador é normalizado para `PlayerRig.CHAR_TARGET_H` (1,5 m) — 27 % menor que eles. GATILHO: se um inimigo básico novo vier com outra altura, medir de novo.
+const ALTURA_DOS_INIMIGOS_BASICOS := 2.05
+## Fator do MODO (1 = arena, que segue com os 1,5 m de todos os personagens). O Modo História o liga em `colocar_civil` para o jogador ter a altura dos inimigos.
+var escala_de_modo := 1.0
+
+
+func escala_do_corpo() -> float:
+	return Racas.escala_de(Visual.raca) * escala_forma * escala_de_modo
+
+
+## Escala que iguala o corpo do jogador à dos inimigos básicos (modelo, cápsula, hurtbox e câmera crescem juntos).
+static func escala_para_altura_dos_inimigos() -> float:
+	return ALTURA_DOS_INIMIGOS_BASICOS / PlayerRig.CHAR_TARGET_H
+
+
+## Pehkui `height`/`width` do mod. O corpo do jogador cresce por igual (cápsula e hurtbox são uniformes), então manda o
+## `height`; o `width` só entra na caixa que as procedures leem (`McEntidade.getBbWidth`).
+func definir_escala_de_forma(altura: float, _largura: float) -> void:
+	escala_forma = clampf(altura, 0.1, 16.0)
+	_aplicar_escala_de_raca()
+
+
 func _aplicar_escala_de_raca() -> void:
-	var e := Racas.escala_de(Visual.raca)
+	_agachar.cancelar()
+	var e := escala_do_corpo()
 	if _char_model != null and is_instance_valid(_char_model):
 		_char_model.scale = _escala_base_do_modelo * e
 	if _colisor != null and is_instance_valid(_colisor):
 		var forma := _colisor.shape as BoxShape3D
 		if forma != null:
 			forma.size = COLISOR_BASE * e
+		var capsula := _colisor.shape as CapsuleShape3D
+		if capsula != null:
+			capsula.radius = RAIO_DA_CAPSULA * (e / escala_de_modo)      # a LARGURA da cápsula não engorda com o modo: vãos e portas do mapa seguem os de antes
+			capsula.height = COLISOR_BASE.y * e
+			HurtboxDeCombate.redimensionar(self, COLISOR_BASE * e, (COLISOR_BASE.y * (e - 1.0)) * 0.5)
 		# A cápsula cresce a partir do centro, então o corpo afundaria meio
 		# tamanho no chão sem subir o colisor junto.
 		_colisor.position.y = (COLISOR_BASE.y * (e - 1.0)) * 0.5
@@ -1977,6 +2778,8 @@ func _aplicar_escala_de_raca() -> void:
 
 
 func _tingir_modelo() -> void:
+	if is_instance_valid(_char_model) and _char_model.get_meta("preserve_original_materials", false):
+		return
 	if cor_idx < 0 or cor_idx >= CORES.size():
 		return
 	var modelo := _char_model
@@ -2025,6 +2828,9 @@ func _tingir_modelo() -> void:
 		(m as MeshInstance3D).material_override = mat
 
 func _setup_character_model(cid: String) -> void:
+	var bara := BARA.action_for(self)
+	if bara != null: bara.finish()
+	BARA_NET.cleanup(self)
 	# ⚠️ SAÍDA POR TROCA DE PERSONAGEM. `_rig.montar` constrói um modelo NOVO: as
 	# malhas pintadas e o nó do chapéu vão embora com o antigo. Desligar antes
 	# evita o chapéu órfão e faz o `_gear2` reapontar para o rig novo.
@@ -2033,8 +2839,14 @@ func _setup_character_model(cid: String) -> void:
 	if not ELENCO_LIBERADO.has(cid):
 		cid = ELENCO_LIBERADO[0]
 
+	var reequipar_yoru := combat_mode == "sword"
+	_cancel_yoru_action("rig")
+	if is_instance_valid(_yoru):
+		_toggle_yoru_visual()
 	_buki.esquecer_visual()   # o modelo antigo levou as armas embora
 	_rig.montar(cid)
+	if reequipar_yoru:
+		_toggle_yoru_visual()
 
 	# Fôlego (VFX): é do PLAYER, não do rig — sobrevive à troca de personagem e é
 	# reaproveitado. Só o voxel tem (o skinnado saía pelo `return` antes deste
@@ -2076,14 +2888,15 @@ func _setup_character_model(cid: String) -> void:
 func _buki_mostrar_arma(slot: String) -> void:
 	_buki.mostrar_arma(slot)
 
-# O corpo some em DOIS casos: 1ª pessoa (já era) e canhão-corpo da Buki (X).
-# Ficam no mesmo lugar porque brigavam: o `_apply_perspective` reacendia o corpo
-# no meio da transformação.
+# O corpo some em TRÊS casos: 1ª pessoa (já era), canhão-corpo da Buki (X) e a forma
+# de foguete da Rocket (F no Modo História). Ficam no mesmo lugar porque brigavam: o
+# `_apply_perspective` reacendia o corpo no meio da transformação.
 func _atualizar_visibilidade_corpo() -> void:
 	if _char_model == null:
 		return
-	var pode_ver_corpo := (_camera == null or not _camera.em_primeira_pessoa()) and _buki_visual != "X"
-	_char_model.visible = pode_ver_corpo and (not _invisivel or _is_authority)
+	var pode_ver_corpo := (_camera == null or not _camera.em_primeira_pessoa()) \
+			and _buki_visual != "X" and not _voo.forma_de_foguete()
+	_char_model.visible = pode_ver_corpo and not get_meta("phoenix_transformado", false) and not get_meta("magu_cao_ativo", false) and not get_meta("goro_mp_invisivel", false) and not get_meta("mine_piece_invisivel", false) and not get_meta(FormaZoan.META_ATIVA, false) and (not _invisivel or _is_authority)
 	_aplicar_transparencia_invisivel()
 
 func iniciar_invisibilidade() -> void:
@@ -2096,6 +2909,11 @@ func iniciar_invisibilidade() -> void:
 		_pedir_invisibilidade.rpc_id(NetworkConfig.SERVER_ID)
 	else:
 		_aplicar_invisibilidade(true)
+
+## A Camuflagem Transparente (Suke Suke Z) está ligada? Consultado pela IA dos inimigos (`CerebroMinePiece`): antes disto a
+## invisibilidade só escondia o modelo e todo inimigo continuava a perseguir o jogador (defeito achado em 15/11/2026).
+func esta_camuflado() -> bool:
+	return _invisivel
 
 func revelar_invisibilidade() -> void:
 	if not _invisivel: return
@@ -2164,10 +2982,106 @@ func fruta_bloqueada_por_dano() -> bool:
 ## depois do dano o golpe do alvo já foi interrompido e a resposta seria sempre
 ## falsa (ver `DamageZone.antes_do_acerto`).
 func em_startup_de_ataque() -> bool:
+	if combate_direcional != null:
+		return combate_direcional.em_preparo()
 	return _melee != null and _melee.fase() == "startup"
 
 
+## A raiz visível do personagem (a que gira com o olhar e contém o rig). Pública
+## para o combate direcional aplicar pose sem ler campo privado.
+func modelo_visual() -> Node3D:
+	return _char_model
+
+
+## Clipe de GOLPE do combate direcional (Epic Fight): toca o clipe assado no corpo inteiro; o executor decide fases e dano.
+var _clipe_de_golpe := false
+
+
+## Giro máximo do quadril (yaw) num golpe de clipe do Epic Fight: ~52° (o montante girava ~115° e parecia atacar para trás): ver `ProceduralAnimator.limite_do_giro_do_quadril`.
+const GIRO_MAXIMO_DO_QUADRIL_NO_GOLPE := 0.0        # 0 = sem limite: o limite de 52° (primeira tentativa) NÃO corrigia o montante; quem corrige é `RumoDosGolpes`
+var giro_maximo_do_quadril_no_golpe := GIRO_MAXIMO_DO_QUADRIL_NO_GOLPE      # variável para o teste de direção comparar com/sem o limite (0 = sem limite)
+## Inclinação máxima do tronco num golpe de clipe do Epic Fight (rad ≈ 29°; era 0,7 ≈ 40° — o dono pediu o tronco mais em pé, 12/11/2026): ver `ProceduralAnimator.limite_da_dobra_do_tronco`.
+const DOBRA_MAXIMA_DO_TRONCO_NO_GOLPE := 0.5
+
+
+func tocar_clipe_de_golpe(caminho: String, ate := -1.0, velocidade := 1.0) -> void:
+	if _proc_anim == null or not ResourceLoader.exists(caminho):
+		return
+	var a := load(caminho) as Animation
+	if a != null:
+		# O golpe do clipe (Epic Fight) sai para onde a MIRA aponta: o corpo vira para ela JÁ, no primeiro quadro. Os preparos do mod são de 0,05–0,2 s e o teto
+		# de giro do estilo base (360°/s no preparo) não deixava o corpo chegar: com a câmera virada o avanço e o corte saíam de lado ou para trás.
+		if _char_model != null:
+			_char_model.rotation.y = _yaw
+			_loco_chao.rumo = _yaw
+		_proc_anim.play_baked(a, velocidade, 0.0, "", ate)     # só até o fim do golpe: o mod corta o clipe na recuperação
+		_proc_anim.movimento_do_clipe = true                # o avanço do corpo vem do clipe (`Corpo:deslocamento`); `play_baked` o desliga para os outros clipes
+		_proc_anim.limite_da_dobra_do_tronco = DOBRA_MAXIMA_DO_TRONCO_NO_GOLPE
+		_proc_anim.limite_do_giro_do_quadril = giro_maximo_do_quadril_no_golpe
+		_proc_anim.desvio_de_rumo_do_torso = RumoDosGolpes.desvio_do_clipe(caminho)
+		_clipe_de_golpe = true
+
+
+func parar_clipe_de_golpe() -> void:
+	if _proc_anim != null:
+		_proc_anim.movimento_do_clipe = false
+	if _clipe_de_golpe and _proc_anim != null:
+		_proc_anim.play_baked(null)
+	_clipe_de_golpe = false
+
+
+## Um clipe de ação (roll do Q, deslize, bloco Animação do Builder) está dirigindo o
+## corpo inteiro. Pública para o combate direcional não pôr a guarda por cima dele.
+## No Modo História o E é do INVENTÁRIO (e da interação): a HUD da história tem `mochila()`. Na arena (outra HUD) o E segue ligando a Observação.
+func _e_e_do_inventario() -> bool:
+	var hud := get_tree().get_first_node_in_group("hud") if is_inside_tree() else null
+	return hud != null and hud.has_method("mochila")
+
+
+## O jogador levou dano há pouco (janela de combate do `HealthController`). Público para a `ZonaDeCombate`.
+func em_combate() -> bool:
+	return _vida.em_combate()
+
+
+func clipe_de_acao_ativo() -> bool:
+	return _proc_anim != null and _proc_anim.acao_clipe != ""
+
+
+## O corpo está solto para um golpe? Mesmas travas do `_consume_input` (arremesso,
+## derrubado, congelado) mais atordoado, morto e preso ao parkour de parede. É API pública porque o adaptador
+## do combate direcional (`AtorJogador`) não lê campo privado do Player.
+##
+## ⚠️ Duplica três condições do `_consume_input` DE PROPÓSITO: aquele é caminho da
+## arena, e mexer nele para compartilhar mudaria arquivo alheio sem ganho de
+## comportamento. GATILHO: se uma quarta trava entrar num dos dois, unificar.
+##
+## `contar_atordoamento = false` ignora só o "Stunned": o golpe que trocou dano no
+## ATIVO segue até o fim (plano, §7.1), e todo dano deste corpo atordoa.
+func corpo_livre_para_golpe(contar_atordoamento := true) -> bool:
+	if esta_capturado_pelo_vento():
+		return false
+	if is_instance_valid(navegacao):
+		return false
+	if is_instance_valid(montaria):
+		return false
+	if _arremesso.ativo():
+		return false
+	if get_meta("custom_pose", "") == "knockdown" or get_meta("is_frozen", false):
+		return false
+	if contar_atordoamento and _fsm and _fsm.state and _fsm.state.name == "Stunned":
+		return false
+	# Escalando ou correndo na parede o corpo é do parkour: agarrar a parede no meio
+	# do golpe o encerra, e não se começa golpe grudado nela.
+	if _parkour.assumiu():
+		return false
+	return health > 0.0
+
+
 func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knockback: Vector3 = Vector3.ZERO, hitstun_duration: float = 0.3) -> void:
+	amount *= DanoDaHistoria.fator_recebido      # Modo História: fator próprio do dano recebido (a ponta que causa está em `CombatResolver.aplicar`)
+	amount /= maxf(1.0, float(get_meta("resistencia_de_forma", 1.0)))      # fruta Zoan transformada (Ushi Ushi: ×1,5): o dano recebido cai por esse fator
+	if has_meta("nivel_historia"):
+		amount = preload("res://src/historia/atributos_mine_piece.gd").dano_recebido(amount, int(get_meta("nivel_historia")))
 	if _invisivel:
 		revelar_invisibilidade()
 	# `in_black_hole` entrou aqui em 2026-08-11: o Black Hole da Yami é CONTROLE
@@ -2180,11 +3094,37 @@ func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knock
 	# golpe sumia inteiro. O dono pediu que a janela passasse a "cortar os danos
 	# pela metade", e meia imunidade não cabe numa guarda que só sabe dizer
 	# "sim ou não": o corte agora acontece logo abaixo, sobre o `amount`.
-	if get_meta("damage_immune", false) or get_meta("custom_pose", "") == "hibashira" or get_meta("in_black_hole", false):
+	if get_meta("magu_cao_ativo", false) or get_meta("giro_espada_ativo", false) or get_meta("damage_immune", false) or get_meta("kira_investida_imune", false) or get_meta("custom_pose", "") == "hibashira" or get_meta("in_black_hole", false):
 		print("🛡️ DANO E KNOCKBACK BLOQUEADOS! O usuário está IMUNE a danos durante a habilidade!")
 		return
+	var empurra := true
+	# Eventos do Forge do mod (guarda, resistência, Haki de Armamento…) também protegem o JOGADOR (item 4 da auditoria, 09/11/2026).
+	var jogador_do_mod := get_node_or_null("JogadorDoMod") as JogadorDoMod
+	if jogador_do_mod != null:
+		var quem: Node3D = null
+		if has_meta("autor_do_dano") and is_instance_id_valid(int(get_meta("autor_do_dano"))):
+			quem = instance_from_id(int(get_meta("autor_do_dano"))) as Node3D
+		amount = jogador_do_mod.ao_receber_dano(amount, quem)
+		if amount < 0.0:
+			return
+		amount = jogador_do_mod.dano_final(amount)
+		if amount <= 0.0:
+			return
+	# Minecraft: 0,5 s de invulnerabilidade depois de apanhar; golpe maior nesse tempo tira só a diferença, sem empurrão
+	# (`KnockbackMinecraft.filtrar`).
+	# ⚠️ DEPOIS dos eventos do mod (10/11/2026). Antes ele rodava ANTES: o golpe de um personagem do East Blue chega como
+	# `damage_curse` de ~19; o filtro o registrava como "último golpe" e abria a janela de 0,5 s; o mod então cancela esse golpe
+	# e REAPLICA um dano menor (~1, `damage_combat`) dentro do mesmo evento — e o filtro o recusava ("menor ou igual ao último").
+	# Resultado: o empurrão e os efeitos do mod aplicavam, a vida nunca descia. Filtrando o dano FINAL, só o que realmente
+	# vai à vida conta para a janela.
+	if knockback_minecraft != null:
+		var filtro := knockback_minecraft.filtrar(amount)
+		if float(filtro["dano"]) <= 0.0:
+			return
+		amount = float(filtro["dano"])
+		empurra = bool(filtro["empurra"])
+	_cancel_yoru_action("damage")
 	_registrar_trava_de_fruta_por_dano(amount)
-	_resetar_impulso_de_corrida()
 
 	# ⚠️ CORPO DE FERRO CORTA O DANO PELA METADE (2026-08-31). Antes a janela dava
 	# invulnerabilidade e o golpe sumia inteiro; agora ele chega, valendo metade.
@@ -2234,7 +3174,9 @@ func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knock
 		net_vida_do_servidor.rpc(_vida.vida, amount)
 
 	# 2. KNOCKBACK ESCALADO E MODIFICADO POR AR E MOVIMENTO
-	if base_knockback.length() > 0.1:
+	# (No estilo Minecraft o empurrão sai de quem bateu mesmo com `base_knockback` zero.)
+	var tem_empurrao := base_knockback.length() > 0.1 or (knockback_minecraft != null and attacker_pos != Vector3.ZERO)
+	if empurra and tem_empurrao:
 		# ⚠️ QUEM EMPURRA É O DONO DO CORPO, não quem calculou o dano.
 		#
 		# A `DamageZone` roda no SERVIDOR, então este `take_damage` roda na cópia
@@ -2253,11 +3195,14 @@ func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knock
 			if multiplayer.get_peers().has(dono):
 				net_apply_knockback.rpc_id(dono, base_knockback)
 			return
-		_aplicar_knockback(base_knockback)
-		
-	var hitstop_dur := clampf(amount * 0.003 + 0.06, 0.06, 0.16)
-	_hitstop_timer = hitstop_dur
-	velocity = Vector3.ZERO # Impact Frame Hold
+		_aplicar_knockback(base_knockback, attacker_pos)
+
+	# Minecraft não congela quem apanha: o empurrão e o pulinho saem na hora. A pausa
+	# de impacto zerava `velocity` e apagava o pulinho (vertical do empurrão).
+	if knockback_minecraft == null:
+		var hitstop_dur := clampf(amount * 0.003 + 0.06, 0.06, 0.16)
+		_hitstop_timer = hitstop_dur
+		velocity = Vector3.ZERO # Impact Frame Hold
 
 
 	if morreu:
@@ -2266,9 +3211,10 @@ func take_damage(amount: float, attacker_pos: Vector3 = Vector3.ZERO, base_knock
 # Pisca vermelho, som de recepção e número flutuante. Roda em QUALQUER cópia que
 # souber do dano — é o que faz o adversário te ver apanhar.
 func _feedback_de_dano(amount: float, hitstun_duration: float = 0.3) -> void:
-	FxUtil.flash_red(_char_model)
+	_cancel_yoru_action("damage")
+	FxUtil.flash_dano(_char_model)
 	FxUtil.bleed(get_tree().current_scene, global_position + Vector3.UP * 1.2, int(maxf(4, amount / 5.0)))
-	AudioFX.hurt(get_tree().current_scene, global_position + Vector3.UP * 1.0)
+	AudioFX.dano_do_jogador(get_tree().current_scene, global_position + Vector3.UP * 1.0)
 	# ANIMAÇÃO DE RECEPÇÃO DE DANO (pedido do dono, 2026-08-14):
 	# "vai ocorrer sempre que o jogador receber dano".
 	# Fica AQUI, e não no `take_damage`, de propósito: este é o funil por onde
@@ -2357,6 +3303,50 @@ func restaurar_vida_no_servidor() -> void:
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 		net_vida_do_servidor.rpc(_vida.vida, 0.0)
 
+func esta_arremessado() -> bool:
+	return _arremesso.ativo()
+
+func esta_capturado_pelo_vento() -> bool:
+	return has_meta("captura_vento") and is_instance_valid(get_meta("captura_vento"))
+
+func iniciar_captura_vento(controlador: Node) -> void:
+	set_meta("captura_vento", controlador)
+	_cancel_yoru_action("wind_capture")
+	_cast.abortar()
+	_melee.cancelar_golpe()
+	_parkour.cancelar()
+	_voo.cancelar()
+	_arremesso.cancelar(_char_model)
+	_dash_t = 0.0
+	_roll_t = 0.0
+	_input_buffer.clear()
+	velocity = Vector3.ZERO
+
+func cancelar_captura_vento() -> void:
+	var captura: Node = get_meta("captura_vento") if has_meta("captura_vento") else null
+	if is_instance_valid(captura):
+		captura.cancelar()
+
+## Arremesso com derrubada, pedido pelo SERVIDOR (4º soco do Boss). Todas as
+## cópias animam; só o dono do corpo aplica a velocidade (ver PlayerArremesso).
+func receber_arremesso(impulso: Vector3) -> void:
+	if not impulso.is_finite():
+		return
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		net_arremesso.rpc(impulso)
+	elif not multiplayer.has_multiplayer_peer():
+		net_arremesso(impulso)
+
+@rpc("any_peer", "call_local", "reliable")
+func net_arremesso(impulso: Vector3) -> void:
+	if get_meta("magu_cao_ativo", false):
+		return
+	if multiplayer.has_multiplayer_peer():
+		var sender := multiplayer.get_remote_sender_id()
+		if sender != 0 and sender != 1:
+			return
+	_arremesso.iniciar(self, impulso, _is_authority, _char_model)
+
 # Pedido do servidor para o DONO do corpo se empurrar. Só o servidor manda.
 @rpc("any_peer", "call_local", "reliable")
 func net_apply_knockback(base_knockback: Vector3) -> void:
@@ -2370,7 +3360,14 @@ func net_apply_knockback(base_knockback: Vector3) -> void:
 # número moram no `HealthController`; aqui só se entrega o contexto que é do
 # Player — chão e mira — e se soma o componente VERTICAL, que a locomoção não
 # reatribui.
-func _aplicar_knockback(base_knockback: Vector3) -> void:
+func _aplicar_knockback(base_knockback: Vector3, atacante := Vector3.ZERO) -> void:
+	if get_meta("magu_cao_ativo", false):
+		return
+	if knockback_minecraft != null:
+		var pulinho := knockback_minecraft.empurrar(global_position, atacante, base_knockback, GRAVITY, is_on_floor())
+		if pulinho > 0.0:
+			velocity.y = pulinho
+		return
 	velocity.y += _vida.empurrar(base_knockback, is_on_floor(), _yaw)
 
 
@@ -2382,12 +3379,27 @@ func _aplicar_knockback(base_knockback: Vector3) -> void:
 # faz nada de propósito — o servidor enxerga a queda pela `position` replicada e
 # declara a morte de lá. Sem placar na árvore (testes isolados), respawna direto.
 func die_and_respawn() -> void:
+	cancelar_captura_vento()
+	if knockback_minecraft != null:
+		knockback_minecraft.cancelar()
+	_agachar.cancelar()
+	net_agachado = false
+	_cancel_yoru_action("death")
 	# ⚠️ SAÍDA POR MORTE. Sem isto o corpo renasce com a pele do Gear 2 e o
 	# chapéu, sem o estado — e a transformação viraria permanente pela porta dos
 	# fundos. É um dos quatro caminhos de saída listados no `gear2_controller`.
 	if _gear2:
 		_gear2.desativar()
-	var caiu := global_position.y < Scoreboard.VOID_Y
+	var caiu := global_position.y < Scoreboard.void_y_de(self)
+	if is_instance_valid(navegacao):
+		navegacao.sair(true)
+	if is_instance_valid(montaria):
+		montaria.desmontar(true)
+	if ao_morrer.is_valid():
+		if not morrendo:
+			morrendo = true
+			ao_morrer.call(self, caiu)
+		return
 	var placar := get_tree().get_first_node_in_group("scoreboard")
 	if placar and placar.has_method("report_death"):
 		placar.report_death(self, caiu)
@@ -2402,6 +3414,8 @@ func topo_da_cabeca() -> float:
 	var alt: float = COLISOR_BASE.y
 	if is_instance_valid(_colisor) and _colisor.shape is BoxShape3D:
 		alt = (_colisor.shape as BoxShape3D).size.y
+	elif is_instance_valid(_colisor) and _colisor.shape is CapsuleShape3D:
+		alt = (_colisor.shape as CapsuleShape3D).height
 	return global_position.y + alt * 0.5
 
 
@@ -2415,6 +3429,8 @@ func net_eliminar() -> void:
 			return
 	if _eliminado:
 		return
+	cancelar_captura_vento()
+	_cancel_yoru_action("death")
 	_eliminado = true
 	health = 0.0
 	# Um cast preso trava o jogador para o resto da partida — a mesma armadilha
@@ -2422,10 +3438,90 @@ func net_eliminar() -> void:
 	_cast.abortar()
 	clear_spawned_skills()
 	set_meta("is_casting", false)
-	if _animator:
+	if _tocar_morte_mixamo():
+		pass
+	elif _animator:
 		_animator.trigger_death()
 	elif _skel_anim:
 		_skel_anim.play_one_shot("death")
+
+
+# MORTE COM O CLIPE `dying` DO MIXAMO (04/11/2026, pedido do dono: "adicionar animação de morte").
+# O clipe tem 5,8 s e é uma morte inteira: o personagem cambaleia até ~3 s e desaba entre 3,6 e
+# 4,5 s, terminando deitado. Aqui se toca só a JANELA do tropeço até o corpo no chão e a pose
+# FICA (não levanta). Rodando no tempo da sequência de morte do História (câmera lenta ×0,25), a
+# janela é acelerada para a queda levar ~DURACAO_DA_QUEDA s de tela. Sem rig procedural ou sem o
+# clipe, devolve false e vale a queda de sempre.
+const CLIPE_DE_MORTE := "res://assets/animations/dying.res"
+const MORTE_INICIO := 3.0
+const MORTE_FIM := 4.9
+const DURACAO_DA_QUEDA := 2.2          # segundos de TELA (tempo real) no Modo História
+var _morte_y_base := 0.0
+var _morte_corpo_baixado := false
+
+func _tocar_morte_mixamo() -> bool:
+	if _proc_anim == null or not ResourceLoader.exists(CLIPE_DE_MORTE):
+		return false
+	var clipe := load(CLIPE_DE_MORTE) as Animation
+	if clipe == null:
+		return false
+	var fim := minf(MORTE_FIM, clipe.length)
+	var escala := MorteDoJogador.ESCALA_DO_TEMPO if ao_morrer.is_valid() else 1.0
+	var velocidade := (fim - MORTE_INICIO) / (DURACAO_DA_QUEDA * escala) if ao_morrer.is_valid() else 1.0
+	_proc_anim.play_baked(clipe, velocidade, MORTE_INICIO, "", fim, true)
+	if _char_model != null:
+		_morte_y_base = _char_model.position.y
+		_morte_corpo_baixado = true
+	return true
+
+
+# Corpo deitado pousa no chão: o clipe só gira os membros em torno do quadril, então o corpo
+# deitado ficaria no ar à altura do quadril. Baixa o modelo até o ponto mais baixo tocar o pé da
+# cápsula (cresce com a queda: em pé o ponto mais baixo JÁ é o pé e nada se mexe).
+func _pousar_corpo_morto(delta: float) -> void:
+	if not _morte_corpo_baixado or _char_model == null or _colisor == null:
+		return
+	var chao := global_position.y - (topo_da_cabeca() - global_position.y)   # pé da cápsula
+	var mais_baixo := INF
+	for no in _char_model.find_children("*", "MeshInstance3D", true, false):
+		var mi := no as MeshInstance3D
+		if mi.mesh == null or not mi.visible:
+			continue
+		mais_baixo = minf(mais_baixo, (mi.global_transform * mi.get_aabb()).position.y)
+	if mais_baixo == INF:
+		return
+	var folga := mais_baixo - chao
+	if folga > 0.02:
+		_char_model.position.y -= folga * clampf(delta * 10.0, 0.0, 1.0)
+
+
+## Solta o clipe de morte e devolve o corpo à altura normal (respawn e reanimação do coração).
+func _soltar_corpo_morto() -> void:
+	if not _morte_corpo_baixado:
+		return
+	_morte_corpo_baixado = false
+	if _proc_anim != null:
+		_proc_anim.play_baked(null)
+	if _char_model != null:
+		_char_model.position.y = _morte_y_base
+
+
+## O CORAÇÃO VOLTOU A BATER (04/11/2026, `ReanimacaoDoCoracao`): em vez de respawnar, o corpo se
+## levanta onde caiu com `fracao` da vida máxima. Desfaz o que `net_eliminar` travou: controles,
+## clipe de morte, postura. Só o Modo História chama (o servidor da arena nunca reanima).
+func reviver_do_coracao(fracao: float) -> void:
+	_soltar_corpo_morto()
+	_eliminado = false
+	if get_meta("morte_ja_animada", false):
+		remove_meta("morte_ja_animada")
+	health = max_health * clampf(fracao, 0.0, 1.0)
+	morrendo = false
+	set_meta("is_casting", false)
+	if _animator:
+		_animator.is_locked = false
+		_animator.trigger_idle_after_revive()
+	elif _skel_anim:
+		_skel_anim.play_one_shot("idle")
 
 
 # Respawn de verdade. Só o DONO do corpo pode se teleportar (quem não é
@@ -2438,11 +3534,22 @@ func net_force_respawn() -> void:
 		var sender := multiplayer.get_remote_sender_id()
 		if sender != 0 and sender != 1:
 			return
+	_agachar.cancelar()
+	net_agachado = false
+	cancelar_captura_vento()
+	if is_instance_valid(navegacao):
+		navegacao.sair(true)
+	if is_instance_valid(montaria):
+		montaria.desmontar(true)
 	# Sair da enchente é o único caminho de volta: quem foi eliminado só volta a
 	# responder no respawn do pódio.
+	_cancel_yoru_action("respawn")
+	_soltar_corpo_morto()
 	_eliminado = false
 	print("💀 MORTE REGISTRADA! Respawnando na plataforma...")
-	if _animator:
+	if get_meta("morte_ja_animada", false):
+		remove_meta("morte_ja_animada")           # a sequência da história já tocou a queda (não repetir no ponto novo)
+	elif _animator:
 		_animator.trigger_death()
 	elif _skel_anim:
 		_skel_anim.play_one_shot("death")
@@ -2510,10 +3617,16 @@ func net_force_respawn() -> void:
 		_fruit_cooldowns[slot_k] = 0.0
 	for slot_k in _style_cooldowns.keys():
 		_style_cooldowns[slot_k] = 0.0
+	if _yoru_combat:
+		_yoru_combat.restore_cooldowns({})
+		_yoru_combat._penalty = 0.0
 	_server_cast_next_ms.clear()
 	_server_last_cast_token.clear()
+	_server_proximo_golpe_ms = 0
+	_intervalo_golpe = 0.0
 
 	_vida.restaurar()
+	_arremesso.cancelar(_char_model)
 	RecepcaoDeDano.limpar(self)
 	# Orçamento de dano também morre com o corpo. Um pente cujo teto já tinha
 	# sido gasto sobreviveria ao respawn e a primeira arma sacada na vida nova
@@ -2521,7 +3634,7 @@ func net_force_respawn() -> void:
 	# pendurado depois da morte).
 	encerrar_disparo()
 	velocity = Vector3.ZERO
-	global_position = Scoreboard.RESPAWN   # centro da plataforma (zona sem buraco)
+	global_position = ponto_de_renascimento   # arena: centro da plataforma (sem buraco)
 
 func suppress_skills_temporarily(duration: float) -> void:
 	_cast.suprimir(duration)
@@ -2530,19 +3643,105 @@ func lock_movement(duration: float, skill_id: String = "") -> void:
 	# Ignora o timer (FSM cuida), mas mantém metadata
 	set_meta("active_skill", skill_id)
 
+## Teclas de habilidade de fruta que prendem o corpo enquanto apertadas. O F (voo, bicicleta,
+## montaria) fica de fora: nele segurar é justamente andar.
+const TECLAS_QUE_PRENDEM: Array[String] = ["Z", "X", "C", "V"]
+var _teclas_seguradas := {}
+
+## Alguma habilidade está com a tecla apertada? Preso no lugar (sem andar, pular nem
+## esquivar; a gravidade segue). Skill do Builder com "Pode andar enquanto segura" é a
+## exceção, e o menu aberto não conta (a tecla pode ter sido solta lá).
+func habilidade_segurada_prende() -> bool:
+	if _teclas_seguradas.is_empty() or combat_mode == "sword":
+		return false
+	for slot in _teclas_seguradas:
+		var s := KitDoBuilder.skill(slot, current_fruit_id)
+		if not s.is_empty() and bool(s.get("ativacao", {}).get("andar_segurando", false)):
+			continue
+		return true
+	return false
+
+## Alguma tecla segurada é de uma skill com "Paralisa segurando" (Nikyu Nikyu, 14/10/2026)?
+## Aí o corpo fica parado onde está, sem gravidade — até no ar. Só no Modo História.
+func habilidade_segurada_paralisa() -> bool:
+	if _teclas_seguradas.is_empty() or perfil_de_frutas == null or combat_mode == "sword":
+		return false
+	for slot in _teclas_seguradas:
+		var s := KitDoBuilder.skill(slot, current_fruit_id)
+		if not s.is_empty() and bool(s.get("ativacao", {}).get("paralisar_segurando", false)) \
+				and not bool(s.get("ativacao", {}).get("andar_segurando", false)):
+			return true
+	return false
+
+func _notification(what: int) -> void:
+	# Janela perdeu o foco com a tecla apertada: o soltar nunca chega — não deixar preso.
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		_teclas_seguradas.clear()
+
 # CAST — a decisão mora em src/player/cast_controller.gd (passo 6c). Aqui ficam
 # as cascas: a API pública que o input, a HUD e a rede já conhecem.
 func begin_charge(slot: String) -> void:
+	# TECLA DA HABILIDADE SEGURADA = JOGADOR PRESO NO LUGAR (pedido do dono, 14/10/2026).
+	# O registro vale enquanto a tecla está apertada. Skill do BUILDER só prende se o golpe
+	# SAIU (em recarga, sem energia ou com condição recusada, o corpo fica livre — pedido do
+	# dono, 14/10/2026): o registro dela é feito depois do `comecar`, abaixo.
+	var do_builder := KitDoBuilder.pelo_builder(current_fruit_id, slot)
+	var pode_prender: bool = slot in TECLAS_QUE_PRENDEM and current_fruit_id != "" \
+		and not (_arremesso != null and _arremesso.ativo())
+	if pode_prender and not do_builder:
+		_teclas_seguradas[slot] = true
+	# `can_use_fruit` é a trava do Modo História: lá a fruta comida libera Z/X/C/V sem
+	# abrir os modos 1/2/3, o T, o E e o Corpo de Ferro, que andam com `can_use_skills`.
+	if not capacidades.can_use_skills and not capacidades.can_use_fruit:
+		return
+	if _arremesso.ativo():
+		return
+	if combat_mode == "sword":
+		request_yoru_action(slot)
+		return
 	if not pode_conjurar():
 		return
-	_resetar_impulso_de_corrida()
 	_cast.comecar(slot)
+	if pode_prender and do_builder and _cast.kit_em_curso(slot):
+		_teclas_seguradas[slot] = true
+	# O indicador acende DEPOIS: só quando a tecla armou mesmo a mira. Acender antes
+	# mostrava alvo para um golpe que a recarga ou a energia iam recusar.
+	if _cast.mirando() == slot:
+		_mostrar_mira_de_fruta(slot)
 
 func release_charge(slot: String) -> void:
-	# ⚠️ SEM portão aqui. Soltar precisa passar SEMPRE: se o jogador trocar para
-	# o modo espada com uma carga em curso, é este `soltar` que a encerra. Barrar
-	# a soltura deixaria a carga presa para sempre.
+	_teclas_seguradas.erase(slot)
+	if combat_mode == "sword":
+		return
+	if _mira_fruta != null and _mira_fruta.mostrando() == slot:
+		_mira_fruta.esconder()
 	_cast.soltar(slot)
+
+
+## Segurar a tecla MOSTRA onde o golpe vai cair; soltar apaga. Quem desenha é o
+## `MiraDeFruta`, com a mesma conta do controlador. Só no Modo História (onde existe
+## ficha) e só na autoridade: a mira de um corpo remoto seria a mira do outro jogador.
+func _mostrar_mira_de_fruta(slot: String) -> void:
+	if not _is_authority or perfil_de_frutas == null or not perfil_de_frutas.tem(slot):
+		return
+	if _mira_fruta == null:
+		_mira_fruta = MIRA_DE_FRUTA.new()
+		_mira_fruta.dono = self
+		add_child(_mira_fruta)
+	_mira_fruta.mostrar(slot)
+
+
+func request_yoru_action(id: String) -> void:
+	if _yoru_network:
+		_yoru_network.request_action(id, RosaDosVentos.frente(_yaw))
+
+
+func _cancel_yoru_action(reason: String) -> void:
+	if _yoru_network:
+		_yoru_network.cancel_action(reason)
+	elif _yoru_combat:
+		_yoru_combat.cancel(reason)
+
 
 
 ## Callback dos controladores Pacifista quando a janela mecanica acaba. O token
@@ -2560,13 +3759,11 @@ func finalizar_skill_pika_c(cast_token: int = 0) -> void:
 func cast_skill_slot(slot_key: String) -> void:
 	if not pode_conjurar():
 		return
-	_resetar_impulso_de_corrida()
 	_cast.conjurar_direto(slot_key)
 
 func _request_cast(slot: String) -> void:
 	if not pode_conjurar():
 		return
-	_resetar_impulso_de_corrida()
 	_cast.pedir_cast(slot)
 
 # ---- casting SERVIDOR-AUTORIDADE ----
@@ -2575,6 +3772,10 @@ func _request_cast(slot: String) -> void:
 # no servidor. Sem peer (SP puro/harness) roda tudo local, idêntico.
 var _server_cast_next_ms: Dictionary = {}
 var _server_last_cast_token: Dictionary = {}
+## Intervalo entre golpes de fruta no servidor (07/10/2026): última tecla e quando outra
+## pode sair. Folga de 80 % para a latência não recusar o golpe legítimo.
+var _server_proximo_golpe_ms := 0
+var _server_ultimo_golpe := ""
 
 
 func _vetor_de_cast_finito(v: Vector3) -> bool:
@@ -2585,6 +3786,8 @@ func _fonte_de_cast_valida(source_kind: String, source_id: String) -> bool:
 	if source_kind == "style":
 		return FightingStyles.STYLES.has(source_id)
 	if source_kind == "fruit":
+		if KitDoBuilder.e_do_builder(source_id):
+			return KitDoBuilder.disponivel(source_id)
 		return SkillSystem.get_fruit_skills().has(source_id)
 	return false
 
@@ -2594,7 +3797,10 @@ func _fonte_de_cast_valida(source_kind: String, source_id: String) -> bool:
 ## impede RPC repetido de multiplicar hitboxes entre dois pacotes legítimos.
 func _autorizar_cast_remoto(slot: String, aim: Vector3, origin: Vector3,
 		cast_token: int, source_kind: String, source_id: String) -> bool:
-	if not slot in ["Z", "X", "C", "V"]:
+	if has_meta("combate_mine_piece"):
+		return false
+	var kit := source_kind == "fruit" and KitDoBuilder.pelo_builder(source_id, slot)
+	if not slot in ["Z", "X", "C", "V"] and not (slot == "F" and (kit or (source_kind == "fruit" and source_id == "tori_tori_phoenix"))):
 		return false
 	if not _vetor_de_cast_finito(aim) or not _vetor_de_cast_finito(origin):
 		return false
@@ -2617,6 +3823,19 @@ func _autorizar_cast_remoto(slot: String, aim: Vector3, origin: Vector3,
 		RECARGA_POR_SLOT.get(slot, 5.0))
 	if source_kind == "fruit" and source_id in ["bomu_bomu", "suke_suke"]:
 		recarga = 10.0
+	if source_kind == "fruit" and source_id == "tori_tori_phoenix":
+		recarga = SkillSystem.recarga_da_arena(slot, source_id) * 0.9
+	if kit:
+		# A recarga da skill; 90 % para a latência não recusar a repetição legítima.
+		recarga = KitDoBuilder.recarga(slot, source_id) * 0.9
+	# Intervalo entre golpes de fruta: só entre teclas DIFERENTES (as rajadas de um golpe
+	# chegam como vários pedidos da mesma tecla e quem as limita é a recarga dela).
+	if source_kind == "fruit" and slot != _server_ultimo_golpe and agora < _server_proximo_golpe_ms:
+		return false
+	if source_kind == "fruit":
+		var intervalo := KitDoBuilder.intervalo_depois(slot, source_id) if kit else INTERVALO_ENTRE_GOLPES
+		_server_ultimo_golpe = slot
+		_server_proximo_golpe_ms = agora + int(intervalo * 0.8 * 1000.0)
 	_server_cast_next_ms[chave] = agora + int(recarga * 1000.0)
 	return true
 
@@ -2630,7 +3849,7 @@ func _net_cast(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.0,
 		if source_kind == "":
 			source_kind = combat_mode
 			source_id = estilo_atual() if source_kind == "style" else current_fruit_id
-		if cid != 0 and not _autorizar_cast_remoto(slot, aim, origin, cast_token,
+		if cid != 0 and source_id not in ["ope_ope", "bara_bara", "rocket"] and not _autorizar_cast_remoto(slot, aim, origin, cast_token,
 				source_kind, source_id):
 			return
 		_do_server_cast(slot, aim, origin, charge, cast_token, source_kind, source_id)
@@ -2642,7 +3861,7 @@ func find_best_melee_target(radius: float = 12.0) -> Node3D:
 	var best_target: Node3D = null
 	var highest_score: float = -9999.0
 	
-	var candidates = get_tree().get_nodes_in_group("enemy") + get_tree().get_nodes_in_group("player")
+	var candidates = AlvosDeGolpe.todos(get_tree())
 	for c in candidates:
 		if c == self or not is_instance_valid(c):
 			continue
@@ -2802,6 +4021,23 @@ func _net_play_combo_breaker(pos: Vector3) -> void:
 # Melee.JANELA (2 s). Segue o MESMO trajeto de rede das skills: o dono pede, o
 # servidor cria a hitbox, todo mundo reproduz a animação.
 func _request_melee() -> void:
+	# Porta única do corpo a corpo: o buffer "attack" só é enchido aqui, e é dele
+	# que saem o combo, o chute giratório e a queda esmagadora.
+	if not capacidades.can_attack:
+		return
+	# Clique do Minecraft (V5): com as mãos livres ou no "luta", o pedido de golpe vira o BATER do clique (por aqui, sem mira de mouse).
+	if clique_de_blocos != null and clique_de_blocos.assume_as_maos():
+		clique_de_blocos.bater_no_que_esta_na_mira()
+		return
+	# Modo História: o clique é do combate direcional. Por esta porta (testes,
+	# chamadas diretas) o golpe sai para a FRENTE; a direção pelo mouse chega pela
+	# entrada própria do combate (Fase 2 do plano).
+	if combate_direcional != null:
+		combate_direcional.pedir_ataque(GolpeDirecional.Direcao.FRENTE)
+		return
+	if equipped_weapon == "sword":
+		request_yoru_action("M1")
+		return
 	if _fsm and _fsm.state and _fsm.state.name == "Stunned":
 		return # Não faz buffer se estiver atordoado
 	_add_input_to_buffer("attack")
@@ -3019,7 +4255,7 @@ func _altura_para_impacto_aereo() -> float:
 func _alvo_abaixo_para_queda() -> Node3D:
 	var melhor: Node3D = null
 	var melhor_dist := INF
-	for candidato in get_tree().get_nodes_in_group("enemy") + get_tree().get_nodes_in_group("player"):
+	for candidato in AlvosDeGolpe.todos(get_tree()):
 		if candidato == self or not is_instance_valid(candidato) or not candidato is Node3D:
 			continue
 		var alvo := candidato as Node3D
@@ -3090,7 +4326,9 @@ func _process_mink_bite(delta: float) -> void:
 	_mink_bite_target.set_meta("is_frozen", true)
 	StatusFX.aplicar(_mink_bite_target, StatusFX.CONGELADO, _mink_hold_timer)
 	# A mordida confirma o agarrão; o chute seguinte é o golpe de arremesso.
-	_mink_bite_target.take_damage(54.0, _mink_bite_target.global_position, Vector3.ZERO, 0.28)
+	# Pelo CombatResolver com o dono como atacante de corpo a corpo: para quem
+	# reage a M1 (o Boss) a mordida e o chute contam como golpes seguidos.
+	CombatResolver.aplicar(_mink_bite_target, 54.0, 0, 0.0, _mink_bite_target.global_position, Vector3.ZERO, 0.28, 0.0, false, self)
 	set_meta("custom_pose", "mink_bite_hold")
 
 
@@ -3110,7 +4348,7 @@ func _executar_chute_mink() -> void:
 		return
 	_mink_bite_target.set_meta("is_frozen", false)
 	var impulso := (_mink_bite_dir + Vector3.UP * 0.32).normalized() * 48.0
-	_mink_bite_target.take_damage(116.0, _mink_bite_target.global_position, impulso, 0.72)
+	CombatResolver.aplicar(_mink_bite_target, 116.0, 0, 0.0, _mink_bite_target.global_position, impulso, 0.72, 0.0, false, self)
 	set_meta("custom_pose", "mink_kick")
 	var limpar := get_tree().create_timer(0.34)
 	limpar.timeout.connect(_encerrar_mordida_mink)
@@ -3135,9 +4373,6 @@ func iniciar_ataque_contextual(id: String, yaw: float) -> bool:
 	# de solo continuam exigindo os pés apoiados. Ver `ContextualMelee.exige_chao`.
 	if ContextualMeleeData.exige_chao(id) and not is_on_floor():
 		return false
-	if id == "context_retreat_kick" and not _recuo_contextual_livre(yaw):
-		return false
-	_resetar_impulso_de_corrida()
 	_contextual_attack_seq += 1
 	_apresentar_ataque_contextual(id, yaw, _contextual_attack_seq)
 	var escala := scale.y
@@ -3148,25 +4383,6 @@ func iniciar_ataque_contextual(id: String, yaw: float) -> bool:
 
 func sequencia_contextual_atual() -> int:
 	return _contextual_attack_seq
-
-func _recuo_contextual_livre(yaw: float) -> bool:
-	if get_world_3d() == null:
-		return false
-	var frente := RosaDosVentos.frente(yaw)
-	var inicio := global_position + Vector3.UP * 0.80
-	var consulta := PhysicsRayQueryParameters3D.create(inicio, inicio - frente * 1.05, 15, [get_rid()])
-	consulta.collide_with_areas = false
-	consulta.collide_with_bodies = true
-	var hit := get_world_3d().direct_space_state.intersect_ray(consulta)
-	if hit.is_empty():
-		return true
-	# Um adversário atrás não é parede e não deve desligar S + M1. A colisão
-	# continua resolvida pelo CharacterBody; esta consulta só evita iniciar a
-	# ação já comprimido contra cenário sólido.
-	var collider = hit.get("collider")
-	if collider is Node and ((collider as Node).is_in_group("player") or (collider as Node).is_in_group("enemy")):
-		return true
-	return false
 
 func _processar_movimento_contextual() -> void:
 	if _melee == null or not _melee.contextual_ativo():
@@ -3255,8 +4471,13 @@ func pedir_cancelamento_contextual_no_servidor(sequencia: int) -> void:
 	else:
 		_net_cancel_contextual_melee.rpc_id(1, sequencia)
 
-func _resetar_impulso_de_corrida() -> void:
-	_aceleracao_da_corrida.resetar()
+## Clipe de animação do mod (`MinepieceModAnimationMessage`): o servidor roda o mod e manda o pacote aos clientes, que o tocam
+## no corpo (o meta `pose_do_mod` não é replicado). Só o servidor (peer 1) pode mandar.
+@rpc("any_peer", "call_remote", "reliable")
+func _net_animacao_do_mod(clipe: String, sobrescrever: bool) -> void:
+	if multiplayer.get_remote_sender_id() != 1:
+		return
+	AnimacaoDoMod.no_de(self).tocar(clipe, sobrescrever)
 
 @rpc("any_peer", "call_remote", "reliable")
 func _net_melee(passo: int, origem: Vector3, fwd: Vector3) -> void:
@@ -3363,9 +4584,6 @@ func _do_server_contextual_melee(sequencia: int, id: String, origem: Vector3, fw
 	if global_position.distance_to(origem) > 3.0 or absf(origem.y - global_position.y) > 2.5:
 		_rejeitar_contextual_servidor(sequencia)
 		return
-	if id == "context_retreat_kick" and not _recuo_contextual_livre(atan2(-fwd.x, -fwd.z)):
-		_rejeitar_contextual_servidor(sequencia)
-		return
 	var agora := Time.get_ticks_msec()
 	if agora < _server_contextual_next_ms:
 		_rejeitar_contextual_servidor(sequencia)
@@ -3423,6 +4641,9 @@ func _net_contextual_cancelled(sequencia: int) -> void:
 # SERVIDOR: cria a hitbox (a DamageZone só machuca no servidor) e manda todos
 # reproduzirem a animação do golpe.
 func _do_server_melee(passo: int, origem: Vector3, fwd: Vector3) -> void:
+	# O RPC legado nunca arma a Yoru, nem contorna a sequência autoritativa.
+	if equipped_weapon == "sword" or combat_mode == "sword":
+		return
 	Melee.golpear(get_tree().current_scene, self, passo, origem, fwd)
 	if multiplayer.has_multiplayer_peer():
 		_net_play_melee.rpc(passo)
@@ -3469,8 +4690,21 @@ func _net_play_melee(passo: int) -> void:
 				Melee.fim_da_janela(passo, equipped_weapon))
 
 # --- GURA GURA Z: INVESTIDA FÍSICA ---
+## Direção do CORPO até o ponto que o retículo marca. A mira (`mira_do_cast`) sai da
+## linha da câmera de OMBRO: um golpe que sai do corpo com ela anda paralelo ao
+## retículo e passa ~1,5 m ao lado do alvo (investidas da Gura e da Bomu, 05/10/2026).
+func rumo_ao_ponto_mirado(aim: Vector3, alcance := 40.0) -> Vector3:
+	if not is_inside_tree() or _cam == null:
+		return aim
+	var origem: Vector3 = mira_do_cast()["origem"]
+	var ponto := AlvosDeGolpe.ponto_mirado(get_world_3d(), origem, aim, alcance, [get_rid()])
+	var d := ponto - (global_position + Vector3.UP * 1.0)
+	return d.normalized() if d.length() > 0.5 else aim
+
+
 func start_gura_rush(aim_dir: Vector3) -> void:
 	if _gura_rush_active or _skill_cooldowns.get("Z", 0.0) > 0.0: return
+	aim_dir = rumo_ao_ponto_mirado(aim_dir)
 	_gura_rush_active = true
 	_gura_rush_timer = 0.6 # Tempo máximo correndo
 	_gura_grab_timer = 0.0
@@ -3478,7 +4712,7 @@ func start_gura_rush(aim_dir: Vector3) -> void:
 	var flat = Vector3(aim_dir.x, 0, aim_dir.z)
 	_gura_rush_dir = flat.normalized() if flat.length() > 0.1 else -global_transform.basis.z
 	trigger_skill_cooldown("Z")
-	gastar_energia(ENERGY_SKILL)
+	gastar_energia(custo_de_energia_do_cast("Z"))
 	congelar_para_cast()
 	set_meta("custom_pose", "gura_rush")
 
@@ -3509,7 +4743,10 @@ func _process_gura_rush(delta: float) -> void:
 	var shape = SphereShape3D.new()
 	shape.radius = 1.2
 	par.shape = shape
-	par.transform = Transform3D(Basis(), global_position + Vector3.UP * 1.0 + _gura_rush_dir * 1.5)
+	# No CENTRO do corpo, não 1 m acima: com a Gura em escala 2 a esfera ia de 1,4 a
+	# 3,8 m de altura e passava por cima de um bicho baixo — a investida encostava na
+	# vaca e o soco nunca saía (medido em 05/10/2026).
+	par.transform = Transform3D(Basis(), global_position + _gura_rush_dir * 1.5)
 	par.collide_with_areas = true
 	par.collide_with_bodies = true
 	par.collision_mask = 15
@@ -3531,6 +4768,7 @@ func _process_gura_rush(delta: float) -> void:
 func start_bomu_rush(aim_dir: Vector3, _charge: float = 0.5) -> void:
 	if _bomu_rush_active:
 		return
+	aim_dir = rumo_ao_ponto_mirado(aim_dir)
 	_bomu_rush_active = true
 	_bomu_rush_timer = 0.72
 	_bomu_grab_timer = 0.0
@@ -3586,6 +4824,117 @@ func _encerrar_bomu_rush() -> void:
 		remove_meta("custom_pose")
 
 # SERVIDOR = autoridade: (validaria cooldown/estado) e manda TODOS reproduzirem.
+## Transação de combate da Ope: somente servidor, custos após toda validação.
+func _autorizar_ope(slot: String, aim: Vector3, origin: Vector3, token: int) -> bool:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return false
+	var reason := OPE.validation_reason(self, slot, aim)
+	if not origin.is_finite() or global_position.distance_to(origin) > 4.5:
+		reason = "Origem da técnica inválida."
+	var key := "fruit/ope_ope/" + slot
+	var now := Time.get_ticks_msec()
+	if reason == "" and (now < int(_server_cast_next_ms.get(key, 0)) \
+			or float(_fruit_cooldowns.get(slot, 0.0)) > 0.0):
+		reason = "Técnica em recarga."
+	if reason == "" and token > 0 and token <= int(_server_last_cast_token.get(key, 0)):
+		reason = "Pedido já processado."
+	if reason == "" and energy < custo_de_energia_do_cast(slot):
+		reason = "Energia insuficiente."
+	if reason != "":
+		if multiplayer.has_multiplayer_peer() and not _is_authority:
+			_net_ope_rejected.rpc_id(get_multiplayer_authority(), token, reason)
+		else:
+			_net_ope_rejected(token, reason)
+		return false
+	_server_cast_next_ms[key] = now + int(SkillSystem.get_slot_cooldown(slot, "ope_ope") * 1000.0)
+	_server_last_cast_token[key] = token
+	gastar_energia(custo_de_energia_do_cast(slot))
+	# Cópias remotas usam relógio de servidor; a autoridade usa o HUD normal.
+	if _is_authority:
+		trigger_skill_cooldown(slot)
+	return true
+
+
+@rpc("any_peer", "reliable")
+func _net_ope_rejected(token: int, reason: String) -> void:
+	if multiplayer.has_multiplayer_peer() and multiplayer.get_remote_sender_id() not in [0, 1]:
+		return
+	if token == int(get_meta("ope_pending_token", 0)):
+		set_meta("ope_pending_until", 0)
+	OPE.feedback(self, reason)
+
+
+## O servidor publica os dois destinos juntos. Cada dono move seu próprio corpo,
+## evitando que a replicação desfaça a troca no quadro seguinte.
+func ope_relocate(from: Vector3, to: Vector3, victim: NodePath,
+		victim_to: Vector3, swap: bool) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	if multiplayer.has_multiplayer_peer():
+		_net_ope_relocate.rpc(from, to, victim, victim_to, swap)
+	else:
+		_net_ope_relocate(from, to, victim, victim_to, swap)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _net_ope_relocate(from: Vector3, to: Vector3, victim: NodePath,
+		victim_to: Vector3, swap: bool) -> void:
+	if multiplayer.has_multiplayer_peer() and multiplayer.get_remote_sender_id() not in [0, 1]:
+		return
+	global_position = to
+	velocity = Vector3.ZERO
+	net_velocity = Vector3.ZERO
+	reset_physics_interpolation()
+	if not victim.is_empty():
+		var target := get_node_or_null(victim) as Node3D
+		if is_instance_valid(target):
+			target.global_position = victim_to
+			if target is CharacterBody3D:
+				target.velocity = Vector3.ZERO
+			if target is Player:
+				target.net_velocity = Vector3.ZERO
+			target.reset_physics_interpolation()
+	if swap:
+		OPE_VFX.shambles(_get_skills_container(), from, to)
+
+
+## Eventos autoritativos mantêm colisão/agulha e apresentação no mesmo instante.
+func ope_event(token: int, event: String, index: int = -1,
+		at: Vector3 = Vector3.ZERO, direction: Vector3 = Vector3.FORWARD) -> void:
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return
+	if multiplayer.has_multiplayer_peer():
+		_net_ope_event.rpc(token, event, index, at, direction)
+	else:
+		_net_ope_event(token, event, index, at, direction)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _net_ope_event(token: int, event: String, index: int,
+		at: Vector3, direction: Vector3) -> void:
+	if multiplayer.has_multiplayer_peer() and multiplayer.get_remote_sender_id() not in [0, 1]:
+		return
+	if not is_instance_valid(_spawned_skills_container):
+		return
+	for effect in _spawned_skills_container.get_children():
+		if effect.get_script() == OPE and effect.cast_token == token:
+			effect.present_event(event, index, at, direction)
+			return
+
+
+# O servidor publica o fim do cão: clientes não ficam imunes até o timeout
+# quando o contato autoritativo já explodiu a transformação.
+@rpc("any_peer", "call_remote", "reliable")
+func _net_magu_fim(token: int, posicao: Vector3, pedra: bool) -> void:
+	if multiplayer.get_remote_sender_id() != NetworkConfig.SERVER_ID:
+		return
+	if not is_instance_valid(_spawned_skills_container):
+		return
+	for efeito in _spawned_skills_container.get_children():
+		if efeito.has_method("receber_fim") and int(efeito.get("token")) == token:
+			efeito.receber_fim(posicao, pedra)
+
+
 func _do_server_cast(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.0,
 		cast_token: int = 0, source_kind: String = "", source_id: String = "") -> void:
 	if source_kind == "":
@@ -3593,8 +4942,21 @@ func _do_server_cast(slot: String, aim: Vector3, origin: Vector3, charge: float 
 		source_id = estilo_atual() if source_kind == "style" else current_fruit_id
 	if not _fonte_de_cast_valida(source_kind, source_id):
 		return
+	if (has_meta("magu_acao") and is_instance_valid(get_meta("magu_acao"))):
+		return
 	if source_kind == "fruit" and _fruit_damage_lock_timer > 0.0:
 		return # validação autoritativa: cliente não pula a recuperação por RPC
+	if source_id == "tori_tori_phoenix":
+		if source_kind != "fruit" or current_fruit_id != source_id or not _phoenix.pode(slot): return
+	if source_id == "rocket":
+		if source_kind != "fruit" or not _rocket.autorizar(slot, aim, origin, cast_token):
+			return
+	if source_id == "ope_ope":
+		if source_kind != "fruit" or not _autorizar_ope(slot, aim, origin, cast_token):
+			return
+	if source_id == "bara_bara":
+		if source_kind != "fruit" or not BARA_NET.authorize(self, slot, aim, origin, cast_token):
+			return
 	# BUKI BUKI: o cast É o saque da arma. É AQUI, na cópia autoritativa, que a
 	# munição do servidor é carregada — o cliente não escolhe quantas balas tem.
 	# Já sai com uma a menos porque o próprio saque dispara o primeiro tiro.
@@ -3681,7 +5043,7 @@ func _spec_do_disparo(fruta: String, slot: String) -> DamageSpec:
 	var chave := fruta + "/" + slot
 	if _spec_disparo != null and _spec_disparo_chave == chave:
 		return _spec_disparo
-	var s := Balance.novo(fruta, slot)
+	var s := Balance.novo(fruta, slot, escala_de_dano_da_fruta(fruta))
 	if s == null:
 		s = DamageSpec.avulso(0.0)
 	_spec_disparo = s
@@ -3703,11 +5065,17 @@ func _net_play_cast(slot: String, aim: Vector3, origin: Vector3, charge: float =
 	if multiplayer.has_multiplayer_peer():
 		var sender = multiplayer.get_remote_sender_id()
 		if sender != 0 and sender != 1: return
+	if source_kind == "fruit" and source_id in ["ope_ope", "bara_bara", "rocket"]:
+		set_meta("ope_pending_until" if source_id == "ope_ope" else "bara_pending_until", 0)
+		if _is_authority and multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+			gastar_energia(custo_de_energia_do_cast(slot))
+			trigger_skill_cooldown(slot)
 	_fire_skill(slot, aim, origin, charge, cast_token, source_kind, source_id)
 
 var _spawned_skills_container: Node3D
 
 func _exit_tree() -> void:
+	BARA_NET.cleanup(self)
 	if is_instance_valid(_spawned_skills_container):
 		_spawned_skills_container.queue_free()
 
@@ -3716,10 +5084,16 @@ func _get_skills_container() -> Node3D:
 		_spawned_skills_container = Node3D.new()
 		_spawned_skills_container.name = "Skills_" + name
 		var sc = get_tree().current_scene
-		if sc:
-			sc.add_child.call_deferred(_spawned_skills_container)
+		var pai: Node = sc if sc else self
+		# Entra na árvore NO MESMO QUADRO (06/10/2026). Era sempre `call_deferred`: o
+		# PRIMEIRO golpe da sessão criava os efeitos num contêiner ainda fora da
+		# árvore, e todo `global_position` deles falhava ("!is_inside_tree" no Hiken
+		# da Mera; a Pika e a Goro tinham contorno próprio). Deferido só quando o pai
+		# ainda está montando os filhos, que é o caso em que o Godot recusa o add_child.
+		if pai.is_inside_tree() and pai.is_node_ready():
+			pai.add_child(_spawned_skills_container)
 		else:
-			add_child.call_deferred(_spawned_skills_container)
+			pai.add_child.call_deferred(_spawned_skills_container)
 	return _spawned_skills_container
 
 # ⚠️ A LIMPEZA PRECISA ATRAVESSAR A REDE (2026-08-22).
@@ -3746,12 +5120,209 @@ func _net_limpar_skills() -> void:
 	clear_spawned_skills()
 
 func clear_spawned_skills() -> void:
+	if _phoenix != null: _phoenix.cancelar()
+	if _rocket != null: _rocket.cancelar()
 	if is_instance_valid(_spawned_skills_container):
 		for c in _spawned_skills_container.get_children():
 			c.queue_free()
 
 # Presentation da skill (roda em todos): VFX pela fruta/estilo. A DamageZone criada
 # dentro só aplica dano no SERVIDOR (ver DamageZone).
+## ARENA (decisão do dono, 06/10/2026): o botão do menu do M pede o Kit do Builder ao
+## SERVIDOR, que equipa em todos pelo mesmo caminho da fruta colhida (`FruitNet`).
+func pedir_kit_do_builder() -> void:
+	combat_mode = "fruit"
+	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
+		_servidor_dar_kit(get_multiplayer_authority())
+	else:
+		_net_pedir_kit.rpc_id(1)
+
+
+@rpc("any_peer", "reliable")
+func _net_pedir_kit() -> void:
+	if not multiplayer.is_server():
+		return
+	var cid := multiplayer.get_remote_sender_id()
+	if cid != get_multiplayer_authority():
+		return
+	_servidor_dar_kit(cid)
+
+
+func _servidor_dar_kit(peer_id: int, fruta: String = KitDoBuilder.ID) -> void:
+	if not KitDoBuilder.e_do_builder(fruta) or not KitDoBuilder.disponivel(fruta):
+		return
+	FruitNet.pickup(fruta, peer_id)
+
+
+## ARENA: uma FRUTA do Builder (ex.: Noro Noro no Mi) pedida pelo menu do M — o mesmo
+## caminho do kit, com o id da fruta (o servidor confere que ela existe e tem skill).
+func pedir_fruta_do_builder(fruta: String) -> void:
+	combat_mode = "fruit"
+	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
+		_servidor_dar_kit(get_multiplayer_authority(), fruta)
+	else:
+		_net_pedir_fruta_do_builder.rpc_id(1, fruta)
+
+
+@rpc("any_peer", "reliable")
+func _net_pedir_fruta_do_builder(fruta: String) -> void:
+	if not multiplayer.is_server() or multiplayer.get_remote_sender_id() != get_multiplayer_authority():
+		return
+	_servidor_dar_kit(multiplayer.get_remote_sender_id(), fruta)
+
+
+## "Carregar e soltar" (06/10/2026): a tecla subiu. Quem decide é a autoridade do corpo
+## (continuar, ou cancelar se ainda não chegou ao ponto de segurar); o servidor espalha
+## para todos os peers, onde o executor daquela tecla segue ou para.
+var _execs_do_kit := {}          # tecla → ExecutorDeSkill deste corpo (em cada peer)
+
+## `aim`/`origem` = a mira NO SOLTAR (07/10/2026): o Z carregado da Pika sai para onde o
+## retículo está quando a tecla sobe, não para onde estava ao apertar.
+func pedir_soltar_do_kit(slot: String, cancelar: bool, aim := Vector3.ZERO, origem := Vector3.ZERO) -> void:
+	if not multiplayer.has_multiplayer_peer():
+		_net_soltar_kit(slot, cancelar, aim, origem)
+	elif multiplayer.is_server():
+		_net_soltar_kit.rpc(slot, cancelar, aim, origem)
+	else:
+		_net_pedir_soltar_kit.rpc_id(1, slot, cancelar, aim, origem)
+
+
+@rpc("any_peer", "reliable")
+func _net_pedir_soltar_kit(slot: String, cancelar: bool, aim := Vector3.ZERO, origem := Vector3.ZERO) -> void:
+	if not multiplayer.is_server() or multiplayer.get_remote_sender_id() != get_multiplayer_authority():
+		return
+	if not _vetor_de_cast_finito(aim) or not _vetor_de_cast_finito(origem) \
+			or global_position.distance_to(origem) > 4.5:
+		aim = Vector3.ZERO                  # mira inválida: o golpe sai com a do aperto
+	_net_soltar_kit.rpc(slot, cancelar, aim, origem)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _net_soltar_kit(slot: String, cancelar: bool, aim := Vector3.ZERO, origem := Vector3.ZERO) -> void:
+	if multiplayer.has_multiplayer_peer():
+		var de := multiplayer.get_remote_sender_id()
+		if de != 0 and de != 1:
+			return
+	var e: Variant = _execs_do_kit.get(slot)
+	if not is_instance_valid(e):
+		return
+	if cancelar:
+		(e as ExecutorDeSkill).cancelar()
+	elif str((e as ExecutorDeSkill).skill.get("ativacao", {}).get("modo", "")) == "Sustentar":
+		(e as ExecutorDeSkill).soltar()      # "Sustentar": soltar encerra a skill
+	else:
+		if aim.length_squared() > 0.0001 and _vetor_de_cast_finito(aim) and _vetor_de_cast_finito(origem):
+			var ponto := AlvosDeGolpe.ponto_mirado(get_world_3d(), origem, aim, 60.0, [get_rid()])
+			(e as ExecutorDeSkill).mirar_de_novo(aim, ponto)
+		(e as ExecutorDeSkill).segurando = false
+
+
+## Lentidão de skill (Noro Noro, 06/10/2026): quem move este corpo é o cliente dono, e
+## só o servidor sabe do acerto — o servidor espalha o fator para todos os peers.
+## Congelamento da Hie em rede (07/10/2026, "todos os golpes congelam 0,7 s"): o acerto
+## é do servidor; o corpo é do cliente dono. O servidor espalha para todos: o dono trava
+## (`is_frozen`, que a locomoção respeita) e todos veem o bloco de gelo.
+func congelar_em_rede(segundos: float) -> void:
+	if get_meta("magu_cao_ativo", false):
+		return
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		_net_congelar.rpc(segundos)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _net_congelar(segundos: float) -> void:
+	if get_meta("magu_cao_ativo", false):
+		return
+	if multiplayer.get_remote_sender_id() != 1:
+		return
+	IceFX.congelar(self, clampf(segundos, 0.0, 10.0), false)
+
+
+func aplicar_lentidao_em_rede(fator: float, segundos: float) -> void:
+	if not multiplayer.has_multiplayer_peer() or not multiplayer.is_server():
+		Lentidao.aplicar_local(self, fator, segundos)
+		return
+	_net_lentidao.rpc(fator, segundos)
+
+
+@rpc("any_peer", "call_local", "reliable")
+func _net_lentidao(fator: float, segundos: float) -> void:
+	if get_meta("magu_cao_ativo", false):
+		return
+	if multiplayer.has_multiplayer_peer():
+		var de := multiplayer.get_remote_sender_id()
+		if de != 0 and de != 1:
+			return
+	Lentidao.aplicar_local(self, clampf(fator, 0.02, 1.0), clampf(segundos, 0.0, 30.0))
+
+
+## Pedido de movimento de uma skill do Builder (chamado a cada quadro pelo executor).
+func definir_movimento_de_skill(vel: Vector3, vertical: bool, parar: bool = false) -> void:
+	if parar:
+		_mov_skill_quadro = -100
+		_mov_skill_vel = Vector3.ZERO
+		return
+	_mov_skill_vel = vel
+	_mov_skill_vertical = vertical
+	_mov_skill_quadro = Engine.get_physics_frames()
+
+
+func _movimento_de_skill_ativo() -> bool:
+	return Engine.get_physics_frames() - _mov_skill_quadro <= 2
+
+
+## Skill do Builder com "Flutuar" (Pika refeita no editor, 06/10/2026): do começo ao fim
+## dela o corpo não cai (golpe no ar). Quem liga e desliga é o executor.
+func definir_flutuar(sim: bool) -> void:
+	_flutuar_por_skill = sim
+	if sim:
+		velocity.y = 0.0
+
+
+## VFX "Cometa" do Builder: o corpo VIRA luz (some) enquanto o bloco dura. Visual: roda
+## em todos os peers, como o próprio executor.
+func ocultar_corpo_por_skill(sim: bool) -> void:
+	if _char_model != null:
+		_char_model.visible = not sim
+
+
+## Clipe de um bloco de Animação do Builder: vira uma pose do animador procedural
+## (o catálogo do Builder é fechado; a tabela fica em `KitDoBuilder.POSES`).
+##
+## 07/10/2026 (pedido do dono: "corrigir as animações atuais"): a prévia tocava um clipe e
+## o jogo ligava uma pose antiga (`KitDoBuilder.POSES`) — coisas diferentes. Agora é o
+## clipe bakeado da lista do editor (`ClipesDeSkill`), no TEMPO do bloco, pelo caminho do
+## roll do Q (o "clipe de ação" do animador, que já vai pela rede). A prévia aplica o mesmo.
+const ClipesDeSkill := preload("res://src/skills_builder/clipes_de_skill.gd")
+var _clipe_de_skill := ""
+var _tempo_clipe_de_skill := 0.0
+var _peso_clipe_de_skill := 1.0
+
+func tocar_animacao_de_skill(clipe: String, tempo: float, _velocidade: float, intensidade: float) -> void:
+	_clipe_de_skill = ClipesDeSkill.caminho(clipe)
+	_tempo_clipe_de_skill = tempo
+	_peso_clipe_de_skill = clampf(intensidade, 0.0, 1.0)
+
+
+func parar_animacao_de_skill() -> void:
+	_clipe_de_skill = ""
+
+
+## KIT DO BUILDER (06/10/2026): a skill da tecla roda no `ExecutorDeSkill`, no contêiner
+## de golpes deste jogador. Presentation em todos os peers; dano só no servidor.
+func _lancar_do_kit(slot: String, aim: Vector3, origin: Vector3, fruta: String = KitDoBuilder.ID) -> void:
+	var s := KitDoBuilder.skill(slot, fruta)
+	if s.is_empty():
+		return
+	var fora: Array[RID] = [get_rid()]
+	var ponto := AlvosDeGolpe.ponto_mirado(get_world_3d(), origin, aim, 60.0, fora)
+	print("🛠 %s: %s [%s]" % [KitDoBuilder.nome(fruta).to_upper(), s.identificacao.nome, slot])
+	# Semente da chuva (07/10/2026): mira e origem viajam iguais na rede.
+	var escala := escala_de_dano_da_fruta(fruta, true)
+	_execs_do_kit[slot] = ExecutorDeSkill.lancar(_get_skills_container(), self, s, aim,
+		escala, ponto, hash([aim, origin]))
+
+
 func _fire_skill(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.0,
 		cast_token: int = 0, source_kind: String = "", source_id: String = "") -> void:
 	var variant: int = ["Z", "X", "C", "V"].find(slot)
@@ -3767,6 +5338,10 @@ func _fire_skill(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.
 	var cast_source := source_id
 	if cast_source == "":
 		cast_source = estilo_atual() if cast_mode == "style" else current_fruit_id
+	# ANEXO VISUAL (15/11/2026): anel de ativação da cor da fruta sob o jogador, como nas frutas do mod. Medido na arena: 26 de 59 golpes mudavam <4% da imagem
+	# (golpes junto ao corpo, sem nenhuma marca de que a técnica disparou). Só desenho; o custo é um tween.
+	if cast_mode == "fruit" and cast_source != "":
+		PoderDaFruta.ativacao(self, cast_source, ENERGY_SKILL)
 	var cast_com_duracao_propria := false
 
 	if cast_mode == "style":
@@ -3781,11 +5356,13 @@ func _fire_skill(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.
 		FightingStyles.cast(world, active_style, variant, origin, aim, spec_e.dano, self,
 			spec_e, cast_token)
 		cast_com_duracao_propria = active_style == "pacifista"
+	elif KitDoBuilder.pelo_builder(cast_source, slot):
+		_lancar_do_kit(slot, aim, origin, cast_source)
 	else:
 		var fruit_skills := SkillSystem.get_fruit_skills()
 		# ⚠️ Aqui existia `else "gomu_gomu"` — um fallback MUDO, e ele era a causa
 		# de dois bugs relatados jogando:
-		#   • pegar uma fruta sem skills (ope_ope, hito_hito_nika, tori_tori_phoenix)
+		#   • pegar uma fruta sem skills (hito_hito_nika, tori_tori_phoenix)
 		#     dava os golpes da Gomu Gomu com o nome da outra fruta na HUD;
 		#   • depois de MORRER o jogador larga a fruta (`current_fruit_id = ""`) e
 		#     passava a sair Gomu Gomu do nada, como se tivesse ganhado uma fruta.
@@ -3810,7 +5387,7 @@ func _fire_skill(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.
 		# ⚠️ A spec tem de ser criada UMA vez por golpe e descer inteira até o
 		# efeito. Deixar cada hitbox pedir a sua daria um orçamento por hitbox,
 		# que é exatamente o teto que NÃO existia antes desta refatoração.
-		var spec := Balance.novo(fid, slot)
+		var spec := Balance.novo(fid, slot, escala_de_dano_da_fruta(fid))
 		if spec == null:
 			push_warning("[Balance] '%s/%s' não está na tabela de dano" % [fid, slot])
 			spec = DamageSpec.avulso(0.0)
@@ -3818,6 +5395,18 @@ func _fire_skill(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.
 		print("⚡ FRUTA ", fid.to_upper(), ": ", sdata.get("nome", slot))
 
 		match fid:
+			"tori_tori_phoenix":
+				_phoenix.executar(slot, aim, spec)
+				cast_com_duracao_propria = true
+			"magu_magu":
+				preload("res://src/effects/magu/tecnica_magu.gd").lancar(world, self, slot, aim, spec, cast_token)
+				cast_com_duracao_propria = true
+			"rocket":
+				_rocket.iniciar(slot, aim, cast_token)
+				cast_com_duracao_propria = true
+			"ope_ope":
+				OPE.cast(world, slot, aim, origin, self, spec, cast_token)
+				cast_com_duracao_propria = true
 			# ⚠️ O V DA GOMU NÃO É MAIS UM GOLPE — é a transformação Gear 2
 			# (decisão do dono, 2026-08-27). Entra ANTES do `GomuFX.cast` porque
 			# não cria hitbox nenhuma: é estado, não conjuração. O Red Hawk, que
@@ -3834,7 +5423,9 @@ func _fire_skill(slot: String, aim: Vector3, origin: Vector3, charge: float = 0.
 			"hie_hie":   IceFX.cast(world, origin, aim, variant, dano, self, spec)
 			"goro_goro": GoroFX.cast(world, origin, aim, variant, dano, self, spec, charge)
 			"yami_yami": YamiFX.cast(world, origin, aim, variant, dano, self, spec)
-			"bara_bara": BaraFX.cast(world, origin, aim, variant, dano, self, spec)
+			"bara_bara":
+				BARA.cast(world, slot, aim, origin, self, spec, cast_token)
+				cast_com_duracao_propria = true
 			"gura_gura": GuraFX.cast(world, origin, aim, variant, dano, self, charge, spec)
 			"bomu_bomu": BomuFX.cast(world, origin, aim, variant, dano, self, charge, spec)
 			"pika_pika":
@@ -3896,11 +5487,18 @@ func _cycle_fruit() -> void:
 	print("🔀 Fruta de teste: ", nxt)
 
 func equip_fruit(fruit_id: String) -> void:
+	if _phoenix != null: _phoenix.cancelar()
+	if (has_meta("magu_acao") and is_instance_valid(get_meta("magu_acao"))):
+		get_meta("magu_acao").encerrar()
 	# ⚠️ SAÍDA POR TROCA DE FRUTA. O Gear 2 é da Gomu Gomu; sair dela tem de
 	# largar a transformação junto, senão a pele e o chapéu ficam num personagem
 	# que já é de outra fruta.
 	if _gear2 and _gear2.esta_ativo():
 		_gear2.desativar()
+	# Mesma regra para a camuflagem da Suke: trocar de fruta invisível deixava o dreno
+	# de energia correndo com a fruta nova (medido em 03/10/2026, test_frutas_na_historia).
+	if _invisivel and fruit_id != "suke_suke":
+		revelar_invisibilidade()
 	# ⚠️ A FRUTA SOME DA ÁRVORE AO SER EQUIPADA — por QUALQUER caminho.
 	#
 	# Isto vive aqui, e não no `pickup_fruit`, porque equipar tem TRÊS entradas e
@@ -3954,6 +5552,10 @@ func equip_fruit(fruit_id: String) -> void:
 	set_meta("yami_black_hole_active", false)
 	set_meta("yami_kurouzu_active", false)
 	var all_passives := FruitPassiveSystem.get_all_passives()
+	# Sem passiva (o Kit do Builder, ou sem fruta), o corpo volta ao normal. Antes a
+	# velocidade e o pulo da fruta ANTERIOR ficavam (06/10/2026).
+	speed_multiplier = 1.0
+	jump_multiplier = 1.0
 	if all_passives.has(fruit_id):
 		var p_data: Dictionary = all_passives[fruit_id]
 		speed_multiplier = float(p_data.get("speed_mod", 1.0))
@@ -4106,6 +5708,10 @@ func lamina_da_espada() -> SwordBlade:
 
 
 func sacar_ou_guardar_espada() -> void:
+	set_combat_mode("fruit" if combat_mode == "sword" else "sword")
+
+
+func _toggle_yoru_visual() -> void:
 	if _yoru != null and is_instance_valid(_yoru):
 		# ⚠️ SAI DA ÁRVORE AGORA, e só depois é liberada. `queue_free` sozinho
 		# deixa o nó pendurado na mão até o fim do quadro: quem olhasse a mão no
@@ -4141,3 +5747,37 @@ func sacar_ou_guardar_espada() -> void:
 		_proc_anim.usar_lamina_no_rastro(_yoru.guarda, _yoru.ponta, _yoru)
 	equipped_weapon = "sword"
 	print("[Yoru] sacada — handle sobre %s" % mao.name)
+
+
+func bara_snapshot(data: Dictionary) -> void:
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		_net_bara_snapshot.rpc(data)
+
+@rpc("any_peer", "call_remote", "unreliable_ordered")
+func _net_bara_snapshot(data: Dictionary) -> void:
+	if multiplayer.get_remote_sender_id() != 1: return
+	BARA_NET.receive(self, data)
+
+func bara_finished(token: int) -> void:
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		_net_bara_finished.rpc(token)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _net_bara_finished(token: int) -> void:
+	if multiplayer.get_remote_sender_id() != 1: return
+	BARA_NET.finish(self, token)
+
+func bara_impact(at: Vector3, explosive: bool) -> void:
+	if multiplayer.has_multiplayer_peer():
+		if multiplayer.is_server(): _net_bara_impact.rpc(at, explosive)
+	else: _net_bara_impact(at, explosive)
+
+@rpc("any_peer", "call_local", "reliable")
+func _net_bara_impact(at: Vector3, explosive: bool) -> void:
+	if multiplayer.has_multiplayer_peer() and multiplayer.get_remote_sender_id() not in [0, 1]: return
+	BARA.VFX.impact(_get_skills_container(), at, explosive)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _net_bara_rejected(reason: String) -> void:
+	if multiplayer.get_remote_sender_id() != 1: return
+	BARA_NET.feedback(self, reason)

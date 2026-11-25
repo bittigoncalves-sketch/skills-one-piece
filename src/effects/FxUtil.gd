@@ -191,17 +191,52 @@ static func mundo_de_skills(caster: Node, alternativa: Node = null) -> Node:
 #
 # O `Engine.get_main_loop()` é o mesmo `SceneTree`, e não depende de o nó já
 # estar pendurado em algum lugar.
-static func autofree(node: Node, t: float) -> void:
-	if node == null or not is_instance_valid(node):
+## Devolve o corpo ao jogador quando o gesto acaba.
+##
+## ⚠️ SÓ LIMPA SE A POSE AINDA FOR A MESMA. Sem essa checagem, um golpe curto
+## disparado logo depois de outro apagaria a pose do SEGUNDO quando o prazo do
+## PRIMEIRO vencesse — e o corpo voltaria ao neutro no meio do gesto novo.
+##
+## Usa `Engine.get_main_loop()` como plano B pelo mesmo motivo que `autofree`
+## logo abaixo: no primeiro golpe de uma vida o nó pode estar fora da árvore.
+static func limpar_pose(ator: Node, pose: String, prazo: float) -> void:
+	if ator == null or not is_instance_valid(ator):
 		return
-	var arv: SceneTree = node.get_tree()
+	var arv: SceneTree = ator.get_tree() if ator.is_inside_tree() else null
 	if arv == null:
 		arv = Engine.get_main_loop() as SceneTree
 	if arv == null:
-		return                                  # sem laço principal: nada a agendar
-	arv.create_timer(t).timeout.connect(func():
-		if is_instance_valid(node):
-			node.queue_free())
+		return
+	var fraco: WeakRef = weakref(ator)
+	arv.create_timer(prazo).timeout.connect(func():
+		var alvo = fraco.get_ref()
+		if alvo != null and is_instance_valid(alvo) \
+				and str(alvo.get_meta("custom_pose", "")) == pose:
+			alvo.set_meta("custom_pose", ""))
+
+
+static func autofree(node: Node, t: float) -> SceneTreeTimer:
+	if node == null or not is_instance_valid(node):
+		return null
+	# `is_inside_tree()` ANTES de `get_tree()`: num nó solto o Godot registra
+	# "Parameter data.tree is null" no log mesmo com o fallback logo abaixo
+	# resolvendo tudo. E nó solto é o caso NORMAL aqui — o `Skills_<jogador>`
+	# entra na cena por `call_deferred`, então o primeiro efeito de cada vida
+	# nasce fora da árvore. Log limpo faz parte do PASS (~/.claude/NIVEL_OPE.md).
+	var arv: SceneTree = node.get_tree() if node.is_inside_tree() else null
+	if arv == null:
+		arv = Engine.get_main_loop() as SceneTree
+	if arv == null:
+		return null                             # sem laço principal: nada a agendar
+	# A hitbox pode colidir ou ser cancelada antes do prazo. A referência fraca
+	# mantém o callback válido mesmo depois que esse nó foi destruído.
+	var pending: WeakRef = weakref(node)
+	var timer := arv.create_timer(t)
+	timer.timeout.connect(func():
+		var alive := pending.get_ref() as Node
+		if is_instance_valid(alive):
+			alive.queue_free())
+	return timer      # quem quiser esticar a vida (tempo local) mexe em `time_left`
 
 # Piscada VERMELHA de dano: aplica um overlay vermelho translúcido em TODAS as meshes
 # do modelo e o desvanece (não altera os materiais base). Vale p/ qualquer ser.
@@ -241,6 +276,80 @@ static func flash_red(root: Node3D) -> void:
 				else:
 					(mi2 as GeometryInstance3D).material_overlay = null)
 
+
+# ---- FLASH DE DANO (jogador e Boss, 2026-09-13) ----
+# Troca de cor + textura ao levar dano: o corpo pisca em vermelho FLASH_DANO_PISCADAS
+# vezes em FLASH_DANO_DUR, com uma trama de impacto (listras correndo + granulado,
+# em coordenada de MUNDO para não depender de UV) e borda acesa por cima do
+# material original. Sobreposição (`material_overlay`): nenhum material do asset
+# é duplicado nem alterado. Um golpe durante a piscada REINICIA o ciclo em vez de
+# o fim do anterior cortar o novo no meio.
+const FLASH_DANO_DUR := 0.5
+const FLASH_DANO_PISCADAS := 3
+const _FLASH_DANO_SHADER := """
+shader_type spatial;
+render_mode unshaded, blend_mix, depth_draw_never, cull_back, shadows_disabled;
+uniform float intensidade = 0.0;
+varying vec3 pos_mundo;
+void vertex() {
+	pos_mundo = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+}
+void fragment() {
+	float listras = step(0.5, fract((pos_mundo.x + pos_mundo.y * 1.7 + pos_mundo.z) * 7.0 - TIME * 9.0));
+	float grao = fract(sin(dot(floor(pos_mundo * 40.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+	float trama = mix(listras, grao, 0.35);
+	float borda = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.0);
+	ALBEDO = mix(vec3(0.85, 0.02, 0.02), vec3(1.0, 0.55, 0.45), trama * 0.6);
+	ALPHA = clamp((0.45 + 0.35 * trama + 0.30 * borda) * intensidade, 0.0, 0.95);
+}
+"""
+static var _flash_dano_shader: Shader
+
+static func flash_dano(root: Node3D) -> void:
+	if root == null or not root.is_inside_tree():
+		return
+	var meshes: Array = []
+	_collect_meshes(root, meshes)
+	if meshes.is_empty():
+		return
+	# ⚠️ `get_meta(nome, null)` NÃO é "padrão nulo": null como padrão equivale a não
+	# passar padrão, e o Godot acusa erro quando a meta ainda não existe.
+	var mat: ShaderMaterial = root.get_meta("_flash_dano_mat") if root.has_meta("_flash_dano_mat") else null
+	if mat == null:
+		if _flash_dano_shader == null:
+			_flash_dano_shader = Shader.new()
+			_flash_dano_shader.code = _FLASH_DANO_SHADER
+		mat = ShaderMaterial.new()
+		mat.shader = _flash_dano_shader
+		root.set_meta("_flash_dano_mat", mat)
+	for mi in meshes:
+		(mi as GeometryInstance3D).material_overlay = mat
+	var anterior = root.get_meta("_flash_dano_tween") if root.has_meta("_flash_dano_tween") else null
+	if anterior is Tween and (anterior as Tween).is_valid():
+		(anterior as Tween).kill()
+	var tw := root.create_tween()
+	root.set_meta("_flash_dano_tween", tw)
+	tw.tween_method(func(t: float):
+		if is_instance_valid(mat):
+			mat.set_shader_parameter("intensidade", flash_dano_intensidade(t))
+	, 0.0, 1.0, FLASH_DANO_DUR)
+	tw.tween_callback(func():
+		if not is_instance_valid(root):
+			return
+		var sfx := root.get_node_or_null("/root/ScreenFX")
+		var destacado: bool = sfx != null and sfx.has_method("is_aim_target_highlighted") and sfx.is_aim_target_highlighted(root)
+		for mi2 in meshes:
+			if is_instance_valid(mi2):
+				if destacado and sfx.has_method("get_target_material"):
+					(mi2 as GeometryInstance3D).material_overlay = sfx.get_target_material()
+				else:
+					(mi2 as GeometryInstance3D).material_overlay = null)
+
+## Intensidade no instante normalizado t ∈ [0, 1]: FLASH_DANO_PISCADAS picos que
+## enfraquecem e terminam exatamente em zero.
+static func flash_dano_intensidade(t: float) -> float:
+	var tt := clampf(t, 0.0, 1.0)
+	return absf(sin(tt * PI * FLASH_DANO_PISCADAS)) * (1.0 - 0.35 * tt)
 
 # Número de DANO flutuante (Label3D que sobe e some) sobre o alvo atingido.
 static func damage_number(world: Node, pos: Vector3, amount: float, color: Color = Color(1, 1, 1)) -> void:
@@ -400,16 +509,16 @@ static func dash_effect(world: Node, base_pos: Vector3, move_dir: Vector3) -> vo
 	mat_out.albedo_color = brilho(Color(0.85, 0.95, 1.0, 0.85), 3.0)
 	mat_out.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mi_out.material_override = mat_out
-	mi_out.scale = Vector3(0.35, 0.25, 0.35)
 	world.add_child(mi_out)
-	mi_out.global_position = base_pos + Vector3(0, 1.0, 0) + recuo
+	mi_out.global_position = base_pos + Vector3(0, -0.45, 0) + recuo
 
 	# Rotaciona para que o anel fique de pé e cresça perpendicular ao fwd
 	mi_out.transform.basis = ring_basis.rotated(right, PI/2.0)
+	mi_out.scale = Vector3(0.16, 0.10, 0.16)
 	
 	var tw1 := mi_out.create_tween()
 	tw1.set_parallel(true)
-	tw1.tween_property(mi_out, "scale", Vector3(3.4, 0.1, 3.4), 0.35).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw1.tween_property(mi_out, "scale", Vector3(0.95, 0.07, 0.95), 0.35).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	tw1.tween_property(mat_out, "albedo_color:a", 0.0, 0.35)
 	tw1.tween_callback(mi_out.queue_free).set_delay(0.36)
 
@@ -425,14 +534,14 @@ static func dash_effect(world: Node, base_pos: Vector3, move_dir: Vector3) -> vo
 	mat_in.albedo_color = brilho(Color(1.0, 1.0, 1.0, 0.95), 4.0)
 	mat_in.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mi_in.material_override = mat_in
-	mi_in.scale = Vector3(0.2, 0.35, 0.2)
 	world.add_child(mi_in)
-	mi_in.global_position = base_pos + Vector3(0, 1.0, 0) + recuo - fwd * 0.1
+	mi_in.global_position = base_pos + Vector3(0, -0.45, 0) + recuo - fwd * 0.1
 	mi_in.transform.basis = ring_basis.rotated(right, PI/2.0)
+	mi_in.scale = Vector3(0.10, 0.12, 0.10)
 	
 	var tw2 := mi_in.create_tween()
 	tw2.set_parallel(true)
-	tw2.tween_property(mi_in, "scale", Vector3(2.1, 0.08, 2.1), 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw2.tween_property(mi_in, "scale", Vector3(0.55, 0.06, 0.55), 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw2.tween_property(mat_in, "albedo_color:a", 0.0, 0.25)
 	tw2.tween_callback(mi_in.queue_free).set_delay(0.26)
 
@@ -454,7 +563,7 @@ static func dash_effect(world: Node, base_pos: Vector3, move_dir: Vector3) -> vo
 	
 	var burst := particles(45, 0.45, true, pm, voxel_mesh, 0.92)
 	world.add_child(burst)
-	burst.global_position = base_pos + Vector3(0, 0.5, 0) + recuo
+	burst.global_position = base_pos + Vector3(0, -0.45, 0) + recuo
 	autofree(burst, 0.7)
 
 # Efeito de sangramento: gotas quadradas caindo no chão com partículas extras

@@ -1,0 +1,102 @@
+{
+  "bot": "parado",
+  "semente": 1,
+  "rodada": "C",
+  "godot": "4.6.3-stable (official)",
+  "porta": "25000",
+  "hitstop": false,
+  "tempo_simulado_s": 53.783,
+  "distancia_inicial_m": 6.0,
+  "min_s": 40.0,
+  "max_s": 120.0,
+  "duracao_s": 53.783,
+  "quadros": 3227,
+  "parede_s": 53.79,
+  "tempo_real_x": 1.0,
+  "morreu": false,
+  "atingiu_minimo": true,
+  "ttk_2048_s": 53.783,
+  "ttk_extrapolado_s": null,
+  "dano_total": 2070.8,
+  "dano_40s": 1599.2,
+  "dps": 38.5,
+  "dps_40s": 39.98,
+  "golpes": {
+    "jab": {
+      "lancados": 6,
+      "chegaram_ao_contato": 6,
+      "acertaram": 6,
+      "dano": 431.1,
+      "taxa_sobre_lancados": 1.0,
+      "taxa_sobre_contato": 1.0
+    },
+    "jab_right": {
+      "lancados": 5,
+      "chegaram_ao_contato": 5,
+      "acertaram": 5,
+      "dano": 359.9,
+      "taxa_sobre_lancados": 1.0,
+      "taxa_sobre_contato": 1.0
+    },
+    "jab_left": {
+      "lancados": 5,
+      "chegaram_ao_contato": 5,
+      "acertaram": 5,
+      "dano": 359.9,
+      "taxa_sobre_lancados": 1.0,
+      "taxa_sobre_contato": 1.0
+    },
+    "jab_finish": {
+      "lancados": 5,
+      "chegaram_ao_contato": 5,
+      "acertaram": 5,
+      "dano": 359.9,
+      "taxa_sobre_lancados": 1.0,
+      "taxa_sobre_contato": 1.0
+    },
+    "detached_fist": {
+      "lancados": 5,
+      "chegaram_ao_contato": 5,
+      "acertaram": 5,
+      "dano": 559.9,
+      "taxa_sobre_lancados": 1.0,
+      "taxa_sobre_contato": 1.0
+    }
+  },
+  "cortes": {
+    "lancados": 0,
+    "com_frente": 0,
+    "acertaram": 0,
+    "taxa_sobre_frentes": null,
+    "detalhes": []
+  },
+  "punho_destacado": {
+    "usos": 5,
+    "acertos": 5
+  },
+  "arremessos_no_jogador": 5,
+  "parado_sem_agir": {
+    "guard_recarga_combo": {
+      "s": 0.017,
+      "s_alvo_ate_2m": 0.0
+    }
+  },
+  "parado_total_s": 0.017,
+  "parado_total_alvo_ate_2m_s": 0.0,
+  "parado_fora_da_recarga_s": 0.0,
+  "parado_fora_da_recarga_alvo_ate_2m_s": 0.0,
+  "parado_fora_da_recarga_2q_ou_mais_s": 0.0,
+  "corte_bloqueado_por_recarga_s": 0.0,
+  "chase_com_alvo_ate_2m_s": 1.333,
+  "tempo_com_alvo_s": 35.317,
+  "dist_media_com_alvo_m": 4.221,
+  "dist_media_m": 7.64,
+  "dano_no_boss": 0.0,
+  "reacoes_boss": {
+
+  },
+  "dano_nao_atribuido": [],
+  "saltos_de_sequencia": 0,
+  "desvios_de_buraco_quadros": 0,
+  "reaproximando_s": 16.383
+}

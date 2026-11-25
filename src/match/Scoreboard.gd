@@ -45,6 +45,18 @@ const FLOOD_START_Y := 0.0     # topo da plataforma
 const FLOOD_MAX_Y := 80.0
 const CREDIT_WINDOW := 10.0    # janela do crédito de kill por queda
 const VOID_Y := -40.0          # abaixo disto = caiu do mapa
+# Modo História: o fundo do mar chega a -64 m (mar aberto) e -80 m (fossa), então a
+# zona de morte da arena (-40) matava o mergulhador instantaneamente (15/10/2026).
+# Fica abaixo do plano do abismo (`RelevoMarinho.BORDA_DO_MUNDO` = -66) com folga.
+const VOID_Y_HISTORIA := -150.0
+
+## Altura da morte por queda NESTE mundo. Única fonte de verdade: Scoreboard, Player,
+## SkillSystem e TrainingDummy chamam isto em vez de repetir o -40.
+static func void_y_de(no: Node) -> float:
+	if no != null and no.is_inside_tree() \
+			and no.get_tree().get_first_node_in_group("modo_historia") != null:
+		return VOID_Y_HISTORIA
+	return VOID_Y
 const RESPAWN := Vector3(0, 6, 0)
 const SYNC_INTERVAL := 0.5     # o servidor reemite o estado 2x por segundo
 
@@ -114,7 +126,7 @@ func _watch_falls() -> void:
 		_ensure_entry(peer)
 		if float(_dead_until.get(peer, 0.0)) > _clock:
 			continue          # já contabilizado; espero o respawn acontecer
-		if (p as Node3D).global_position.y < VOID_Y:
+		if (p as Node3D).global_position.y < void_y_de(p):
 			_register_death(p, peer, true)
 
 # --------------------------------------------------- API chamada de fora

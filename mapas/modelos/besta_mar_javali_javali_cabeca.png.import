@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bj8ur1vcvtfn5"
-path="res://.godot/imported/besta_mar_javali_javali_cabeca.png-c460bf1d9b5c4844ec5adc8dd386bc86.ctex"
+path.bptc="res://.godot/imported/besta_mar_javali_javali_cabeca.png-c460bf1d9b5c4844ec5adc8dd386bc86.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "b2744966b161cd48c8cabd81f09859be"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/besta_mar_javali_javali_cabeca.png"
-dest_files=["res://.godot/imported/besta_mar_javali_javali_cabeca.png-c460bf1d9b5c4844ec5adc8dd386bc86.ctex"]
+dest_files=["res://.godot/imported/besta_mar_javali_javali_cabeca.png-c460bf1d9b5c4844ec5adc8dd386bc86.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

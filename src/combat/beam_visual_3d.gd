@@ -30,7 +30,21 @@ static func criar(pai: Node, inicio: Vector3, fim: Vector3, raio: float = 0.1,
 	feixe.set_meta(META_VISUAL, true)
 	pai.add_child(feixe)
 	atualizar(feixe, inicio, fim)
+	if aditivo:
+		_casca_de_brilho(feixe, raio, cor, energia)
 	return feixe
+
+
+## Halo do feixe: filho (herda posição, escala e comprimento do cilindro) mais largo e translúcido, somado — o núcleo fica nítido e a luz vaza em volta.
+## Só em feixe aditivo; o filho usa o MESMO mesh, então `atualizar` (que muda a altura do CylinderMesh do pai) não o desfaz: ele escala em X/Z só.
+static func _casca_de_brilho(feixe: MeshInstance3D, raio: float, cor: Color, energia: float) -> void:
+	var halo := MeshInstance3D.new()
+	halo.name = "Halo"
+	halo.mesh = feixe.mesh
+	halo.material_override = FxUtil.mesh_emissive_material(Color(cor, 0.22), energia * 0.5, true)
+	halo.scale = Vector3(2.6, 1.0, 2.6)
+	halo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	feixe.add_child(halo)
 
 
 ## Move as pontas do feixe sem recriar a malha ou o material.

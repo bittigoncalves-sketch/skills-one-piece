@@ -1,0 +1,835 @@
+[gd_resource type="Resource" script_class="EstiloCorpoACorpo" format=3]
+
+[ext_resource type="Script" path="res://src/combat/direcional/golpe_direcional.gd" id="1_r6fmy"]
+[ext_resource type="Script" path="res://src/combat/direcional/chave_de_pose.gd" id="2_mqitr"]
+[ext_resource type="Script" path="res://src/combat/direcional/estilo_corpo_a_corpo.gd" id="3_d1u1r"]
+
+[sub_resource type="Resource" id="Resource_4t8y2"]
+script = ExtResource("2_mqitr")
+fracao = 0.8
+usa_mao_direita = true
+mao_direita = Vector3(0.24, 1.65, -0.06)
+cotovelo_direito = Vector3(1, -0.3, 0.4)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.06, 1.42, -0.1)
+cotovelo_esquerdo = Vector3(-1, -0.5, 0.3)
+rotacoes = {
+"Head": Vector3(0, 6.5, 0),
+"SpineMid": Vector3(-4, -3, 0),
+"Torso": Vector3(-8, -16, 0),
+"Wrist_R": Vector3(205, 0, 0)
+}
+
+[sub_resource type="Resource" id="Resource_lbp0s"]
+script = ExtResource("2_mqitr")
+fase = 1
+usa_mao_direita = true
+mao_direita = Vector3(0.22, 1.55, -0.18)
+cotovelo_direito = Vector3(1, -0.3, 0.4)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.04, 1.34, -0.22)
+cotovelo_esquerdo = Vector3(-1, -0.5, 0.3)
+rotacoes = {
+"Head": Vector3(0, 3.25, 0),
+"SpineMid": Vector3(-4, -1.5, 0),
+"Torso": Vector3(-4, -10, 0),
+"Wrist_R": Vector3(175, 0, 0)
+}
+
+[sub_resource type="Resource" id="Resource_nnyua"]
+script = ExtResource("2_mqitr")
+fase = 1
+fracao = 0.5
+curva = 1
+usa_mao_direita = true
+mao_direita = Vector3(0.15, 1.15, -0.53)
+cotovelo_direito = Vector3(1, -0.3, 0.4)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(-0.02, 1.02, -0.39)
+cotovelo_esquerdo = Vector3(-1, -0.5, 0.3)
+rotacoes = {
+"Head": Vector3(0, -5.2, 0),
+"SpineMid": Vector3(-4, 2.4, 0),
+"Torso": Vector3(10, 10, 0),
+"Wrist_R": Vector3(90, 0, 0)
+}
+
+[sub_resource type="Resource" id="Resource_0f5q4"]
+script = ExtResource("2_mqitr")
+fase = 1
+fracao = 1.0
+usa_mao_direita = true
+mao_direita = Vector3(0.18, 0.85, -0.55)
+cotovelo_direito = Vector3(1, -0.3, 0.4)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(-0.02, 0.77, -0.39)
+cotovelo_esquerdo = Vector3(-1, -0.5, 0.3)
+rotacoes = {
+"Head": Vector3(0, -11.7, 0),
+"SpineMid": Vector3(-4, 5.4, 0),
+"Torso": Vector3(15, 16, 0),
+"Wrist_R": Vector3(40, 0, 0)
+}
+
+[sub_resource type="Resource" id="Resource_wlc81"]
+script = ExtResource("2_mqitr")
+fase = 2
+fracao = 0.4
+usa_mao_direita = true
+mao_direita = Vector3(0.26, 1.02, -0.26)
+cotovelo_direito = Vector3(1, -0.3, 0.4)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.04, 0.91, -0.19)
+cotovelo_esquerdo = Vector3(-1, -0.5, 0.3)
+rotacoes = {
+"Head": Vector3(0, -5.2, 0),
+"SpineMid": Vector3(-4, 2.4, 0),
+"Torso": Vector3(0, 0, 0),
+"Wrist_R": Vector3(140, 0, 0)
+}
+
+[sub_resource type="Resource" id="Resource_a1mug"]
+script = ExtResource("1_r6fmy")
+id = &"machado_corte_0"
+nome = "Lenhar"
+preparo = 0.42
+ativo = 0.22
+recuperacao = 0.46
+hitstun = 0.25
+pesado = true
+dano_de_postura = 32.0
+aparavel = true
+fator_movimento_preparo = 0.6
+fator_movimento_ativo = 0.35
+fator_movimento_recuperacao = 0.5
+giro_max_preparo = 360.0
+giro_max_ativo = 150.0
+giro_max_recuperacao = 240.0
+efetor = &"MachadoFio"
+raio_de_contato = 0.1
+empurrao = 4.5
+hitstop = 0.045
+chaves = Array[ExtResource("2_mqitr")]([SubResource("Resource_4t8y2"), SubResource("Resource_lbp0s"), SubResource("Resource_nnyua"), SubResource("Resource_0f5q4"), SubResource("Resource_wlc81")])
+
+[sub_resource type="Resource" id="Resource_r6fmy"]
+script = ExtResource("2_mqitr")
+fracao = 0.8
+usa_mao_direita = true
+mao_direita = Vector3(0.28198388, 1.1106, -0.19013548)
+cotovelo_direito = Vector3(0.8, -0.6, 0.3)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.11600574, 1.1106, -0.0989937)
+cotovelo_esquerdo = Vector3(-0.8, -0.6, 0.3)
+rotacoes = {
+"Head": Vector3(0, 18, 0),
+"SpineMid": Vector3(-4, -9, 0),
+"Torso": Vector3(0, -30, 0),
+"Wrist_L": Vector3(5.008956e-06, 2.6400046, 89.99999),
+"Wrist_R": Vector3(0, -177.36, -90)
+}
+
+[sub_resource type="Resource" id="Resource_mqitr"]
+script = ExtResource("2_mqitr")
+fase = 1
+usa_mao_direita = true
+mao_direita = Vector3(0.27140707, 1.1106, -0.21906531)
+cotovelo_direito = Vector3(0.8, -0.6, 0.3)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.122461796, 1.1106, -0.10214278)
+cotovelo_esquerdo = Vector3(-0.8, -0.6, 0.3)
+rotacoes = {
+"Head": Vector3(0, 14.4, 0),
+"SpineMid": Vector3(-4, -7.2, 0),
+"Torso": Vector3(0, -24, 0),
+"Wrist_L": Vector3(5.008956e-06, 12.000005, 89.99999),
+"Wrist_R": Vector3(0, -168, -90)
+}
+
+[sub_resource type="Resource" id="Resource_d1u1r"]
+script = ExtResource("2_mqitr")
+fase = 1
+fracao = 0.25
+curva = 1
+usa_mao_direita = true
+mao_direita = Vector3(0.1834509, 1.1106, -0.30931523)
+cotovelo_direito = Vector3(0.8, -0.6, 0.3)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.14128041, 1.1106, -0.12471509)
+cotovelo_esquerdo = Vector3(-0.8, -0.6, 0.3)
+rotacoes = {
+"Head": Vector3(0, 7.2, 0),
+"SpineMid": Vector3(-4, -3.6, 0),
+"Torso": Vector3(0, -12, 0),
+"Wrist_L": Vector3(5.008956e-06, 51.000004, 89.99999),
+"Wrist_R": Vector3(0, -129, -90)
+}
+
+[sub_resource type="Resource" id="Resource_y1agw"]
+script = ExtResource("2_mqitr")
+fase = 1
+fracao = 0.5
+curva = 3
+usa_mao_direita = true
+mao_direita = Vector3(0.058299992, 1.1106, -0.32410002)
+cotovelo_direito = Vector3(0.8, -0.6, 0.3)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.14170001, 1.1106, -0.1541)
+cotovelo_esquerdo = Vector3(-0.8, -0.6, 0.3)
+rotacoes = {
+"Head": Vector3(0, -1.2, 0),
+"SpineMid": Vector3(-4, 0.6, 0),
+"Torso": Vector3(0, 2, 0),
+"Wrist_L": Vector3(5.008956e-06, 90, 89.99999),
+"Wrist_R": Vector3(0, -90, -90)
+}
+
+[sub_resource type="Resource" id="Resource_0gw3u"]
+script = ExtResource("2_mqitr")
+fase = 1
+fracao = 0.75
+curva = 3
+usa_mao_direita = true
+mao_direita = Vector3(-0.048264876, 1.1106, -0.25682992)
+cotovelo_direito = Vector3(0.8, -0.6, 0.3)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.12353357, 1.1106, -0.1772004)
+cotovelo_esquerdo = Vector3(-0.8, -0.6, 0.3)
+rotacoes = {
+"Head": Vector3(0, -10.8, 0),
+"SpineMid": Vector3(-4, 5.4, 0),
+"Torso": Vector3(0, 18, 0),
+"Wrist_L": Vector3(5.008956e-06, 129, 89.99999),
+"Wrist_R": Vector3(0, -51.000004, -90)
+}
+
+[sub_resource type="Resource" id="Resource_c0c3b"]
+script = ExtResource("2_mqitr")
+fase = 1
+fracao = 1.0
+curva = 2
+usa_mao_direita = true
+mao_direita = Vector3(-0.08874689, 1.1106, -0.13748777)
+cotovelo_direito = Vector3(0.8, -0.6, 0.3)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.09487804, 1.1106, -0.18372032)
+cotovelo_esquerdo = Vector3(-0.8, -0.6, 0.3)
+rotacoes = {
+"Head": Vector3(0, -18, 0),
+"SpineMid": Vector3(-4, 9, 0),
+"Torso": Vector3(0, 30, 0),
+"Wrist_L": Vector3(5.008956e-06, 168, 89.99999),
+"Wrist_R": Vector3(0, -12.000005, -90)
+}
+
+[sub_resource type="Resource" id="Resource_s63em"]
+script = ExtResource("2_mqitr")
+fase = 2
+fracao = 0.4
+usa_mao_direita = true
+mao_direita = Vector3(-0.08246954, 1.1106, -0.18833812)
+cotovelo_direito = Vector3(0.8, -0.6, 0.3)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.10682398, 1.1106, -0.18348718)
+cotovelo_esquerdo = Vector3(-0.8, -0.6, 0.3)
+rotacoes = {
+"Head": Vector3(0, -7.2, 0),
+"SpineMid": Vector3(-4, 3.6, 0),
+"Torso": Vector3(0, 12, 0),
+"Wrist_L": Vector3(5.008956e-06, 152.40001, 89.99999),
+"Wrist_R": Vector3(0, -27.600008, -90)
+}
+
+[sub_resource type="Resource" id="Resource_2obxv"]
+script = ExtResource("1_r6fmy")
+id = &"machado_corte_lateral_esquerda"
+nome = "Corte lateral"
+direcao = 1
+preparo = 0.34
+ativo = 0.26
+recuperacao = 0.44
+hitstun = 0.25
+pesado = true
+dano_de_postura = 32.0
+aparavel = true
+fator_movimento_preparo = 0.7
+fator_movimento_ativo = 0.45
+fator_movimento_recuperacao = 0.55
+giro_max_preparo = 360.0
+giro_max_ativo = 120.0
+giro_max_recuperacao = 240.0
+efetor = &"MachadoFio"
+raio_de_contato = 0.1
+empurrao = 4.5
+hitstop = 0.045
+chaves = Array[ExtResource("2_mqitr")]([SubResource("Resource_r6fmy"), SubResource("Resource_mqitr"), SubResource("Resource_d1u1r"), SubResource("Resource_y1agw"), SubResource("Resource_0gw3u"), SubResource("Resource_c0c3b"), SubResource("Resource_s63em")])
+
+[sub_resource type="Resource" id="Resource_k278m"]
+script = ExtResource("2_mqitr")
+fracao = 0.8
+usa_mao_direita = true
+mao_direita = Vector3(-0.081983894, 1.0894, -0.19013548)
+cotovelo_direito = Vector3(0.8, -0.6, 0.3)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.08399425, 1.0894, -0.0989937)
+cotovelo_esquerdo = Vector3(-0.8, -0.6, 0.3)
+rotacoes = {
+"Head": Vector3(0, -18, 0),
+"SpineMid": Vector3(-4, 9, 0),
+"Torso": Vector3(0, 30, 0),
+"Wrist_L": Vector3(-5.008956e-06, -2.6400046, -90),
+"Wrist_R": Vector3(0, 177.36, 90)
+}
+
+[sub_resource type="Resource" id="Resource_x0y1h"]
+script = ExtResource("2_mqitr")
+fase = 1
+usa_mao_direita = true
+mao_direita = Vector3(-0.07140706, 1.0894, -0.21906531)
+cotovelo_direito = Vector3(0.8, -0.6, 0.3)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.07753821, 1.0894, -0.10214278)
+cotovelo_esquerdo = Vector3(-0.8, -0.6, 0.3)
+rotacoes = {
+"Head": Vector3(0, -14.4, 0),
+"SpineMid": Vector3(-4, 7.2, 0),
+"Torso": Vector3(0, 24, 0),
+"Wrist_L": Vector3(-5.008956e-06, -12.000005, -90),
+"Wrist_R": Vector3(0, 168, 90)
+}
+
+[sub_resource type="Resource" id="Resource_hj4qv"]
+script = ExtResource("2_mqitr")
+fase = 1
+fracao = 0.25
+curva = 1
+usa_mao_direita = true
+mao_direita = Vector3(0.016549103, 1.0894, -0.30931523)
+cotovelo_direito = Vector3(0.8, -0.6, 0.3)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.05871959, 1.0894, -0.12471509)
+cotovelo_esquerdo = Vector3(-0.8, -0.6, 0.3)
+rotacoes = {
+"Head": Vector3(0, -7.2, 0),
+"SpineMid": Vector3(-4, 3.6, 0),
+"Torso": Vector3(0, 12, 0),
+"Wrist_L": Vector3(-5.008956e-06, -51.000004, -90),
+"Wrist_R": Vector3(0, 129, 90)
+}
+
+[sub_resource type="Resource" id="Resource_7hd18"]
+script = ExtResource("2_mqitr")
+fase = 1
+fracao = 0.5
+curva = 3
+usa_mao_direita = true
+mao_direita = Vector3(0.14170001, 1.0894, -0.32410002)
+cotovelo_direito = Vector3(0.8, -0.6, 0.3)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.058299992, 1.0894, -0.1541)
+cotovelo_esquerdo = Vector3(-0.8, -0.6, 0.3)
+rotacoes = {
+"Head": Vector3(0, 1.2, 0),
+"SpineMid": Vector3(-4, -0.6, 0),
+"Torso": Vector3(0, -2, 0),
+"Wrist_L": Vector3(-5.008956e-06, -90, -90),
+"Wrist_R": Vector3(0, 90, 90)
+}
+
+[sub_resource type="Resource" id="Resource_hvs5n"]
+script = ExtResource("2_mqitr")
+fase = 1
+fracao = 0.75
+curva = 3
+usa_mao_direita = true
+mao_direita = Vector3(0.24826488, 1.0894, -0.25682992)
+cotovelo_direito = Vector3(0.8, -0.6, 0.3)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.076466426, 1.0894, -0.1772004)
+cotovelo_esquerdo = Vector3(-0.8, -0.6, 0.3)
+rotacoes = {
+"Head": Vector3(0, 10.8, 0),
+"SpineMid": Vector3(-4, -5.4, 0),
+"Torso": Vector3(0, -18, 0),
+"Wrist_L": Vector3(-5.008956e-06, -129, -90),
+"Wrist_R": Vector3(0, 51.000004, 90)
+}
+
+[sub_resource type="Resource" id="Resource_3pu5k"]
+script = ExtResource("2_mqitr")
+fase = 1
+fracao = 1.0
+curva = 2
+usa_mao_direita = true
+mao_direita = Vector3(0.2887469, 1.0894, -0.13748777)
+cotovelo_direito = Vector3(0.8, -0.6, 0.3)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.10512196, 1.0894, -0.18372032)
+cotovelo_esquerdo = Vector3(-0.8, -0.6, 0.3)
+rotacoes = {
+"Head": Vector3(0, 18, 0),
+"SpineMid": Vector3(-4, -9, 0),
+"Torso": Vector3(0, -30, 0),
+"Wrist_L": Vector3(-5.008956e-06, -168, -90),
+"Wrist_R": Vector3(0, 12.000005, 90)
+}
+
+[sub_resource type="Resource" id="Resource_gdsk4"]
+script = ExtResource("2_mqitr")
+fase = 2
+fracao = 0.4
+usa_mao_direita = true
+mao_direita = Vector3(0.2824695, 1.0894, -0.18833812)
+cotovelo_direito = Vector3(0.8, -0.6, 0.3)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.09317601, 1.0894, -0.18348718)
+cotovelo_esquerdo = Vector3(-0.8, -0.6, 0.3)
+rotacoes = {
+"Head": Vector3(0, 7.2, 0),
+"SpineMid": Vector3(-4, -3.6, 0),
+"Torso": Vector3(0, -12, 0),
+"Wrist_L": Vector3(-5.008956e-06, -152.40001, -90),
+"Wrist_R": Vector3(0, 27.600008, 90)
+}
+
+[sub_resource type="Resource" id="Resource_buujn"]
+script = ExtResource("1_r6fmy")
+id = &"machado_corte_lateral_direita"
+nome = "Corte lateral"
+direcao = 2
+preparo = 0.34
+ativo = 0.26
+recuperacao = 0.44
+hitstun = 0.25
+pesado = true
+dano_de_postura = 32.0
+aparavel = true
+fator_movimento_preparo = 0.7
+fator_movimento_ativo = 0.45
+fator_movimento_recuperacao = 0.55
+giro_max_preparo = 360.0
+giro_max_ativo = 120.0
+giro_max_recuperacao = 240.0
+efetor = &"MachadoFio"
+raio_de_contato = 0.1
+empurrao = 4.5
+hitstop = 0.045
+chaves = Array[ExtResource("2_mqitr")]([SubResource("Resource_k278m"), SubResource("Resource_x0y1h"), SubResource("Resource_hj4qv"), SubResource("Resource_7hd18"), SubResource("Resource_hvs5n"), SubResource("Resource_3pu5k"), SubResource("Resource_gdsk4")])
+
+[sub_resource type="Resource" id="Resource_hlutc"]
+script = ExtResource("2_mqitr")
+fracao = 0.8
+usa_mao_direita = true
+mao_direita = Vector3(0.24, 1.65, -0.06)
+cotovelo_direito = Vector3(1, -0.3, 0.4)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.06, 1.42, -0.1)
+cotovelo_esquerdo = Vector3(-1, -0.5, 0.3)
+rotacoes = {
+"Head": Vector3(0, 6.5, 0),
+"SpineMid": Vector3(-4, -3, 0),
+"Torso": Vector3(-8, -16, 0),
+"Wrist_R": Vector3(205, 0, 0)
+}
+
+[sub_resource type="Resource" id="Resource_sgqem"]
+script = ExtResource("2_mqitr")
+fase = 1
+usa_mao_direita = true
+mao_direita = Vector3(0.22, 1.55, -0.18)
+cotovelo_direito = Vector3(1, -0.3, 0.4)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.04, 1.34, -0.22)
+cotovelo_esquerdo = Vector3(-1, -0.5, 0.3)
+rotacoes = {
+"Head": Vector3(0, 3.25, 0),
+"SpineMid": Vector3(-4, -1.5, 0),
+"Torso": Vector3(-4, -10, 0),
+"Wrist_R": Vector3(175, 0, 0)
+}
+
+[sub_resource type="Resource" id="Resource_0d0hj"]
+script = ExtResource("2_mqitr")
+fase = 1
+fracao = 0.5
+curva = 1
+usa_mao_direita = true
+mao_direita = Vector3(0.15, 1.15, -0.53)
+cotovelo_direito = Vector3(1, -0.3, 0.4)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(-0.02, 1.02, -0.39)
+cotovelo_esquerdo = Vector3(-1, -0.5, 0.3)
+rotacoes = {
+"Head": Vector3(0, -5.2, 0),
+"SpineMid": Vector3(-4, 2.4, 0),
+"Torso": Vector3(10, 10, 0),
+"Wrist_R": Vector3(90, 0, 0)
+}
+
+[sub_resource type="Resource" id="Resource_jyw7y"]
+script = ExtResource("2_mqitr")
+fase = 1
+fracao = 1.0
+usa_mao_direita = true
+mao_direita = Vector3(0.18, 0.85, -0.55)
+cotovelo_direito = Vector3(1, -0.3, 0.4)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(-0.02, 0.77, -0.39)
+cotovelo_esquerdo = Vector3(-1, -0.5, 0.3)
+rotacoes = {
+"Head": Vector3(0, -11.7, 0),
+"SpineMid": Vector3(-4, 5.4, 0),
+"Torso": Vector3(15, 16, 0),
+"Wrist_R": Vector3(40, 0, 0)
+}
+
+[sub_resource type="Resource" id="Resource_i1d1n"]
+script = ExtResource("2_mqitr")
+fase = 2
+fracao = 0.4
+usa_mao_direita = true
+mao_direita = Vector3(0.26, 1.02, -0.26)
+cotovelo_direito = Vector3(1, -0.3, 0.4)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.04, 0.91, -0.19)
+cotovelo_esquerdo = Vector3(-1, -0.5, 0.3)
+rotacoes = {
+"Head": Vector3(0, -5.2, 0),
+"SpineMid": Vector3(-4, 2.4, 0),
+"Torso": Vector3(0, 0, 0),
+"Wrist_R": Vector3(140, 0, 0)
+}
+
+[sub_resource type="Resource" id="Resource_2kpeq"]
+script = ExtResource("1_r6fmy")
+id = &"machado_corte_3"
+nome = "Lenhar"
+direcao = 3
+preparo = 0.42
+ativo = 0.22
+recuperacao = 0.46
+hitstun = 0.25
+pesado = true
+dano_de_postura = 32.0
+aparavel = true
+fator_movimento_preparo = 0.6
+fator_movimento_ativo = 0.35
+fator_movimento_recuperacao = 0.5
+giro_max_preparo = 360.0
+giro_max_ativo = 150.0
+giro_max_recuperacao = 240.0
+efetor = &"MachadoFio"
+raio_de_contato = 0.1
+empurrao = 4.5
+hitstop = 0.045
+chaves = Array[ExtResource("2_mqitr")]([SubResource("Resource_hlutc"), SubResource("Resource_sgqem"), SubResource("Resource_0d0hj"), SubResource("Resource_jyw7y"), SubResource("Resource_i1d1n")])
+
+[sub_resource type="Resource" id="Resource_1rpmh"]
+script = ExtResource("2_mqitr")
+usa_mao_direita = true
+mao_direita = Vector3(0.24751765, 1.0109211, -0.29073873)
+cotovelo_direito = Vector3(0.4, -1, 0.1)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(0.23157373, 0.9077751, -0.13274428)
+cotovelo_esquerdo = Vector3(-0.4, -1, 0.1)
+usa_pes = true
+pe_direito = Vector3(0.17, 0.18, 0.13)
+joelho_direito = Vector3(0.55, 0, -0.85)
+pe_esquerdo = Vector3(-0.13, 0.17, -0.13)
+joelho_esquerdo = Vector3(0.15, 0, -1)
+quadril = Vector3(0, -0.095, 0)
+rotacoes = {
+"Ball_R": Vector3(8, 0, 0),
+"Chest": Vector3(-3, -3, 0),
+"Foot_L": Vector3(0, -12, 0),
+"Foot_R": Vector3(-8, -35, 0),
+"Head": Vector3(-5, 18, 0),
+"SpineLower": Vector3(0, -3, 0),
+"SpineMid": Vector3(-4, -4, 0),
+"Torso": Vector3(0, -10, 0),
+"Wrist_L": Vector3(-21.088182, 29.809732, 147.08514),
+"Wrist_R": Vector3(21.088177, -150.19029, -147.08516)
+}
+
+[sub_resource type="Resource" id="Resource_o5i3p"]
+script = ExtResource("2_mqitr")
+usa_mao_direita = true
+mao_direita = Vector3(0.23, 1.12, -0.28)
+cotovelo_direito = Vector3(0.9, -0.4, 0.1)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(-0.25, 1, -0.12)
+cotovelo_esquerdo = Vector3(-0.5, -1, 0.1)
+usa_pes = true
+pe_direito = Vector3(0.17, 0.18, 0.13)
+joelho_direito = Vector3(0.55, 0, -0.85)
+pe_esquerdo = Vector3(-0.13, 0.17, -0.13)
+joelho_esquerdo = Vector3(0.15, 0, -1)
+quadril = Vector3(0, -0.12, 0)
+rotacoes = {
+"Chest": Vector3(-3, 3, 0),
+"Head": Vector3(-6, 6, 10),
+"SpineLower": Vector3(0, 2, 0),
+"SpineMid": Vector3(-4, 5, 0),
+"Torso": Vector3(0, 6, 0),
+"Wrist_R": Vector3(150, 0, -20)
+}
+
+[sub_resource type="Resource" id="Resource_8ybcr"]
+script = ExtResource("2_mqitr")
+usa_mao_direita = true
+mao_direita = Vector3(0.23, 1.12, -0.28)
+cotovelo_direito = Vector3(0.2, -1, 0.2)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(-0.25, 1, -0.12)
+cotovelo_esquerdo = Vector3(-0.2, -1, 0.2)
+rotacoes = {
+"Chest": Vector3(-6, -2, 0),
+"Head": Vector3(-10, 8, 0),
+"SpineLower": Vector3(0, -6, 0),
+"SpineMid": Vector3(-8, -4, 0),
+"Wrist_R": Vector3(150, 0, -20)
+}
+
+[sub_resource type="Resource" id="Resource_voqsd"]
+script = ExtResource("2_mqitr")
+usa_mao_direita = true
+mao_direita = Vector3(0.23, 1.12, -0.28)
+cotovelo_direito = Vector3(0.2, -1, 0.2)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(-0.25, 1, -0.12)
+cotovelo_esquerdo = Vector3(-0.2, -1, 0.2)
+rotacoes = {
+"Chest": Vector3(2, -2, 0),
+"Head": Vector3(-2, 8, 0),
+"SpineLower": Vector3(2, -6, 0),
+"SpineMid": Vector3(4, -4, 0),
+"Wrist_R": Vector3(150, 0, -20)
+}
+
+[sub_resource type="Resource" id="Resource_17vli"]
+script = ExtResource("2_mqitr")
+usa_mao_direita = true
+mao_direita = Vector3(0.23, 1.12, -0.28)
+cotovelo_direito = Vector3(1, -0.5, 0.3)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(-0.25, 1, -0.12)
+cotovelo_esquerdo = Vector3(-1, -0.5, 0.3)
+usa_pes = true
+pe_direito = Vector3(0.17, 0.26, 0.2)
+joelho_direito = Vector3(0.55, 0, -0.85)
+pe_esquerdo = Vector3(-0.13, 0.17, -0.13)
+joelho_esquerdo = Vector3(0.15, 0, -1)
+quadril = Vector3(0, -0.12, 0.05)
+rotacoes = {
+"Chest": Vector3(6, 0, 0),
+"Head": Vector3(8, 10, 0),
+"SpineLower": Vector3(3, 0, 0),
+"SpineMid": Vector3(7, -3, 0),
+"Wrist_R": Vector3(150, 0, -20)
+}
+
+[sub_resource type="Resource" id="Resource_vpsnf"]
+script = ExtResource("2_mqitr")
+usa_mao_direita = true
+mao_direita = Vector3(0.23, 1.12, -0.28)
+cotovelo_direito = Vector3(1, -0.3, 0.3)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(-0.25, 1, -0.12)
+cotovelo_esquerdo = Vector3(-1, -0.3, 0.3)
+usa_pes = true
+pe_direito = Vector3(0.17, 0.18, 0.13)
+joelho_direito = Vector3(0.55, 0, -0.85)
+pe_esquerdo = Vector3(-0.13, 0.25, -0.05)
+joelho_esquerdo = Vector3(0.15, 0, -1)
+quadril = Vector3(0, -0.08, 0.05)
+rotacoes = {
+"Chest": Vector3(6, 4, 0),
+"Head": Vector3(8, 6, 0),
+"SpineLower": Vector3(4, 0, 0),
+"SpineMid": Vector3(8, 6, 0),
+"Wrist_R": Vector3(150, 0, -20)
+}
+
+[sub_resource type="Resource" id="Resource_hqfei"]
+script = ExtResource("2_mqitr")
+usa_mao_direita = true
+mao_direita = Vector3(0.23, 1.12, -0.28)
+cotovelo_direito = Vector3(0.4, -1, 0.1)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(-0.25, 1, -0.12)
+cotovelo_esquerdo = Vector3(-0.4, -1, 0.1)
+usa_pes = true
+pe_direito = Vector3(0.17, 0.18, 0.13)
+joelho_direito = Vector3(0.55, 0, -0.85)
+pe_esquerdo = Vector3(-0.13, 0.17, -0.13)
+joelho_esquerdo = Vector3(0.15, 0, -1)
+quadril = Vector3(0, -0.105, -0.05)
+rotacoes = {
+"Chest": Vector3(-10, -2, 0),
+"Head": Vector3(-18, 10, 0),
+"SpineLower": Vector3(-4, 0, 0),
+"SpineMid": Vector3(-14, -4, 0),
+"Wrist_R": Vector3(150, 0, -20)
+}
+
+[sub_resource type="Resource" id="Resource_hppwl"]
+script = ExtResource("2_mqitr")
+usa_mao_direita = true
+mao_direita = Vector3(0.23, 1.12, -0.28)
+cotovelo_direito = Vector3(0.4, -1, 0.1)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(-0.25, 1, -0.12)
+cotovelo_esquerdo = Vector3(-0.4, -1, 0.1)
+usa_pes = true
+pe_direito = Vector3(0.17, 0.18, 0.13)
+joelho_direito = Vector3(0.55, 0, -0.85)
+pe_esquerdo = Vector3(-0.13, 0.17, -0.13)
+joelho_esquerdo = Vector3(0.15, 0, -1)
+quadril = Vector3(-0.03, -0.1, 0)
+rotacoes = {
+"Chest": Vector3(2, 4, 6),
+"Head": Vector3(4, 10, 10),
+"SpineLower": Vector3(2, 0, 4),
+"SpineMid": Vector3(2, 6, 8),
+"Wrist_R": Vector3(150, 0, -20)
+}
+
+[sub_resource type="Resource" id="Resource_fbv5l"]
+script = ExtResource("2_mqitr")
+usa_mao_direita = true
+mao_direita = Vector3(0.23, 1.12, -0.28)
+cotovelo_direito = Vector3(0.4, -1, 0.1)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(-0.25, 1, -0.12)
+cotovelo_esquerdo = Vector3(-0.4, -1, 0.1)
+usa_pes = true
+pe_direito = Vector3(0.17, 0.18, 0.13)
+joelho_direito = Vector3(0.55, 0, -0.85)
+pe_esquerdo = Vector3(-0.13, 0.17, -0.13)
+joelho_esquerdo = Vector3(0.15, 0, -1)
+quadril = Vector3(0.03, -0.1, 0)
+rotacoes = {
+"Chest": Vector3(2, -4, -6),
+"Head": Vector3(4, -10, -10),
+"SpineLower": Vector3(2, 0, -4),
+"SpineMid": Vector3(2, -6, -8),
+"Wrist_R": Vector3(150, 0, -20)
+}
+
+[sub_resource type="Resource" id="Resource_13t5a"]
+script = ExtResource("2_mqitr")
+usa_mao_direita = true
+mao_direita = Vector3(0.23, 1.12, -0.28)
+cotovelo_direito = Vector3(0.4, -1, 0.1)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(-0.25, 1, -0.12)
+cotovelo_esquerdo = Vector3(-0.4, -1, 0.1)
+usa_pes = true
+pe_direito = Vector3(0.17, 0.18, 0.13)
+joelho_direito = Vector3(0.55, 0, -0.85)
+pe_esquerdo = Vector3(-0.13, 0.17, -0.13)
+joelho_esquerdo = Vector3(0.15, 0, -1)
+quadril = Vector3(0, -0.105, 0.03)
+rotacoes = {
+"Chest": Vector3(8, -4, 0),
+"Head": Vector3(14, 18, 0),
+"SpineMid": Vector3(10, -8, 0),
+"Wrist_R": Vector3(150, 0, -20)
+}
+
+[sub_resource type="Resource" id="Resource_tnof2"]
+script = ExtResource("2_mqitr")
+usa_mao_direita = true
+mao_direita = Vector3(0.23, 1.12, -0.28)
+cotovelo_direito = Vector3(0.3, -1, 0.3)
+usa_mao_esquerda = true
+mao_esquerda = Vector3(-0.25, 1, -0.12)
+cotovelo_esquerdo = Vector3(-0.3, -1, 0.3)
+usa_pes = true
+pe_direito = Vector3(0.17, 0.18, 0.13)
+joelho_direito = Vector3(0.55, 0, -0.85)
+pe_esquerdo = Vector3(-0.13, 0.25, -0.05)
+joelho_esquerdo = Vector3(0.15, 0, -1)
+quadril = Vector3(0, -0.13, 0.06)
+rotacoes = {
+"Chest": Vector3(6, -2, 0),
+"Head": Vector3(10, 18, 0),
+"SpineLower": Vector3(4, -4, 0),
+"SpineMid": Vector3(8, -4, 0),
+"Wrist_R": Vector3(150, 0, -20)
+}
+
+[resource]
+script = ExtResource("3_d1u1r")
+id = &"machado"
+nome = "Machado de lenhador"
+golpes = Array[ExtResource("1_r6fmy")]([SubResource("Resource_a1mug"), SubResource("Resource_2obxv"), SubResource("Resource_buujn"), SubResource("Resource_2kpeq")])
+buffer = 0.3
+guarda = SubResource("Resource_1rpmh")
+maos = {
+"Index1_L": Vector3(-85, 0, 0),
+"Index1_R": Vector3(-85, 0, 0),
+"Index2_L": Vector3(-95, 0, 0),
+"Index2_R": Vector3(-95, 0, 0),
+"Index3_L": Vector3(-70, 0, 0),
+"Index3_R": Vector3(-70, 0, 0),
+"Little1_L": Vector3(-85, 0, 0),
+"Little1_R": Vector3(-85, 0, 0),
+"Little2_L": Vector3(-95, 0, 0),
+"Little2_R": Vector3(-95, 0, 0),
+"Little3_L": Vector3(-70, 0, 0),
+"Little3_R": Vector3(-70, 0, 0),
+"Middle1_L": Vector3(-85, 0, 0),
+"Middle1_R": Vector3(-85, 0, 0),
+"Middle2_L": Vector3(-95, 0, 0),
+"Middle2_R": Vector3(-95, 0, 0),
+"Middle3_L": Vector3(-70, 0, 0),
+"Middle3_R": Vector3(-70, 0, 0),
+"Ring1_L": Vector3(-85, 0, 0),
+"Ring1_R": Vector3(-85, 0, 0),
+"Ring2_L": Vector3(-95, 0, 0),
+"Ring2_R": Vector3(-95, 0, 0),
+"Ring3_L": Vector3(-70, 0, 0),
+"Ring3_R": Vector3(-70, 0, 0),
+"Thumb1_L": Vector3(-20, 0, 0),
+"Thumb1_R": Vector3(-20, 0, 0),
+"Thumb2_L": Vector3(-40, 0, 0),
+"Thumb2_R": Vector3(-40, 0, 0),
+"Thumb3_L": Vector3(-40, 0, 0),
+"Thumb3_R": Vector3(-40, 0, 0)
+}
+orientar_punhos = true
+manter_postura = true
+altura_de_apoio = 0.22
+soltar_pe_a = 0.18
+duracao_do_passo = 0.14
+altura_do_passo = 0.05
+transicao_entrada = 0.18
+transicao_saida = 0.25
+guarda_apos_acao = 2.5
+cone_da_guarda = 120.0
+postura_maxima = 100.0
+postura_regeneracao = 25.0
+postura_atraso = 1.0
+postura_apos_quebra = 50.0
+duracao_da_quebra = 1.5
+baixar_guarda = 0.2
+guarda_liberada_na_recuperacao = 0.6
+fator_movimento_guarda = 0.55
+fator_movimento_quebra = 0.3
+pose_guarda_erguida = SubResource("Resource_8ybcr")
+pose_impacto_na_guarda = SubResource("Resource_voqsd")
+pose_quebra_de_guarda = SubResource("Resource_17vli")
+janela_de_aparo = 0.2
+duracao_rebatido = 0.15
+janela_de_riposte = 0.6
+fator_de_riposte = 0.6
+janela_de_finta = 0.6
+finta_minimo_restante = 0.12
+custo_da_finta = 10.0
+pose_aparo = SubResource("Resource_o5i3p")
+pose_rebatido = SubResource("Resource_vpsnf")
+reacao_frente = SubResource("Resource_13t5a")
+reacao_esquerda = SubResource("Resource_fbv5l")
+reacao_direita = SubResource("Resource_hppwl")
+reacao_costas = SubResource("Resource_hqfei")
+reacao_pesada = SubResource("Resource_tnof2")

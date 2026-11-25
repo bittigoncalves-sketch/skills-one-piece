@@ -92,7 +92,7 @@ static func alvo_de(dono: Node) -> Node3D:
 		return null
 	var melhor: Node3D = null
 	var menor := ALCANCE_BUSCA
-	for grupo in ["player", "enemy"]:
+	for grupo in ["player", "enemy", AlvosDeGolpe.GRUPO]:
 		for n in arvore.get_nodes_in_group(grupo):
 			if n == dono or not (n is Node3D) or not is_instance_valid(n):
 				continue

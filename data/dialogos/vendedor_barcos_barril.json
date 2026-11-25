@@ -1,0 +1,27 @@
+{
+  "id": "vendedor_barcos_barril",
+  "estados": {
+    "encontro": [
+      {
+        "falante": "Vendedor de navios",
+        "texto": "Então você venceu o desafio dos copos do Buggy?"
+      },
+      {
+        "falante": "Vendedor de navios",
+        "texto": "Tenho um jeito de levar você para o mar: entre neste barril."
+      }
+    ],
+    "entrega_barril": [
+      {
+        "falante": "Vendedor de navios",
+        "texto": "Feche a tampa e fique firme. Boa viagem!"
+      }
+    ],
+    "sem_vitoria": [
+      {
+        "falante": "Vendedor de navios",
+        "texto": "Ouvi falar do desafio dos copos. Você encontrou a pedra?"
+      }
+    ]
+  }
+}

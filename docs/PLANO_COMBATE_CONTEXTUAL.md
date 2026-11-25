@@ -62,16 +62,23 @@ mais genérica.
 | 1 | Espaço + M1 | Aú / estrelinha | já existente |
 | 2 | No ar, alvo abaixo e altura de queda válida | queda esmagadora | já existente |
 | 3 | Mink correndo, mordida disponível e alvo válido | investida → agarrão → chute | já existente |
-| 4 | No chão, sem sprint, A/D + M1 | esquiva lateral + gancho | Fase 1 |
-| 5 | No chão, sem sprint, S + M1 | chute recuando | Fase 1 |
-| 6 | No chão, sem sprint, W + M1 | cotovelada de avanço | Fase 1 |
-| 7 | Demais casos | combo M1 base | já existente |
+| 4 | No ar, com parede ao lado e chute ainda não gasto | chute de parede | Fase 5 |
+| 5 | No ar | chute aéreo | Fase 4 |
+| 6 | No chão, sem sprint, W + M1 no **4º golpe** do combo | Lançamento | Fase 3 |
+| 7 | Demais casos (inclusive andar com W/A/S/D + M1 no chão) | combo M1 base | já existente |
 
-Se W/A/S/D forem pressionadas juntas, A/D vencem W/S: uma esquiva lateral tem
-silhueta e intenção menos ambíguas. A rota Mink continua acima de toda variação
-direcional, para não perder sua identidade ao segurar W + Shift.
+> ⚠️ **2026-09-13 — variações de movimento simples APAGADAS (pedido do dono).**
+> W + M1 (cotovelada), S + M1 (chute recuando) e A/D + M1 (esquiva com gancho)
+> saíram do jogo: fichas, poses, checagem de recuo e testes. O motivo relatado:
+> andar + clique trocava o golpe, e no Boss esse golpe chegava sem a marca de
+> corpo a corpo e o empurrava. Andar + clique no chão agora é sempre o combo M1.
+> Ficaram as variações que pedem uma situação: Aú, queda esmagadora, investida
+> Mink, chute aéreo, chute de parede e o Lançamento (W só no 4º golpe). A Fase 1
+> abaixo é **registro histórico**. Contra o Boss, contextuais, Aú e investida
+> Mink contam como M1 (paralisam/arremessam, sem empurrão) — ver
+> `docs/BOSS_BUGGY_PROGRESS.md`.
 
-## Fase 1 — variações de solo
+## Fase 1 — variações de solo (APAGADA em 2026-09-13; registro histórico)
 
 Todos os números abaixo são valores finais de dano contra a vida atual de
 2048. O dano fica abaixo do finalizador M1 (112), pois estas ações compram

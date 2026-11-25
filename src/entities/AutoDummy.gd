@@ -120,7 +120,7 @@ func _attack() -> void:
 	_melee_janela = Melee.JANELA
 	
 	var clipe = Melee.clipe(_melee_passo, w)
-	if _rig and _rig.animador() and _rig.procedural():
+	if _rig and (_rig.animador() or _rig.visual_definition) and _rig.procedural():
 		_rig.procedural().play_baked(clipe, float(g["vel"]) / s, float(g.get("inicio", 0.0)))
 		
 	var fwd = -global_transform.basis.z
@@ -142,6 +142,8 @@ func take_damage(amount: float, from_pos: Vector3 = Vector3.ZERO, knockback: Vec
 		_ap.play("damage")
 
 func _recolor_model(c: Color) -> void:
+	if is_instance_valid(_model) and _model.get_meta("preserve_original_materials", false):
+		return
 	if not _model:
 		return
 	for child in _meshes(_model):

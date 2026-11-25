@@ -1,0 +1,311 @@
+extends Node
+## IA e movimento de habilidades. Efeitos e pose são apresentação, sem dano próprio.
+signal iniciou(habilidade: String)
+signal terminou(habilidade: String)
+var corpo: AnimalDaIlha
+var config: Resource
+var fase := ""
+var habilidade := ""
+var tempo_fase := 0.0
+var tornado: Node3D
+var _pose: Node
+var _vento: Node3D
+var _alvo: Node3D
+var _direcao := Vector3.FORWARD
+var _acertados := {}
+var _cast := 0
+var _recarga_i := 0.0
+var _recarga_v := 0.0
+var _intervalo := 0.6
+var _proxima := "investida"
+var _avancou := 0.0
+var _altura_antes := 0.0
+
+func _ready() -> void:
+	_pose = load("res://src/historia/bosses/harpia/pose_harpia.gd").new()
+	_pose.montar(corpo._modelo)
+	_vento = load("res://src/historia/bosses/harpia/vento_harpia.gd").new()
+	add_child(_vento)
+	_vento.limpar()
+
+func ativo() -> bool:
+	return not fase.is_empty() or is_instance_valid(tornado)
+
+func atualizar(delta: float) -> bool:
+	if not corpo.vivo():
+		cancelar()
+		return false
+	if multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
+		return false
+	_recarga_i = maxf(0, _recarga_i - delta)
+	_recarga_v = maxf(0, _recarga_v - delta)
+	_intervalo = maxf(0, _intervalo - delta)
+	if fase.is_empty():
+		var quem := corpo.oponente if _vivo(corpo.oponente) else corpo.alvo
+		if not _pode_enfrentar(quem):
+			return false
+		corpo.oponente = quem
+		corpo.estado = AnimalDaIlha.Estado.PERSEGUINDO
+		_pairar(quem, delta)
+		if _intervalo <= 0:
+			if _proxima == "vendaval" and _recarga_v <= 0:
+				iniciar_vendaval(quem)
+			elif _recarga_i <= 0:
+				iniciar_investida(quem)
+			elif _recarga_v <= 0:
+				iniciar_vendaval(quem)
+		return true
+	tempo_fase += delta
+	corpo._golpe_alvo = null
+	corpo.animador.animar(delta, Vector3.ZERO, 1, 1, "planando", 0)
+	match fase:
+		"preparar_investida":
+			if not _vivo(_alvo):
+				cancelar()
+				return true
+			if tempo_fase < maxf(config.preparo_investida - .2, 0.0):
+				_mirar(_alvo)
+			_encarar(_direcao, delta)
+			_apresentar("preparar_investida", tempo_fase / config.preparo_investida)
+			if tempo_fase >= config.preparo_investida:
+				_trocar_fase("investida")
+				_vento.configurar("investida", config.raio_impacto, 4.0)
+		"investida":
+			_encarar(_direcao, delta, true)
+			var inicio := _centro()
+			var restante: float = config.velocidade_investida * config.duracao_investida - _avancou
+			var passo: Vector3 = _direcao * minf(config.velocidade_investida * delta, maxf(restante, 0))
+			corpo.velocity = _direcao * config.velocidade_investida
+			var colisao := corpo.move_and_collide(passo)
+			_avancou += passo.length() if colisao == null else colisao.get_travel().length()
+			_varrer(inicio, _centro())
+			if colisao != null:
+				_atingir(HurtboxDeCombate.dono_de(colisao.get_collider()))
+			_apresentar("investida", tempo_fase / config.duracao_investida)
+			if colisao != null or tempo_fase >= config.duracao_investida or restante <= .001:
+				_recuperar()
+		"preparar_vendaval":
+			if not _vivo(_alvo):
+				cancelar()
+				return true
+			_mirar(_alvo)
+			_encarar(_direcao, delta)
+			_apresentar("preparar_vendaval", tempo_fase / config.preparo_vendaval)
+			if tempo_fase >= config.preparo_vendaval:
+				_lancar_tornado()
+		"vendaval":
+			_apresentar("lancar_vendaval", clampf(tempo_fase / .7, 0, 1))
+			# Cinco segundos pertencem ao tornado; morrer/sair da cena é cancelamento.
+			if not is_instance_valid(tornado) or tornado.is_queued_for_deletion():
+				tornado = null
+				_recuperar()
+		"recuperar":
+			_apresentar("recuperar", tempo_fase / config.recuperacao)
+			corpo._visual.rotation.x = lerp_angle(corpo._visual.rotation.x, 0, 1.0 - exp(-8 * delta))
+			if tempo_fase >= config.recuperacao:
+				_finalizar()
+	_sincronizar_hurtbox()
+	return true
+
+func iniciar_investida(quem: Node3D) -> bool:
+	if not _pode_iniciar(quem) or _recarga_i > 0:
+		return false
+	if _centro().distance_to(_centro_alvo(quem)) > config.velocidade_investida * config.duracao_investida:
+		return false
+	_preparar(quem, "investida")
+	_recarga_i = config.recarga_investida
+	_proxima = "vendaval"
+	_vento.configurar("preparacao", 2.0, 3.0)
+	_trocar_fase("preparar_investida")
+	return true
+
+func iniciar_vendaval(quem: Node3D) -> bool:
+	if not _pode_iniciar(quem) or _recarga_v > 0:
+		return false
+	_preparar(quem, "vendaval")
+	_recarga_v = config.recarga_vendaval
+	_proxima = "investida"
+	_vento.configurar("preparacao", 3.0, 4.0)
+	_trocar_fase("preparar_vendaval")
+	return true
+
+func _preparar(quem: Node3D, acao: String) -> void:
+	_alvo = quem
+	habilidade = acao
+	_acertados.clear()
+	_avancou = 0.0
+	_cast = CombatResolver.novo_cast()
+	corpo.velocity = Vector3.ZERO
+	corpo._golpe_alvo = null
+	corpo.animador.exclusivo = true
+	corpo.animador.atualizar_base_exclusiva()
+	_mirar(quem)
+	iniciou.emit(acao)
+
+func _pode_iniciar(quem: Node3D) -> bool:
+	return not ativo() and corpo.vivo() and _vivo(quem) and _linha_livre(quem) \
+		and not (corpo.has_meta("captura_vento") and is_instance_valid(corpo.get_meta("captura_vento"))) \
+		and not (corpo.has_meta("arremesso_vento") and is_instance_valid(corpo.get_meta("arremesso_vento")))
+
+func _pode_enfrentar(quem: Node3D) -> bool:
+	if not _vivo(quem) or not corpo._dentro_da_area(quem.global_position, 0):
+		return false
+	var d := Vector2(quem.global_position.x - corpo.global_position.x, quem.global_position.z - corpo.global_position.z).length()
+	return d < float(corpo.ficha.get("alerta", 22)) * (1.6 if corpo.estado == AnimalDaIlha.Estado.PERSEGUINDO else 1.0)
+
+func _pairar(quem: Node3D, delta: float) -> void:
+	var longe := corpo.global_position - quem.global_position
+	longe.y = 0
+	if longe.length_squared() < .01:
+		longe = Vector3.BACK
+	var destino := quem.global_position + longe.normalized() * 12.0 + Vector3.UP * 4.0
+	var falta := destino - corpo.global_position
+	corpo.velocity = falta.limit_length(6.0)
+	corpo.move_and_collide(corpo.velocity * delta)
+	_mirar(quem)
+	_encarar(_direcao, delta)
+	corpo._visual.rotation.x = lerp_angle(corpo._visual.rotation.x, 0, 1.0 - exp(-5 * delta))
+	corpo.animador.animar(delta, Vector3.ZERO, 1, 1, "planando", 0)
+	_sincronizar_hurtbox()
+
+func _mirar(quem: Node3D) -> void:
+	_direcao = (_centro_alvo(quem) - _centro()).normalized()
+	if _direcao.is_zero_approx():
+		_direcao = Vector3.FORWARD
+
+func _encarar(dir: Vector3, delta: float, mergulho := false) -> void:
+	var yaw := atan2(dir.x, dir.z)
+	corpo._yaw = lerp_angle(corpo._yaw, yaw, 1.0 - exp(-10 * delta))
+	corpo._visual.rotation.y = corpo._yaw
+	if mergulho:
+		corpo._visual.rotation.x = -atan2(dir.y, Vector2(dir.x, dir.z).length())
+
+func _centro() -> Vector3:
+	return corpo.global_position + Vector3.UP * (corpo.get_node("Colisao") as Node3D).position.y
+
+func _centro_alvo(quem: Node3D) -> Vector3:
+	return quem.global_position if quem.is_in_group("player") else quem.global_position + Vector3.UP * .8
+
+func _linha_livre(quem: Node3D) -> bool:
+	var q := PhysicsRayQueryParameters3D.create(_centro(), _centro_alvo(quem), 1)
+	var excluidos: Array[RID] = [corpo.get_rid()]
+	if quem is CollisionObject3D:
+		excluidos.append(quem.get_rid())
+	q.exclude = excluidos
+	return corpo.get_world_3d().direct_space_state.intersect_ray(q).is_empty()
+
+func _varrer(de: Vector3, ate: Vector3) -> void:
+	var forma := CapsuleShape3D.new()
+	forma.radius = config.raio_impacto
+	forma.height = de.distance_to(ate) + 2 * forma.radius
+	var q := PhysicsShapeQueryParameters3D.new()
+	q.shape = forma
+	q.collision_mask = 1 | HurtboxDeCombate.CAMADA
+	q.exclude = [corpo.get_rid(), corpo._hurtbox.get_rid()]
+	q.transform.origin = (de + ate) * .5
+	if de.distance_squared_to(ate) > .000001:
+		q.transform.basis = Basis(Quaternion(Vector3.UP, (ate - de).normalized()))
+	for resultado in corpo.get_world_3d().direct_space_state.intersect_shape(q, 64):
+		_atingir(HurtboxDeCombate.dono_de(resultado["collider"]))
+
+func _atingir(alvo: Node) -> void:
+	if alvo == corpo or not alvo is Node3D or not _vivo(alvo) or not alvo.has_method("take_damage"):
+		return
+	if _acertados.has(alvo.get_instance_id()) or not _linha_livre(alvo):
+		return
+	var vida: Variant = alvo.get("health")
+	if vida == null:
+		return
+	_acertados[alvo.get_instance_id()] = true
+	CombatResolver.aplicar(alvo, config.dano_investida, _cast, config.dano_investida, corpo.global_position, Vector3.ZERO, .35)
+	# Retorno do funil é o dano calculado, não confirmação; Player pode recusá-lo.
+	if is_instance_valid(alvo) and float(alvo.get("health")) > 0 and float(alvo.get("health")) < float(vida):
+		var para := Vector3(_direcao.x, 0, _direcao.z).normalized()
+		if para.is_zero_approx():
+			para = Vector3.FORWARD
+		load("res://src/historia/bosses/harpia/captura_vento.gd").aplicar_arremesso(alvo, para * config.arremesso_horizontal + Vector3.UP * config.arremesso_vertical)
+
+func _lancar_tornado() -> void:
+	var frente := Vector3(_direcao.x, 0, _direcao.z).normalized()
+	if frente.is_zero_approx():
+		frente = Vector3.FORWARD
+	var origem := corpo.global_position + frente * 2.0
+	var q := PhysicsRayQueryParameters3D.create(origem + Vector3.UP * 3, origem + Vector3.DOWN * 40, 1)
+	var excluidos: Array[RID] = [corpo.get_rid()]
+	for n in get_tree().get_nodes_in_group("player"):
+		if n is CollisionObject3D:
+			excluidos.append(n.get_rid())
+	q.exclude = excluidos
+	var chao := corpo.get_world_3d().direct_space_state.intersect_ray(q)
+	if not chao.is_empty():
+		origem.y = chao["position"].y + .05
+	tornado = load("res://src/historia/bosses/harpia/tornado_vendaval.gd").new()
+	tornado.position = origem
+	get_tree().current_scene.add_child(tornado) if get_tree().current_scene != null else get_tree().root.add_child(tornado)
+	tornado.configurar(corpo, frente)
+	_vento.limpar()
+	_trocar_fase("vendaval")
+
+func _apresentar(acao: String, progresso: float) -> void:
+	_pose.atualizar(acao, clampf(progresso, 0, 1), get_physics_process_delta_time())
+	_vento.global_position = _centro()
+	_vento.global_basis = Basis.looking_at(_direcao, Vector3.UP if absf(_direcao.y) < .99 else Vector3.RIGHT)
+	if fase.begins_with("preparar") or fase == "investida":
+		_vento.atualizar(tempo_fase, .8 if fase.begins_with("preparar") else 1.0)
+
+func _sincronizar_hurtbox() -> void:
+	if corpo._hurtbox != null:
+		PhysicsServer3D.body_set_state(corpo._hurtbox.get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM, corpo._hurtbox.global_transform)
+
+func _trocar_fase(nova: String) -> void:
+	fase = nova
+	tempo_fase = 0.0
+
+func _recuperar() -> void:
+	corpo.velocity = Vector3.ZERO
+	_vento.limpar()
+	CombatResolver.encerrar(_cast)
+	_cast = 0
+	_trocar_fase("recuperar")
+
+func _finalizar() -> void:
+	var anterior := habilidade
+	fase = ""
+	habilidade = ""
+	corpo.velocity = Vector3.ZERO
+	corpo._visual.rotation.x = 0
+	corpo.animador.exclusivo = false
+	_pose.restaurar()
+	_vento.limpar()
+	_intervalo = config.intervalo
+	terminou.emit(anterior)
+
+func cancelar() -> void:
+	if is_instance_valid(tornado):
+		tornado.cancelar()
+		tornado = null
+	CombatResolver.encerrar(_cast)
+	_cast = 0
+	_acertados.clear()
+	_alvo = null
+	if is_instance_valid(_pose) and is_instance_valid(corpo):
+		_finalizar()
+	else:
+		fase = ""
+		habilidade = ""
+
+func reiniciar() -> void:
+	cancelar()
+	_recarga_i = 0
+	_recarga_v = 0
+	_intervalo = .6
+	_proxima = "investida"
+
+func _exit_tree() -> void:
+	cancelar()
+
+static func _vivo(quem: Node) -> bool:
+	if not is_instance_valid(quem) or not quem is Node3D or not quem.is_inside_tree() or quem.is_queued_for_deletion():
+		return false
+	var h: Variant = quem.get("health")
+	return h == null or float(h) > 0

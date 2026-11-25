@@ -28,6 +28,30 @@ em `Player.ELENCO_LIBERADO` (hoje não está — o elenco está travado em `base
 | `src/player/cast_controller.gd` | o portão da carga do V (`CARREGAVEIS`) e o `MeraChargeNode` |
 | `src/combat/Balance.gd` | **todo o dano** dos quatro slots (a tabela única, desde 2026-08-21) |
 
+### E, desde 2026-09-08, o DESENHO mora separado
+
+| arquivo | papel |
+|---|---|
+| `src/effects/MeraVfx.gd` | a fachada visual. **Não causa dano** — mesmo contrato do `OpeVfx` |
+| `src/effects/MeraGeometry.gd` | primitivas de fogo em malha: língua, coroa, anel, brasa, casca, queimadura |
+| `src/effects/MeraFireBurst.gd` | fogo transitório: clarão de cano, impacto, explosão, marca no chão |
+| `src/effects/MeraEmberBody.gd` | corpo quente persistente: punho do Hiken, Sol Quadrado, rastro de projétil |
+| `src/fx/shaders/mera_flame.gdshader` | o corpo da chama |
+| `src/fx/shaders/mera_ember.gdshader` | a crosta de magma com fenda acesa |
+| `src/fx/shaders/mera_scorch.gdshader` | o chão queimado esfriando |
+| `tools/dev_tests/test_mera_visual.gd` | 20 asserções medidas sobre a geometria |
+
+**Por que separar.** Enquanto o visual mora no mesmo arquivo que cria
+`DamageZone`, mexer na aparência é mexer em balanceamento. A Ope já fazia essa
+divisão (`OpeVfx` × `OpeController`); a Mera passou a fazer também. O plano
+completo está em [`../PLANO_MERA_MERA.md`](../PLANO_MERA_MERA.md).
+
+**Por que MALHA e não partícula.** É a tese do `OpeGeometry`: *"No particles or
+dynamic lights."* Partícula é uma nuvem de quadrados virados para a câmera —
+não tem silhueta, e de longe vira mancha. A régua da casa é ler o golpe pelo
+contorno. As partículas não sumiram todas: as 700 da explosão ficaram, porque
+num estouro de raio 6 elas dão a poeira que a malha não dá.
+
 O despacho é por **variante** em `FireFX.cast`: `0 = Z`, `1 = X`, `2 = C`,
 qualquer outra `= V`. `src/effects/BurnStatus.gd` **não é da Mera** — hoje só o
 Red Hawk da Gomu Gomu o instancia.

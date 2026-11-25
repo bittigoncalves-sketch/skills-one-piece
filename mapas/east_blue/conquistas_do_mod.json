@@ -1,0 +1,1604 @@
+{
+ "formato": 1,
+ "conquistas": {
+  "minepiece:basic_operations_back_step": {
+   "criterios": [
+    "basic_operations_back_step_0"
+   ],
+   "pai": "minepiece:basic_operations_select_skill",
+   "gatilho": "impossible",
+   "titulo": "Backstep",
+   "descricao": "Jump backward and perform a backstep",
+   "icone": "minecraft:feather",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:basic_operations_change_technique": {
+   "criterios": [
+    "basic_operations_change_technique_0"
+   ],
+   "pai": "minepiece:basic_operations_select_skill",
+   "gatilho": "impossible",
+   "titulo": "Change Technique",
+   "descricao": "Use special key to change techniques",
+   "icone": "minecraft:wooden_sword",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:basic_operations_create_crew": {
+   "criterios": [
+    "basic_operations_create_crew_0"
+   ],
+   "pai": "minepiece:mine_piece_basic_operations",
+   "gatilho": "impossible",
+   "titulo": "Form a Pirate Crew",
+   "descricao": "Use special key to form a pirate crew",
+   "icone": "minepiece:pirate_flag",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:basic_operations_guard": {
+   "criterios": [
+    "basic_operations_guard_0"
+   ],
+   "pai": "minepiece:mine_piece_basic_operations",
+   "gatilho": "impossible",
+   "titulo": "Guard",
+   "descricao": "Sneak and guard against enemy attacks",
+   "icone": "minecraft:shield",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:basic_operations_perfect_guard": {
+   "criterios": [
+    "basic_operations_perfect_guard_0"
+   ],
+   "pai": "minepiece:basic_operations_guard",
+   "gatilho": "impossible",
+   "titulo": "Perfect Guard",
+   "descricao": "Guard against enemy attacks at the perfect timing",
+   "icone": "minecraft:shield",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:basic_operations_select_skill": {
+   "criterios": [
+    "basic_operations_select_skill_0"
+   ],
+   "pai": "minepiece:mine_piece_basic_operations",
+   "gatilho": "impossible",
+   "titulo": "Select Skill",
+   "descricao": "Select a skill using the \"Skill Changer\"",
+   "icone": "minepiece:skill_selector",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:basic_operations_the_first": {
+   "criterios": [
+    "basic_operations_the_first_0"
+   ],
+   "pai": "minepiece:basic_operations_create_crew",
+   "gatilho": "impossible",
+   "titulo": "The First",
+   "descricao": "Recruit comrades using the pirate flag",
+   "icone": "minepiece:pirate_flag",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:basic_operations_use_technique": {
+   "criterios": [
+    "basic_operations_use_technique_0"
+   ],
+   "pai": "minepiece:basic_operations_change_technique",
+   "gatilho": "impossible",
+   "titulo": "Use Technique",
+   "descricao": "Use special key to use the technique",
+   "icone": "minecraft:wooden_sword",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_advancements": {
+   "criterios": [
+    "battle_advancements_0"
+   ],
+   "pai": "",
+   "gatilho": "tick",
+   "titulo": "Raid Advancements",
+   "descricao": "Let's battle with many characters",
+   "icone": "minepiece:skill_selector",
+   "moldura": "task",
+   "aviso": false,
+   "xp": 0
+  },
+  "minepiece:battle_east_blue": {
+   "criterios": [
+    "battle_east_blue_0"
+   ],
+   "pai": "minepiece:battle_advancements",
+   "gatilho": "tick",
+   "titulo": "East Blue",
+   "descricao": "East Blue",
+   "icone": "minecraft:compass",
+   "moldura": "task",
+   "aviso": false,
+   "xp": 0
+  },
+  "minepiece:battle_grand_line": {
+   "criterios": [
+    "battle_grand_line_0"
+   ],
+   "pai": "minepiece:battle_advancements",
+   "gatilho": "tick",
+   "titulo": "Grand Line",
+   "descricao": "Grand Line",
+   "icone": "minecraft:compass",
+   "moldura": "task",
+   "aviso": false,
+   "xp": 0
+  },
+  "minepiece:battle_new_world": {
+   "criterios": [
+    "battle_new_world_0"
+   ],
+   "pai": "minepiece:battle_advancements",
+   "gatilho": "tick",
+   "titulo": "Grand Line -New World-",
+   "descricao": "Grand Line -New World-",
+   "icone": "minecraft:compass",
+   "moldura": "task",
+   "aviso": false,
+   "xp": 0
+  },
+  "minepiece:battle_north_blue": {
+   "criterios": [
+    "battle_north_blue_0"
+   ],
+   "pai": "minepiece:battle_advancements",
+   "gatilho": "tick",
+   "titulo": "North Blue",
+   "descricao": "North Blue",
+   "icone": "minecraft:compass",
+   "moldura": "task",
+   "aviso": false,
+   "xp": 0
+  },
+  "minepiece:battle_raid_east_blue_1": {
+   "criterios": [
+    "battle_raid_east_blue_1_0"
+   ],
+   "pai": "minepiece:battle_east_blue",
+   "gatilho": "impossible",
+   "titulo": "Raid 1 - Higuma Bandits",
+   "descricao": "Defeat the Higuma Bandits",
+   "icone": "minecraft:filled_map",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_east_blue_2": {
+   "criterios": [
+    "battle_raid_east_blue_2_0"
+   ],
+   "pai": "minepiece:battle_raid_east_blue_1",
+   "gatilho": "impossible",
+   "titulo": "Raid 2 - Alvida Pirates",
+   "descricao": "Defeat the Alvida Pirates",
+   "icone": "minecraft:filled_map",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_east_blue_20": {
+   "criterios": [
+    "battle_raid_east_blue_20_0"
+   ],
+   "pai": "minepiece:battle_raid_east_blue_8",
+   "gatilho": "impossible",
+   "titulo": "Raid EX - Red Hair Pirates",
+   "descricao": "Defeat the Red Hair Pirates",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_east_blue_3": {
+   "criterios": [
+    "battle_raid_east_blue_3_0"
+   ],
+   "pai": "minepiece:battle_raid_east_blue_2",
+   "gatilho": "impossible",
+   "titulo": "Raid 3 - Marines 153rd Branch",
+   "descricao": "Defeat the Marines, 153rd Branch",
+   "icone": "minecraft:filled_map",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_east_blue_4": {
+   "criterios": [
+    "battle_raid_east_blue_4_0"
+   ],
+   "pai": "minepiece:battle_raid_east_blue_3",
+   "gatilho": "impossible",
+   "titulo": "Raid 4 - Buggy Pirates",
+   "descricao": "Defeat the Buggy Pirates",
+   "icone": "minecraft:filled_map",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_east_blue_5": {
+   "criterios": [
+    "battle_raid_east_blue_5_0"
+   ],
+   "pai": "minepiece:battle_raid_east_blue_4",
+   "gatilho": "impossible",
+   "titulo": "Raid 5 - Black Cat Pirates",
+   "descricao": "Defeat the Black Cat Pirates",
+   "icone": "minecraft:filled_map",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_east_blue_6": {
+   "criterios": [
+    "battle_raid_east_blue_6_0"
+   ],
+   "pai": "minepiece:battle_raid_east_blue_5",
+   "gatilho": "impossible",
+   "titulo": "Raid 6 - Krieg Pirates",
+   "descricao": "Defeat the Krieg Pirates",
+   "icone": "minecraft:filled_map",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_east_blue_7": {
+   "criterios": [
+    "battle_raid_east_blue_7_0"
+   ],
+   "pai": "minepiece:battle_raid_east_blue_6",
+   "gatilho": "impossible",
+   "titulo": "Raid 7 - Arlong Pirates",
+   "descricao": "Defeat the Arlong Pirates",
+   "icone": "minecraft:filled_map",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_east_blue_8": {
+   "criterios": [
+    "battle_raid_east_blue_8_0"
+   ],
+   "pai": "minepiece:battle_raid_east_blue_7",
+   "gatilho": "impossible",
+   "titulo": "Raid 8 - Loguetown",
+   "descricao": "Defeat the Loguetown Raid",
+   "icone": "minecraft:filled_map",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_grand_line_1": {
+   "criterios": [
+    "battle_raid_grand_line_1_0"
+   ],
+   "pai": "minepiece:battle_grand_line",
+   "gatilho": "impossible",
+   "titulo": "Raid 1 - (WIP) Baroque Works",
+   "descricao": "Defeat the Baroque Works",
+   "icone": "minecraft:filled_map",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_grand_line_2": {
+   "criterios": [
+    "battle_raid_grand_line_2_0"
+   ],
+   "pai": "minepiece:battle_raid_grand_line_1",
+   "gatilho": "impossible",
+   "titulo": "Raid 2 - Cipher Pol",
+   "descricao": "Defeat the Cipher Pol",
+   "icone": "minecraft:filled_map",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_grand_line_20": {
+   "criterios": [
+    "battle_raid_grand_line_20_0"
+   ],
+   "pai": "minepiece:battle_raid_grand_line_6",
+   "gatilho": "impossible",
+   "titulo": "Raid EX - Summit War",
+   "descricao": "Defeat the Summit War Raid",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_grand_line_3": {
+   "criterios": [
+    "battle_raid_grand_line_3_0"
+   ],
+   "pai": "minepiece:battle_raid_grand_line_2",
+   "gatilho": "impossible",
+   "titulo": "Raid 3 - Thriller Bark Pirates",
+   "descricao": "Defeat the Thriller Bark Pirates",
+   "icone": "minecraft:filled_map",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_grand_line_4": {
+   "criterios": [
+    "battle_raid_grand_line_4_0"
+   ],
+   "pai": "minepiece:battle_raid_grand_line_3",
+   "gatilho": "impossible",
+   "titulo": "Raid 4 - Worst Generation",
+   "descricao": "Defeat the Worst Generation Raid",
+   "icone": "minecraft:filled_map",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_grand_line_5": {
+   "criterios": [
+    "battle_raid_grand_line_5_0"
+   ],
+   "pai": "minepiece:battle_raid_grand_line_4",
+   "gatilho": "impossible",
+   "titulo": "Raid 5 - Marine's New Weaponry",
+   "descricao": "Defeat the Marine's New Weaponry Raid",
+   "icone": "minecraft:filled_map",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_grand_line_6": {
+   "criterios": [
+    "battle_raid_grand_line_6_0"
+   ],
+   "pai": "minepiece:battle_raid_grand_line_5",
+   "gatilho": "impossible",
+   "titulo": "Raid 6 - (WIP) Impel Down",
+   "descricao": "Defeat the Impel Down Raid",
+   "icone": "minecraft:filled_map",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_new_world_1": {
+   "criterios": [
+    "battle_raid_new_world_1_0"
+   ],
+   "pai": "minepiece:battle_new_world",
+   "gatilho": "impossible",
+   "titulo": "Raid 1 - New Fish-Man Pirates",
+   "descricao": "Defeat the New Fish-Man Pirates",
+   "icone": "minecraft:filled_map",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_new_world_2": {
+   "criterios": [
+    "battle_raid_new_world_2_0"
+   ],
+   "pai": "minepiece:battle_raid_new_world_1",
+   "gatilho": "impossible",
+   "titulo": "Raid 2 - (WIP) Punk Hazard",
+   "descricao": "Defeat the Punk Hazard Raid",
+   "icone": "minecraft:filled_map",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_new_world_20": {
+   "criterios": [
+    "battle_raid_new_world_20_0"
+   ],
+   "pai": "minepiece:battle_raid_new_world_6",
+   "gatilho": "impossible",
+   "titulo": "Raid EX - The Legend",
+   "descricao": "Defeat the Legend Raid",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_new_world_3": {
+   "criterios": [
+    "battle_raid_new_world_3_0"
+   ],
+   "pai": "minepiece:battle_raid_new_world_2",
+   "gatilho": "impossible",
+   "titulo": "Raid 3 - (WIP) Donquixote Family",
+   "descricao": "Defeat the Donquixote Family",
+   "icone": "minecraft:filled_map",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_new_world_4": {
+   "criterios": [
+    "battle_raid_new_world_4_0"
+   ],
+   "pai": "minepiece:battle_raid_new_world_3",
+   "gatilho": "impossible",
+   "titulo": "Raid 4- Three Sweet Commanders",
+   "descricao": "Defeat the Three Sweet Commanders Raid",
+   "icone": "minecraft:filled_map",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_new_world_5": {
+   "criterios": [
+    "battle_raid_new_world_5_0"
+   ],
+   "pai": "minepiece:battle_raid_new_world_4",
+   "gatilho": "impossible",
+   "titulo": "Raid 5 - Beasts Pirates",
+   "descricao": "Defeat the Beasts Pirates",
+   "icone": "minecraft:filled_map",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_new_world_6": {
+   "criterios": [
+    "battle_raid_new_world_6_0"
+   ],
+   "pai": "minepiece:battle_raid_new_world_5",
+   "gatilho": "impossible",
+   "titulo": "Raid 6 - (WIP) Egghead",
+   "descricao": "Defeat the Egghead Raid",
+   "icone": "minecraft:filled_map",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_raid_south_blue_20": {
+   "criterios": [
+    "battle_raid_south_blue_20_0"
+   ],
+   "pai": "minepiece:battle_south_blue",
+   "gatilho": "impossible",
+   "titulo": "Raid EX - Elegia",
+   "descricao": "Defeat the Elegia Raid",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:battle_red_line": {
+   "criterios": [
+    "battle_red_line_0"
+   ],
+   "pai": "minepiece:battle_advancements",
+   "gatilho": "tick",
+   "titulo": "Red Line",
+   "descricao": "Red Line",
+   "icone": "minecraft:compass",
+   "moldura": "task",
+   "aviso": false,
+   "xp": 0
+  },
+  "minepiece:battle_skypiea": {
+   "criterios": [
+    "battle_skypiea_0"
+   ],
+   "pai": "minepiece:battle_advancements",
+   "gatilho": "tick",
+   "titulo": "Skypiea",
+   "descricao": "Skypiea",
+   "icone": "minecraft:compass",
+   "moldura": "task",
+   "aviso": false,
+   "xp": 0
+  },
+  "minepiece:battle_south_blue": {
+   "criterios": [
+    "battle_south_blue_0"
+   ],
+   "pai": "minepiece:battle_advancements",
+   "gatilho": "tick",
+   "titulo": "South Blue",
+   "descricao": "South Blue",
+   "icone": "minecraft:compass",
+   "moldura": "task",
+   "aviso": false,
+   "xp": 0
+  },
+  "minepiece:battle_west_blue": {
+   "criterios": [
+    "battle_west_blue_0"
+   ],
+   "pai": "minepiece:battle_advancements",
+   "gatilho": "tick",
+   "titulo": "West Blue",
+   "descricao": "West Blue",
+   "icone": "minecraft:compass",
+   "moldura": "task",
+   "aviso": false,
+   "xp": 0
+  },
+  "minepiece:grade_100_m": {
+   "criterios": [
+    "grade_100_m_0"
+   ],
+   "pai": "minepiece:grade_30_m",
+   "gatilho": "impossible",
+   "titulo": "B100,000,000",
+   "descricao": "You can use skills with a cost of 300 or less",
+   "icone": "minecraft:iron_nugget",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 1
+  },
+  "minepiece:grade_1500_m": {
+   "criterios": [
+    "grade_1500_m_0"
+   ],
+   "pai": "minepiece:grade_500_m",
+   "gatilho": "impossible",
+   "titulo": "B1,500,000,000",
+   "descricao": "You can use skills with a cost of 1000 or less",
+   "icone": "minecraft:diamond",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 1
+  },
+  "minepiece:grade_3000_m": {
+   "criterios": [
+    "grade_3000_m_0"
+   ],
+   "pai": "minepiece:grade_1500_m",
+   "gatilho": "impossible",
+   "titulo": "B3,000,000,000",
+   "descricao": "You can use skills of any cost",
+   "icone": "minecraft:netherite_ingot",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 1
+  },
+  "minepiece:grade_300_m": {
+   "criterios": [
+    "grade_300_m_0"
+   ],
+   "pai": "minepiece:grade_100_m",
+   "gatilho": "impossible",
+   "titulo": "B300,000,000",
+   "descricao": "You can use skills with a cost of 400 or less",
+   "icone": "minecraft:iron_ingot",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 1
+  },
+  "minepiece:grade_30_m": {
+   "criterios": [
+    "grade_30_m_0"
+   ],
+   "pai": "minepiece:start_mine_piece",
+   "gatilho": "impossible",
+   "titulo": "B30,000,000",
+   "descricao": "You can use skills with a cost of 250 or less",
+   "icone": "minecraft:coal",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 1
+  },
+  "minepiece:grade_400_m": {
+   "criterios": [
+    "grade_400_m_0"
+   ],
+   "pai": "minepiece:grade_300_m",
+   "gatilho": "impossible",
+   "titulo": "B400,000,000",
+   "descricao": "You can use skills with a cost of 500 or less",
+   "icone": "minecraft:gold_nugget",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 1
+  },
+  "minepiece:grade_500_m": {
+   "criterios": [
+    "grade_500_m_0"
+   ],
+   "pai": "minepiece:grade_400_m",
+   "gatilho": "impossible",
+   "titulo": "B500,000,000",
+   "descricao": "You can use skills with a cost of 600 or less",
+   "icone": "minecraft:gold_ingot",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 1
+  },
+  "minepiece:mine_piece_basic_operations": {
+   "criterios": [
+    "mine_piece_basic_operations_0"
+   ],
+   "pai": "minepiece:start_mine_piece",
+   "gatilho": "tick",
+   "titulo": "Basic Operations",
+   "descricao": "Basic Operations",
+   "icone": "minepiece:skill_selector",
+   "moldura": "task",
+   "aviso": false,
+   "xp": 0
+  },
+  "minepiece:mine_piece_charactor_skills": {
+   "criterios": [
+    "mine_piece_charactor_skills_0"
+   ],
+   "pai": "minepiece:mine_piece_skills",
+   "gatilho": "tick",
+   "titulo": "Character Skills",
+   "descricao": "Character Skills",
+   "icone": "minepiece:skill_selector",
+   "moldura": "task",
+   "aviso": false,
+   "xp": 0
+  },
+  "minepiece:mine_piece_haki_skills": {
+   "criterios": [
+    "mine_piece_haki_skills_0"
+   ],
+   "pai": "minepiece:mine_piece_skills",
+   "gatilho": "tick",
+   "titulo": "Haki",
+   "descricao": "Haki",
+   "icone": "minepiece:skill_selector",
+   "moldura": "task",
+   "aviso": false,
+   "xp": 0
+  },
+  "minepiece:mine_piece_skills": {
+   "criterios": [
+    "mine_piece_skills_0"
+   ],
+   "pai": "",
+   "gatilho": "tick",
+   "titulo": "Skill Advancements (Mine Piece)",
+   "descricao": "Player Skills",
+   "icone": "minepiece:skill_selector",
+   "moldura": "task",
+   "aviso": false,
+   "xp": 0
+  },
+  "minepiece:skill_andon": {
+   "criterios": [
+    "skill_andon_0"
+   ],
+   "pai": "minepiece:skill_lunarian_advancement",
+   "gatilho": "impossible",
+   "titulo": "Imperial Flame",
+   "descricao": "Become a B100,000,000 Bounty Holder",
+   "icone": "minecraft:fire_charge",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_armament_haki": {
+   "criterios": [
+    "skill_armament_haki_0"
+   ],
+   "pai": "minepiece:mine_piece_haki_skills",
+   "gatilho": "impossible",
+   "titulo": "Armament Haki",
+   "descricao": "Fight with Physical Attacks",
+   "icone": "minecraft:iron_sword",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_armament_haki_max": {
+   "criterios": [
+    "skill_armament_haki_max_0"
+   ],
+   "pai": "minepiece:skill_armament_haki",
+   "gatilho": "impossible",
+   "titulo": "Complete Armament Haki",
+   "descricao": "Master the Physical Combat",
+   "icone": "minecraft:netherite_sword",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_assault_attack": {
+   "criterios": [
+    "skill_assault_attack_0"
+   ],
+   "pai": "minepiece:mine_piece_skills",
+   "gatilho": "impossible",
+   "titulo": "Assault Attack",
+   "descricao": "Become a B30,000,000 Bounty Holder",
+   "icone": "minecraft:diamond_sword",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_celestial_dragons_advavncement": {
+   "criterios": [
+    "skill_celestial_dragons_advavncement_0"
+   ],
+   "pai": "minepiece:mine_piece_charactor_skills",
+   "gatilho": "impossible",
+   "titulo": "Celestial Dragons",
+   "descricao": "Select Celestial Dragons' Skill",
+   "icone": "minepiece:clothes_charlos_chestplate",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_continuous_slash": {
+   "criterios": [
+    "skill_continuous_slash_0"
+   ],
+   "pai": "minepiece:skill_mihawk_advancement",
+   "gatilho": "impossible",
+   "titulo": "Continuous Slash",
+   "descricao": "Become a B100,000,000 Bounty Holder",
+   "icone": "minepiece:yoru",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_cyborg_advancement": {
+   "criterios": [
+    "skill_cyborg_advancement_0"
+   ],
+   "pai": "minepiece:mine_piece_charactor_skills",
+   "gatilho": "impossible",
+   "titulo": "Cyborg Ability",
+   "descricao": "Select Cyborg Skill",
+   "icone": "minepiece:clothes_franky_helmet",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_cyborg_passive_1": {
+   "criterios": [
+    "skill_cyborg_passive_1_0"
+   ],
+   "pai": "minepiece:skill_cyborg_advancement",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Cyborg",
+   "descricao": "Reduces frontal damage",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_cyborg_passive_2": {
+   "criterios": [
+    "skill_cyborg_passive_2_0"
+   ],
+   "pai": "minepiece:skill_cyborg_passive_1",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Hard-boiled",
+   "descricao": "Barrage Attack can be used for longer",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_diable_jambe": {
+   "criterios": [
+    "skill_diable_jambe_0"
+   ],
+   "pai": "minepiece:skill_sanji_advancement",
+   "gatilho": "impossible",
+   "titulo": "Diable Jambe",
+   "descricao": "Become a B100,000,000 Bounty Holder [Use with special key]",
+   "icone": "minecraft:campfire",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_fishman_advancement": {
+   "criterios": [
+    "skill_fishman_advancement_0"
+   ],
+   "pai": "minepiece:mine_piece_charactor_skills",
+   "gatilho": "impossible",
+   "titulo": "Fish-man Karate",
+   "descricao": "Select Fish-man's Skill",
+   "icone": "minecraft:heart_of_the_sea",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_fishman_passive_1": {
+   "criterios": [
+    "skill_fishman_passive_1_0"
+   ],
+   "pai": "minepiece:skill_fishman_advancement",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Fish-man",
+   "descricao": "Super Strength, Water Breathing, Increased Swim Speed",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_garp_advancement": {
+   "criterios": [
+    "skill_garp_advancement_0"
+   ],
+   "pai": "minepiece:mine_piece_charactor_skills",
+   "gatilho": "impossible",
+   "titulo": "Garp's Ability",
+   "descricao": "Select Garp's Skill",
+   "icone": "minecraft:iron_block",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_garp_passive_1": {
+   "criterios": [
+    "skill_garp_passive_1_0"
+   ],
+   "pai": "minepiece:skill_garp_advancement",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Iron Fist 1",
+   "descricao": "Striking Power +25%, Knockback +50%.",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_garp_passive_2": {
+   "criterios": [
+    "skill_garp_passive_2_0"
+   ],
+   "pai": "minepiece:skill_garp_passive_1",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Iron Fist 2",
+   "descricao": "Guard Effectiveness +50%, Counter Attack Power +50%.",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_geppo": {
+   "criterios": [
+    "skill_geppo_0"
+   ],
+   "pai": "minepiece:skill_tekkai",
+   "gatilho": "impossible",
+   "titulo": "Moonwalk",
+   "descricao": "Jump frequently",
+   "icone": "minepiece:clothes_cp_9_helmet",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_giant_advancement": {
+   "criterios": [
+    "skill_giant_advancement_0"
+   ],
+   "pai": "minepiece:mine_piece_charactor_skills",
+   "gatilho": "impossible",
+   "titulo": "Giant's Ability",
+   "descricao": "Select Giant's Skill",
+   "icone": "minecraft:goat_horn",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_giant_passive_1": {
+   "criterios": [
+    "skill_giant_passive_1_0"
+   ],
+   "pai": "minepiece:skill_giant_advancement",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Giant Race",
+   "descricao": "Increase physical size. Knockback Resistance +4.",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_hakoku": {
+   "criterios": [
+    "skill_hakoku_0"
+   ],
+   "pai": "minepiece:skill_giant_advancement",
+   "gatilho": "impossible",
+   "titulo": "Hakoku Sovereignty",
+   "descricao": "Become a B100,000,000 Bounty Holder",
+   "icone": "minecraft:iron_sword",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_haoshoku_haki": {
+   "criterios": [
+    "skill_haoshoku_haki_0"
+   ],
+   "pai": "minepiece:mine_piece_haki_skills",
+   "gatilho": "impossible",
+   "titulo": "Supreme King Haki",
+   "descricao": "Fight and continue to defeat powerful enemies",
+   "icone": "minepiece:clothes_elizabello_helmet",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_ifrit_jambe": {
+   "criterios": [
+    "skill_ifrit_jambe_0"
+   ],
+   "pai": "minepiece:skill_diable_jambe",
+   "gatilho": "impossible",
+   "titulo": "Ifrit Jambe",
+   "descricao": "Become a B500,000,000 Bounty Holder [Press N key]",
+   "icone": "minecraft:soul_campfire",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_kaido_advancement": {
+   "criterios": [
+    "skill_kaido_advancement_0"
+   ],
+   "pai": "minepiece:mine_piece_charactor_skills",
+   "gatilho": "impossible",
+   "titulo": "Kaido's Ability",
+   "descricao": "Select Kaido's Skill",
+   "icone": "minecraft:dragon_breath",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_kaido_passive_1": {
+   "criterios": [
+    "skill_kaido_passive_1_0"
+   ],
+   "pai": "minepiece:skill_kaido_advancement",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Superbeing",
+   "descricao": "Max Health +20, Armor Toughness +5.",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_kairyu_ipponzeoi": {
+   "criterios": [
+    "skill_kairyu_ipponzeoi_0"
+   ],
+   "pai": "minepiece:skill_karakusagawara_seiken",
+   "gatilho": "impossible",
+   "titulo": "Ocean Current Shoulder Throw",
+   "descricao": "Become a B100,000,000 Bounty Holder",
+   "icone": "minecraft:heart_of_the_sea",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_kamie": {
+   "criterios": [
+    "skill_kamie_0"
+   ],
+   "pai": "minepiece:skill_geppo",
+   "gatilho": "impossible",
+   "titulo": "Paper Arts (WIP)",
+   "descricao": "Become a B30,000,000 Bounty Holder",
+   "icone": "minepiece:clothes_cp_9_helmet",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_kamusari_shanks": {
+   "criterios": [
+    "skill_kamusari_shanks_0"
+   ],
+   "pai": "minepiece:skill_shanks_advancement",
+   "gatilho": "impossible",
+   "titulo": "Divine Departure",
+   "descricao": "Become a B500,000,000 Bounty Holder",
+   "icone": "minepiece:griffon",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_karakusagawara_seiken": {
+   "criterios": [
+    "skill_karakusagawara_seiken_0"
+   ],
+   "pai": "minepiece:skill_fishman_advancement",
+   "gatilho": "impossible",
+   "titulo": "Arabesque Brick Fist",
+   "descricao": "Become a B30,000,000 Bounty Holder",
+   "icone": "minecraft:heart_of_the_sea",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_karyudon": {
+   "criterios": [
+    "skill_karyudon_0"
+   ],
+   "pai": "minepiece:skill_andon",
+   "gatilho": "impossible",
+   "titulo": "Imperial Flaming Wings",
+   "descricao": "Become a B500,000,000 Bounty Holder",
+   "icone": "minecraft:fire_charge",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_king_of_hell": {
+   "criterios": [
+    "skill_king_of_hell_0"
+   ],
+   "pai": "minepiece:skill_zoro_advancement",
+   "gatilho": "impossible",
+   "titulo": "King of Hell",
+   "descricao": "Become a B500,000,000 Bounty Holder [Use with special key]",
+   "icone": "minecraft:green_dye",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_kosanze_ragnaraku": {
+   "criterios": [
+    "skill_kosanze_ragnaraku_0"
+   ],
+   "pai": "minepiece:skill_raimei_hakke",
+   "gatilho": "impossible",
+   "titulo": "Conquerer of Three Worlds Ragnaraku",
+   "descricao": "Become a B300,000,000 Bounty Holder",
+   "icone": "minepiece:hassaikai",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_lunarian_advancement": {
+   "criterios": [
+    "skill_lunarian_advancement_0"
+   ],
+   "pai": "minepiece:mine_piece_charactor_skills",
+   "gatilho": "impossible",
+   "titulo": "Lunarian's Ability",
+   "descricao": "Select Lunarian's Skill",
+   "icone": "minepiece:clothes_king_helmet",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_lunarian_passive_1": {
+   "criterios": [
+    "skill_lunarian_passive_1_0"
+   ],
+   "pai": "minepiece:skill_lunarian_advancement",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Lunarian 1",
+   "descricao": "Adaptation to any environment",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_lunarian_passive_2": {
+   "criterios": [
+    "skill_lunarian_passive_2_0"
+   ],
+   "pai": "minepiece:skill_lunarian_passive_1",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Lunarian 2",
+   "descricao": "Adaptation to the Sky: Acquire Flight Ability",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_mihawk_advancement": {
+   "criterios": [
+    "skill_mihawk_advancement_0"
+   ],
+   "pai": "minepiece:mine_piece_charactor_skills",
+   "gatilho": "impossible",
+   "titulo": "Mihawk's Ability",
+   "descricao": "Select Mihawk's Skill",
+   "icone": "minepiece:clothes_mihawk_helmet",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_mihawk_passive_1": {
+   "criterios": [
+    "skill_mihawk_passive_1_0"
+   ],
+   "pai": "minepiece:skill_mihawk_advancement",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Mastered Subtle Sword",
+   "descricao": "All sword skill cool time are halved",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_mihawk_passive_2": {
+   "criterios": [
+    "skill_mihawk_passive_2_0"
+   ],
+   "pai": "minepiece:skill_mihawk_passive_1",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Perfected Mighty Sword",
+   "descricao": "Execute a powerful counter upon a sword's perfect guard",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_observation_haki": {
+   "criterios": [
+    "skill_observation_haki_0"
+   ],
+   "pai": "minepiece:mine_piece_haki_skills",
+   "gatilho": "impossible",
+   "titulo": "Observation Haki",
+   "descricao": "Use a lot of Perfect Guard",
+   "icone": "minecraft:observer",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_observation_haki_max": {
+   "criterios": [
+    "skill_observation_haki_max_0"
+   ],
+   "pai": "minepiece:skill_observation_haki",
+   "gatilho": "impossible",
+   "titulo": "Complete Observation Haki",
+   "descricao": "Master the Perfect Guard",
+   "icone": "minecraft:observer",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_oden_advancement": {
+   "criterios": [
+    "skill_oden_advancement_0"
+   ],
+   "pai": "minepiece:mine_piece_charactor_skills",
+   "gatilho": "impossible",
+   "titulo": "Oden Kozuki's Ability",
+   "descricao": "Select Oden Kozuki's Skill",
+   "icone": "minepiece:clothes_oden_chestplate",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_oden_passive_1": {
+   "criterios": [
+    "skill_oden_passive_1_0"
+   ],
+   "pai": "minepiece:skill_oden_advancement",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Ryuo",
+   "descricao": "Armament Haki transforms into Ryuo",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_onigawara_seiken": {
+   "criterios": [
+    "skill_onigawara_seiken_0"
+   ],
+   "pai": "minepiece:skill_kairyu_ipponzeoi",
+   "gatilho": "impossible",
+   "titulo": "Demon Brick Fist",
+   "descricao": "Become a B500,000,000 Bounty Holder",
+   "icone": "minecraft:heart_of_the_sea",
+   "moldura": "goal",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_overswing_mihawk": {
+   "criterios": [
+    "skill_overswing_mihawk_0"
+   ],
+   "pai": "minepiece:skill_continuous_slash",
+   "gatilho": "impossible",
+   "titulo": "Overswing",
+   "descricao": "Become a B500,000,000 Bounty Holder",
+   "icone": "minepiece:yoru",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_passive_celestial_dragons_1": {
+   "criterios": [
+    "skill_passive_celestial_dragons_1_0"
+   ],
+   "pai": "minepiece:skill_celestial_dragons_advavncement",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Authority",
+   "descricao": "You are no longer targeted by enemies. Your bounty will no longer increase.",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_passive_roger_1": {
+   "criterios": [
+    "skill_passive_roger_1_0"
+   ],
+   "pai": "minepiece:skill_roger_advancement",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Kingly Mettle 1",
+   "descricao": "Gain Supreme King Haki. Knockback Resistance +4",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_passive_roger_2": {
+   "criterios": [
+    "skill_passive_roger_2_0"
+   ],
+   "pai": "minepiece:skill_passive_roger_1",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Kingly Mettle 2",
+   "descricao": "Stun Power +25%, Stun Resistance +25%.",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_passive_roger_3": {
+   "criterios": [
+    "skill_passive_roger_3_0"
+   ],
+   "pai": "minepiece:skill_passive_roger_2",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Kingly Mettle 3",
+   "descricao": "Slash Damage +15%, Devil Fruit Cooldown Added (3s).",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_projectile_slash_advancement": {
+   "criterios": [
+    "skill_projectile_slash_advancement_0"
+   ],
+   "pai": "minepiece:skill_assault_attack",
+   "gatilho": "impossible",
+   "titulo": "Projectile Slash",
+   "descricao": "Become a B100,000,000 Bounty Holder",
+   "icone": "minecraft:diamond_sword",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_raimei_hakke": {
+   "criterios": [
+    "skill_raimei_hakke_0"
+   ],
+   "pai": "minepiece:skill_kaido_advancement",
+   "gatilho": "impossible",
+   "titulo": "Thunder Bagua",
+   "descricao": "Become a B30,000,000 Bounty Holder",
+   "icone": "minepiece:hassaikai",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_rankyaku": {
+   "criterios": [
+    "skill_rankyaku_0"
+   ],
+   "pai": "minepiece:skill_shigan",
+   "gatilho": "impossible",
+   "titulo": "Tempest Kick",
+   "descricao": "Become a B30,000,000 Bounty Holder",
+   "icone": "minepiece:clothes_cp_9_helmet",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_roger_advancement": {
+   "criterios": [
+    "skill_roger_advancement_0"
+   ],
+   "pai": "minepiece:mine_piece_charactor_skills",
+   "gatilho": "impossible",
+   "titulo": "Roger's Ability",
+   "descricao": "Select Roger's Skill",
+   "icone": "minepiece:clothes_roger_helmet",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_rokuogan": {
+   "criterios": [
+    "skill_rokuogan_0"
+   ],
+   "pai": "minepiece:skill_kamie",
+   "gatilho": "impossible",
+   "titulo": "Six King Gun",
+   "descricao": "Master Six Powers and Become a B300,000,000 Bounty Holder",
+   "icone": "minepiece:clothes_cp_9_helmet",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_rokushiki_advancement": {
+   "criterios": [
+    "skill_rokushiki_advancement_0"
+   ],
+   "pai": "minepiece:mine_piece_charactor_skills",
+   "gatilho": "impossible",
+   "titulo": "Six Powers",
+   "descricao": "Select Lucci's Skill",
+   "icone": "minepiece:clothes_cp_9_chestplate",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_rokushiki_passive_1": {
+   "criterios": [
+    "skill_rokushiki_passive_1_0"
+   ],
+   "pai": "minepiece:skill_rokushiki_advancement",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Six Powers User",
+   "descricao": "Quickly double-tap keys to use Six Powers [Sneak] Iron Body, [Movement] Shave",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_ryuno_ibuki": {
+   "criterios": [
+    "skill_ryuno_ibuki_0"
+   ],
+   "pai": "minepiece:skill_ryuno_kagidume",
+   "gatilho": "impossible",
+   "titulo": "Dragon Breath",
+   "descricao": "Become a B500,000,000 Bounty Holder",
+   "icone": "minecraft:iron_ingot",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_ryuno_kagidume": {
+   "criterios": [
+    "skill_ryuno_kagidume_0"
+   ],
+   "pai": "minepiece:skill_sabo_advancement",
+   "gatilho": "impossible",
+   "titulo": "Dragon's Claw",
+   "descricao": "Select Sabo's Skill",
+   "icone": "minecraft:iron_ingot",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_sabo_advancement": {
+   "criterios": [
+    "skill_sabo_advancement_0"
+   ],
+   "pai": "minepiece:mine_piece_charactor_skills",
+   "gatilho": "impossible",
+   "titulo": "Sabo's Ability",
+   "descricao": "Select Sabo's Skill",
+   "icone": "minepiece:clothes_sabo_helmet",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_sabo_passive_1": {
+   "criterios": [
+    "skill_sabo_passive_1_0"
+   ],
+   "pai": "minepiece:skill_sabo_advancement",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Core Perception",
+   "descricao": "Charged strike attacks ignore enemy defense and deal more damage",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_sanji_advancement": {
+   "criterios": [
+    "skill_sanji_advancement_0"
+   ],
+   "pai": "minepiece:mine_piece_charactor_skills",
+   "gatilho": "impossible",
+   "titulo": "Leg Skills",
+   "descricao": "Select Sanji's Skill",
+   "icone": "minecraft:black_dye",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_sanji_passive_1": {
+   "criterios": [
+    "skill_sanji_passive_1_0"
+   ],
+   "pai": "minepiece:skill_sanji_advancement",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Scientific Exoskeleton",
+   "descricao": "Reduces damage",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_shanks_advancement": {
+   "criterios": [
+    "skill_shanks_advancement_0"
+   ],
+   "pai": "minepiece:mine_piece_charactor_skills",
+   "gatilho": "impossible",
+   "titulo": "Shanks' Ability",
+   "descricao": "Select Shanks' Skill",
+   "icone": "minepiece:clothes_shanks_helmet",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_shanks_passive_1": {
+   "criterios": [
+    "skill_shanks_passive_1_0"
+   ],
+   "pai": "minepiece:skill_shanks_advancement",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Red-Haired Haki",
+   "descricao": "Gain Supreme King Haki. You can blast Haki from Griffon.",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_shanks_passive_2": {
+   "criterios": [
+    "skill_shanks_passive_2_0"
+   ],
+   "pai": "minepiece:skill_shanks_passive_1",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Red-Haired Swordsmanship",
+   "descricao": "Execute a powerful counter upon a sword's perfect guard",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_shanks_passive_3": {
+   "criterios": [
+    "skill_shanks_passive_3_0"
+   ],
+   "pai": "minepiece:skill_shanks_passive_2",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Foresight",
+   "descricao": "\"Assault Attack\" search radius and speed are increased.",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_shigan": {
+   "criterios": [
+    "skill_shigan_0"
+   ],
+   "pai": "minepiece:skill_soru",
+   "gatilho": "impossible",
+   "titulo": "Finger Pistol",
+   "descricao": "Become a B30,000,000 Bounty Holder",
+   "icone": "minepiece:clothes_cp_9_helmet",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_soru": {
+   "criterios": [
+    "skill_soru_0"
+   ],
+   "pai": "minepiece:skill_rokushiki_advancement",
+   "gatilho": "impossible",
+   "titulo": "Shave",
+   "descricao": "Become a B30,000,000 Bounty Holder",
+   "icone": "minepiece:clothes_cp_9_helmet",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_tekkai": {
+   "criterios": [
+    "skill_tekkai_0"
+   ],
+   "pai": "minepiece:skill_rankyaku",
+   "gatilho": "impossible",
+   "titulo": "Iron Body",
+   "descricao": "Guard frequently",
+   "icone": "minepiece:clothes_cp_9_helmet",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_world_greatest_sword_strike": {
+   "criterios": [
+    "skill_world_greatest_sword_strike_0"
+   ],
+   "pai": "minepiece:skill_overswing_mihawk",
+   "gatilho": "impossible",
+   "titulo": "World's Greatest Sword Strike",
+   "descricao": "Beat Dracule Mihawk",
+   "icone": "minepiece:yoru",
+   "moldura": "challenge",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_zoro_advancement": {
+   "criterios": [
+    "skill_zoro_advancement_0"
+   ],
+   "pai": "minepiece:mine_piece_charactor_skills",
+   "gatilho": "impossible",
+   "titulo": "Zoro's Ability",
+   "descricao": "Select Zoro's Skill",
+   "icone": "minepiece:clothes_zoro_hairstyle_helmet",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:skill_zoro_passive_1": {
+   "criterios": [
+    "skill_zoro_passive_1_0"
+   ],
+   "pai": "minepiece:skill_zoro_advancement",
+   "gatilho": "impossible",
+   "titulo": "[Passive] Three Sword Style",
+   "descricao": "Unlocks Three Sword Style ([Shift+Right-Click] with a sword to equip it to your head)",
+   "icone": "minecraft:enchanted_book",
+   "moldura": "task",
+   "aviso": true,
+   "xp": 0
+  },
+  "minepiece:start_mine_piece": {
+   "criterios": [
+    "start_mine_piece_0"
+   ],
+   "pai": "",
+   "gatilho": "tick",
+   "titulo": "ROMANCE DAWN",
+   "descricao": "Start Mine Piece Mod",
+   "icone": "minepiece:clothes_luffy_helmet",
+   "moldura": "task",
+   "aviso": false,
+   "xp": 0
+  },
+  "minepiece:update": {
+   "criterios": [
+    "update_0"
+   ],
+   "pai": "minepiece:start_mine_piece",
+   "gatilho": "impossible",
+   "titulo": "",
+   "descricao": "",
+   "icone": "",
+   "moldura": "task",
+   "aviso": false,
+   "xp": 0
+  }
+ }
+}

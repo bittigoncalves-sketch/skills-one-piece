@@ -83,6 +83,16 @@ func _ready() -> void:
 	_hud = Hud.new()
 	add_child(_hud)
 
+	var encounter := BossEncounter.new()
+	encounter.name = "BossEncounter"
+	add_child(encounter)
+	add_child(BossHealthBar.new())
+	var bara_layer := CanvasLayer.new()
+	bara_layer.name = "BaraHudLayer"
+	bara_layer.layer = 6
+	add_child(bara_layer)
+	bara_layer.add_child(preload("res://src/ui/BaraHud.gd").new())
+
 	# Inimigos (Fase 7): desligados. O nó só entra na árvore com a flag ligada —
 	# e como a flag é const, servidor e clientes montam a MESMA árvore.
 	if ENEMIES_ENABLED:
@@ -285,7 +295,11 @@ func _spawn_player_data(data: Dictionary) -> Node:
 func _make_player_sync() -> MultiplayerSynchronizer:
 	var cfg := SceneReplicationConfig.new()
 	for p in ["position", "net_velocity", "net_facing", "net_on_floor", "net_charge_pose",
-			"net_charge_progress", "current_fruit_id", "combat_mode", "current_style_idx"]:
+			"net_charge_progress", "current_fruit_id", "combat_mode", "current_style_idx",
+			# Parkour e locomoção (03/10/2026): wall run, escalada e inclinação de curva.
+			"net_parkour", "net_agachado", "net_escalando", "net_parede_lado", "net_subida", "net_inclinacao",
+			# Roll (Q) e ações com clipe: animação e tempo (Ctrl agora agacha).
+			"net_acao_clipe", "net_acao_tempo"]:
 		cfg.add_property(NodePath(".:" + p))
 	var sync := MultiplayerSynchronizer.new()
 	sync.name = "Sync"

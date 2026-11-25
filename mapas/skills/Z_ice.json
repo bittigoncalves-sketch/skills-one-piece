@@ -1,0 +1,539 @@
+{
+	"animacao": {
+		"clipe": "boxing_1",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.0
+	},
+	"ativacao": {
+		"andar_segurando": false,
+		"carga": 0.5,
+		"empurrao_carga_max": 1.0,
+		"modo": "Pressionar",
+		"ponto_segurar": 0.5,
+		"repetir": false,
+		"segurar_max": 5.0,
+		"tecla": "Z"
+	},
+	"audio": {
+		"som": "Vento",
+		"tom": 1.0,
+		"volume": -12.0
+	},
+	"camera": {
+		"tremor": 0.2,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 30.0,
+		"exige_alvo": false,
+		"exige_chao": false,
+		"nivel_minimo": 1,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 30.0,
+		"custo": 4.4,
+		"custo_por_segundo": 0.0,
+		"duracao": 1.5,
+		"fim_sobre_alvo": 0.0,
+		"flutuar": false,
+		"inicio_do_fim": -1.0,
+		"intervalo_depois": 0.5,
+		"mirar_no_alvo": false,
+		"parar_no_vazio": false,
+		"recarga": 5.0
+	},
+	"dano": {
+		"atordoamento": 0.0,
+		"congelar": 0.7,
+		"critico": 0.0,
+		"duracao_efeito": 1.0,
+		"empurrao": 0.6,
+		"lentidao": 0.0,
+		"multiplicador": 2.0,
+		"tipo": "Gelo",
+		"valor": 8.0
+	},
+	"eventos": [
+		{
+			"duracao": 1.35,
+			"habilitado": true,
+			"id": "recuo",
+			"inicio": 0.0,
+			"parametros": {
+				"curva": "Suave",
+				"direcao": "Trás",
+				"distancia": 8.0,
+				"velocidade": 5.0
+			},
+			"tipo": "movimento"
+		},
+		{
+			"duracao": 0.4,
+			"habilitado": true,
+			"id": "sopro",
+			"inicio": 0.0,
+			"parametros": {
+				"som": "Gelo: rajada",
+				"tom": 1.3,
+				"volume": -10.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.9,
+			"habilitado": true,
+			"id": "anel_no_chao",
+			"inicio": 0.0,
+			"parametros": {
+				"altura": 0.08,
+				"ancora": "Mundo",
+				"escala": 1.1,
+				"estilo": "Anel",
+				"frente": 0.0
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 1.3,
+			"habilitado": true,
+			"id": "geada",
+			"inicio": 0.05,
+			"parametros": {
+				"altura": 1.0,
+				"escala": 0.8,
+				"estilo": "Fótons",
+				"frente": 0.0
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.32,
+			"habilitado": true,
+			"id": "pose_recuo_0",
+			"inicio": 0.0,
+			"parametros": {
+				"pose": "pose_1",
+				"transicao": 0.08
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.16,
+			"habilitado": true,
+			"id": "pose_disparo_0",
+			"inicio": 0.32,
+			"parametros": {
+				"pose": "pose_2",
+				"transicao": 0.05
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.24,
+			"habilitado": true,
+			"id": "pose_recuo_1",
+			"inicio": 0.48,
+			"parametros": {
+				"pose": "pose_1",
+				"transicao": 0.1
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.16,
+			"habilitado": true,
+			"id": "pose_disparo_1",
+			"inicio": 0.72,
+			"parametros": {
+				"pose": "pose_2",
+				"transicao": 0.05
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.19,
+			"habilitado": true,
+			"id": "pose_recuo_2",
+			"inicio": 0.88,
+			"parametros": {
+				"pose": "pose_1",
+				"transicao": 0.1
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.16,
+			"habilitado": true,
+			"id": "pose_disparo_2",
+			"inicio": 1.07,
+			"parametros": {
+				"pose": "pose_2",
+				"transicao": 0.05
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.27,
+			"habilitado": true,
+			"id": "pose_fim",
+			"inicio": 1.23,
+			"parametros": {
+				"pose": "pose_1",
+				"transicao": 0.12
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.16,
+			"habilitado": true,
+			"id": "cristais_0",
+			"inicio": 0.28,
+			"parametros": {
+				"ancora": "Osso do jogador",
+				"escala": 0.45,
+				"estilo": "Carga",
+				"osso": "Mão direita"
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.16,
+			"habilitado": true,
+			"id": "cristais_e_0",
+			"inicio": 0.28,
+			"parametros": {
+				"ancora": "Osso do jogador",
+				"escala": 0.45,
+				"estilo": "Carga",
+				"osso": "Mão esquerda"
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.05,
+			"habilitado": true,
+			"id": "salva_0",
+			"inicio": 0.4,
+			"parametros": {
+				"abertura": 26.0,
+				"direcao_disparo": "Mira",
+				"explosao": 0.8,
+				"gravidade": 0.0,
+				"imunidade_gelo": false,
+				"perfurar": false,
+				"quantidade": 8,
+				"raio": 0.22,
+				"rastro": "Gelo",
+				"sai_de": "Entre as mãos",
+				"som_explosao": "Gelo: disparo",
+				"velocidade": 30.0,
+				"vida": 1.2,
+				"visual": "Estaca de gelo"
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.25,
+			"habilitado": true,
+			"id": "estalo_0",
+			"inicio": 0.4,
+			"parametros": {
+				"som": "Gelo: disparo",
+				"tom": 1.5,
+				"volume": -6.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.1,
+			"habilitado": true,
+			"id": "tremor_0",
+			"inicio": 0.4,
+			"parametros": {
+				"tremor": 0.06
+			},
+			"tipo": "camera"
+		},
+		{
+			"duracao": 0.16,
+			"habilitado": true,
+			"id": "cristais_1",
+			"inicio": 0.68,
+			"parametros": {
+				"ancora": "Osso do jogador",
+				"escala": 0.45,
+				"estilo": "Carga",
+				"osso": "Mão direita"
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.16,
+			"habilitado": true,
+			"id": "cristais_e_1",
+			"inicio": 0.68,
+			"parametros": {
+				"ancora": "Osso do jogador",
+				"escala": 0.45,
+				"estilo": "Carga",
+				"osso": "Mão esquerda"
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.05,
+			"habilitado": true,
+			"id": "salva_1",
+			"inicio": 0.8,
+			"parametros": {
+				"abertura": 26.0,
+				"direcao_disparo": "Mira",
+				"explosao": 0.8,
+				"gravidade": 0.0,
+				"imunidade_gelo": false,
+				"perfurar": false,
+				"quantidade": 8,
+				"raio": 0.22,
+				"rastro": "Gelo",
+				"sai_de": "Entre as mãos",
+				"som_explosao": "Gelo: disparo",
+				"velocidade": 30.0,
+				"vida": 1.2,
+				"visual": "Estaca de gelo"
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.25,
+			"habilitado": true,
+			"id": "estalo_1",
+			"inicio": 0.8,
+			"parametros": {
+				"som": "Gelo: disparo",
+				"tom": 1.5,
+				"volume": -6.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.1,
+			"habilitado": true,
+			"id": "tremor_1",
+			"inicio": 0.8,
+			"parametros": {
+				"tremor": 0.06
+			},
+			"tipo": "camera"
+		},
+		{
+			"duracao": 0.16,
+			"habilitado": true,
+			"id": "cristais_2",
+			"inicio": 1.03,
+			"parametros": {
+				"ancora": "Osso do jogador",
+				"escala": 0.45,
+				"estilo": "Carga",
+				"osso": "Mão direita"
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.16,
+			"habilitado": true,
+			"id": "cristais_e_2",
+			"inicio": 1.03,
+			"parametros": {
+				"ancora": "Osso do jogador",
+				"escala": 0.45,
+				"estilo": "Carga",
+				"osso": "Mão esquerda"
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.05,
+			"habilitado": true,
+			"id": "salva_2",
+			"inicio": 1.15,
+			"parametros": {
+				"abertura": 26.0,
+				"direcao_disparo": "Mira",
+				"explosao": 0.8,
+				"gravidade": 0.0,
+				"imunidade_gelo": true,
+				"perfurar": false,
+				"quantidade": 8,
+				"raio": 0.22,
+				"rastro": "Gelo",
+				"sai_de": "Entre as mãos",
+				"som_explosao": "Gelo: disparo",
+				"velocidade": 30.0,
+				"vida": 1.2,
+				"visual": "Estaca de gelo"
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.25,
+			"habilitado": true,
+			"id": "estalo_2",
+			"inicio": 1.15,
+			"parametros": {
+				"som": "Gelo: disparo",
+				"tom": 1.5,
+				"volume": -6.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.1,
+			"habilitado": true,
+			"id": "tremor_2",
+			"inicio": 1.15,
+			"parametros": {
+				"tremor": 0.06
+			},
+			"tipo": "camera"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 3.0,
+		"forma": "Esfera",
+		"largura": 3.0,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 1.5,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": -2.0
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "Recua deslizando no gelo e dispara três salvas de estacas entre as mãos; cada estaca estoura em gelo e congela quem acerta por 0,7 s.",
+		"dono": "Jogador",
+		"fruta": "hie_hie",
+		"id": "Z_ice",
+		"modelo": "Base",
+		"nome": "Espinhos de Gelo"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 2.0,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 6.0
+	},
+	"poses": [
+		{
+			"id": "pose_1",
+			"nome": "recuo",
+			"ossos": {
+				"Thigh_L": [
+					45.0,
+					0.0,
+					0.0
+				],
+				"Thigh_R": [
+					15.0,
+					0.0,
+					0.0
+				],
+				"UpperArm_L": [
+					90.0,
+					0.0,
+					0.0
+				],
+				"UpperArm_R": [
+					90.0,
+					0.0,
+					0.0
+				]
+			}
+		},
+		{
+			"id": "pose_2",
+			"nome": "Disparo",
+			"ossos": {
+				"ForeArm_L": [
+					0.0,
+					0.0,
+					0.0
+				],
+				"ForeArm_R": [
+					0.0,
+					0.0,
+					0.0
+				],
+				"Thigh_L": [
+					51.0,
+					0.0,
+					0.0
+				],
+				"Thigh_R": [
+					21.0,
+					0.0,
+					0.0
+				],
+				"Torso": [
+					-6.0,
+					0.0,
+					0.0
+				],
+				"UpperArm_L": [
+					96.0,
+					-8.0,
+					0.0
+				],
+				"UpperArm_R": [
+					96.0,
+					8.0,
+					0.0
+				]
+			}
+		}
+	],
+	"projeteis": {
+		"abertura": 20.0,
+		"area_chuva": 8.0,
+		"direcao_disparo": "Mira",
+		"explosao": 0.0,
+		"giro": 0.0,
+		"gravidade": 0.0,
+		"modelo": "",
+		"perfurar": false,
+		"quantidade": 8,
+		"raio": 0.25,
+		"rastro": "Nenhum",
+		"sem_dano": false,
+		"som_explosao": "Impacto",
+		"velocidade": 24.0,
+		"vida": 2.0,
+		"visual": "Estaca de gelo"
+	},
+	"versao": 1,
+	"vfx": {
+		"altura": 1.0,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#9fe8ff",
+		"cor_2": "#f2fdff",
+		"escala": 1.0,
+		"estilo": "Impacto",
+		"frente": 1.0,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "Mão direita",
+		"projetil_de": ""
+	}
+}

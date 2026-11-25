@@ -1,0 +1,165 @@
+{
+	"animacao": {
+		"clipe": "Ataque",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.0
+	},
+	"ativacao": {
+		"andar_segurando": false,
+		"carga": 0.5,
+		"empurrao_carga_max": 1.0,
+		"modo": "Pressionar",
+		"paralisar_segurando": false,
+		"ponto_segurar": 0.5,
+		"repetir": false,
+		"segurar_max": 5.0,
+		"tecla": "Z"
+	},
+	"audio": {
+		"som": "Impacto",
+		"tom": 1.0,
+		"volume": -12.0
+	},
+	"camera": {
+		"tremor": 0.2,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 64.0,
+		"exige_alvo": false,
+		"exige_chao": false,
+		"nivel_minimo": 1,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 64.0,
+		"custo": 0.0,
+		"custo_por_segundo": 0.0,
+		"duracao": 0.5,
+		"fim_sobre_alvo": 0.0,
+		"flutuar": false,
+		"inicio_do_fim": -1.0,
+		"intervalo_depois": 0.0,
+		"mirar_no_alvo": false,
+		"parar_no_vazio": false,
+		"recarga": 0.0
+	},
+	"dano": {
+		"atordoamento": 0.1,
+		"congelar": 0.0,
+		"critico": 0.0,
+		"cura_do_dano": 0.0,
+		"duracao_efeito": 1.0,
+		"empurrao": 1.5,
+		"lentidao": 0.0,
+		"multiplicador": 2.0,
+		"tipo": "Físico",
+		"valor": 9.0
+	},
+	"eventos": [
+		{
+			"duracao": 0.05,
+			"habilitado": true,
+			"id": "bala",
+			"inicio": 0.15,
+			"parametros": {
+
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som",
+			"inicio": 0.15,
+			"parametros": {
+				"som": "Disparo",
+				"tom": 1.4,
+				"volume": -6.0
+			},
+			"tipo": "audio"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 3.0,
+		"forma": "Esfera",
+		"largura": 3.0,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 1.5,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": -2.0
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "[East Blue · Mine Piece] Ataque comum com arma de fogo: um tiro.",
+		"dono": "Chefe",
+		"fruta": "",
+		"id": "mpeb_comum_tiro",
+		"modelo": "Base",
+		"nome": "Tiro"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 2.0,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 6.0
+	},
+	"poses": [],
+	"projeteis": {
+		"abertura": 0.0,
+		"area_chuva": 8.0,
+		"direcao_disparo": "Mira",
+		"explosao": 0.0,
+		"giro": 0.0,
+		"gravidade": 0.0,
+		"imunidade_gelo": true,
+		"modelo": "",
+		"perfurar": false,
+		"quantidade": 1,
+		"raio": 0.12,
+		"raio_de_acerto": 0.0,
+		"raio_do_anel": 2.5,
+		"rastro": "Fumaça",
+		"sai_de": "Corpo",
+		"sem_dano": false,
+		"som_explosao": "Impacto",
+		"velocidade": 60.0,
+		"vida": 0.8,
+		"visual": "Bala de canhão"
+	},
+	"transformacao": {
+		"alvo": "Usuário",
+		"cor": "#dce9ff",
+		"escala": 1.0,
+		"modelo": "",
+		"raio": 8.0,
+		"visual": "Fumaça"
+	},
+	"versao": 1,
+	"vfx": {
+		"altura": 1.0,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#ffffff",
+		"cor_2": "#ffffff",
+		"escala": 1.0,
+		"estilo": "Impacto",
+		"frente": 1.0,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "Mão direita",
+		"projetil_de": ""
+	}
+}

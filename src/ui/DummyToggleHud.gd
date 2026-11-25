@@ -25,7 +25,7 @@ extends Control
 #  clica manda um pedido ao servidor. Não há caso "meu boneco / seu boneco".
 # ============================================================================
 
-const LARGURA := 250.0
+const LARGURA := 300.0
 const LINHA := 26.0
 const MARGEM := 20.0
 const PAD := 10.0

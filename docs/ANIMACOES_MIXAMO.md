@@ -80,6 +80,28 @@ consertado; ver "Rebake de 2026-08-10" no fim da seção 5).
 4. Aplica um **flip de 180° em Y** (`yflip`) — o Mixamo exporta olhando +Z, a
    convenção do projeto é **frente = −Z**.
 
+> **Conversão v3 (07/10/2026) — a conta é no MUNDO, não no espaço do esqueleto.**
+> O `Skeleton3D` do .glb fica sob um nó `Armature` girado 90° em X (escala 0,01).
+> Até 07/10 o delta de cada osso era convertido com o `yflip` no espaço do
+> esqueleto: giro em volta da vertical virava tombo lateral. O quadril que gira
+> no soco ou no chute deitava o boneco inteiro, e o antebraço da guarda saía
+> espelhado (100° de erro no `punching`). A corrida passava porque é quase só giro
+> em X, que essa troca preserva. Hoje:
+>
+> `global(papel) = yflip · A · pose · repouso⁻¹ · A⁻¹ · yflip⁻¹ · Q(papel)`
+>
+> - **A** é o giro do esqueleto no mundo.
+> - **Q** leva do braço PENDURADO, o zero do rig (de onde partem as poses
+>   procedurais, as MeleePoses e as do Builder), até a pose T do repouso do Mixamo.
+>   Só braço e antebraço têm Q.
+>
+> O refino de chaves perto do gimbal vale para todos os clipes. Todo `.res` leva o
+> metadado `conversao = 3`. A medida contra o .glb fica em
+> `tools/dev_tests/test_fidelidade_dos_clipes.gd`: membros com 3°–6°, coluna com
+> 5°–11°. O braço do Base fica 19,2° mais aberto, que é a abertura do zero DELE
+> (corpo largo), não erro do clipe. Para conferir um bake novo antes de sobrescrever:
+> `-- --saida=<pasta>`. Erro registrado em `docs/erros.md`.
+
 ### Mapa osso Mixamo → papel do rig
 
 | Papel no rig | Osso Mixamo | Pai |

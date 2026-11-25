@@ -33,20 +33,21 @@ var _cancelled := false
 static func room_for(actor: Node) -> Node3D:
 	if not is_instance_valid(actor):
 		return null
-	var value = actor.get_meta("ope_room", null)
+	var value = (actor.get_meta("ope_room") if actor.has_meta("ope_room") else null)
 	if is_instance_valid(value) and value is Node3D and not value.is_queued_for_deletion():
 		return value
 	return null
 
 
 static func actor_available(actor: Node3D) -> bool:
-	if not is_instance_valid(actor) or not actor.is_inside_tree():
+	if not is_instance_valid(actor) or not actor.is_inside_tree() or actor.is_queued_for_deletion():
 		return false
 	if str(actor.get("current_fruit_id")) != "ope_ope" or str(actor.get("combat_mode")) != "fruit":
 		return false
 	if float(actor.get("health")) <= 0.0 or actor.get("is_suppressed") == true:
 		return false
-	if actor.get_meta("is_frozen", false) or actor.get_meta("in_black_hole", false):
+	if actor.get_meta("is_frozen", false) or actor.get_meta("in_black_hole", false) \
+		or actor.get_meta("in_kurouzu", false) or actor.get_meta("in_vortex", false):
 		return false
 	return true
 
@@ -60,7 +61,7 @@ static func validation_reason(actor: Node3D, wanted_slot: String, direction: Vec
 		return "Mira inválida."
 	if actor.has_method("fruta_bloqueada_por_dano") and actor.fruta_bloqueada_por_dano():
 		return "Recupere-se do impacto."
-	if actor.get_meta("ope_action", null) != null:
+	if is_instance_valid((actor.get_meta("ope_action") if actor.has_meta("ope_action") else null)):
 		return "Conclua a técnica atual."
 	if wanted_slot == "Z":
 		return ""
@@ -100,7 +101,7 @@ static func cast(parent: Node, wanted_slot: String, direction: Vector3,
 	effect.slot = wanted_slot
 	effect.aim = direction.normalized()
 	effect.origin = cast_origin
-	effect.center = cast_origin - Vector3.UP
+	effect.center = actor.global_position
 	effect.damage_spec = spec
 	effect.cast_token = token
 	parent.add_child(effect)
@@ -185,15 +186,15 @@ func _physics_process(delta: float) -> void:
 		_resolved = true
 		if _server():
 			_resolve_gamma()
-	# Takt conserva sus proyectiles hasta el último impacto. Cada zona mantiene
-	# la dependencia de ROOM y se cancela en cuanto desaparezca.
+	# Takt conserva os projéteis até o último impacto. Cada zona mantém a
+	# dependência de ROOM e é cancelada se o campo desaparecer.
 	var lifespan := 3.5 if slot == "C" else float(DURATIONS[slot]) + 0.5
 	if elapsed >= lifespan:
 		queue_free()
 
 
 func _owns_pose() -> bool:
-	return owner_actor.get_meta("ope_action", null) == self \
+	return (owner_actor.get_meta("ope_action") if owner_actor.has_meta("ope_action") else null) == self \
 		and owner_actor.get_meta("is_casting", false) == true
 
 
@@ -207,7 +208,7 @@ func _tick_pose() -> void:
 
 func _finish_pose() -> void:
 	_pose_finished = true
-	if not is_instance_valid(owner_actor) or owner_actor.get_meta("ope_action", null) != self:
+	if not is_instance_valid(owner_actor) or (owner_actor.get_meta("ope_action") if owner_actor.has_meta("ope_action") else null) != self:
 		return
 	owner_actor.remove_meta("ope_action")
 	owner_actor.set_meta("is_casting", false)
@@ -221,15 +222,17 @@ func cancel() -> void:
 	if _cancelled:
 		return
 	_cancelled = true
+	if _server() and is_instance_valid(owner_actor) and owner_actor.is_inside_tree():
+		owner_actor.ope_event(cast_token, "cancel")
 	_finish_pose()
-	if is_instance_valid(owner_actor) and owner_actor.get_meta("ope_room", null) == self:
+	if is_instance_valid(owner_actor) and (owner_actor.get_meta("ope_room") if owner_actor.has_meta("ope_room") else null) == self:
 		owner_actor.remove_meta("ope_room")
 	queue_free()
 
 
 func _exit_tree() -> void:
 	_finish_pose()
-	if is_instance_valid(owner_actor) and owner_actor.get_meta("ope_room", null) == self:
+	if is_instance_valid(owner_actor) and (owner_actor.get_meta("ope_room") if owner_actor.has_meta("ope_room") else null) == self:
 		owner_actor.remove_meta("ope_room")
 	if damage_spec != null:
 		CombatResolver.encerrar(damage_spec.cast_id)
@@ -251,16 +254,22 @@ func _resolve_shambles() -> void:
 
 
 func _launch_rock(index: int) -> void:
-	if not _server():
-		return
 	var start: Vector3 = VFX.takt_start(center, index)
 	if not room.contains_point(start):
+		return
+	if is_instance_valid(_presentation):
+		_presentation.launch_rock(index, start, target_point, 30.0)
+	if not _server():
 		return
 	var trajectory := target_point - start
 	var zone := ZONE.new()
 	zone.name = "OpeTaktRock_%d" % index
 	zone.room_ref = weakref(room)
 	zone.stop_on_collision = true
+	zone.is_projectile = true
+	zone.collided_with_any.connect(func(_body: Node):
+		if is_instance_valid(owner_actor):
+			owner_actor.ope_event(cast_token, "rock_impact", index, zone.global_position))
 	add_child(zone)
 	zone.global_position = start
 	zone.setup(damage_spec.dano, 7.0, trajectory.normalized() * 30.0,
@@ -291,15 +300,23 @@ func _resolve_gamma() -> void:
 		var sweep := get_world_3d().direct_space_state.cast_motion(body_query)
 		if sweep.size() == 2 and sweep[0] > 0.95:
 			owner_actor.ope_relocate(from, to, NodePath(""), Vector3.ZERO, false)
-	# Alcance curto: elipsoide frente à mão, com linha de visão para cobertura.
+	owner_actor.ope_event(cast_token, "gamma_strike", -1,
+		owner_actor.global_position, horizontal)
+	# Alcance curto diante da mão, com linha de visão para cobertura.
 	var zone := ZONE.new()
 	zone.name = "OpeGammaKnife"
 	zone.room_ref = weakref(room)
 	zone.exige_linha_de_visao = true
 	zone.origem_linha_de_visao = owner_actor.global_position
+	zone.hit_landed.connect(func(body: Node):
+		if is_instance_valid(owner_actor):
+			owner_actor.ope_event(cast_token, "gamma_hit", -1, body.global_position))
 	add_child(zone)
 	zone.global_position = owner_actor.global_position + horizontal * 1.8
-	zone.setup(damage_spec.dano, 10.0, Vector3.ZERO, 0.20, owner_actor, 2.0, null, 0.55)
+	zone.look_at(zone.global_position + horizontal, Vector3.UP)
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(1.6, 2.2, 3.2)
+	zone.setup(damage_spec.dano, 10.0, Vector3.ZERO, 0.20, owner_actor, 1.0, shape, 0.55)
 	damage_spec.marcar(zone)
 
 
@@ -310,20 +327,26 @@ static func pick_target(actor: Node3D, direction: Vector3, maximum: float) -> No
 	var best: Node3D
 	var best_score := -INF
 	var forward := direction.normalized()
-	var candidates := actor.get_tree().get_nodes_in_group("player") + actor.get_tree().get_nodes_in_group("enemy")
+	var candidates := AlvosDeGolpe.todos(actor.get_tree())
 	for candidate in candidates:
 		if candidate == actor or not candidate is Node3D or not candidate.has_method("take_damage"):
 			continue
-		if not active_room.contains_point(candidate.global_position, 0.5):
+		if candidate.is_queued_for_deletion() or candidate.get_meta("damage_immune", false):
 			continue
-		var offset: Vector3 = candidate.global_position - actor.global_position
+		var hp = candidate.get("health")
+		if hp != null and float(hp) <= 0.0:
+			continue
+		var meio := AlvosDeGolpe.centro(candidate)
+		if not active_room.contains_point(meio, 0.5):
+			continue
+		var offset: Vector3 = meio - actor.global_position
 		var distance := offset.length()
 		if distance < 0.1 or distance > maximum:
 			continue
 		var alignment := forward.dot(offset.normalized())
 		if alignment < 0.90:
 			continue
-		if not line_clear(actor, actor.global_position, candidate.global_position, [candidate]):
+		if not line_clear(actor, actor.global_position, meio, [candidate]):
 			continue
 		var score := alignment * 40.0 - distance * 0.15
 		if score > best_score:
@@ -423,3 +446,20 @@ static func ground_position(actor: Node3D, desired: Vector3, extra: Array) -> Di
 	if not space.intersect_shape(body_query, 1).is_empty():
 		return {}
 	return {"position": candidate}
+
+
+## Chamada apenas pelo evento aceito do servidor no Player.
+func present_event(event: String, index: int, at: Vector3, direction: Vector3) -> void:
+	match event:
+		"cancel":
+			if not _cancelled:
+				_cancelled = true
+				_finish_pose()
+				queue_free()
+		"rock_impact":
+			if is_instance_valid(_presentation):
+				_presentation.impact_rock(index, at)
+		"gamma_strike":
+			VFX.gamma_strike(self, at, direction, 3.2)
+		"gamma_hit":
+			VFX.impact(self, at, true)

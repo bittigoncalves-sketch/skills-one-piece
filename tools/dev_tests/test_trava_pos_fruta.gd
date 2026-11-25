@@ -1,6 +1,6 @@
 extends SceneTree
 # ============================================================================
-#  A TRAVA DE 5 SEGUNDOS APÓS QUALQUER ATAQUE DE FRUTA, e a Mera sem carga.
+#  A TRAVA APÓS ATAQUE DE FRUTA (desligada em 2026-09-13), e a Mera sem carga.
 #
 #  Pedidos do dono (2026-09-01):
 #    • "elimina a necessidade de tempo para desferir ataques de frutas na Mera";
@@ -61,10 +61,13 @@ func _a_mera_sem_carga() -> void:
 		carregaveis.has("bomu_bomu") and carregaveis["bomu_bomu"].size() == 2)
 
 
-## 2. A TRAVA: bloqueia os poderes e PAUSA as recargas.
+## 2. A TRAVA. Desligada pelo dono em 2026-09-13 (TRAVA_POS_FRUTA = 0; "vai ser
+## refeita de outra forma"). Verifica as duas coisas: desligada, nenhum ataque a
+## arma e a recarga corre; e o MECANISMO continua funcionando se for armado, para
+## quem religar não descobrir tarde que a pausa quebrou.
 func _a_trava(p: Node3D) -> void:
-	print("\n=== 2. a trava de 5 s ===")
-	_ok("a trava dura 5 s", absf(p.TRAVA_POS_FRUTA - 5.0) < 0.01)
+	print("\n=== 2. a trava pós-fruta (desligada) ===")
+	_ok("a trava está desligada (0 s)", absf(p.TRAVA_POS_FRUTA) < 0.001)
 
 	p.combat_mode = "fruit"
 	p.current_fruit_id = "mera_mera"
@@ -72,35 +75,27 @@ func _a_trava(p: Node3D) -> void:
 	for k in p._fruit_cooldowns.keys():
 		p._fruit_cooldowns[k] = 0.0
 
-	# Um ataque de fruta arma a trava.
+	# Desligada: um ataque de fruta NÃO arma a trava e a recarga anda.
 	p.trigger_skill_cooldown("Z")
 	await _quadros(2)
 	print("   depois de um ataque: trava %.1f s | recarga do Z %.1f s"
 		% [p._trava_pos_fruta, p._fruit_cooldowns["Z"]])
-	_ok("usar um ataque de fruta ARMA a trava", p._trava_pos_fruta > 4.0)
-	_ok("e a recarga do slot também começou", p._fruit_cooldowns["Z"] > 0.0)
+	_ok("usar um ataque de fruta NÃO arma trava nenhuma", p._trava_pos_fruta <= 0.0)
+	_ok("a recarga do slot começou", p._fruit_cooldowns["Z"] > 0.0)
+	var cd0: float = p._fruit_cooldowns["Z"]
+	await _quadros(90)
+	_ok("sem trava, a recarga corre desde o primeiro instante", p._fruit_cooldowns["Z"] < cd0)
 
-	# ⚠️ A PAUSA. Meia dúzia de quadros depois, a recarga NÃO pode ter andado.
+	# ⚠️ O MECANISMO, armado à mão: bloqueia a recarga enquanto corre.
+	p._trava_pos_fruta = 5.0
 	var cd_antes: float = p._fruit_cooldowns["Z"]
 	var trava_antes: float = p._trava_pos_fruta
-	# ⚠️ QUADROS DE PROCESSO NÃO SÃO TICKS DE FÍSICA. O decremento roda no
-	# `_physics_process`, e 40 quadros de processo renderam menos de meio
-	# segundo de física — pouco para a diferença aparecer com uma casa decimal.
-	# 90 dão margem folgada, e o que importa aqui é a DIREÇÃO da mudança.
+	# Quadros de PROCESSO não são ticks de física; 90 dão margem para a mudança.
 	await _quadros(90)
-	print("   90 quadros depois: trava %.1f -> %.1f | recarga %.1f -> %.1f"
+	print("   armada à mão, 90 quadros: trava %.1f -> %.1f | recarga %.1f -> %.1f"
 		% [trava_antes, p._trava_pos_fruta, cd_antes, p._fruit_cooldowns["Z"]])
-	_ok("a TRAVA anda", p._trava_pos_fruta < trava_antes)
-	_ok("mas a RECARGA fica parada", absf(p._fruit_cooldowns["Z"] - cd_antes) < 0.01)
-
-	# ⚠️ CONTROLE DA PAUSA: com a trava vencida, a recarga volta a andar. Sem
-	# isto, uma recarga QUEBRADA (que nunca anda) passaria como "pausada".
-	p._trava_pos_fruta = 0.0
-	var cd2: float = p._fruit_cooldowns["Z"]
-	await _quadros(90)
-	print("   sem a trava: recarga %.1f -> %.1f" % [cd2, p._fruit_cooldowns["Z"]])
-	_ok("passada a trava, a recarga volta a correr",
-		p._fruit_cooldowns["Z"] < cd2)
+	_ok("mecanismo preservado: a TRAVA anda", p._trava_pos_fruta < trava_antes)
+	_ok("mecanismo preservado: a RECARGA fica parada", absf(p._fruit_cooldowns["Z"] - cd_antes) < 0.01)
 
 	for k in p._fruit_cooldowns.keys():
 		p._fruit_cooldowns[k] = 0.0

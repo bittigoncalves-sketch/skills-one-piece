@@ -1,0 +1,67 @@
+[gd_resource type="Resource" script_class="PerfilDeFrutas" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://src/historia/frutas/tecnica_de_fruta.gd" id="1_tecnica"]
+[ext_resource type="Script" path="res://src/historia/frutas/perfil_de_frutas.gd" id="2_perfil"]
+
+[sub_resource type="Resource" id="Resource_z"]
+script = ExtResource("1_tecnica")
+slot = "Z"
+nome = "Missile Fist"
+comportamento = "missil"
+recarga = 6.0
+custo_de_energia = 20.0
+dano = 30.0
+raio = 2.0
+alcance = 40.0
+empurrao = 6.0
+dano_de_postura = 25.0
+hitstun = 0.35
+
+[sub_resource type="Resource" id="Resource_x"]
+script = ExtResource("1_tecnica")
+slot = "X"
+nome = "Air Strike"
+comportamento = "bombardeio"
+recarga = 10.0
+custo_de_energia = 30.0
+dano = 15.0
+raio = 2.0
+empurrao = 8.0
+dano_de_postura = 12.0
+hitstun = 0.3
+
+[sub_resource type="Resource" id="Resource_c"]
+script = ExtResource("1_tecnica")
+slot = "C"
+nome = "Rocket Crash"
+comportamento = "mergulho"
+recarga = 12.0
+custo_de_energia = 30.0
+dano = 45.0
+raio = 3.5
+alcance = 18.0
+empurrao = 12.0
+dano_de_postura = 40.0
+hitstun = 0.5
+
+[sub_resource type="Resource" id="Resource_f"]
+script = ExtResource("1_tecnica")
+slot = "F"
+nome = "Blast Off"
+comportamento = "voo"
+recarga = 8.0
+custo_de_energia = 20.0
+duracao = 3.0
+dano = 0.0
+raio = 0.0
+alcance = 0.0
+empurrao = 0.0
+dano_de_postura = 0.0
+hitstun = 0.0
+
+[resource]
+script = ExtResource("2_perfil")
+fruta = "rocket"
+regen_de_energia = 10.0
+dano_bloqueado = 0.3
+tecnicas = Array[ExtResource("1_tecnica")]([SubResource("Resource_z"), SubResource("Resource_x"), SubResource("Resource_c"), SubResource("Resource_f")])

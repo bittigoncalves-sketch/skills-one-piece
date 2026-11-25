@@ -11,6 +11,16 @@ static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damag
 		caster: Node, spec: DamageSpec = null) -> void:
 	var body_pos := (caster as Node3D).global_position + Vector3.UP * 1.0 if caster is Node3D else origin
 	var fwd := dir.normalized()
+	# O braço sai do OMBRO, não da linha da câmera: mira o ponto que o retículo marca.
+	# Com a direção da câmera ele ia paralelo à mira e batia no chão antes do alvo
+	# (medido no inimigo do mapa, 05/10/2026 — `AlvosDeGolpe.ponto_mirado`).
+	if caster is Node3D and (caster as Node3D).is_inside_tree() and origin.is_finite() and origin != Vector3.ZERO:
+		var fora: Array[RID] = []
+		if caster is CollisionObject3D:
+			fora.append((caster as CollisionObject3D).get_rid())
+		var ponto := AlvosDeGolpe.ponto_mirado((caster as Node3D).get_world_3d(), origin, fwd, 40.0, fora)
+		if body_pos.distance_to(ponto) > 0.5:
+			fwd = (ponto - body_pos).normalized()
 	# `spec` é opcional porque as auditorias de `tools/dev_tests/` chamam os
 	# efeitos direto, sem passar pela tabela. Sem ela o golpe sai avulso — dano
 	# cheio, sem orçamento — que é o que uma medição de hitbox quer.
@@ -22,6 +32,9 @@ static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damag
 		1: _bazooka(world, body_pos, fwd, damage, caster, spec)
 		2: _gatling(world, body_pos, fwd, damage, caster, spec)
 		3: _red_hawk(world, body_pos, fwd, damage, caster, spec)
+		10: _jet_pistol(world, body_pos, fwd, damage, caster, spec)
+		11: _jet_bazooka(world, body_pos, fwd, damage, caster, spec)
+		12: _gear3_gigant(world, body_pos, fwd, damage, caster, spec)
 
 # ---------- Helper: Encontra nó do rig do jogador pelo nome ----------
 static func _find_rig_node(root: Node, node_name: String) -> Node3D:
@@ -200,3 +213,92 @@ static func _red_hawk(world: Node, body_pos: Vector3, fwd: Vector3, damage: floa
 	var red_hawk = load("res://src/effects/GomuRedHawk.gd").new()
 	world.add_child(red_hawk)
 	red_hawk.setup(world, caster, shoulder, fwd, damage, on_recover, spec)
+
+# ---------- Gear 2 Z: Gomu Gomu no Jet Pistol (Supersônico) ----------
+static func _jet_pistol(world: Node, body_pos: Vector3, fwd: Vector3, damage: float, caster: Node, spec: DamageSpec) -> void:
+	var shoulder := _find_rig_node(caster, "UpperArm_R")
+	if shoulder == null:
+		shoulder = _find_rig_node(caster, "UpperArm_L")
+
+	if shoulder:
+		var on_recover := Callable()
+		if caster and caster.has_method("trigger_recovery_anim"):
+			on_recover = Callable(caster, "trigger_recovery_anim")
+		var arm := GomuArm.new()
+		world.add_child(arm)
+		arm.setup(world, caster, shoulder, shoulder, fwd, 16.0, 0.20, damage, on_recover, true, 1.2, 1.2, spec, false, true)
+
+		# Anel de choque de condensação sonora (sonic boom) no ombro
+		var pm := ParticleProcessMaterial.new()
+		pm.direction = fwd
+		pm.spread = 20.0
+		pm.initial_velocity_min = 12.0
+		pm.initial_velocity_max = 24.0
+		pm.scale_min = 0.5
+		pm.scale_max = 1.4
+		pm.color_ramp = FxUtil.gradient([Color(1, 1, 1, 0.95), Color(1, 0.8, 0.8, 0.4), Color(1, 1, 1, 0)])
+		var blast := FxUtil.particles(60, 0.25, true, pm, FxUtil.grain(0.12))
+		world.add_child(blast)
+		blast.global_position = shoulder.global_position
+		FxUtil.autofree(blast, 0.4)
+		return
+
+	# Fallback (sem rig)
+	_pistol(world, body_pos, fwd, damage, caster, spec)
+
+# ---------- Gear 2 X: Gomu Gomu no Jet Bazooka (Propulsão de Vapor) ----------
+static func _jet_bazooka(world: Node, body_pos: Vector3, fwd: Vector3, damage: float, caster: Node, spec: DamageSpec) -> void:
+	var length := 18.0
+	var arm_r := _find_rig_node(caster, "UpperArm_R")
+	var arm_l := _find_rig_node(caster, "UpperArm_L")
+
+	if arm_r and arm_l:
+		var on_recover := Callable()
+		if caster and caster.has_method("trigger_recovery_anim"):
+			on_recover = Callable(caster, "trigger_recovery_anim").bind("X")
+			
+		var gomu_r := GomuArm.new()
+		world.add_child(gomu_r)
+		gomu_r.setup(world, caster, arm_r, arm_r, fwd, length, 0.26, damage, on_recover, true, 2.8, 2.2, spec, false, true)
+		
+		var gomu_l := GomuArm.new()
+		world.add_child(gomu_l)
+		gomu_l.setup(world, caster, arm_l, arm_l, fwd, length, 0.26, damage, Callable(), false, 2.8, 2.2, spec, false, true)
+		
+		GomuAudio.play(world, body_pos, "bazooka", 1.5)
+
+		# Jatos de vapor supersônico
+		world.get_tree().create_timer(0.04).timeout.connect(func():
+			if not world or not is_instance_valid(world): return
+			var pm := ParticleProcessMaterial.new()
+			pm.direction = fwd
+			pm.spread = 35.0
+			pm.initial_velocity_min = 25.0
+			pm.initial_velocity_max = 45.0
+			pm.scale_min = 1.2
+			pm.scale_max = 3.5
+			pm.color_ramp = FxUtil.gradient([Color(1, 1, 1, 0.95), Color(1, 0.6, 0.5, 0.7), Color(1, 1, 1, 0)])
+			var blast := FxUtil.particles(320, 0.5, true, pm, FxUtil.grain(0.6))
+			world.add_child(blast)
+			blast.global_position = arm_r.global_position + fwd * length
+			FxUtil.autofree(blast, 0.7)
+		)
+		return
+
+	# Fallback (sem rig)
+	_bazooka(world, body_pos, fwd, damage, caster, spec)
+
+# ---------- Gear 2 C: GOMU GOMU NO GEAR 3 (Soco Gigante / Gigant Pistol) ----------
+static func _gear3_gigant(world: Node, body_pos: Vector3, fwd: Vector3, damage: float, caster: Node, spec: DamageSpec) -> void:
+	var shoulder := _find_rig_node(caster, "UpperArm_R")
+	if shoulder == null:
+		shoulder = _find_rig_node(caster, "UpperArm_L")
+
+	var on_recover := Callable()
+	if caster and caster.has_method("trigger_recovery_anim"):
+		on_recover = Callable(caster, "trigger_recovery_anim").bind("C")
+
+	var gear3 = load("res://src/effects/GomuGear3Punch.gd").new()
+	world.add_child(gear3)
+	gear3.setup(world, caster, shoulder, shoulder, fwd, damage, on_recover, spec)
+

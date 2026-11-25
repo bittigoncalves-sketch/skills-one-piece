@@ -124,6 +124,34 @@ func _build() -> void:
 		_list.add_child(btn)
 		_buttons[str(c["id"])] = btn
 
+	# KIT DO BUILDER (decisão do dono, 06/10/2026): as skills publicadas no Skills
+	# Builder, equipadas como fruta pelo servidor. Só aparece com skill de Jogador.
+	if KitDoBuilder.disponivel():
+		var kit := Button.new()
+		kit.name = "KitDoBuilder"
+		kit.text = "%s (%s)" % [KitDoBuilder.NOME, " ".join(KitDoBuilder.teclas())]
+		kit.custom_minimum_size = Vector2(180, 34)
+		kit.focus_mode = Control.FOCUS_NONE
+		kit.add_theme_stylebox_override("normal", _btn_box(false))
+		kit.add_theme_stylebox_override("hover", _btn_box(true))
+		kit.add_theme_stylebox_override("pressed", _btn_box(true))
+		kit.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+		kit.pressed.connect(_on_pick_kit)
+		col_char.add_child(kit)
+	# FRUTAS DO BUILDER (06/10/2026): cada fruta pronta do catálogo (ex.: Noro Noro no Mi).
+	for fid in KitDoBuilder.frutas_prontas():
+		var bf := Button.new()
+		bf.name = "Fruta_" + fid
+		bf.text = "%s (%s)" % [KitDoBuilder.nome(fid), " ".join(KitDoBuilder.teclas(fid))]
+		bf.custom_minimum_size = Vector2(180, 34)
+		bf.focus_mode = Control.FOCUS_NONE
+		bf.add_theme_stylebox_override("normal", _btn_box(false))
+		bf.add_theme_stylebox_override("hover", _btn_box(true))
+		bf.add_theme_stylebox_override("pressed", _btn_box(true))
+		bf.add_theme_color_override("font_color", KitDoBuilder.cor(fid).lightened(0.3))
+		bf.pressed.connect(_on_pick_fruta_do_builder.bind(fid))
+		col_char.add_child(bf)
+
 	# Divisor Vertical
 	var vsep := VSeparator.new()
 	var vss := StyleBoxFlat.new()
@@ -195,6 +223,18 @@ func _on_pick(char_id: String) -> void:
 		player._setup_character_model(char_id)
 	_refresh_highlight()
 	toggle()  # fecha e recaptura o mouse
+
+func _on_pick_fruta_do_builder(fid: String) -> void:
+	var player := PlayerScript.local_player(get_tree())
+	if player and player.has_method("pedir_fruta_do_builder"):
+		player.pedir_fruta_do_builder(fid)
+	toggle()
+
+func _on_pick_kit() -> void:
+	var player := PlayerScript.local_player(get_tree())
+	if player and player.has_method("pedir_kit_do_builder"):
+		player.pedir_kit_do_builder()
+	toggle()
 
 func _on_pick_style(style_id: String) -> void:
 	var player := PlayerScript.local_player(get_tree())

@@ -1,0 +1,341 @@
+extends SceneTree
+## Sonda 2 (auditoria Bara onda 1): primeiro cast, trajetoria Z, hitstun efetivo,
+## vitima Player, M1 limpo e autodano do C. Nao altera o projeto.
+const BARA := preload("res://src/combat/BaraController.gd")
+const HOME := Vector3(0, 101, 0)
+const DUMMY_Y := 100.81
+var actor: Node3D
+var dummy: Node3D
+var token := 9000
+var far := HOME + Vector3(25, -0.19, 25)
+
+func out(s: String) -> void:
+	print("MEAS " + s)
+
+func f3(v: Vector3) -> String:
+	return "(%.3f,%.3f,%.3f)" % [v.x, v.y, v.z]
+
+func _init() -> void:
+	await process_frame
+	create_timer(600.0, true, false, true).timeout.connect(func():
+		print("MEAS TIMEOUT")
+		quit(3))
+	var flow := root.get_node("GameFlow")
+	flow.dummies["TrainingDummy"] = true
+	flow.dummies["AutoDummy"] = false
+	flow.start_singleplayer()
+	await create_timer(2).timeout
+	actor = get_first_node_in_group("player")
+	dummy = get_first_node_in_group("dummy")
+	actor.set_physics_process(false)
+	dummy.set_physics_process(false)
+	actor.equip_fruit("bara_bara")
+	actor.combat_mode = "fruit"
+	box(Vector3(0, 99.7, 0), Vector3(60, 0.6, 60))
+	await reset(far, false)
+
+	# ---- 1. primeiro cast num contêiner novo: Z e X no MESMO quadro ----
+	out("first_cast container_valid_before=%s" % str(is_instance_valid(actor._spawned_skills_container)))
+	var e0: float = actor.energy
+	request("Z")
+	var az = BARA.action_for(actor)
+	request("X")
+	var ax = BARA.action_for(actor)
+	out("first_cast same_frame action_for_after_Z=%s action_for_after_X=%s energy_paid=%.0f container_in_tree=%s" % [str(az), str(ax), e0 - actor.energy, str(actor._spawned_skills_container.is_inside_tree())])
+	await physics_frame
+	await physics_frame
+	var effects := get_nodes_in_group("bara_effect")
+	var names := []
+	for n in effects: names.append(str(n.name) + "(slot=" + str(n.slot) + ")")
+	out("first_cast after_2_frames bara_effect_nodes=%d %s action_for=%s" % [effects.size(), str(names), str(BARA.action_for(actor))])
+	for i in 150:
+		await physics_frame
+	effects = get_nodes_in_group("bara_effect")
+	out("first_cast after_2.5s bara_effect_nodes=%d dummy_health=%.0f is_casting=%s" % [effects.size(), dummy.health, str(actor.get_meta("is_casting", false))])
+	actor.clear_spawned_skills()
+	await frames(3)
+
+	# ---- 2. Z em vazio: tempos + trajetoria; raio efetivo pela bisseccao ja medida ----
+	await reset(far, false)
+	var zt: Array = await trace_hands("Z", Vector3.FORWARD, "whiff60_Z")
+	var pts: Array = zt[1]
+	for lat in [0.924, 0.938]:
+		out("radius Z lateral=%.3f fwd=3.50 path_to_box_gap=%.3f (samples=%d)" % [lat, path_box_distance(pts, HOME + Vector3.FORWARD * 3.5 + Vector3(lat, DUMMY_Y - HOME.y, 0)), pts.size()])
+	# confirma a bisseccao nesta sessao
+	for lat in [0.90, 0.924, 0.938, 0.96]:
+		var d: float = await single_hit("Z", HOME + Vector3.FORWARD * 3.5 + Vector3(lat, DUMMY_Y - HOME.y, 0))
+		out("radius Z recheck lateral=%.3f damage=%.0f gap=%.3f" % [lat, d, path_box_distance(pts, HOME + Vector3.FORWARD * 3.5 + Vector3(lat, DUMMY_Y - HOME.y, 0))])
+
+	# ---- 3. hitstun efetivo no dummy (tempo ate _hitstun_timer<=0, com hitstop) ----
+	for slot in ["Z", "X", "C"]:
+		var at := HOME + Vector3.FORWARD * (3.0 if slot == "Z" else 6.0) + Vector3(0, DUMMY_Y - HOME.y, 0)
+		if slot == "C":
+			at = HOME + Vector3.FORWARD * 16.5 + Vector3(0, DUMMY_Y - HOME.y, 0)
+		await reset(at, true)
+		request(slot)
+		var hp := 2048.0
+		var t_hit := -1.0
+		var t := 0.0
+		var stun_end := -1.0
+		var stop_end := -1.0
+		var kb_applied := Vector3.ZERO
+		var p_hit := Vector3.ZERO
+		while t < 3.0:
+			await physics_frame
+			t += (1.0 / Engine.physics_ticks_per_second) * Engine.time_scale
+			if t_hit < 0 and dummy.health < hp:
+				t_hit = t
+				p_hit = dummy.global_position
+				out("dummy_hitstun slot=%s hit dmg=%.0f hitstun_timer=%.3f hitstop=%.3f pending_kb=%s" % [slot, hp - dummy.health, dummy._hitstun_timer, dummy._hitstop_timer, f3(dummy._pending_knockback)])
+			elif t_hit >= 0:
+				if stop_end < 0 and dummy._hitstop_timer <= 0.0:
+					stop_end = t - t_hit
+					kb_applied = dummy.velocity
+				if stun_end < 0 and dummy._hitstun_timer <= 0.0:
+					stun_end = t - t_hit
+					break
+		out("dummy_hitstun slot=%s hitstop_ends_after=%.3f hitstun_ends_after=%.3f velocity_after_hitstop=%s horiz=%.2f" % [slot, stop_end, stun_end, f3(kb_applied), Vector2(kb_applied.x, kb_applied.z).length()])
+
+	# ---- 4. vitima Player (Z, X a 6 m, V a 3 m) ----
+	var main := current_scene
+	var victim: Node = main._spawn_player_data({"id": 77, "pos": [0, 101, -3], "cor": 1})
+	victim.set_multiplayer_authority(1)
+	actor.get_parent().add_child(victim)
+	await create_timer(1.0).timeout
+	victim.set_process_unhandled_input(false)
+	out("victim ready=%s is_auth=%s fruit=%s pos=%s" % [str(victim.is_inside_tree()), str(victim._is_authority), str(victim.current_fruit_id), f3(victim.global_position)])
+	dummy.global_position = far
+	for cs in [["Z", 3.0], ["X", 6.0], ["V", 3.0]]:
+		await reset(far, false)
+		victim.global_position = HOME + Vector3.FORWARD * float(cs[1])
+		victim.velocity = Vector3.ZERO
+		victim.health = victim.max_health
+		await frames(20)
+		var vp0: Vector3 = victim.global_position
+		request(str(cs[0]))
+		var e = BARA.action_for(actor)
+		var hp: float = victim.health
+		var hits := 0
+		var t_last := -1.0
+		var stunned_frames := 0
+		var t := 0.0
+		var max_h := 0.0
+		var max_up := -INF
+		var launched := false
+		var log_after := -1.0
+		while t < 4.2:
+			await physics_frame
+			t += (1.0 / Engine.physics_ticks_per_second) * Engine.time_scale
+			var st := str(victim._fsm.state.name)
+			if victim.health < hp:
+				hits += 1
+				var pose_t := float(victim.get_meta("_dano_pose_t")) if victim.has_meta("_dano_pose_t") else -1.0
+				out("victim %s hit#%d t=%.3f dmg=%.0f fsm=%s dano_pose_t=%.3f hitstop=%.3f vel=%s arremesso_ativo=%s pos=%s" % [cs[0], hits, t, hp - victim.health, st, pose_t, float(victim._hitstop_timer), f3(victim.velocity), str(victim._arremesso.ativo()), f3(victim.global_position)])
+				hp = victim.health
+				t_last = t
+				stunned_frames = 0
+			if t_last >= 0:
+				if st == "Stunned": stunned_frames += 1
+				var hv := Vector2(victim.velocity.x, victim.velocity.z).length()
+				max_h = maxf(max_h, hv)
+				max_up = maxf(max_up, victim.velocity.y)
+				if victim._arremesso.ativo(): launched = true
+		out("victim %s total_dmg=%.0f hits=%d last_hit_stunned_frames=%d(@%dHz) max_planar_speed_after_hits=%.2f max_vy=%.2f arremesso_seen=%s disp=%s horiz=%.2f" % [cs[0], victim.max_health - victim.health, hits, stunned_frames, Engine.physics_ticks_per_second, max_h, max_up, str(launched), f3(victim.global_position - vp0), Vector2(victim.global_position.x - vp0.x, victim.global_position.z - vp0.z).length()])
+	# ---- 4b. estado Stunned: duracao por golpe isolado Z ----
+	await reset(far, false)
+	victim.global_position = HOME + Vector3.FORWARD * 3.0
+	victim.health = victim.max_health
+	await frames(20)
+	request("Z")
+	var t2 := 0.0
+	var hit_t := -1.0
+	var hp2: float = victim.health
+	var stun_start := -1.0
+	var stun_stop := -1.0
+	var pose_stop := -1.0
+	while t2 < 2.0:
+		await physics_frame
+		t2 += (1.0 / Engine.physics_ticks_per_second) * Engine.time_scale
+		if hit_t < 0 and victim.health < hp2: hit_t = t2
+		if hit_t >= 0:
+			var st := str(victim._fsm.state.name)
+			if st == "Stunned" and stun_start < 0: stun_start = t2 - hit_t
+			if stun_start >= 0 and st != "Stunned" and stun_stop < 0: stun_stop = t2 - hit_t
+			if pose_stop < 0 and not victim.has_meta("_dano_pose_t"): pose_stop = t2 - hit_t
+	out("victim Z stunned_state from=%.3f to=%.3f dano_pose_cleared_after=%.3f" % [stun_start, stun_stop, pose_stop])
+	victim.queue_free()
+	await frames(5)
+
+	# ---- 5. M1 limpo: maos mirando para a DIREITA, dummy a frente ----
+	actor.set_physics_process(true)
+	await reset(far, false)
+	await frames(30)
+	var front := actor.global_position + Vector3.FORWARD * 1.1
+	front.y = DUMMY_Y
+	await m1_once(front, "", 0.0, Vector3.RIGHT, "control")
+	await m1_once(front, "Z", 0.30, Vector3.RIGHT, "Z_outbound")
+	await m1_once(front, "Z", 0.65, Vector3.RIGHT, "Z_returning")
+	await m1_once(front, "X", 0.55, Vector3.RIGHT, "X_outbound")
+	await m1_once(front, "X", 0.90, Vector3.RIGHT, "X_returning")
+	await m1_once(front, "V", 0.70, Vector3.RIGHT, "V_hand0_out")
+	await m1_once(front, "V", 2.20, Vector3.RIGHT, "V_both_out")
+	await m1_once(front, "C", 0.30, Vector3.RIGHT, "C_windup")
+
+	# ---- 6. C a queima-roupa: explosao e autodano ----
+	for kase in ["wall1p5", "wall2p5", "floor_down"]:
+		var w: Node3D = null
+		if kase == "wall1p5": w = box(HOME + Vector3(0, 0, -1.7), Vector3(6, 6, 0.4))
+		if kase == "wall2p5": w = box(HOME + Vector3(0, 0, -2.7), Vector3(6, 6, 0.4))
+		await frames(2)
+		await reset(far, false)
+		await frames(20)
+		actor.health = actor.max_health
+		var p0: Vector3 = actor.global_position
+		var aim := Vector3.FORWARD if kase != "floor_down" else Vector3(0, -0.8, -0.6).normalized()
+		request("C", aim)
+		var e = BARA.action_for(actor)
+		await physics_frame
+		var boom := Vector3.INF
+		var t_boom := -1.0
+		var was_active := false
+		var em := 0
+		while is_instance_valid(e) and not e.is_queued_for_deletion():
+			if t_boom < 0:
+				if e._emitted != em:
+					em = e._emitted
+					if not e._ball_active:
+						boom = e._ball_position
+						t_boom = e.elapsed
+				if e._ball_active: was_active = true
+				elif was_active:
+					boom = e._ball_position
+					t_boom = e.elapsed
+			await physics_frame
+		out("self_damage case=%s explode_t=%.3f explosion=%s dist_to_actor_center=%.2f actor_health_loss=%.1f actor_disp=%s" % [kase, t_boom, f3(boom), boom.distance_to(p0) if boom.is_finite() else -1.0, actor.max_health - actor.health, f3(actor.global_position - p0)])
+		if w: w.queue_free()
+		await frames(2)
+	actor.set_physics_process(false)
+	print("MEAS DONE")
+	current_scene.queue_free()
+	await create_timer(0.2).timeout
+	quit(0)
+
+func trace_hands(slot: String, aim: Vector3, label: String) -> Array:
+	request(slot, aim)
+	var pts := [[], []]
+	var prev := ["attached", "attached"]
+	var e = null
+	for i in 3:
+		e = BARA.action_for(actor)
+		if e != null: break
+		await physics_frame
+	var last := 0.0
+	while is_instance_valid(e) and not e.is_queued_for_deletion():
+		await physics_frame
+		if not is_instance_valid(e): break
+		last = e.elapsed
+		for side in e.hands.size():
+			var h: Dictionary = e.hands[side]
+			if str(h.state) != "attached": pts[side].append(h.transform.origin)
+			if str(h.state) != prev[side]:
+				out("%s t=%.3f hand=%d %s->%s pos=%s" % [label, e.elapsed, side, prev[side], str(h.state), f3(h.transform.origin)])
+				prev[side] = str(h.state)
+	out("%s END last_elapsed=%.3f" % [label, last])
+	return pts
+
+func single_hit(slot: String, at: Vector3) -> float:
+	await reset(at, false)
+	request(slot)
+	var e = BARA.action_for(actor)
+	while is_instance_valid(e) and not e.is_queued_for_deletion():
+		await physics_frame
+	await frames(2)
+	return 2048.0 - dummy.health
+
+func path_box_distance(pts: Array, center: Vector3) -> float:
+	var best := INF
+	var half := Vector3(0.5, 0.8, 0.5)
+	for i in range(1, pts.size()):
+		var a: Vector3 = pts[i - 1]
+		var b: Vector3 = pts[i]
+		for k in 21:
+			var p := a.lerp(b, k / 20.0) - center
+			var q := Vector3(clampf(p.x, -half.x, half.x), clampf(p.y, -half.y, half.y), clampf(p.z, -half.z, half.z))
+			best = minf(best, p.distance_to(q))
+	return best
+
+func m1_once(target: Vector3, slot: String, at: float, aim: Vector3, label: String) -> void:
+	await reset(target, false)
+	actor.set_physics_process(true)
+	var guard := 0
+	while guard < 240 and str(actor._fsm.state.name) != "Idle":
+		await physics_frame
+		guard += 1
+	await frames(130) # janela do combo expira (Melee.JANELA)
+	var e = null
+	if slot != "":
+		request(slot, aim)
+		await physics_frame
+		e = BARA.action_for(actor)
+		while is_instance_valid(e) and float(e.elapsed) < at:
+			await physics_frame
+	var hands_s := ""
+	var el := -1.0
+	if is_instance_valid(e):
+		el = float(e.elapsed)
+		for side in e.hands.size(): hands_s += "%d:%s " % [side, str(e.hands[side].state)]
+	var hp0: float = dummy.health
+	actor._request_melee()
+	var states := []
+	var hitboxes_max := 0
+	for i in 45:
+		await physics_frame
+		var st := str(actor._fsm.state.name)
+		if states.is_empty() or states[-1] != st: states.append(st)
+		hitboxes_max = maxi(hitboxes_max, get_nodes_in_group("hitbox").size())
+	var dmg: float = hp0 - dummy.health
+	var alive: bool = is_instance_valid(e) and not e.is_queued_for_deletion()
+	out("m1 case=%s bara_elapsed_at_click=%.3f hands_at_click=[%s] fsm_sequence=%s hitbox_nodes_max=%d dummy_damage=%.1f bara_action_alive_after_0.75s=%s" % [label, el, hands_s, str(states), hitboxes_max, dmg, str(alive)])
+	actor.clear_spawned_skills()
+	await frames(10)
+
+func frames(n: int) -> void:
+	for i in n: await physics_frame
+
+func reset(dummy_at: Vector3, dummy_physics: bool) -> void:
+	actor.clear_spawned_skills()
+	await process_frame
+	actor.global_position = HOME
+	actor.velocity = Vector3.ZERO
+	actor.net_velocity = Vector3.ZERO
+	actor.health = actor.max_health
+	actor.energy = actor.max_energy
+	actor._fruit_cooldowns.clear()
+	actor._server_cast_next_ms.clear()
+	actor._fruit_damage_lock_timer = 0.0
+	actor._trava_pos_fruta = 0.0
+	actor.set_meta("is_casting", false)
+	dummy.set_physics_process(dummy_physics)
+	dummy.global_position = dummy_at
+	dummy.velocity = Vector3.ZERO
+	dummy._hitstun_timer = 0.0
+	dummy._hitstop_timer = 0.0
+	dummy._pending_knockback = Vector3.ZERO
+	dummy.health = 2048.0
+	await physics_frame
+	await physics_frame
+
+func request(slot: String, direction: Vector3 = Vector3.FORWARD) -> void:
+	token += 1
+	actor._do_server_cast(slot, direction, actor.global_position, 0.0, token, "fruit", "bara_bara")
+
+func box(at: Vector3, size: Vector3) -> Node3D:
+	var body := StaticBody3D.new()
+	var col := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = size
+	col.shape = shape
+	body.add_child(col)
+	current_scene.add_child(body)
+	body.global_position = at
+	return body

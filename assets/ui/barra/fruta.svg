@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <!-- Akuma no Mi genérica: fruta com espirais -->
+  <g stroke="#1e2b1a" stroke-width="2">
+    <circle cx="24" cy="27" r="15" fill="#8e5bd6"/>
+    <path d="M14 24 q5 -5 10 0 q5 5 10 0 M13 31 q5 -5 10 0 q5 5 11 0" fill="none" stroke="#e7d8ff" stroke-width="2"/>
+    <path d="M24 12 q1 -5 5 -7" fill="none" stroke="#5a3a1a" stroke-width="2.5"/>
+    <path d="M26 9 q7 -3 10 3 q-7 3 -10 -3 Z" fill="#5fbf4f"/>
+  </g>
+</svg>

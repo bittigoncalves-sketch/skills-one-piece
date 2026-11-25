@@ -8,6 +8,55 @@ lista vira palpite.
 
 ---
 
+## 2026-10-17 — Besta bovina: teste da sequência de ataques
+
+`test_ataques_agua_bestas.gd` terminou com 39/40 verificações: a bovina ficou em
+`idle`, agressiva, junto ao jogador, sem alternar as cinco bolhas e o raio (0
+disparos). Reproduzido com o novo `BarrasDeCriaturas` ativo e, numa cópia do teste,
+removido antes das verificações da IA; ambos 39/40, mesma asserção. As outras três
+espécies passaram. Logs em `art_src/validation/vida_forja/logs/`. Causa da IA ainda
+não investigada; nenhuma alteração nos ataques nesta frente.
+
+## 2026-10-15 — Portão geral: arena sem dummy e editor de animação
+
+Detectado por `DISPLAY= WAYLAND_DISPLAY= ./validar.sh rapido`, durante sobrevivência/tripulação. Seis testes de arena também falham no HEAD `9301956` sob preferências idênticas: `test_arena`, `test_asas_de_anjo`, `test_ataque_aereo`, `test_ataques_contextuais`, `test_bomu_z_rush`, `test_chute_giratorio`. Os testes dependem de boneco de treino, mas a preferência salva o deixa ausente. Logs A/B: `art_src/validation/sobrevivencia/logs/base_head/`. Pendência: isolar explicitamente os pré-requisitos das sondas sem alterar preferências do jogador.
+
+`test_compila` também reprova seis scripts não versionados de `tools/anim_editor/studio`: `rig_scene.gd`, `main.gd`, `timeline.gd`, `test_selection.gd`, `test_studio.gd`, `view.gd`. Referências `res://document.gd` e semelhantes apontam à raiz do jogo, onde faltam. Observação sem A/B: não há snapshot anterior desses arquivos. Nenhuma edição no studio nesta frente. Pendência: definir se é projeto Godot independente ou módulo e ajustar os caminhos na frente correspondente.
+
+Exceção de entrega autorizada pelo Claude por delegação do usuário, sem mudar o portão geral. Antes da próxima grande frente, versionar o estado atual para permitir comparação completa. O texto “25 testes” em `docs/guia/COMO_TRABALHAR.md:66` está desatualizado; gatilho para corrigi-lo: portão novamente com zero falhas.
+
+
+## ⚔️ O corte horizontal ainda reprova 3 asserções (era 9)
+
+**O que se vê.** `test_corte_horizontal` reprova 3 de 22: a mão esquerda larga o
+cabo no meio do golpe (pior caso 0,84 m, contra um piso de rig de ~0,15 m), o fio
+não fica deitado (37,4° onde 90° é horizontal) e o tronco gira só 42,2° em vez de
+rodar em bloco.
+
+**O que JÁ FOI consertado, e por quê valia a pena.** Em 10/09/2026 o mesmo teste
+reprovava **9** asserções com a espada CONGELADA nos 16 quadros do corte. A causa
+era o `YoruController` aplicando a pose parada por cima do golpe: `Melee` +
+`ProceduralAnimator` cortam sem passar por ele, então `action_id` fica vazio, e
+como o controlador roda com prioridade 50 — depois do Player — era ele quem
+escrevia por último. A guarda nova tornou isso visível (subiu para 11, com a
+espada presa em x=+0,78 / z=+1,53, que é a própria guarda) e levou ao conserto:
+`YoruController._golpe_procedural_em_curso()` cede o corpo enquanto o caminho
+antigo estiver cortando. De 11 para 3.
+
+**⚠️ CORREÇÃO DE UM REGISTRO ANTERIOR DESTA MESMA LISTA.** A versão anterior deste
+item concluía que a causa estava "em alguma das outras mudanças não commitadas".
+A apuração por worktree estava certa no que mediu — o teste passa 22/22 no HEAD,
+e passava com os sete arquivos da frente Yoru copiados por cima — mas a conclusão
+que tirei dela era larga demais: faltava o `YoruRig.gd` e o `Player.gd` da árvore
+suja nessa cópia, e era justamente na interação entre eles que o conflito vivia.
+Worktree prova o que roda nela, não o que NÃO foi copiado para dentro.
+
+**As 3 que sobram** são do caminho procedural antigo (`WeaponPoses`, `Melee`,
+`ProceduralAnimator`), e não da Yoru nova: o `YoruController` não participa mais
+do golpe quando esse caminho está ativo.
+
+---
+
 ## 🎨 Os "Vagalumes de Fogo" da Mera Mera saem ARCO-ÍRIS
 
 **Detectado em 2026-08-25**, ao ligar o glow: com brilho, o problema deixou de
@@ -920,7 +969,15 @@ arquivos de efeito contra a tabela.
 Os defeitos de colisão que eu **corrigi** estão em [`erros.md`](erros.md) e na
 página da fruta. O que segue é o que achei e **não** mexi.
 
-### 51. 🔴 A Pika Pika é a fruta INICIAL e não tem árvore no mapa
+### 51. 🟡 A Pika Pika não tem árvore no mapa (deixou de ser urgente em 2026-09-08)
+
+> **Atualização de 2026-09-08:** a `FRUTA_INICIAL` passou para a `ope_ope`, que
+> **tem** árvore. Ninguém mais nasce com a Pika, então o buraco deixou de ser
+> "a fruta de largada não volta". O fato permanece: a Pika continua sendo a
+> única fruta jogável que não dá para pegar no mapa. O `test_frutas_somem`, que
+> falhava por causa disso, **passou a passar**.
+
+O texto original:
 
 **Detectado em 2026-09-06**, cruzando `SkillSystem.gd` com
 `TreeAndFruitGenerator._todas_as_definicoes()`:
@@ -942,7 +999,78 @@ deliberado que a fruta de largada seja exclusiva do início. Se não for, a
 correção é uma entrada de árvore em `_todas_as_definicoes()` — o filtro a planta
 sozinho depois disso.
 
-### 52. 🔴 `traco_esperado.txt` está defasado desde a troca da fruta inicial
+### 52. 🔴 `traco_esperado.txt` está defasado — e agora dá para consertar de vez
+
+> **Atualização de 2026-09-08 — a explicação anterior estava errada, e o
+> defeito é maior do que se pensava.**
+>
+> O texto abaixo culpava a passiva da `suke_suke` (`4,2 × 1,05 = 4,41`).
+> Medido: **a `suke_suke` tem `speed_mod` 1,0**, não 1,05
+> ([FruitPassiveSystem.gd:49](../FruitPassiveSystem.gd#L49)). Ela nunca poderia
+> produzir os 4,41 gravados. A arqueologia do commit que gravou a linha de base
+> (`cdc3b44`, 12/08) mostra o que de fato aconteceu:
+>
+> - `FRUTA_INICIAL` **não existia** naquele commit; quem equipava era o
+>   `Main.gd:114`, com **`suna_suna`** — `speed_mod` **1,05**. Daí, e só daí,
+>   os `4,2 × 1,05 = 4,410 m/s` que o arquivo registra em 179 quadros.
+>
+> **E há uma segunda causa, independente da fruta.** A fórmula da velocidade
+> mudou depois da gravação:
+>
+> ```gdscript
+> # 12/08 (cdc3b44):  SPEED * speed_multiplier * (1.5 se sprint) * parkour
+> # hoje:             SPEED * speed_multiplier * (1.5 se sprint) * impulso_corrida * parkour
+> ```
+>
+> O `impulso_corrida` é o `RunAccelerationController`, que **rampa de 1,0 a 2,0
+> ao longo de 3 s de corrida**. A linha de base é anterior a esse sistema: os
+> 90 quadros gravados em 6,615 m/s (o patamar de corrida) hoje aceleram. Ou
+> seja, **a física mudou de propósito** desde 12/08 — a linha de base não é só
+> "de outra fruta", é de outro motor de locomoção.
+>
+> A comparação é `diff -q`, **byte a byte, tolerância zero**
+> ([validar.sh:340](../../validar.sh#L340)) — qualquer uma das duas causas
+> sozinha já reprova o arquivo inteiro.
+>
+> **Regravar agora é o melhor momento**, por um motivo que continua valendo: com
+> a `ope_ope` (`speed_mod` 1,0) o traço anda a **4,2000 m/s**, o `SPEED` cru,
+> sem multiplicador de fruta nenhum — a única linha de base que se pode
+> re-derivar sem saber qual fruta estava equipada. **Continua sendo decisão do
+> dono**, porque regravar redefine o que a bateria considera correto, e apaga a
+> rede de segurança de tudo que mudou entre 12/08 e hoje.
+>
+> **O diagnóstico foi feito (2026-09-08).** Regravei o traço com a fruta da
+> gravação original (`suna_suna`) e comparei com o arquivo de 12/08:
+>
+> | | resultado |
+> |---|---|
+> | quadros com velocidade idêntica | **393 de 491** |
+> | primeiro quadro divergente | **76** — exatamente onde o roteiro começa a correr |
+> | caminhada (quadros 1–75) | **byte a byte idêntica**, 4,4100 m/s |
+>
+> A caminhada inteira bate. A divergência começa no primeiro quadro de corrida e
+> **rampa**:
+>
+> | quadro | gravado | atual | fator |
+> |---|---|---|---|
+> | 75 | 4,4100 | 4,4100 | 1,0000 |
+> | 76 | 6,6150 | 6,6518 | 1,0056 |
+> | 85 | 6,6150 | 6,9825 | 1,0556 |
+> | 95 | 6,6150 | 7,3500 | 1,1111 |
+> | 105 | 6,6150 | 7,7175 | 1,1667 |
+>
+> O fator cresce **0,3333 por segundo** (medido: 0,1611 em 29 quadros a 60 Hz).
+> O `RunAccelerationController` declara `(MULTIPLICADOR_MAXIMO 2,0 − 1,0) /
+> TEMPO_PARA_MAXIMO 3,0` = **0,3333 por segundo**. Bate na quarta casa.
+>
+> **Veredito: não há regressão escondida.** As 98 divergências são inteiramente
+> a aceleração de corrida — um sistema adicionado de propósito depois da
+> gravação — e as posições a jusante que ela desloca em cascata. Regravar a
+> linha de base **não enterra bug nenhum**; só passa a registrar a física que o
+> jogo de fato tem hoje. **Continua sendo decisão do dono**, e agora é uma
+> decisão informada.
+
+O texto original:
 
 **Detectado em 2026-09-06**: o `traco_locomocao` reprova no `validar.sh`, e a
 causa não é física.
@@ -988,12 +1116,50 @@ mas o dano que realmente chega ao alvo subiu.
 
 ### 54. 🔴 A espada é LOCAL: em multiplayer o servidor resolve SOCO
 
-**Detectado em 2026-09-06**, na revisão. Nada replica a espada:
+**Detectado em 2026-09-06**, na revisão.
 
-- as propriedades replicadas do Player são `net_velocity`, `net_facing`,
-  `net_on_floor`, `net_charge_pose` e `net_charge_progress` — **`equipped_weapon`
-  não está entre elas**;
+> ⚠️ **CORRIGIDO EM 2026-09-08: a premissa original deste item estava errada.**
+> Ele afirmava que as propriedades replicadas eram só `net_velocity`,
+> `net_facing`, `net_on_floor`, `net_charge_pose` e `net_charge_progress`. A
+> lista real (`Main.gd:288`) é maior:
+>
+> ```
+> position, net_velocity, net_facing, net_on_floor, net_charge_pose,
+> net_charge_progress, current_fruit_id, combat_mode, current_style_idx
+> ```
+>
+> **`combat_mode` JÁ replica.** O buraco não é o dado — é o **efeito**: o
+> `MultiplayerSynchronizer` faz escrita crua da propriedade, então a cópia remota
+> nunca passa por `set_combat_mode()` e o efeito colateral que saca a espada
+> nunca roda lá. `equipped_weapon`, esse sim, não replica.
+>
+> Isso muda o conserto: replicar `equipped_weapon` sozinho não basta, e replicar
+> `combat_mode` de novo seria trabalho inútil. O que falta é o caminho que
+> **executa o saque** na cópia remota.
+>
+> Verificado com host e cliente reais na etapa 0 do
+> [`PLANO_YORU.md`](PLANO_YORU.md); evidência em
+> `multimodal/cache/yoru-validation/rede_medicoes.txt`.
+
+O que continua verdadeiro:
+
+- **`equipped_weapon` não está entre as propriedades replicadas**;
 - `sacar_ou_guardar_espada()` e `set_combat_mode()` não têm RPC nenhum.
+
+E a auditoria de 2026-09-08 acrescentou **cinco falhas reproduzidas** que este
+item não previa, todas em `_do_server_melee` (`Player.gd:3467`), que são cinco
+linhas **sem validação nenhuma** — nem índice, nem estado, nem recarga, nem
+sequência:
+
+| | falha | evidência medida |
+|---|---|---|
+| R4 | mensagem repetida **duplica dano** | 2× `_net_melee(0)` no mesmo quadro = −96,0 |
+| R5 | golpe cancelado **ressuscita** | `cancelar_golpe()` aos 0,05 s e a hitbox nasce assim mesmo |
+| R6 | **índice de golpe não é validado** | 5× no mesmo quadro = **−560,0 de uma vida de 2048 num tick** |
+| R7 | trocar de modo no startup | vira `BOX 4,00 × 1,00 × 3,75 m` com dano de espada |
+
+O caminho contextual (`_do_server_contextual_melee`) já tem `sequencia` e RPC de
+cancelamento — serve de modelo para o M1 básico.
 
 Consequências em partida com mais de um jogador:
 
@@ -1028,3 +1194,365 @@ tela de quem jogar:
 
 Virar as duas para `false` quando a conferência terminar.
 
+### 56. ✅ RESOLVIDO — o botão de PULO cobria a zona de câmera com a Ope equipada
+
+**Detectado em 2026-09-08**, ao tornar a `ope_ope` a fruta inicial; **já
+corrigido no mesmo dia**, na frente da Ope. Fica registrado porque documenta um
+acoplamento fácil de reintroduzir.
+
+**O que era.** A `SkillBar` sobe quando a Ope está equipada, para não ficar por
+baixo do painel de treino. Só que o `ToqueHud` deriva **toda** a régua de botões
+do retângulo dessa barra — então a régua inteira subia junto, ~94 px. Medido na
+época: o PULO ia de `(1000, 422)` para `(1000, 328)`, e o toque de câmera do
+`test_toque`, em `(0,8 × largura, 0,5 × altura)` = **(1024, 360)**, caía a
+**40 px** do centro do PULO, dentro do raio de 50. Arrastar no meio-direita da
+tela para olhar em volta apertava pular.
+
+**A correção** ([src/ui/SkillBar.gd:211](../src/ui/SkillBar.gd#L211)) condiciona
+a subida ao contexto, em vez de amarrá-la só à fruta:
+
+```gdscript
+var bottom := -108.0 if _ope_equipped and not ToqueHud.ativo() else -14.0
+```
+
+No PC a barra sobe e reserva o painel de treino; no toque conserva a régua
+original.
+
+**Verificado:** `test_toque` fecha em **25 conferem / 0 divergem** com a
+`ope_ope` equipada, na bateria completa e isolado.
+
+**O que continua valendo como risco.** A causa de fundo não é a Ope: é o
+`ToqueHud` posicionar botões a partir do retângulo da `SkillBar`. Qualquer
+mudança de tamanho ou posição da barra move a régua de toque junto. Foi o mesmo
+mecanismo que mordeu em 2026-09-06, quando encurtar um *rótulo* do HUD estreitou
+a barra e encostou dois botões (ver `docs/erros.md`). **GATILHO para desacoplar:
+na terceira vez que um ajuste de HUD mexer na posição de um botão de toque.**
+
+### 57. 🟡 A explosão do Hiken pode não criar hitbox quando o punho expira
+
+**Achado em 2026-09-08**, de raspão, ao trocar o visual da Mera. **Não foi
+corrigido: mexe em hitbox, e o trabalho autorizado era visual.**
+
+**A evidência.** No `test_frutas`, com a `mera_mera`:
+
+```
+ERROR: Parent node is busy setting up children, `add_child()` failed.
+ERROR: Condition "!is_inside_tree()" is true. Returning: Transform3D()
+   at: get_global_transform
+       [0] _explosion (res://src/effects/FireFXGrande.gd:286)
+       [1] <anonymous lambda> (res://src/effects/FireFX.gd:314)
+```
+
+A linha 286 é `zone.global_position = pos + Vector3.UP * 1.0`. Ela só reclama
+porque o `world.add_child(zone)` da linha anterior **falhou** — e falhou porque
+o pai estava bloqueado. A lambda de `FireFX.gd:314` é o `explode` do Hiken, que
+está ligado a **dois** gatilhos: `collided_with_any` e `tree_exiting`.
+
+**Confirmado na rodada limpa de 2026-09-08:** contando pelo quadro `[0]` do
+backtrace, a chamada que falha é literalmente o `world.add_child(zone)` da
+`FireFXGrande.gd:285` — uma ocorrência por execução da fruta. O erro de
+`get_global_transform` na linha seguinte é consequência, não causa.
+
+**A hipótese.** Quando o `explode` corre pelo `tree_exiting` — o punho acabando
+o tempo de vida sem acertar ninguém —, o pai está no meio da saída da árvore e
+recusa filhos novos. A `DamageZone` da explosão não nasce, e os **96 de dano**
+que o `Balance` reserva para a parte `"explosao"` não são entregues.
+
+**⚠️ NÃO CONFIRMADO EM JOGO.** A pilha acima é do teste, e no teste o
+`tree_exiting` também dispara no desmonte do cenário — o que produziria o mesmo
+erro por um motivo que não acontece jogando. **Antes de mexer, medir:** soltar
+um Hiken no vazio, deixar expirar por tempo, e contar se nasce `DamageZone` no
+fim do trajeto.
+
+**Se confirmar, o conserto já existe ao lado.** A fachada visual da Mera passou
+a anexar com `add_child.call_deferred()` exatamente por causa deste bloqueio
+(ver `MeraVfx._anexar`); o mesmo remédio serve para a zona — com o cuidado de
+que uma hitbox um quadro atrasada é decisão de jogo, não de desenho.
+
+
+---
+
+### 58. 🟡 `test_bara_combat`: o canhão (C) não dá dano em área fora da trajetória
+
+**Achado em 2026-09-14**, rodando `./validar.sh rapido` para validar o Modo História.
+**Não foi corrigido: é da Bara, fora do escopo.**
+
+**A evidência.** Falha 2 de 2 rodando sozinho: `FAIL C causa dano em área fora da
+trajetória central` (`checks=30 failures=1`). O teste põe o boneco 2 m ao lado e
+16 m à frente, atira o C levemente para baixo e espera 2,5 s: a vida continua 2048.
+
+**Não é do Modo História.** Com as travas de capacidade e o geppo do parkour desfeitos
+à mão (cópia dos arquivos, só as linhas próprias revertidas), a falha é idêntica. O
+teste não estava na lista de 13/09, e o `erros.md` registra trabalho do Codex na Bara
+nesta mesma manhã (`BaraPoses.gd`). **Começar por aí.**
+
+---
+
+## 🆕 Achados de 2026-09-16 — auditoria para o combate do Modo História
+
+Levantados por leitura de código (não reproduzidos em jogo) durante o planejamento
+de [`PLANO_COMBATE_HISTORIA.md`](PLANO_COMBATE_HISTORIA.md). **Nenhum foi corrigido:
+são da arena, e o novo combate da história não usa esses caminhos.**
+
+### 59. 🔴 A hitbox do M1 de punho não pode ser cancelada
+
+`Melee.golpear` agenda a hitbox com `create_timer(startup * s)`, e o callback só confere
+se `caster` e `world` ainda são válidos (`Melee.gd:660-663`). Nem
+`MeleeController.cancelar_golpe` nem o estado `Stunned` alcançam esse timer.
+**Consequência esperada:** um golpe interrompido no startup (apanhou, morreu, trocou
+de modo) ainda cria a `DamageZone`. O contextual já resolve com token de sequência
+(`contextual_melee.gd:351-356`). **Antes de mexer, medir:** atacar, aplicar hitstun
+no atacante antes de 0,20 s e contar se nasce zona.
+
+### 60. 🟠 Hit stop global a cada acerto no servidor
+
+`DamageZone._on_body` chama `GameFlow.hit_stop()` a cada corpo atingido
+(`DamageZone.gd:331-333`), e ele põe `Engine.time_scale = 0,06` por 0,05 s reais
+(`GameFlow.gd:270-275`). No host de uma partida isso desacelera a simulação **de
+todos**; nos clientes não aparece. Não empilha (sai se `time_scale < 1`).
+
+### 61. 🟡 O tremor de câmera do M1 sai com golpe cancelado ou errado
+
+O tranco é agendado por `SceneTreeTimer` no clique (`melee_controller.gd:216-220`) e
+dispara no fim do startup mesmo se o golpe foi cancelado ou não acertou nada.
+
+### 62. 🟡 Dois buffers de clique para o mesmo M1
+
+`Player._input_buffer` guarda até 10 cliques por 400 ms (`Player.gd:192-213`) e o
+`MeleeController` tem outro de 0,18 s. Um clique de até 400 ms atrás pode virar golpe
+quando a FSM volta a Idle — o próprio controlador diz que "clique de 1 s atrás não é
+intenção de agora".
+
+### 63. 🟡 Corpo remoto com knockback sai de `take_damage` antes de morrer
+
+No servidor, para vítima de outro peer com knockback > 0,1, `take_damage` envia
+`net_apply_knockback` e dá `return` (`Player.gd:2393-2397`) antes do
+`if morreu: die_and_respawn()` (:2405-2406), que é a **única** chamada de
+`die_and_respawn` no `Player.gd`. `net_vida_do_servidor` só atualiza a vida no dono,
+sem tratar a morte. **NÃO CONFIRMADO em partida** — pode haver outro caminho de
+eliminação (placar/rodada) que cubra isso; medir com dois processos antes de mexer.
+
+### 64. 🟡 "Civil: clique esquerdo não ataca" passa sem medir nada em headless
+
+`test_modo_historia` (`_tecla_mouse`) atribui `Input.mouse_mode = CAPTURED` e entrega o
+clique ao `_unhandled_input`. **Medido em 16/09/2026:** em `--headless` o `mouse_mode`
+continua `VISIBLE` depois da atribuição (sonda de 3 linhas). O clique cai no ramo de
+recaptura do mouse (`Player.gd`, topo do `_unhandled_input`) e sai **antes** de chegar
+ao `_request_melee` — o teste passaria mesmo sem trava nenhuma. O controle positivo da
+mesma seção usa `_request_melee()` direto, não o clique. **Conserto sugerido:** julgar o
+clique só quando a captura pegar (o `test_combate_historia` já faz assim e roda o trecho
+com tela) ou mover o trecho para o bloco com tela do `validar.sh`.
+
+## O painel de treino cobre a barra de técnicas — vale para quase toda fruta
+
+**Achado em 2026-09-12**, ao dar ícones próprios à Goro Goro. Não é regressão:
+é anterior, só não aparecia porque quase nenhuma fruta tinha o que mostrar ali.
+
+**Sintoma.** O painel de bonecos (`[x] Boneco de treino F1` / `Boneco automático
+F2`), ancorado no canto inferior direito, passa por cima dos slots **C** e **V**
+da `SkillBar`. Na captura da Goro antes do conserto, "Shunshin (Teleporte Raio)"
+e "Mamaragan (Tempestade)" aparecem cortados ao meio pelo painel.
+
+**Causa.** `SkillBar._atualizar_posicao_ope()` eleva a barra em 108 px para
+reservar esse espaço, mas só quando `_ope_equipped or _sword_equipped`. A flag
+nasceu específica da Ope, na época a única fruta com arte na barra — o nome da
+função ainda registra isso.
+
+**O que foi feito agora:** a Goro entrou na condição, porque ganhou os quatro
+ícones nesta passagem e o painel comia metade da barra dela.
+
+**O que ficou aberto — decisão do dono.** Todas as **outras** frutas continuam
+cobertas: Gomu (que também tem ícones), Mera, Gura, Bara, Buki, Pika, Yami, Hie,
+Suna, Bomu. Três saídas:
+
+1. **Elevar sempre** — a barra sobe para qualquer fruta. Mais simples e
+   consistente; muda o enquadramento de todo mundo.
+2. **Elevar quando há ícone** (`ICONES_POR_FRUTA.has(fruit_id)`) — cobre Ope,
+   Gomu e Goro hoje, e cada fruta nova entra sozinha ao ganhar arte.
+3. **Mover o painel de treino** em vez da barra — ele é ferramenta de
+   depuração, e talvez seja ele que devesse ceder espaço.
+
+⚠️ **No toque a régua é outra:** `ToqueHud.ativo()` já impede a elevação, porque
+subir a barra empurraria o botão PULO para dentro da zona de câmera. Qualquer
+uma das três saídas precisa preservar isso.
+
+---
+
+## Auditoria Bara Bara para Buggy — 2026-09-12
+
+Achados anteriores à integração visual, **sem alterações no kit nesta tarefa**. Evidência e funções em [BOSS_BUGGY_IMPLEMENTATION_PLAN.md](BOSS_BUGGY_IMPLEMENTATION_PLAN.md), seção 9, e [BOSS_BUGGY_COMBAT_DESIGN.md](BOSS_BUGGY_COMBAT_DESIGN.md), seções 2–4.
+
+- `BaraFX.BaraCleaveController._process`: duração é checada antes do tick e o acumulador perde sobra. Simulação aritmética da ordem indica quatro ticks a 120 FPS versus cinco a 30/60; ainda requer reprodução instrumentada do controlador na engine.
+- `BaraDomainController`: altera cores do WorldEnvironment sem restauração, acessa câmera sem guarda para ausência e seleciona alvos por distância sem oclusão. Confirmado por inspeção; não alegar teste de servidor dedicado.
+- C/V aplicam `CombatResolver` diretamente, contornando o crédito `Scoreboard.register_hit` de `DamageZone`; revisar atribuição de impactos antes de recompensas.
+- `_net_spawn_single_slash` aceita `any_peer` sem validação interna: limitar eventos visuais à autoridade. O dano já permanece no servidor.
+- Z/X não marcam `is_projectile`; X adiciona 2,2 m à origem e a explosão é somente visual. São comportamentos observados; adequação de origem/explosão exige decisão e medição, não correção automática.
+- `Engine.has_singleton("ScreenFX")` consulta singleton nativo; o ScreenFX deste jogo é autoload. Os flashes desses ramos precisam usar a referência correta na futura migração.
+- `FightingStyles._cast_boxe` ignora `variant`, gerando o mesmo projétil nos quatro slots. Não tratar esse código como os quatro golpes de boxe prontos.
+
+A passiva Bara apenas declarada já está registrada nesta lista e não foi duplicada. Não corrigir esses itens incidentalmente durante importação de modelo.
+
+## 🆕 Achados de 2026-09-21 — pés do boneco de duelo crescendo
+
+### 65. 🟡 `YoruRig` escreve `global_basis` com escala do global — mesmo padrão que fez os pés crescerem
+
+**Como foi detectado:** ao corrigir os pés do boneco "Ataca" do Modo História, que cresciam a cada
+golpe (causa e medidas em [`erros.md`](erros.md), 21/09). O `AplicadorDePose` escrevia
+`global_basis = R * from_scale(global_basis.get_scale())` e `pai.global_basis = Basis(Quaternion(de, para)) * pai.global_basis`;
+com o pai levemente fora de escala uniforme, o cisalhamento virava escala LOCAL e o animador
+(que só escreve `rotation`) a guardava. No aplicador o pé explodia; os braços, com o segundo padrão,
+derivavam devagar (antebraço 0,997/1,002 em 20 s de golpes).
+
+O `src/anim/YoruRig.gd` tem as duas formas: `wrist.global_basis = wrist_basis.scaled(s)` (~linha 369)
+e `parent.global_basis = Basis(Quaternion(from, to)) * parent.global_basis` (~linha 388). **Não
+reproduzido**: é leitura de código. **Não corrigido**: é arquivo da frente da espada (agentes `yoru-*`).
+
+**Antes de mexer, medir:** Yoru equipada fazendo M1 em ciclo por 30 s, lendo `scale` local de
+`UpperArm/ForeArm/Wrist/Hand` dos dois lados (sonda igual à seção G do `test_contato_historia`).
+Se derivar, a correção provada é a do aplicador: escrever só rotação local
+(`AplicadorDePose._girar_global`), nunca a escala.
+
+
+## Achados da validação de barcos e cavalo — 04/10/2026
+
+Fonte: `art_src/validation/navios/regressao_geral.log`, execução de `./validar.sh rapido` (120 passou / 16 falhou / 5 pulado). A expectativa antiga de dois pets no teste de doma foi atualizada para comparar inventário antes/depois; reexecução passou, conforme `pomar_final.log`.
+
+Ocorrências adicionais às nove falhas já registradas na base de nado/montaria:
+
+- `test_clipes_parkour`: `sprinting_forward_roll`, interpolação de 38,7° entre chaves do `UpperArm_L` em 0,117 s. Detectado pelo teste de 32 clipes; animações de parkour não foram alteradas nesta correção. Investigar o recurso do clipe em tarefa própria.
+- `test_frutas_na_historia`: excedeu 120 s, log avançava pelos ataques das frutas e chegou a Suna/Sables. Timeout não comprova defeito do golpe; antes de corrigir código, medir a duração necessária da bateria específica de frutas.
+- `test_sala_publica`: não abriu porta UPnP nem descobriu endereço público/ID de sala.
+- `test_lan_discovery`: não encontrou host; `net_mp_probe` e `net_dano_probe`: corpos dos peers não apareceram. Os testes offline de campanha passaram. Reproduzir em ambiente com rede local disponível antes de concluir que há regressão; não alterados rede, roteador ou regras de conexão.
+
+As nove falhas anteriores (balance, bara_combat, compila/studio, corte_horizontal, ilha_inicial, mera_z_saque, ope_animacoes, studio_playback, trava_fruta_dano) continuam fora do escopo desta correção. Evidência comparativa: `art_src/validation/nado_montaria/regressao.log`. Não foram corrigidas incidentalmente.
+
+## Achado da bateria de 06/10/2026 (noite) — Buki Buki × vaca, intermitente
+
+### 66. 🟡 `test_frutas_acertam_npcs`: X e C da Buki Buki às vezes não ferem a vaca
+
+- **Sintoma:** na bateria completa de 06/10 (noite) falhou "golpe que machuca um NPC machuca os três (faltando: buki_buki/X→animal)".
+- **Medição:** só com a Buki (`SOP_FRUTAS=buki_buki`), 6 de 7 rodadas passaram; a que falhou errou X **e** C no animal (dano 0), com inimigo e boneco feridos normalmente.
+- **Depuração:** com `SOP_DEPURAR=1`, quando o golpe erra, a vaca está viva, parada (`estado=0`), na camada 1, visível, nos grupos `animais` e `alvo_de_golpe`, na raia (40, 0, −4).
+- **Fora de escopo:** nenhuma mudança desta sessão toca frutas da arena ou animais (Noro, loja de projéteis, corrida de caranguejos). Mais cedo no mesmo dia a auditoria tinha passado com 0 lacunas. Não corrigido por conta (regra 7).
+- **Próximo passo:** gravar o traço da forma do X da Buki (posição e alcance da hitbox × centro da vaca) numa rodada que falhe.
+
+## Achado do Skills Builder em 07/10/2026 — clipes Mixamo com o tronco inclinado de lado
+
+### 67. ✅ Corpo a corpo (`play_baked`) usa clipes cujo tronco foi bakeado inclinado de lado
+
+- **Resolvido pela causa (07/10/2026, noite):** a inclinação vinha do baker, que convertia as rotações no espaço do esqueleto do .glb (girado 90° em X). Os 61 clipes foram reassados na conversão v3, e o M1 recebe os clipes certos pelo mesmo `play_baked`. A correção paliativa do Builder (`endireitar`) saiu. Detalhes em `docs/ANIMACOES_MIXAMO.md` e `docs/erros.md`.
+
+- **Achado:** relato do dono sobre o Builder ("todas viram o personagem meio de lado, a única correta é a investida"). Medido em `assets/animations/*.res`: a inclinação LATERAL média do tronco, que é a RAIZ do corpo no rig, é `idle` 34°, `punching` 44°, `kicking` 46°, `bouncing_fight_idle` 51°, `roundhouse_kick` 73°, contra −3° e 8° em `running` e `sprint` (os clipes da marcha). Alguns (`idle_4`, `idle_5`, os de cobertura) ficavam quase de cabeça para baixo (~170°).
+- **No Builder:** corrigido (`ClipesDeSkill.endireitar`: tira a inclinação lateral média, menos nos clipes que giram o corpo de propósito), igual na prévia, no jogador e na cópia remota. Medido em `test_animacoes_do_builder`, com fotos.
+- **Fora de escopo (regra 7):** o combo M1 toca esses mesmos `.res` por `ProceduralAnimator.play_baked` (o `MeleePoses` sobrepõe pernas e braços, mas o tronco vem do clipe). Não foi conferido se o M1 aparece tombado e nada foi mudado nele.
+- **Próximo passo:** foto do M1 (soco e chute) de frente; se tombar, aplicar a mesma correção do tronco em `_apply_baked`, ou refazer o bake desses clipes (`tools/bake_mixamo.gd`) tirando a orientação do quadril.
+
+### 68. 🟡 Personagens skinnados (Meshy) têm o zero do braço em pose A, não pendurado
+
+- **Achado (07/10/2026, ao reassar os clipes):** os clipes, as poses procedurais, as MeleePoses e as do Builder partem do zero do rig voxel, com o braço pendurado (Base aberto 19°, Buggy reto). O `SkeletonDriver` aplica a rotação do papel como delta sobre o repouso do PRÓPRIO esqueleto. Medido o repouso do braço esquerdo em relação à vertical: `ace` ~48°, `nami` ~20°, `blackbeard` ~33°, `crocodile` ~50°. Nesses personagens, todo clipe e toda pose saem com o braço aberto por essa diferença.
+- **Fora de escopo (regra 7):** já existia antes do rebake e não muda com ele.
+- **Próximo passo:** no `SkeletonDriver`, compor um alinhamento por osso (do pendurado canônico até o repouso do modelo) entre o delta e o `rest_global`, e medir os 4 Meshy contra o Base num mesmo clipe.
+
+### 69. 🟡 Bestas: ataques de água (outra frente, 08/10 11:14–11:19) deixaram dois testes vermelhos
+
+- **Achado (08/10/2026, na bateria dos bandidos):** outra frente pôs bolhas em leque e o raio "compressor" nas pacíficas. Mudou `besta_do_mar.gd`, `perfis.json` (alcance 10 → 35 m) e criou `test_ataques_agua_bestas.gd`. Ela parou às 11:19 e não atualizou o checkpoint.
+- **`test_ataques_agua_bestas`, 39/40.** A bovina "dispara 0" por causa do CENÁRIO do teste, não do jogo. O teste põe a besta em (0, 0, 0), onde o jogador nasce: a besta pisa na cápsula do jogador e, quando o teste teleporta o jogador, o `CharacterBody3D` a leva junto, como faz numa plataforma móvel (medido: a besta salta para o XZ exato do jogador, em um quadro, com velocidade 0; a pilha do salto é só física). A distância fica 0, a "alinhada" fica indefinida e ela nunca atira. Correção sugerida no teste: tirar o jogador de baixo antes de soltar a física da besta, ou pôr a besta longe do nascimento.
+- **`test_comportamento_bestas_mar`, 61/64** (era 64/64 depois da postura de foca, às 10:55). "Revide usa run e alcança ataque" espera `atacando`; com o ataque à distância é `disparando_ataque`. "Afastamento acalma" e "volta à rotina" foram calibrados com alcance 10 m.
+- **Fora de escopo:** é trabalho em andamento da outra frente; nada foi mexido.
+
+
+## Achados de 08/10/2026 — Ilha dos Macacos
+
+### 70. 🟡 O píer `dock_long` aparece sem as tábuas (só postes e cordas), no porto e na Ilha dos Macacos
+
+- **Achado:** nas fotos `art_src/validation/ilha_dos_macacos/09_pier_de_perto.png` e `10_pier_do_porto_de_perto.png`, os dois píeres mostram postes e cordas sobre a água, sem deck.
+- **Hipótese (não medida):** `gerar_ilha.gd` (`_porto`) põe o deck a +0,6 m supondo que ele fica a `t.y − 2,14` = 5,66 m da base do modelo, a altura do `dock_long_no_rope`. Se as tábuas do modelo estiverem mais baixas, ficam embaixo d'água. A leitura dos vértices no headless voltou zerada, então a altura real das tábuas não foi conferida.
+- **Fora de escopo:** já era assim no porto. O píer dos macacos copia a altura do porto de propósito.
+- **Próximo passo:** medir a altura das tábuas do `dock_long.glb` (Blender ou Godot com GPU) e corrigir `topo_deck` em `gerar_ilha.gd` e `gerar_ilha_dos_macacos.gd`.
+
+### 71. 🟡 `SkillsPublicadas.atribuidas` lê `mapas/skills/frutas.json` como se fosse skill (um aviso por bandido)
+
+- **Sintoma:** ao abrir o Modo História aparecem 6 avisos "[SkillsPublicadas] res://mapas/skills/frutas.json inválida: Formato de skill inválido...", um por bandido que nasce (`NinhoDeInimigo._nascer` → `UsuarioDeSkills.ligar` → `atribuidas`).
+- **Causa:** `atribuidas` pula só o `ARQUIVO_DO_KIT`; o catálogo de frutas (`ARQUIVO_DE_FRUTAS`, criado em 07/10) fica na mesma pasta e não é pulado.
+- **Efeito:** só o aviso, nenhuma skill a menos.
+- **Fora de escopo:** visto no teste da Ilha dos Macacos; o código é da frente do Skills Builder.
+- **Próximo passo:** pular também `ARQUIVO_DE_FRUTAS` (uma linha) e conferir se outro `Dados.listar(pasta())` lê a pasta inteira.
+
+### 72. 🟡 O contorno do estilo desenha faixas pretas grossas sobre o mar
+
+- **Achado (08/10/2026):** nas fotos do mar aberto (`art_src/validation/ilha_dos_macacos/lod_*_mar_*.png`) aparecem faixas pretas longas sobre a água, a algumas dezenas de metros da câmera.
+- **Já existia:** a foto `art_src/validation/agua/02_boiando.png`, de 01/10, mostra as mesmas faixas. Não vem do fundo do mar por ilha.
+- **Hipótese (não medida):** o `Contorno` (pós-processo do `WorldEnv`) acha bordas na profundidade, e o oceano transparente deixa passar a profundidade do fundo do mar e das ondas.
+- **Fora de escopo:** é estilo e água, não a ilha nova.
+- **Próximo passo:** conferir no `Contorno` se dá para ignorar o oceano (máscara ou profundidade da superfície) e comparar com fotos antes e depois.
+
+
+
+## Detectado em 13/10/2026 — regressão durante machado/bicicleta
+
+- Atualizar a expectativa antiga do Z em `test_hie_builder.gd`: mede a sequência
+  estendida (1,72 s), mas espera 0,7 s totais, anterior à decisão de 10/10.
+  Não alterado nesta tarefa. `test_hie_z_imunidade` passou.
+- Bateria rápida parcial reprovou em saída da água pela praia, testes de arena
+  com AutoDummy desativado, tabela Pika Z e sequência da besta bovina, entre outros.
+  Não investigados/corrigidos por estarem fora do pedido; evidência em
+  `art_src/validation/machado_bicicleta/regressao_rapida.log`.
+- `test_compila` mantém os seis erros já documentados do projeto separado
+  `tools/anim_editor/studio`. Detalhes no checkpoint desta tarefa.
+
+
+## Reobservado em 14/10/2026 — validação da fênix
+
+- A regressão geral parcial voltou a acusar arena sem dummy, saída da água,
+  Pika Z, bestas e os seis scripts do editor de animação, já citados em 13/10.
+  41 testes passaram / 12 reprovaram antes da interrupção; não houve correção
+  fora do modelo da fênix. Evidência em
+  `art_src/validation/phoenix_referencia_2026-10-14/regressao_rapida.log`.
+- O aviso de `mapas/skills/frutas.json` reapareceu na captura do mapa real
+  (item 71 já registrado); não impediu transformação ou voo.
+- O verificador do índice apontou a referência antiga ausente
+  `historia/equipamentos/bicicleta_de_gelo.gd` em
+  `docs/contexto/agentes/historia.md`. Fora desta reconstrução; conferir o
+  caminho atual antes de atualizar o contexto (log indice.log da fênix).
+
+### 73. 🟡 `test_modo_historia` reprova "o Civil não tem Akuma no Mi" desde o Estilo de Combate Base
+- **Achado (14/10/2026, na E2 do mar — `docs/MAR_HISTORIA_PLANO.md`):** 89 ✅ e 1 ❌. O Civil
+  nasce com o item "Luta" na mão e, com Z/X do estilo base publicados no Builder,
+  `ProgressaoDoPersonagem.fruta_a_equipar()` devolve `KitDoBuilder.ID_ESTILO_BASE`
+  (`src/historia/progressao.gd:434`, mudado às 09:09 de 14/10 por outra frente) — o
+  `current_fruit_id` deixa de ser "".
+- **Não é do mar:** o mar não toca fruta, progressão nem kit.
+- **Próximo passo:** o dono decidir se a checagem passa a aceitar o estilo base como "kit
+  da Luta" (não é Akuma no Mi) ou se o estilo base deve usar outro campo que não
+  `current_fruit_id`.
+
+### 74. 🟡 `progressao.gd` passou do teto de 900 linhas (gatilho de 10/10 vencido)
+- **Achado (14/10/2026, E4 do mar):** 901 linhas antes da E4; o gatilho anotado em
+  `docs/PEDIDO_2026-10-10_HISTORIA.md` era "perto de 880, tirar ilhas/missões/barcos para
+  arquivo próprio". A E4 somou 21 linhas (922) com um ponto GENÉRICO de estado por sistema
+  (`sistemas`, `dados_de`, `gravar_dados`) para que sistemas novos não precisem de campo
+  próprio aqui.
+- **Próximo passo:** extrair ilhas, missões e barcos (e migrar barcos para `sistemas`) numa
+  sessão sem outra frente mexendo na progressão — o arquivo foi alterado por outra frente
+  em 14/10 às 09:09.
+
+### 75. 🟡 `cel.gdshader`: luz omni/spot vaza o piso de sombra para fora do alcance (blocos)
+- **Achado (14/10/2026, E3 do mar):** no `light()`, `ATTENUATION` entra como TETO
+  (`min(luz, mix(sombra_min, 1, som))`). Para o sol ela é só sombra; para omni/spot ela
+  carrega a DISTÂNCIA — fora do alcance o teto fica em `sombra_min` e a luz soma
+  `sombra_min × cor` em toda a área de tela que o Forward+ atribuiu a ela: aparecem
+  QUADRADOS iluminados (foto `art_src/validation/mar/naufragio_e3_naufragio_3_bau.png`,
+  com a `LuzSubaquatica` de 32 m e piso 0,5 no fundo do mar).
+- **Corrigido só no include novo** (`src/fx/shaders/luz_cel.gdshaderinc`: `LIGHT_IS_DIRECTIONAL`
+  → teto; senão `luz *= ATTENUATION`). O `cel.gdshader` tem a mesma conta com piso 0,16.
+- **Próximo passo:** o gatilho anotado no include — o `cel.gdshader` passar a incluir o
+  `luz_cel.gdshaderinc` — corrige o resto do mundo. Conferir com captura antes/depois perto
+  de tochas e mergulhando.
+
+### 76. 🟡 `test_arena` depende das configurações REAIS do jogador (boneco de treino)
+- **Achado (14/10/2026, bateria rápida da frente do mar):** 2 falhas — "o dummy de treino
+  continua" e "jogador e boneco de treino na árvore". O `GameFlow` lê
+  `user://settings.cfg` (`dummy_TrainingDummy`), e no computador do dono está `false` (boneco
+  desligado no menu). Não é regressão de código.
+- **Próximo passo:** o teste ligar o boneco antes (`GameFlow.set_dummy("TrainingDummy", true)`)
+  ou rodar com dados de usuário isolados.

@@ -1,0 +1,25 @@
+# Prompts das referências de logias
+
+Geradas com a ferramenta nativa de imagem em 24/11/2026, sobre fundo opaco. Cada descrição abaixo foi concatenada ao prefixo correspondente. As imagens são conceitos, não capturas do jogo; limites específicos estão nos LEIA-ME de cada fruta.
+
+## Hie — prefixo comum
+
+> Stylized-concept production reference sheet for a third-person action game, ice power Hie Hie. Clear silhouettes, icy blue-white translucent faceted crystalline ice, high-quality material, readable at gameplay scale. Neutral dark studio backdrop, no words, no labels, no logos, no watermark, no elemental body transformation. Show one coherent attack with two visual moments: creation and travel/impact; make a practical reference, not a game screenshot.
+
+- **Partisan:** Partisan: a single long sharp ice spear with a crystalline tip launched from the hand toward a distant enemy, small charge ring and cold splinters; clean unobstructed profile and perspective views of the same spear.
+- **Pheasant Beak:** Pheasant Beak: large recognizable predatory ice bird projectile rising forward from below, wings spread, pointed beak and crystalline feathers, a compact frost burst at launch; show full bird silhouette and flight profile.
+- **Ice Ball:** Ice Ball: a horizontal traveling freezing front along the ground from the hand, clearly marked with a thin icy trail, ice shards and frost engulfing a line of targets; distinguish direction and moving front; not a giant spherical projectile.
+- **Ice Age:** Ice Age: wide radial freezing wave expands from a standing human at center across the ground, frost disk, fractured surface and tall crystalline ice along the advancing boundary, cold mist; wide elevated third-person view with character scale and legible outer radius.
+
+## Outras frutas — prefixo comum
+
+> Create a stylized-concept production reference sheet for a third-person action video game, designed for artists and VFX implementers. Distinct separated panels, each an unmistakably different technique with visible shape, color, direction and human scale, readable rather than a single explosion. Coherent high-quality materials, game camera perspective, dark neutral backgrounds, no labels, no words, no logos, no watermark. The human stays human; no elemental body transformation. This is aspirational visual reference, not a game screenshot.
+
+- **Moku:** Four panels: (1) a single defined white smoke fist thrusting forward; (2) ascending swirling white smoke funnel around a target; (3) a character lunging along a trailing line of smoke and striking with a fist; (4) a broad white smoke field with expanding ring on the ground. Each separate, pale white vapor with soft gray edges and readable silhouette.
+- **Pika:** Six separate panels: (1) narrow golden finger laser, (2) large vertical golden light pillar, (3) light traveling and reflecting along a defined path, (4) light-powered kick, (5) a barrage of many small golden light projectiles, (6) a distinct luminous golden sword held by a person. Warm bright gold with controlled highlights, each attack silhouette readable.
+- **Goro:** Five separated panels: (1) a compact electrical discharge, (2) a thunder pillar descending from the sky, (3) a branching lightning strike, (4) an electrical storm surrounding a visible character, (5) a large descending lightning sphere under a storm. Blue-white and violet electricity, legible branches and controlled highlights.
+- **Mera:** Seven distinct panels showing different fire attacks: Sun Flare radiating flame, Fire Fist with clearly defined forward fist silhouette, Firefly small glowing fire orbs, a vertical Fire Pillar, Fire Gun small finger shots, Blazing Dragon King serpentine fire dragon and Flame Emperor a large sunlike fire sphere. Orange red yellow flames, differentiated silhouettes and human scale.
+- **Magu:** Four separated panels: Great Eruption a giant molten fist, Hound Blaze a forward canine-head magma projectile, Volcanic Explosion an explosive rising lava eruption, Meteor Volcano a rain of large lava meteors. Dark basalt crust with glowing orange red cracks, distinguish from ordinary fire.
+- **Suna:** Five distinct panels: Desert Dagger a short sand blade, Crescent Cutlass crescent sand slashes, Sandstorm a sand tornado, Desert Spada a long sand blade advancing along the ground, Wasteland Cataclysm an expanding dessicated sand field. Pale ochre grains and tan dust, clear silhouette and movement.
+- **Yami:** Four separated panels: Black Vortex a compact dark spiral pulling inward to the hand, Black Hole a dark expanding ground pool with inward pull, Dark Sphere a compact dark projectile sphere, Dark Matter a turbulent dark mass expelled outward. Black-purple smoke with restrained violet rim light so contours remain visible.
+- **Mori:** Four separated panels: Tree Strike a strong wooden root thrust, Giant Tree a huge trunk rising from the ground, Assault Attack a forward attack made with roots, I'll Skewer You many sharp wooden roots stabbing upward around a target. Rich bark, living green details, distinct natural silhouettes.

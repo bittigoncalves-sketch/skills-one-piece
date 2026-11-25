@@ -8,6 +8,16 @@ set -uo pipefail
 
 AQUI="$(cd "$(dirname "$0")" && pwd)"
 PROJ="$(cd "$AQUI/../.." && pwd)"
+# O mesmo atalho abre o estúdio 3D. --legacy mantém a interface Python.
+if [ "${1:-}" != "--legacy" ]; then
+    STUDIO_GODOT="$(bash "$PROJ/find_godot.sh" 2>/dev/null || true)"
+    if [ -n "$STUDIO_GODOT" ]; then
+        exec "$STUDIO_GODOT" --path "$AQUI/studio" "$@"
+    fi
+    echo "Godot não encontrado. Configure GODOT ou use --legacy para o editor Python." >&2
+    exit 1
+fi
+shift
 LOG="$AQUI/abrir.log"
 : > "$LOG"
 

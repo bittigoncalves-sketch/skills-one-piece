@@ -52,7 +52,7 @@ func _regra() -> void:
 	print("=== 1. a regra do counter ===")
 	var alvo := AlvoDeMentira.new()
 	get_root().add_child(alvo)
-	var e: Dictionary = ContextualMelee.especificacao("context_elbow")
+	var e: Dictionary = ContextualMelee.especificacao("context_launcher")
 
 	ContextualMelee._aplicar_counter(alvo, alvo, e, Vector3(0, 0, -1), 1.0)
 	await process_frame
@@ -82,6 +82,9 @@ func _leitura_da_fase(p: Node3D) -> void:
 	# NÃO passa pelo `MeleeController`, e é ele quem guarda o relógio que a
 	# `fase()` lê — a resposta vinha "false" com o golpe rodando. O caminho de
 	# verdade é a tecla mais `_request_melee`, como no `test_ataques_contextuais`.
+	# W só troca o clique no QUARTO golpe (Lançamento) desde 2026-09-13.
+	p._melee._passo = 3
+	p._melee._janela = Melee.JANELA
 	_tecla(KEY_W, true)
 	p._request_melee()
 	var esperou := 0
@@ -89,9 +92,9 @@ func _leitura_da_fase(p: Node3D) -> void:
 		await process_frame
 		esperou += 1
 	_ok("o ataque contextual começou", p._melee.contextual_ativo())
-	await _esperar(0.05)          # dentro do startup (0,14 s)
+	await _esperar(0.05)          # dentro do startup (0,18 s)
 	var dentro: bool = p.em_startup_de_ataque()
-	print("   dentro do startup (dura 0,14 s): %s | fase=%s"
+	print("   dentro do startup (dura 0,18 s): %s | fase=%s"
 		% [str(dentro), p._melee.fase()])
 	_ok("durante o startup, responde SIM", dentro)
 

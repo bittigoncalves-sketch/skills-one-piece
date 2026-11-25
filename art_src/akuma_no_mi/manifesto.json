@@ -1,0 +1,417 @@
+{
+  "frutas": [
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "aro_aro",
+      "modelo_proprio": true,
+      "nome": "Aro Aro (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "ff66cc",
+      "cor": "e64db3",
+      "id": "bara_bara",
+      "modelo_proprio": true,
+      "nome": "Bara Bara no Mi",
+      "origem": "arena"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "batto_batto",
+      "modelo_proprio": true,
+      "nome": "Batto Batto (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "bisu_bisu",
+      "modelo_proprio": true,
+      "nome": "Bisu Bisu (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "ff851f",
+      "cor": "1a1442",
+      "id": "bomu_bomu",
+      "modelo_proprio": true,
+      "nome": "Bomu Bomu no Mi",
+      "origem": "arena"
+    },
+    {
+      "aliases": [],
+      "brilho": "e6edff",
+      "cor": "c7ccd9",
+      "id": "buki_buki",
+      "modelo_proprio": true,
+      "nome": "Buki Buki no Mi",
+      "origem": "arena"
+    },
+    {
+      "aliases": [
+        "hito_hito_nika",
+        "gomu_gomu_gear2"
+      ],
+      "brilho": "e64d99",
+      "cor": "cc3366",
+      "id": "gomu_gomu",
+      "modelo_proprio": true,
+      "nome": "Gomu Gomu no Mi",
+      "origem": "arena"
+    },
+    {
+      "aliases": [],
+      "brilho": "ffff80",
+      "cor": "fff24d",
+      "id": "goro_goro",
+      "modelo_proprio": true,
+      "nome": "Goro Goro no Mi",
+      "origem": "arena"
+    },
+    {
+      "aliases": [],
+      "brilho": "b3d9ff",
+      "cor": "8cb3e6",
+      "id": "gura_gura",
+      "modelo_proprio": true,
+      "nome": "Gura Gura no Mi",
+      "origem": "arena"
+    },
+    {
+      "aliases": [
+        "hie_hie_no_mi_mine_piece",
+        "hie_hie_mine_piece"
+      ],
+      "brilho": "80e6ff",
+      "cor": "4dbfff",
+      "id": "hie_hie",
+      "modelo_proprio": true,
+      "nome": "Hie Hie no Mi",
+      "origem": "arena"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "hito_hito_daibutsu",
+      "modelo_proprio": true,
+      "nome": "Hito Hito Daibutsu (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "horo_horo",
+      "modelo_proprio": true,
+      "nome": "Horo Horo (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "imu",
+      "modelo_proprio": true,
+      "nome": "Imu (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "inu_inu_okuchi_no_makami",
+      "modelo_proprio": true,
+      "nome": "Inu Inu Okuchi No Makami (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "inu_inu_wolf",
+      "modelo_proprio": true,
+      "nome": "Inu Inu Wolf (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "kage_kage",
+      "modelo_proprio": true,
+      "nome": "Kage Kage (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "kira_kira",
+      "modelo_proprio": true,
+      "nome": "Kira Kira (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "kiro_kiro",
+      "modelo_proprio": true,
+      "nome": "Kiro Kiro (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "magu_magu",
+      "modelo_proprio": false,
+      "nome": "Magu Magu no Mi",
+      "origem": "skills"
+    },
+    {
+      "aliases": [],
+      "brilho": "ff661a",
+      "cor": "ff3300",
+      "id": "mera_mera",
+      "modelo_proprio": true,
+      "nome": "Mera Mera no Mi",
+      "origem": "arena"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "mero_mero",
+      "modelo_proprio": true,
+      "nome": "Mero Mero (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "mochi_mochi",
+      "modelo_proprio": true,
+      "nome": "Mochi Mochi (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [
+        "moku_moku_no_mi_mine_piece",
+        "moku_moku_mine_piece"
+      ],
+      "brilho": "c7ccdb",
+      "cor": "ededf5",
+      "id": "moku_moku",
+      "modelo_proprio": false,
+      "nome": "Moku Moku no Mi",
+      "origem": "base"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "mori_mori",
+      "modelo_proprio": true,
+      "nome": "Mori Mori (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "neko_neko_leopard",
+      "modelo_proprio": true,
+      "nome": "Neko Neko Leopard (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "neko_neko_sabertiger",
+      "modelo_proprio": true,
+      "nome": "Neko Neko Sabertiger (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [
+        "nikyu_nikyu_no_mi_mine_piece",
+        "nikyu_nikyu_mine_piece"
+      ],
+      "brilho": "eb85c2",
+      "cor": "8f426b",
+      "id": "nikyu_nikyu",
+      "modelo_proprio": false,
+      "nome": "Nikyu Nikyu no Mi",
+      "origem": "base"
+    },
+    {
+      "aliases": [
+        "ope_ope_mine_piece"
+      ],
+      "brilho": "00ffe6",
+      "cor": "e6334d",
+      "id": "ope_ope",
+      "modelo_proprio": true,
+      "nome": "Ope Ope no Mi",
+      "origem": "arena"
+    },
+    {
+      "aliases": [
+        "pika_pika_no_mi_mine_piece",
+        "pika_pika_mine_piece"
+      ],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "pika_pika",
+      "modelo_proprio": false,
+      "nome": "Pika Pika no Mi",
+      "origem": "skills"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "riki_riki",
+      "modelo_proprio": true,
+      "nome": "Riki Riki (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "ff5908",
+      "cor": "404752",
+      "id": "rocket",
+      "modelo_proprio": true,
+      "nome": "Rocket",
+      "origem": "arena"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "ryu_ryu_brachiosaurus",
+      "modelo_proprio": true,
+      "nome": "Ryu Ryu Brachiosaurus (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "ryu_ryu_pachycephalosaurus",
+      "modelo_proprio": true,
+      "nome": "Ryu Ryu Pachycephalosaurus (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "ryu_ryu_pteranodon",
+      "modelo_proprio": true,
+      "nome": "Ryu Ryu Pteranodon (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "soru_soru",
+      "modelo_proprio": true,
+      "nome": "Soru Soru (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "b8ffff",
+      "cor": "85d6db",
+      "id": "suke_suke",
+      "modelo_proprio": true,
+      "nome": "Suke Suke no Mi",
+      "origem": "arena"
+    },
+    {
+      "aliases": [],
+      "brilho": "ffd980",
+      "cor": "e6bf59",
+      "id": "suna_suna",
+      "modelo_proprio": true,
+      "nome": "Suna Suna no Mi",
+      "origem": "arena"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "supa_supa",
+      "modelo_proprio": true,
+      "nome": "Supa Supa (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "66e6ff",
+      "cor": "33ccff",
+      "id": "tori_tori_phoenix",
+      "modelo_proprio": true,
+      "nome": "Tori Tori no Mi · Phoenix",
+      "origem": "arena"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "uo_uo_seiryu",
+      "modelo_proprio": true,
+      "nome": "Uo Uo Seiryu (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "ushi_ushi_giraffe",
+      "modelo_proprio": true,
+      "nome": "Ushi Ushi Giraffe (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "uta_uta",
+      "modelo_proprio": true,
+      "nome": "Uta Uta (Mine Piece)",
+      "origem": "so_do_mod"
+    },
+    {
+      "aliases": [],
+      "brilho": "801ab3",
+      "cor": "33264d",
+      "id": "yami_yami",
+      "modelo_proprio": true,
+      "nome": "Yami Yami no Mi",
+      "origem": "arena"
+    },
+    {
+      "aliases": [],
+      "brilho": "#ffffff",
+      "cor": "#ff7f50",
+      "id": "zushi_zushi",
+      "modelo_proprio": true,
+      "nome": "Zushi Zushi (Mine Piece)",
+      "origem": "so_do_mod"
+    }
+  ]
+}

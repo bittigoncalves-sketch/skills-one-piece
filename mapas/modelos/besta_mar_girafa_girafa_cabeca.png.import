@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c1t8tw58x3q6i"
-path="res://.godot/imported/besta_mar_girafa_girafa_cabeca.png-d0867c1199ad71f855abf91aa3b2e155.ctex"
+path.bptc="res://.godot/imported/besta_mar_girafa_girafa_cabeca.png-d0867c1199ad71f855abf91aa3b2e155.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "93d2c5af2efaf59a41cbf3ff1f1b7e9e"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/besta_mar_girafa_girafa_cabeca.png"
-dest_files=["res://.godot/imported/besta_mar_girafa_girafa_cabeca.png-d0867c1199ad71f855abf91aa3b2e155.ctex"]
+dest_files=["res://.godot/imported/besta_mar_girafa_girafa_cabeca.png-d0867c1199ad71f855abf91aa3b2e155.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

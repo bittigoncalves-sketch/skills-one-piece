@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c4wn5uw7i6j1f"
-path="res://.godot/imported/palmeira_broto_alto_Image_5.png-1c4f047a401c2e55348c900dc7451cdb.ctex"
+path.bptc="res://.godot/imported/palmeira_broto_alto_Image_5.png-1c4f047a401c2e55348c900dc7451cdb.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "b0a145c313767848bd6b203f5827a7c0"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/palmeira_broto_alto_Image_5.png"
-dest_files=["res://.godot/imported/palmeira_broto_alto_Image_5.png-1c4f047a401c2e55348c900dc7451cdb.ctex"]
+dest_files=["res://.godot/imported/palmeira_broto_alto_Image_5.png-1c4f047a401c2e55348c900dc7451cdb.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

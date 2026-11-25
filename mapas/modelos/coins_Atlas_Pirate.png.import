@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://6jrmq8bq4ugx"
-path="res://.godot/imported/coins_Atlas_Pirate.png-ab0276191f6364211ac0be1289647455.ctex"
+path.bptc="res://.godot/imported/coins_Atlas_Pirate.png-ab0276191f6364211ac0be1289647455.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "219f43be043845c1039f47f20d5b6de4"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/coins_Atlas_Pirate.png"
-dest_files=["res://.godot/imported/coins_Atlas_Pirate.png-ab0276191f6364211ac0be1289647455.ctex"]
+dest_files=["res://.godot/imported/coins_Atlas_Pirate.png-ab0276191f6364211ac0be1289647455.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

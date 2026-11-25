@@ -3,7 +3,12 @@
 **Última revisão:** 2026-08-31.
 **Escopo:** tudo o que acontece quando o jogador clica sem fruta na mão — o
 combo M1, as sete variações contextuais, as três rotas especiais, a defesa, e o
-que a rede valida.
+que a rede valida. Vale na arena e no mundo.
+
+> ⚠️ **No Modo História o clique é OUTRO sistema.** Lá roda o combate direcional
+> (quatro direções pelo gesto do mouse, guarda no botão direito, aparo, riposte,
+> finta), documentado em [`combat/README.md`](combat/README.md). Ele é paralelo: não
+> substitui nem altera nada do que está nesta página.
 
 Os planos de onde isto veio continuam valendo como histórico:
 `PLANO_COMBATE_CONTEXTUAL.md` (as seis fases), `PLANO_COMBATE_BATTLEGROUNDS.md`

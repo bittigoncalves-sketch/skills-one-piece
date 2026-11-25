@@ -1,0 +1,46 @@
+{
+  "personagem": "rebecca",
+  "altura_provisoria_mm": 120,
+  "dimensoes_xyz_mm": [
+    53.16080093383789,
+    48.5760498046875,
+    120.0
+  ],
+  "voxel_mm": 0.1,
+  "componentes": [
+    {
+      "vertices": 2271858,
+      "min_mm": [
+        -23.888988494873047,
+        -23.79724884033203,
+        -9.685754776000977e-08
+      ],
+      "max_mm": [
+        29.266355514526367,
+        24.773815155029297,
+        119.98768615722656
+      ]
+    }
+  ],
+  "arestas_nao_manifold": 0,
+  "faces_degeneradas": 0,
+  "volume_mm3": 32697.54035080956,
+  "residuos_numericos_vertices_removidos": 48,
+  "criterio_residuo": "ate 16 vertices e dimensao maxima menor que 0.06 mm",
+  "malha_fechada_conectada": true,
+  "suportes": false,
+  "espessuras_minimas_validadas": false,
+  "impressao_fisica_validada": false,
+  "fidelidade_visual_aprovada_pelo_usuario": false,
+  "stl": {
+    "arquivo": "rebecca_anime_120mm.stl",
+    "triangulos": 4543776,
+    "bytes": 227188884,
+    "dimensoes_verificadas_mm": [
+      53.16080093383789,
+      48.5760498046875,
+      120.0
+    ],
+    "leitura_binaria_verificada": true
+  }
+}

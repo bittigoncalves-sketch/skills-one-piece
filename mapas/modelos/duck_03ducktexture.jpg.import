@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://6i3joelyfism"
-path="res://.godot/imported/duck_03ducktexture.jpg-2310eddae9b88c41f615436813d9f505.ctex"
+path.bptc="res://.godot/imported/duck_03ducktexture.jpg-2310eddae9b88c41f615436813d9f505.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "339a8d97a3b276a745162aa3034064c9"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/duck_03ducktexture.jpg"
-dest_files=["res://.godot/imported/duck_03ducktexture.jpg-2310eddae9b88c41f615436813d9f505.ctex"]
+dest_files=["res://.godot/imported/duck_03ducktexture.jpg-2310eddae9b88c41f615436813d9f505.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

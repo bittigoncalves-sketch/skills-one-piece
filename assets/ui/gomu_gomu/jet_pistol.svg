@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <!-- Supersonic steam vapor trail -->
+  <path d="M4 32h28" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+  <path d="M8 26h18M6 38h20" stroke="#ff8a80" stroke-width="2" stroke-linecap="round"/>
+  <!-- Sonic boom condensation ring -->
+  <ellipse cx="28" cy="32" rx="4" ry="18" stroke="#ffffff" stroke-width="2.5"/>
+  <path d="M28 14l12 18-12 18" stroke="#80d8ff" stroke-width="2" stroke-linejoin="round"/>
+  <!-- Streamlined high speed fist -->
+  <rect x="34" y="23" width="18" height="18" rx="4" fill="#e53935" stroke="#ffcdd2" stroke-width="2"/>
+  <!-- Steam vents from fist -->
+  <path d="M54 28l6-3M56 32h6M54 36l6 3" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

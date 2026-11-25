@@ -56,7 +56,13 @@ func _init() -> void:
 	rig.alternar_perspectiva()
 	var y1: float = rig.position.y
 	_ok(rig.em_primeira_pessoa(), "alternou para 1a pessoa")
-	_ok(absf(y1 - y3) > 1.0, "a altura do pivo mudou (%.2f -> %.2f)" % [y3, y1])
+	# Confere as DUAS alturas pelas constantes. Antes era "mudou mais de 1 m", número
+	# preso aos 2,2 antigos: com a câmera na altura da cabeça a troca é de 0,4 m.
+	# Constantes lidas do script: citar `CameraRig` direto neste -s quebra a compilação
+	# (a classe usa autoloads) e o teste trava sem dizer nada.
+	var consts: Dictionary = rig.get_script().get_script_constant_map()
+	_ok(absf(y3 - float(consts["CAM_HEIGHT_TPS"])) < 0.01 and absf(y1 - float(consts["CAM_HEIGHT_FPS"])) < 0.01,
+		"a altura do pivo mudou de 3a para 1a pessoa (%.2f -> %.2f)" % [y3, y1])
 	rig.alternar_perspectiva()
 	_ok(absf(rig.position.y - y3) < 0.01, "e volta ao alternar de novo")
 

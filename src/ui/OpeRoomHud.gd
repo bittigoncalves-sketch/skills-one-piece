@@ -14,6 +14,7 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel = PanelContainer.new()
+	_panel.size = Vector2(338.0, 80.0)
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.018, 0.045, 0.058, 0.92)
@@ -81,8 +82,10 @@ func _process(delta: float) -> void:
 	modulate.a = move_toward(modulate.a, 1.0, delta * 7.0)
 	var width := minf(338.0, size.x - 32.0)
 	_panel.position = Vector2((size.x - width) * 0.5, 74.0)
-	_panel.size.x = width
-	var room := actor.get_meta("ope_room", null) as Node
+	# Recolhe também a altura: a primeira medição da Label com autowrap pode
+	# ocorrer antes da largura do container e produzir centenas de pixels.
+	_panel.size = Vector2(width, 0.0)
+	var room := actor.get_meta("ope_room") as Node if actor.has_meta("ope_room") else null
 	var active := is_instance_valid(room) and not room.is_queued_for_deletion()
 	var inside := false
 	var remaining := 0.0
@@ -94,6 +97,9 @@ func _process(delta: float) -> void:
 		_title.text = "ROOM  /  %s" % ("EM OPERAÇÃO" if inside else "FORA DO CAMPO")
 		_status.text = "X  Trocar   ·   C  Arremessar   ·   V  Perfurar" if inside else "Retorne ao ROOM para usar suas técnicas."
 		_status.add_theme_color_override("font_color", MUTED if inside else WARNING)
+		if not room.ready_for_skills():
+			_title.text = "ROOM  /  EXPANDINDO"
+			_status.text = "Preparando o campo cirúrgico…"
 	else:
 		_time.text = "18 m"
 		_title.text = "OPE OPE  /  ROOM"
@@ -101,6 +107,7 @@ func _process(delta: float) -> void:
 		_status.add_theme_color_override("font_color", MUTED)
 	_gauge.value = remaining
 	_gauge.modulate = WARNING if active and (remaining < 4.0 or not inside) else Color.WHITE
-	if Time.get_ticks_msec() < int(actor.get_meta("ope_feedback_until", 0)):
+	if str(actor.get_meta("ope_feedback", "")) != "" \
+			and Time.get_ticks_msec() < int(actor.get_meta("ope_feedback_until", 0)):
 		_status.text = str(actor.get_meta("ope_feedback", ""))
 		_status.add_theme_color_override("font_color", WARNING)

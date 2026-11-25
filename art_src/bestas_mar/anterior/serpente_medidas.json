@@ -1,0 +1,16 @@
+{
+  "vertices": 26844,
+  "triangulos": 53208,
+  "ossos": 17,
+  "vertices_pesos_invalidos": 0,
+  "mandibula_deslocamento_m": 1.1749947410831048,
+  "dimensoes_blender_xyz": [
+    10.600000381469727,
+    13.990001201629639,
+    17.24561432003975
+  ],
+  "clips": [
+    "repouso",
+    "ameaca"
+  ]
+}

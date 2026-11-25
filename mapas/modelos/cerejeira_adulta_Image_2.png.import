@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dldpm3s52q6ck"
-path="res://.godot/imported/cerejeira_adulta_Image_2.png-2d5a3206875b6422735c6864213d0ee4.ctex"
+path.bptc="res://.godot/imported/cerejeira_adulta_Image_2.png-2d5a3206875b6422735c6864213d0ee4.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "abc81590ed2f8f8b0461ccbd06bc28ad"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/cerejeira_adulta_Image_2.png"
-dest_files=["res://.godot/imported/cerejeira_adulta_Image_2.png-2d5a3206875b6422735c6864213d0ee4.ctex"]
+dest_files=["res://.godot/imported/cerejeira_adulta_Image_2.png-2d5a3206875b6422735c6864213d0ee4.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

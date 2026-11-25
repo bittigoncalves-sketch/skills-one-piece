@@ -7,6 +7,48 @@ código).
 **A identidade da fruta é CONTROLE:** dois dos quatro golpes trocam knockback
 por congelamento. Onde as outras frutas arremessam, a Hie Hie prende.
 
+## F no modo história — bicicleta de gelo (13/10/2026)
+
+Com a Hie ativa na barra, **F monta/desmonta**, **WASD conduz** e **Shift acelera**.
+A bicicleta anda em terra e sobre a superfície do mar/rios, deixando gelo temporário
+por 2,5 s. Não cobra energia nem recarga (não solicitadas). Não monta em queda,
+submerso, durante ataque/voo/dash ou sem espaço para o veículo. Trocar de item,
+suprimir a fruta, congelar, morrer ou ser arremessado encerra a montaria.
+
+Rodas, pedais, selim e guidão são gerados por
+`src/historia/equipamentos/bicicleta_de_gelo_visual.gd` (fonte editável). O controlador
+`bicicleta_de_gelo.gd` usa a etapa de montaria do Player e IK para mãos/pés.
+Escopo: história offline, como as montarias da campanha. A passiva de corrida da arena
+continua distinta deste F. Evidências: `docs/MACHADO_BICICLETA_CHECKPOINT.md`.
+
+**Regra posterior ao kit de 07/10:** no modo história, desde 10/10, as salvas do Z
+prolongam o congelamento; somente a terceira, se acertar, concede imunidade ao final.
+Ver `docs/PEDIDO_2026-10-10_HISTORIA.md`. O teste antigo `test_hie_builder` ainda espera
+0,7 s totais; os testes atuais são `test_hie_z_imunidade` e `test_hie_v_gelo`.
+
+## 🆕 Refeita no Skills Builder (07/10/2026)
+
+Pedido do dono: "todos os golpes irão congelar por 0.7 segundos; deixar o novo teste de
+skill Z fruta do gelo no lugar do Z antigo e melhorar o teste". Plano e números:
+[`docs/HIE_BUILDER_PLANO.md`](../HIE_BUILDER_PLANO.md).
+
+| tecla | agora | dano (arena) | recarga |
+|---|---|---|---|
+| Z | **Espinhos de Gelo** (Builder, `res://mapas/skills/Z_ice.json`, feito por `tools/criar_hie_hie.gd` a partir do `Z_ice` do dono): recua ~6,7 m disparando 3 salvas de 8 estacas de gelo **entre as mãos**, em leque de 26°, para a mira; cada estaca estoura em gelo (0,8 m) e congela | 8 por estaca (24 = 192) | 5 s |
+| X | Iceberg (código) — agora também congela | 168 | 7 s |
+| C | Investida de Gelo (código) | 192 | 10 s |
+| V | Ice Age (código), o campo | 32 por tique + 256 | 25 s |
+
+**Todos congelam 0,7 s**, com 0,5 s de imunidade depois de descongelar (`IceFX.CONGELAR`,
+`IceFX.IMUNIDADE`; antes C e V prendiam 5 s + 2 s e o Z e o X não prendiam).
+- **Em rede:** o servidor decide e espalha (`Player.congelar_em_rede`); medido na sonda `net_hie_*_probe`.
+- **Boneco, inimigo e bicho:** a física para enquanto o gelo dura.
+- **Bloco de gelo:** fica no meio do corpo.
+
+A "fruta do gelo" de teste saiu do catálogo. O rascunho original do dono está na biblioteca
+do editor como `Z_ice_original`. O código antigo do Z (`_disparo_de_gelo`) fica sem uso
+até o dono aprovar o novo. As tabelas abaixo descrevem a Hie de antes.
+
 ---
 
 ## Onde mora cada parte
@@ -63,6 +105,18 @@ controle** — continua congelando e recongelando pelos 50 s, sem tirar mais vid
 Dano alto em alvo que não pode se mexer seria execução, não pressão.
 
 ---
+
+## Bicicleta no Modo História — 13/10/2026
+
+Com Hie equipada no item Fruta, **F** monta/desmonta. **WASD** conduz,
+**Shift** acelera, **Ctrl** empina em movimento e as curvas inclinam a bicicleta.
+**Espaço** pula; soltar e apertar novamente executa o segundo salto com giro
+horizontal de **360°** do veículo e do ciclista. Não há terceiro impulso.
+Pousar no chão ou sobre o mar recupera os saltos. Segurar Espaço não repete.
+Menus bloqueiam comandos; trocar de item, congelamento e morte desmontam.
+
+Código: `src/historia/equipamentos/bicicleta_de_gelo.gd`.
+Teste integrado: `tools/dev_tests/test_sharkman_manobras.gd`.
 
 ## Pendências
 

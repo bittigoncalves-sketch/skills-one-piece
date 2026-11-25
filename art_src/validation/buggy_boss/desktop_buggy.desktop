@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=SKILLS ONE PIECE
+Comment=Protótipo 3D — geração procedural matemática, skills e inventário
+Exec=/usr/bin/env SOP_TEST_CHARACTER_TARGET=player /home/gabriel-bitti/dev/skills-one-piece/jogar_buggy.sh
+Icon=/home/gabriel-bitti/dev/skills-one-piece/icon.svg
+Terminal=false
+Categories=Game;

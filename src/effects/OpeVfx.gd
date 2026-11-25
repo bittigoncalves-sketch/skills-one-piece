@@ -3,6 +3,7 @@ extends RefCounted
 const RoomEffect = preload("res://src/effects/OpeRoomField.gd")
 const BurstEffect = preload("res://src/effects/OpeSurgicalBurst.gd")
 const TaktEffect = preload("res://src/effects/OpeTaktVolley.gd")
+const AUDIO = preload("res://src/effects/OpeAudio.gd")
 
 static func room(parent: Node, center: Vector3, radius: float = 18.0, duration: float = 18.0) -> Node3D:
 	var effect := RoomEffect.new()
@@ -10,6 +11,8 @@ static func room(parent: Node, center: Vector3, radius: float = 18.0, duration: 
 	effect.duration = duration
 	parent.add_child(effect)
 	effect.global_position = center
+	effect.project_floor()
+	AUDIO.play(parent, center, "room")
 	return effect
 
 static func shambles(parent: Node, a: Vector3, b: Vector3) -> Node3D:
@@ -18,6 +21,7 @@ static func shambles(parent: Node, a: Vector3, b: Vector3) -> Node3D:
 	effect.destination = b - a
 	parent.add_child(effect)
 	effect.global_position = a
+	AUDIO.play(parent, a, "shambles")
 	return effect
 
 static func takt_start(center: Vector3, index: int) -> Vector3:
@@ -29,6 +33,7 @@ static func takt(parent: Node, center: Vector3, target: Vector3) -> Node3D:
 	effect.target = target - center
 	parent.add_child(effect)
 	effect.global_position = center
+	AUDIO.play(parent, center, "takt")
 	return effect
 
 static func gamma(parent: Node, origin: Vector3, direction: Vector3, length: float = 8.0) -> Node3D:
@@ -38,4 +43,22 @@ static func gamma(parent: Node, origin: Vector3, direction: Vector3, length: flo
 	effect.reach = length
 	parent.add_child(effect)
 	effect.global_position = origin
+	AUDIO.play(parent, origin, "gamma")
+	return effect
+
+static func gamma_strike(parent: Node, origin: Vector3, direction: Vector3, length: float = 3.2) -> Node3D:
+	var effect := BurstEffect.new()
+	effect.mode = "gamma_strike"
+	effect.direction = direction.normalized()
+	effect.reach = length
+	parent.add_child(effect)
+	effect.global_position = origin
+	return effect
+
+static func impact(parent: Node, at: Vector3, gamma_hit: bool = false) -> Node3D:
+	var effect := BurstEffect.new()
+	effect.mode = "gamma_impact" if gamma_hit else "impact"
+	parent.add_child(effect)
+	effect.global_position = at
+	AUDIO.play(parent, at, "impact")
 	return effect

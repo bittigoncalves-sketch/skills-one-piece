@@ -1,0 +1,8 @@
+{
+	"formato": "skills-one-piece/kit-builder",
+	"preco": 1,
+	"teclas": {
+		"Z": "nova_skill"
+	},
+	"versao": 1
+}

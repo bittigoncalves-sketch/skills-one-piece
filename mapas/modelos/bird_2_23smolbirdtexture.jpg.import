@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dkdb1pk6ts13o"
-path="res://.godot/imported/bird_2_23smolbirdtexture.jpg-f5511410e81d44dd25746742cc1045e8.ctex"
+path.bptc="res://.godot/imported/bird_2_23smolbirdtexture.jpg-f5511410e81d44dd25746742cc1045e8.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "ab2714e7bc7b171073415c5c981290ba"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/bird_2_23smolbirdtexture.jpg"
-dest_files=["res://.godot/imported/bird_2_23smolbirdtexture.jpg-f5511410e81d44dd25746742cc1045e8.ctex"]
+dest_files=["res://.godot/imported/bird_2_23smolbirdtexture.jpg-f5511410e81d44dd25746742cc1045e8.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

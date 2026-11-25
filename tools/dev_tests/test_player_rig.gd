@@ -23,6 +23,16 @@ func _init() -> void:
 	_ok(rig.pistolas().size() == 2, "duas pistolas penduradas (%d)" % rig.pistolas().size())
 	_ok(rig.armas_buki().size() > 0, "arsenal da Buki montado (%d armas)" % rig.armas_buki().size())
 	_ok(rig.pivo_buki() != null, "o pivo do canhao-corpo existe")
+	if rig.modelo().get_meta("base_rig_version", 0) == 2:
+		var grip := rig.modelo().find_child("Grip_R", true, false) as Node3D
+		_ok(rig.item_handle.global_position.distance_to(grip.global_position) < .0001,
+			"espada encaixada no ponto de pega da mão")
+		var wrist := rig.modelo().find_child("Wrist_R", true, false) as Node3D
+		var previous := wrist.rotation
+		wrist.rotation.x += .6
+		_ok(rig.item_handle.global_position.distance_to(grip.global_position) < .0001,
+			"arma acompanha a articulação do punho")
+		wrist.rotation = previous
 
 	print("\n-- as vistas do Player entregam o MESMO objeto --")
 	_ok(p._char_model == rig.modelo(), "_char_model == rig.modelo()")
@@ -64,7 +74,14 @@ func _init() -> void:
 	# e a espessura conferida na geometria.
 	_ok(absf(esc.z - esc.y) < 0.0001,
 		"escala do nó UNIFORME (%.4f) — a espessura não mora mais aqui" % esc.z)
-	if not rig.skinnado():
+	if rig.modelo().get_meta("reference_proportions", false):
+		var chest := rig.modelo().find_child("Geo_Chest_Runtime", true, false) as MeshInstance3D
+		_ok(chest != null, "peito novo presente")
+		if chest:
+			var size := chest.mesh.get_aabb().size
+			_ok(absf(size.z / size.x - .28 / .445) < .01,
+				"profundidade da referência preservada, sem engrossar 1.85x")
+	elif not rig.skinnado():
 		var prof := _profundidade_do_torso(rig.modelo())
 		var larg := _largura_do_torso(rig.modelo())
 		_ok(prof > 0.0 and larg > 0.0, "o torso do voxel foi medido (%.3f fundo x %.3f largo)" % [prof, larg])

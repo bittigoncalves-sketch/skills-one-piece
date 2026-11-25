@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://vpgnc8t4pmsj"
-path="res://.godot/imported/besta_mar_serpente_serpente_pele.png-9efedad3c6bb41f5687e059b87eb29ee.ctex"
+path.bptc="res://.godot/imported/besta_mar_serpente_serpente_pele.png-9efedad3c6bb41f5687e059b87eb29ee.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "a81198b2238880128356bcb17926d6a6"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/besta_mar_serpente_serpente_pele.png"
-dest_files=["res://.godot/imported/besta_mar_serpente_serpente_pele.png-9efedad3c6bb41f5687e059b87eb29ee.ctex"]
+dest_files=["res://.godot/imported/besta_mar_serpente_serpente_pele.png-9efedad3c6bb41f5687e059b87eb29ee.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

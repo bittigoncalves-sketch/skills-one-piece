@@ -50,6 +50,12 @@ var reservado: bool = false
 var override_kb_dir: Vector3 = Vector3.ZERO
 var _hit: Dictionary = {}
 var is_weapon_swing: bool = false
+## Hitbox de M1 (clique do mouse). O alvo recebe o atacante pela meta do
+## `CombatResolver` — é o que deixa o Boss reagir diferente ao corpo a corpo.
+var corpo_a_corpo: bool = false
+## Técnica corpo a corpo com cadência PRÓPRIA (rajada da Luta, Z segurado): fica fora da janela de 500 ms por alvo do "clique rápido",
+## que existe para o M1 e engoliria os socos seguintes da técnica (só o primeiro entraria inteiro).
+var sem_janela_de_acerto: bool = false
 var is_projectile: bool = false
 var _clashed: bool = false
 
@@ -58,6 +64,9 @@ var _clashed: bool = false
 # antigos; o Tri-Beam a liga explicitamente e fornece o ponto do impacto.
 var exige_linha_de_visao: bool = false
 var origem_linha_de_visao: Vector3 = Vector3.ZERO
+## Rocket usa feedback local replicado: não desacelerar só o relógio do host.
+## Padrão preservado para os ataques existentes.
+var feedback_global := true
 
 # Cria a colisão e a agenda de vida. Chamar logo após add_child.
 #
@@ -96,18 +105,39 @@ func setup(dmg: float, kb: float, velocity: Vector3, life: float, caster_node: N
 	add_to_group("hitbox")
 	body_entered.connect(_on_body)
 	area_entered.connect(_on_area)
-	FxUtil.autofree(self, life)
+	_vida_timer = FxUtil.autofree(self, life)
+	# PROJÉTIL PEQUENO E RÁPIDO de jogador com fruta (Hie Z, Yami Z, Mera Z…): ganha núcleo + halo + rastro da cor da fruta (15/11/2026). Medido nas capturas:
+	# a cápsula de 0,12 m dava ~1% da imagem. Filhos do próprio hitbox: somem com ele (sem vazamento).
+	if velocity.length() >= 14.0 and radius <= 1.2 and forma == null and is_instance_valid(caster_node) and caster_node.is_in_group("player"):
+		PoderDaFruta.rastro_em_voo(self, "bullet", str(caster_node.get("current_fruit_id")))
 
 # PARALISIA opcional: > 0 = o alvo congela por esse tempo em vez de ser
 # empurrado. Usado pelos raios do El Thor, que prendem em vez de arremessar.
 var paralisa: float = 0.0
 
+# TEMPO LOCAL (Modo História, vida baixa do jogador): o disparo dos OUTROS anda no tempo do mundo
+# ao redor do jogador — mais devagar —, e a vida dele estica na mesma conta, senão ele sumiria
+# antes de chegar onde chegaria. O disparo do próprio jogador segue em tempo normal.
+var _vida_timer: SceneTreeTimer = null
+
+func _fator_de_tempo() -> float:
+	if TempoLocal.jogador == null:
+		return 1.0
+	return TempoLocal.fator_de_disparo(global_position, caster)
+
 func _physics_process(delta: float) -> void:
+	var tempo := _fator_de_tempo()
+	if tempo < 1.0:
+		if _vida_timer != null and _vida_timer.time_left > 0.0:
+			_vida_timer.time_left += delta * (1.0 - tempo)
+		delta *= tempo
 	if vel == Vector3.ZERO:
 		return
 	var antes := global_position
 	global_position += vel * delta
 	_varrer_caminho(antes, global_position)
+	if _forma_varredura != null and damage > 0.0:
+		DestruicaoDeEstruturas.golpe(get_tree(), global_position, _forma_varredura.radius)      # skills quebram construções
 
 # ⚠️ PROJÉTIL RÁPIDO ATRAVESSAVA O ALVO — e ninguém sabia.
 #
@@ -316,8 +346,11 @@ func _on_body(body: Node3D) -> void:
 		# buraco do mapa — e um golpe que parasse de empurrar ao esgotar o teto
 		# perderia a sua função principal.
 		antes_do_acerto.emit(body)
+		# Autor que já saiu da árvore (inimigo da raid some ao morrer; a zona do golpe dele
+		# ainda vive): vai como null — passar o objeto liberado quebra a chamada tipada.
+		var autor: Node = caster if is_instance_valid(caster) else null
 		CombatResolver.aplicar(body, damage, cast_id, teto, global_position, kb, hitstun,
-			reserva, reservado)
+			reserva, reservado, autor if corpo_a_corpo else null, autor, not sem_janela_de_acerto)
 		hit_landed.emit(body)
 		# Crédito de kill: registra quem bateu por último em quem. Se o alvo cair
 		# do mapa nos próximos segundos, a kill é de quem empurrou.
@@ -326,10 +359,10 @@ func _on_body(body: Node3D) -> void:
 			placar.register_hit(body, caster)
 		# Camera Feel no impacto: micro-pausa + flash quente + aberração cromática.
 		var gf := get_node_or_null("/root/GameFlow")
-		if gf and gf.has_method("hit_stop"):
+		if feedback_global and gf and gf.has_method("hit_stop"):
 			gf.hit_stop()
 		var sfx := get_node_or_null("/root/ScreenFX")
-		if sfx and sfx.has_method("flash"):
+		if feedback_global and sfx and sfx.has_method("flash"):
 			sfx.flash(Color(1.0, 0.9, 0.6), 0.22)
 			sfx.chromatic_pulse(0.5)
 

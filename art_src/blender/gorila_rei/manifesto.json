@@ -1,0 +1,78 @@
+{
+ "fps": 24,
+ "clipes": {
+  "idle": {
+   "quadros": 48,
+   "duracao": 2.0,
+   "laco": true,
+   "impacto": null
+  },
+  "walk": {
+   "quadros": 24,
+   "duracao": 1.0,
+   "laco": true,
+   "impacto": null
+  },
+  "run": {
+   "quadros": 16,
+   "duracao": 0.6666666666666666,
+   "laco": true,
+   "impacto": null
+  },
+  "hurt": {
+   "quadros": 12,
+   "duracao": 0.5,
+   "laco": false,
+   "impacto": null
+  },
+  "roar": {
+   "quadros": 60,
+   "duracao": 2.5,
+   "laco": false,
+   "impacto": 0.9166666666666666
+  },
+  "furia": {
+   "quadros": 96,
+   "duracao": 4.0,
+   "laco": false,
+   "impacto": 0.8333333333333334
+  },
+  "soco_chao": {
+   "quadros": 40,
+   "duracao": 1.6666666666666667,
+   "laco": false,
+   "impacto": 0.875
+  },
+  "pulo_esmagar": {
+   "quadros": 52,
+   "duracao": 2.1666666666666665,
+   "laco": false,
+   "impacto": 1.25
+  },
+  "investida": {
+   "quadros": 16,
+   "duracao": 0.6666666666666666,
+   "laco": true,
+   "impacto": null
+  },
+  "giro": {
+   "quadros": 40,
+   "duracao": 1.6666666666666667,
+   "laco": false,
+   "impacto": 0.75
+  },
+  "arremesso": {
+   "quadros": 50,
+   "duracao": 2.0833333333333335,
+   "laco": false,
+   "impacto": 1.0833333333333333
+  },
+  "morte": {
+   "quadros": 72,
+   "duracao": 3.0,
+   "laco": false,
+   "impacto": null
+  }
+ },
+ "atlas": "assets/textures/ilha_macacos/gorila_rei_atlas.png"
+}

@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bqqy5on3ycovk"
-path="res://.godot/imported/besta_mar_bovina_bovina_pele.png-73c8b7fe37ba17df8e2bfa39c9bddf1f.ctex"
+path.bptc="res://.godot/imported/besta_mar_bovina_bovina_pele.png-73c8b7fe37ba17df8e2bfa39c9bddf1f.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "ae0460c5acf65677e54c98eb14192f8d"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/besta_mar_bovina_bovina_pele.png"
-dest_files=["res://.godot/imported/besta_mar_bovina_bovina_pele.png-73c8b7fe37ba17df8e2bfa39c9bddf1f.ctex"]
+dest_files=["res://.godot/imported/besta_mar_bovina_bovina_pele.png-73c8b7fe37ba17df8e2bfa39c9bddf1f.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

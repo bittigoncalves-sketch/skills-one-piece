@@ -33,3 +33,40 @@ art_src/blender/*.blend1
 # Clipes de diagnóstico gravados pelo tools/dev_tests/gravar_clipes.gd.
 # São megabytes de vídeo regeráveis por um comando — não entram no histórico.
 clipes_diagnostico/
+
+# índice vetorial do contexto (refeito sozinho por tools/contexto/indice.py)
+tools/contexto/.cache/
+
+# Personagens do Mine Piece convertidos do JAR local (arte PROVISÓRIA do mod, decisão do
+# dono em 17/10/2026; refazer: python3 -I tools/mine_piece/geo_para_glb.py). Ver
+# docs/EAST_BLUE_PLANO.md.
+# Tudo que começa com mp_ (o .glb, o .import e as texturas que o import do Godot extrai).
+mapas/modelos/mp_*
+# Estruturas do Mine Piece (blocos do Minecraft/mod, PROVISÓRIAS, 18/10/2026; refazer:
+# python3 -I tools/mine_piece/estrutura_para_glb.py). Ver docs/ESTRUTURAS_MINE_PIECE_PLANO.md.
+mapas/modelos/mpe_*
+# Fontes e exportações do combate Mine Piece (importar_combate.py); autoria do mod.
+assets/mine_piece/combate/
+art_src/mine_piece/
+# Goro Goro (Mine Piece): sons, partículas, poses, meteoro e ícone do mod
+# (refazer: python3 -I tools/mine_piece/importar_goro.py).
+assets/mine_piece/goro/
+assets/ui/frutas/goro_goro_mine_piece.png*
+# Assets originais das demais frutas; refazer com tools/mine_piece/inventariar_frutas.py.
+assets/mine_piece/frutas/
+
+# Ferramentas do Mine Piece: venv local do tradutor (tree-sitter)
+tools/mine_piece/.venv/
+# Procedures do Mine Piece TRADUZIDAS (derivadas do mod; regerar: tools/mine_piece/tradutor/traduzir.py)
+src/minecraft/gerado/
+
+# Sons e particulas do Mine Piece extraidos do jar (refazer: python3 -I tools/mine_piece/extrair_visual.py).
+assets/mine_piece/visual/
+mapas/modelos/mpi_*
+
+# Assets do Epic Fight extraídos do jar local (All Rights Reserved) — regeráveis por tools/epic_fight/extrair_do_jar.py
+art_src/epic_fight_local/
+assets/epic_fight/
+
+# Recursos do Minecraft 1.20.1 extraídos do jar local pelo REA (Mojang, All Rights Reserved) — regeráveis por tools/minecraft/copiar_da_extracao.py
+assets/minecraft_local/

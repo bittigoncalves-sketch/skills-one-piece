@@ -1,0 +1,63 @@
+[
+  {
+    "id": "cozinheiro_sanji",
+    "nome": "Sanji",
+    "ossos": 30,
+    "altura": 1.9848,
+    "triangulos": 37892,
+    "clipes": [
+      "descanso",
+      "caminhada",
+      "saudacao",
+      "cozinhar"
+    ]
+  },
+  {
+    "id": "cozinheiro_beto",
+    "nome": "Beto · Mestre do fogão",
+    "ossos": 30,
+    "altura": 1.85,
+    "clipes": [
+      "descanso",
+      "caminhada",
+      "saudacao",
+      "cozinhar"
+    ]
+  },
+  {
+    "id": "cozinheiro_iara",
+    "nome": "Iara · Confeiteira",
+    "ossos": 30,
+    "altura": 1.76,
+    "clipes": [
+      "descanso",
+      "caminhada",
+      "saudacao",
+      "cozinhar"
+    ]
+  },
+  {
+    "id": "cozinheiro_ravi",
+    "nome": "Ravi · Cozinha do mar",
+    "ossos": 30,
+    "altura": 1.9,
+    "clipes": [
+      "descanso",
+      "caminhada",
+      "saudacao",
+      "cozinhar"
+    ]
+  },
+  {
+    "id": "cozinheiro_otto",
+    "nome": "Otto · Padeiro",
+    "ossos": 30,
+    "altura": 1.82,
+    "clipes": [
+      "descanso",
+      "caminhada",
+      "saudacao",
+      "cozinhar"
+    ]
+  }
+]

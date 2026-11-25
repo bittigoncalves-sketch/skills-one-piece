@@ -1,0 +1,205 @@
+{
+	"_leia": "Planta da Ilha Inicial do Modo História (30/09/2026). FONTE do desenho: o gerador (gerar_ilha.gd) e o esboço (esboco_planta.py) leem daqui. Coordenadas do Godot em metros: +X leste, -Z norte; a baseplate vai de -256 a 256.",
+	"ilha": {
+		"meia": 256.0,
+		"bloco": 64.0,
+		"celulas_por_bloco": 32,
+		"faixa_de_praia": 26.0
+	},
+	"rio": {
+		"_leia": "S de costa a costa, do norte para o sul. x(z) = amplitude * sin(pi * z / meia).",
+		"amplitude": 62.0,
+		"largura_norte": 12.0,
+		"largura_sul": 20.0,
+		"margem": 7.0,
+		"leito": 0.25,
+		"agua_meio": 1.15,
+		"agua_foz": 0.15
+	},
+	"regioes": [
+		{
+			"id": "vila",
+			"nome": "Vila",
+			"centro": [
+				140.0,
+				20.0
+			],
+			"raio": 62.0,
+			"altura": 3.0,
+			"plana": true,
+			"cor": "#d8b86a"
+		},
+		{
+			"id": "porto",
+			"nome": "Porto",
+			"centro": [
+				226.0,
+				40.0
+			],
+			"raio": 30.0,
+			"altura": 1.2,
+			"plana": true,
+			"cor": "#a08060"
+		},
+		{
+			"id": "fazendas",
+			"nome": "Fazendas",
+			"centro": [
+				120.0,
+				-150.0
+			],
+			"raio": 55.0,
+			"altura": 4.0,
+			"plana": false,
+			"cor": "#c9d36a"
+		},
+		{
+			"id": "coliseu",
+			"nome": "Coliseu",
+			"centro": [
+				-150.0,
+				150.0
+			],
+			"raio": 46.0,
+			"altura": 2.5,
+			"plana": true,
+			"cor": "#c8a888"
+		},
+		{
+			"id": "morros",
+			"nome": "Morros da floresta",
+			"centro": [
+				-160.0,
+				-140.0
+			],
+			"raio": 105.0,
+			"altura": 26.0,
+			"plana": false,
+			"cor": "#6b8f5a"
+		}
+	],
+	"floresta": {
+		"_leia": "Metade oeste (além do rio), fora da clareira do coliseu e das estradas.",
+		"lado": "oeste",
+		"cor": "#2f6b3a"
+	},
+	"estradas": [
+		{
+			"id": "porto_vila",
+			"pontos": [
+				[
+					240.0,
+					40.0
+				],
+				[
+					190.0,
+					32.0
+				],
+				[
+					150.0,
+					20.0
+				]
+			]
+		},
+		{
+			"id": "vila_ponte_sul",
+			"pontos": [
+				[
+					150.0,
+					20.0
+				],
+				[
+					90.0,
+					50.0
+				],
+				[
+					40.0,
+					70.0
+				],
+				[
+					-20.0,
+					80.0
+				]
+			]
+		},
+		{
+			"id": "ponte_sul_coliseu",
+			"pontos": [
+				[
+					-20.0,
+					80.0
+				],
+				[
+					-80.0,
+					110.0
+				],
+				[
+					-130.0,
+					140.0
+				]
+			]
+		},
+		{
+			"id": "vila_fazendas",
+			"pontos": [
+				[
+					150.0,
+					20.0
+				],
+				[
+					140.0,
+					-60.0
+				],
+				[
+					120.0,
+					-130.0
+				]
+			]
+		},
+		{
+			"id": "fazendas_rio_norte",
+			"pontos": [
+				[
+					120.0,
+					-130.0
+				],
+				[
+					80.0,
+					-118.0
+				],
+				[
+					30.0,
+					-112.0
+				]
+			]
+		},
+		{
+			"id": "rio_norte_morros",
+			"pontos": [
+				[
+					30.0,
+					-112.0
+				],
+				[
+					-30.0,
+					-114.0
+				],
+				[
+					-90.0,
+					-124.0
+				],
+				[
+					-130.0,
+					-132.0
+				]
+			]
+		}
+	],
+	"pontes": {
+		"_leia": "Automáticas: uma ponte onde cada estrada cruza o rio (o gerador acha o cruzamento)."
+	},
+	"spawn": [
+		150.0,
+		20.0
+	]
+}

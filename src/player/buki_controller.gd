@@ -160,6 +160,7 @@ func empunhar(slot: String, autoridade: bool, suprimido: bool) -> void:
 	# Lição: remover chamada é tão perigoso quanto adicionar, quando ela tem
 	# efeito colateral.
 	_dono.avisar_servidor_do_saque(slot)
+	_dono.buki_fps(true, slot)          # FPS: câmera em 1ª pessoa + arma na frente da tela
 
 # GUARDAR: a arma some e o slot largado entra em recarga. Chamado na troca, no
 # fim da munição, ao trocar de fruta e ao morrer.
@@ -170,6 +171,7 @@ func guardar() -> void:
 	_arma = ""
 	_municao = 0
 	_luneta = false
+	_dono.buki_fps(false, "")
 	_dono.avisar_servidor_do_guardar()
 
 # ------------------------------------------------------- lado do SERVIDOR
@@ -275,6 +277,7 @@ func atualizar(delta: float, pitch: float, yaw: float, facing: float) -> void:
 	# direito é a luneta — mira assistida com zoom seria tiro grátis.
 	if _arma == "C":
 		_luneta = bt_dir
+		_dono.buki_luneta(_luneta)
 	else:
 		_luneta = false
 		if bt_dir:
@@ -326,6 +329,9 @@ func atirar() -> void:
 # Boca do cano da arma empunhada. Sem arma na árvore, cai no peito (mesma rede
 # de segurança do `_muzzle_pos` da pistola).
 func boca_do_cano() -> Vector3:
+	var vm = _dono.buki_viewmodel
+	if vm != null and is_instance_valid(vm) and vm.ativo():
+		return vm.boca()          # FPS: o tiro sai da arma que o jogador VÊ
 	var n = _rig.armas_buki().get(_arma)
 	if n is Node3D and is_instance_valid(n) and (n as Node3D).is_inside_tree():
 		var t := (n as Node3D).global_transform

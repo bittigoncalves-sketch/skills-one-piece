@@ -63,12 +63,10 @@ func _t1_modelo(mundo: Node3D) -> void:
 	_ok(modelo != null, "o .glb da Yoru carregou")
 	if modelo == null:
 		return
-	# 180° em X: a lâmina do modelo (-Y) passa a apontar para +Y, que é o lado
-	# em que a espada empunhada cresce a partir da mão.
-	_ok(absf(modelo.rotation.x - PI) < 0.001,
-		"girado 180° em X (lâmina -Y do modelo vira +Y da espada)")
-	_ok(absf(modelo.position.y - YoruSword.CRU_PEGA_Y * YoruSword.ESCALA) < 0.001,
-		"subido %.3f m para o cabo cair na origem" % (YoruSword.CRU_PEGA_Y * YoruSword.ESCALA))
+	_ok(modelo.transform.is_equal_approx(Transform3D.IDENTITY),
+		"GLB novo em metros, sem compensação do modelo antigo")
+	_ok(e.grip_l.position.is_equal_approx(Vector3(0,-0.17,0)),
+		"segunda pega exportada a 17 cm do handle")
 	_ok(YoruSword.LAMINA_PONTA > YoruSword.LAMINA_BASE,
 		"a lâmina vai de %.2f m a %.2f m acima da mão"
 			% [YoruSword.LAMINA_BASE, YoruSword.LAMINA_PONTA])
@@ -205,13 +203,7 @@ func _t5_dano(mundo: Node3D) -> void:
 	# `alcance` metros à frente do PEITO, solto no ar. Aqui se cobra que o efeito
 	# nasça em cima da lâmina, longe da mão.
 	var impacto: Node3D = null
-	for n in get_root().get_children():
-		if n is Node3D and n.name.begins_with("CorteImpacto"):
-			impacto = n as Node3D
-	if impacto == null:
-		for n in mundo.get_children():
-			if n is Node3D and n.name.begins_with("CorteImpacto"):
-				impacto = n as Node3D
+	impacto = get_root().find_child("YoruImpactSparks*",true,false) as Node3D
 	_ok(impacto != null, "o corte deixou um impacto na cena")
 	if impacto != null:
 		var da_mao: float = impacto.global_position.distance_to(espada.global_position)

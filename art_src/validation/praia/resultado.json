@@ -1,0 +1,13 @@
+{
+  "contratos": "PASS",
+  "captura": "PASS",
+  "animacao": {
+    "quadros": 36,
+    "passo_segundos": 0.08333333333333333
+  },
+  "ondas_2s": {
+    "pixels_alterados_percentual": 25.94,
+    "delta_rgb_medio": 2.8295873015873014
+  },
+  "mapa_preservado": "00945145d8779510e4f90eacac6c2d9f6d572a8f77cee315253ba90012df85eb"
+}

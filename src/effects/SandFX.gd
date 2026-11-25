@@ -12,14 +12,15 @@ const SAND := [
 ]
 
 static func cast(world: Node, origin: Vector3, dir: Vector3, variant: int, damage: float,
-		caster: Node, spec: DamageSpec = null) -> void:
+		caster: Node, spec: DamageSpec = null) -> Node:
 	if spec == null:
 		spec = DamageSpec.avulso(damage)
 	match variant:
-		0: _blade(world, origin, dir, damage, caster, spec)
+		0: return _blade(world, origin, dir, damage, caster, spec)
 		1: _tornado(world, origin + dir * 4.0, damage, caster, dir, spec)
 		2: _quicksand(world, origin + dir * 4.0, damage, caster, spec)
 		_: _desert(world, _ground_target(caster, dir, 11.0), damage, caster, spec)
+	return null
 
 static func _ground_target(caster: Node, dir: Vector3, distance: float) -> Vector3:
 	# O ataque de área não usa pitch: olhar para cima/baixo nunca pode fazer o
@@ -104,8 +105,10 @@ static func _voxel_multimesh(blocks: Array, size: float, color: Color) -> MultiM
 	return mmi
 
 # ---------- Z: Desert Spada — lâmina de areia projétil ----------
+## Devolve a zona de dano da lâmina (o Z), para quem quiser poupar alguém do corte (a
+## tripulação do barco poupa o próprio casco).
 static func _blade(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
-		spec: DamageSpec = null) -> void:
+		spec: DamageSpec = null) -> Node:
 	if spec == null:
 		spec = DamageSpec.avulso(damage)
 	var zone := DamageZone.new()
@@ -143,6 +146,7 @@ static func _blade(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 	AudioFX.whoosh(world, origin, 0.9)   # "fiu" da lâmina cortando o ar
 	var tw := zone.create_tween()
 	tw.tween_property(blade, "scale", Vector3(1.2, 1.2, 0.5), 1.2)
+	return zone
 
 # ---------- X: Sables — tornado de areia (puxa, levanta, dano contínuo) ----------
 static func _tornado(world: Node, pos: Vector3, damage: float, caster: Node, dir: Vector3 = Vector3.ZERO,

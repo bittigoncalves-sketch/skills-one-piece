@@ -1,0 +1,94 @@
+[gd_resource type="Resource" script_class="BossDefinition" load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://src/bosses/BossDefinition.gd" id="1"]
+[ext_resource type="Resource" path="res://assets/models/bosses/buggy/buggy_boss_visual.tres" id="2"]
+[ext_resource type="Resource" path="res://assets/bosses/buggy/jab.tres" id="3"]
+
+[ext_resource type="Script" path="res://src/bosses/BossAbility.gd" id="4"]
+[ext_resource type="Script" path="res://src/bosses/BossSlashAbility.gd" id="5"]
+
+[ext_resource type="Script" path="res://src/bosses/BossDetachedAbility.gd" id="6"]
+
+[ext_resource type="Resource" path="res://assets/models/bosses/buggy/detached/right_hand_binding.tres" id="7"]
+
+[sub_resource type="Resource" id="DetachedFinish"]
+script = ExtResource("6")
+id = &"detached_fist"
+hand = "R"
+windup = 0.55
+active = 0.45
+recovery = 0.45
+cooldown = 0.85
+damage = 112.0
+knockback = 0.0
+hitstun = 0.25
+launch_horizontal = 14.0
+launch_vertical = 9.0
+hit_radius = 0.24
+distance = 7.0
+return_time = 0.35
+reuse_delay = 6.0
+
+[sub_resource type="Resource" id="Corte"]
+script = ExtResource("5")
+id = &"corte"
+hand = "R"
+windup = 0.85
+active = 0.12
+recovery = 0.55
+cooldown = 4.0
+damage = 90.0
+knockback = 14.0
+hitstun = 0.35
+aim_time = 0.30
+slash_range = 18.0
+speed = 26.0
+width = 1.5
+
+[sub_resource type="Resource" id="JabRight"]
+script = ExtResource("4")
+id = &"jab_right"
+hand = "R"
+windup = 0.16
+active = 0.12
+recovery = 0.10
+cooldown = 0.65
+damage = 72.0
+knockback = 0.0
+hitstun = 0.10
+
+[sub_resource type="Resource" id="JabLeft"]
+script = ExtResource("4")
+id = &"jab_left"
+hand = "L"
+windup = 0.16
+active = 0.12
+recovery = 0.10
+cooldown = 0.65
+damage = 72.0
+knockback = 0.0
+hitstun = 0.10
+
+[sub_resource type="Resource" id="JabFinish"]
+script = ExtResource("4")
+id = &"jab_finish"
+hand = "R"
+windup = 0.16
+active = 0.12
+recovery = 0.60
+cooldown = 0.65
+damage = 72.0
+knockback = 0.0
+hitstun = 0.18
+launch_horizontal = 14.0
+launch_vertical = 9.0
+
+[resource]
+script = ExtResource("1")
+id = &"buggy"
+display_name = "Buggy — O Boxeador"
+visual = ExtResource("2")
+ability = ExtResource("3")
+followups = Array[ExtResource("4")]([SubResource("JabRight"), SubResource("JabLeft"), SubResource("JabFinish"), SubResource("DetachedFinish")])
+slash = SubResource("Corte")
+detached_part = ExtResource("7")

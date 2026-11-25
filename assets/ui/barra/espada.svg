@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <!-- Espada -->
+  <g stroke="#1d1d22" stroke-width="2" stroke-linejoin="round">
+    <path d="M36 5 L41 7 L22 30 L18 26 Z" fill="#dfe6ec"/>
+    <path d="M13 23 L25 35 L22 38 L10 26 Z" fill="#c9a24a"/>
+    <path d="M16 32 L9 39" stroke="#5a3a24" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="8" cy="40" r="3" fill="#c9a24a"/>
+  </g>
+</svg>

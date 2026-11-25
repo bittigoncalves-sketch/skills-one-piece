@@ -29,6 +29,7 @@ enum Tipo {
 	UNICO,      ## um acerto, um valor. O caso comum.
 	MULTI,      ## vários acertos de `dano` cada, somando no máximo `teto`.
 	CARREGADO,  ## interpola de `dano` a `dano_max` conforme o tempo de carga.
+	UTILITARIO, ## espaço/mobilidade: não cria dano nem reserva orçamento.
 }
 
 var tipo: Tipo = Tipo.UNICO
@@ -93,6 +94,22 @@ func para_cast() -> DamageSpec:
 	s.cast_id = CombatResolver.novo_cast()
 	return s
 
+## Multiplica TODOS os números do golpe (dano, carga cheia, teto, reserva e partes)
+## por `k`, na própria cópia. Existe para o Modo História trazer o kit da arena na
+## escala dele (`Balance.novo(..., escala)`); o molde nunca é escalado.
+func escalar(k: float) -> DamageSpec:
+	dano *= k
+	dano_max *= k
+	teto *= k
+	reserva *= k
+	if not partes.is_empty():
+		var novas := {}
+		for nome in partes:
+			var v: Variant = partes[nome]
+			novas[nome] = v * k if (v is float or v is int) else v
+		partes = novas
+	return self
+
 # -------------------------------------------------------------------- leitura
 ## Quanto vale UM acerto deste golpe. `carga` só importa em CARREGADO.
 ##
@@ -123,7 +140,7 @@ func marcar(zona: Node, e_climax: bool = false) -> void:
 	zona.reservado = e_climax
 
 func _to_string() -> String:
-	var nome: String = ["unico", "multi", "carregado"][int(tipo)]
+	var nome: String = ["unico", "multi", "carregado", "utilitario"][int(tipo)]
 	if tipo == Tipo.CARREGADO:
 		return "DamageSpec(%s %.0f->%.0f teto=%.0f id=%d)" % [nome, dano, dano_max, teto, cast_id]
 	if tipo == Tipo.MULTI:

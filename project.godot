@@ -36,6 +36,26 @@ window/stretch/aspect="expand"
 ; Por isso usamos o driver nativo. Vale p/ qualquer forma de abrir (editor, lançador).
 display_server/driver.linuxbsd="wayland"
 
+[input]
+
+; SÓ o combate direcional do Modo História lê estas ações
+; (src/combat/direcional/entrada_corpo_a_corpo.gd, docs/PLANO_COMBATE_HISTORIA.md).
+; O resto do jogo continua lendo tecla direto, por convenção (Player.gd, cabeçalho).
+combate_atacar={
+"deadzone": 0.5,
+"events": [Object(InputEventMouseButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"button_mask":0,"position":Vector2(0, 0),"global_position":Vector2(0, 0),"factor":1.0,"button_index":1,"canceled":false,"pressed":false,"double_click":false,"script":null)
+]
+}
+combate_defender={
+"deadzone": 0.5,
+"events": [Object(InputEventMouseButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"button_mask":0,"position":Vector2(0, 0),"global_position":Vector2(0, 0),"factor":1.0,"button_index":2,"canceled":false,"pressed":false,"double_click":false,"script":null)
+]
+}
+
+[physics]
+
+common/max_physics_steps_per_frame=3
+
 [rendering]
 
 renderer/rendering_method="forward_plus"

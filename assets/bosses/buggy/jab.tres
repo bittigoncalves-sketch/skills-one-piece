@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="BossAbility" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/bosses/BossAbility.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"jab"
+windup = 0.24
+active = 0.12
+recovery = 0.10
+cooldown = 0.65
+damage = 72.0
+hit_radius = 0.22
+knockback = 0.0
+hitstun = 0.10

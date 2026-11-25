@@ -138,13 +138,23 @@ static func _yasakani(world: Node, origin: Vector3, dir: Vector3, damage: float,
 
 	_carga(salva, world, origin)
 
+	# Os raios saem da MÃO, e a mira sai da linha da câmera de ombro: paralelo à
+	# mira, o leque passava ao lado do alvo (o Z da Pika errava o inimigo a 4 m —
+	# medido em 05/10/2026). O leque se abre em torno do ponto que o retículo marca.
+	var ponto := Vector3.INF
+	if caster is Node3D and (caster as Node3D).is_inside_tree():
+		var fora: Array[RID] = []
+		if caster is CollisionObject3D:
+			fora.append((caster as CollisionObject3D).get_rid())
+		ponto = AlvosDeGolpe.ponto_mirado((caster as Node3D).get_world_3d(), origin, fwd, ALCANCE, fora)
+
 	# A salva inteira é agendada de uma vez. Timer por raio, e não um
 	# `_process` com contador, porque não há estado entre os raios: cada um nasce
 	# independente e some sozinho.
 	for i in FEIXES:
 		var atraso := CARGA + i * INTERVALO
 		var t := salva.get_tree().create_timer(atraso)
-		t.timeout.connect(_disparar_um.bind(world, caster, fwd, damage, spec, i))
+		t.timeout.connect(_disparar_um.bind(world, caster, fwd, damage, spec, i, ponto))
 
 
 # A luz que junta na mão antes da salva. É o que dá a leitura em UM quadro
@@ -187,14 +197,17 @@ static func _carga(pai: Node3D, world: Node, origin: Vector3) -> void:
 
 
 static func _disparar_um(world: Node, caster: Node, fwd: Vector3, damage: float,
-		spec: DamageSpec, indice: int) -> void:
+		spec: DamageSpec, indice: int, ponto: Vector3 = Vector3.INF) -> void:
 	if not is_instance_valid(world):
 		return
 
 	var origem: Vector3 = fwd * 0.0
 	if is_instance_valid(caster) and caster is Node3D:
 		origem = (caster as Node3D).global_position + Vector3(0, ALTURA_MAO, 0)
-	var dir := _direcao_do_leque(fwd, indice)
+	var centro := fwd
+	if ponto.is_finite() and (ponto - origem).length_squared() > 1.0:
+		centro = (ponto - origem).normalized()
+	var dir := _direcao_do_leque(centro, indice)
 
 	# ⚠️ SERVIDOR-AUTORIDADE. O rastro e o clarão rodam em todo cliente; quem
 	# machuca é só o servidor. A `DamageZone` já é criada apenas aqui, mas a
@@ -308,7 +321,7 @@ static func _ao_acertar(corpo: Node, caster: Node) -> void:
 	if corpo == caster:
 		return
 	# Chão e bloco não valem peso — só corpo que sente.
-	if not (corpo.is_in_group("player") or corpo.is_in_group("enemy")):
+	if not AlvosDeGolpe.e_alvo(corpo):
 		return
 	if caster.get_meta("pika_peso_dado", false):
 		return
@@ -538,7 +551,7 @@ class _ViagemDeLuz extends Node3D:
 		var arvore := get_tree()
 		if arvore == null:
 			return fora
-		for grupo in ["player", "enemy"]:
+		for grupo in ["player", "enemy", AlvosDeGolpe.GRUPO]:
 			for n in arvore.get_nodes_in_group(grupo):
 				if n is CollisionObject3D and is_instance_valid(n):
 					fora.append((n as CollisionObject3D).get_rid())
@@ -637,7 +650,7 @@ class _ViagemDeLuz extends Node3D:
 		var arvore := get_tree()
 		if arvore == null:
 			return
-		for grupo in ["enemy", "player"]:
+		for grupo in ["enemy", "player", AlvosDeGolpe.GRUPO]:
 			for n in arvore.get_nodes_in_group(grupo):
 				if n == caster or not (n is Node3D) or not is_instance_valid(n):
 					continue

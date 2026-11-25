@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d2yx87lp0i4ow"
-path="res://.godot/imported/chick_22smolchikentexture.jpg-893a60f0ce0a99738e9d8915b4fb85ea.ctex"
+path.bptc="res://.godot/imported/chick_22smolchikentexture.jpg-893a60f0ce0a99738e9d8915b4fb85ea.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "539b164ad14d136272067fd9cc6631e3"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/chick_22smolchikentexture.jpg"
-dest_files=["res://.godot/imported/chick_22smolchikentexture.jpg-893a60f0ce0a99738e9d8915b4fb85ea.ctex"]
+dest_files=["res://.godot/imported/chick_22smolchikentexture.jpg-893a60f0ce0a99738e9d8915b4fb85ea.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

@@ -6,9 +6,32 @@
 existe no código**; é texto de vitrine, como nas outras Logias (ver o
 [README da pasta](README.md)).
 
-> ⚠️ **É a fruta inicial do jogo** (`Player.FRUTA_INICIAL`, [Player.gd:94](../../Player.gd#L94),
-> desde 2026-09-04). Todo jogador que entra numa partida começa com ela, então
-> defeito aqui é defeito que todo mundo vê no primeiro minuto.
+> ⚠️ **Foi a fruta inicial entre 2026-09-04 e 2026-09-08**, quando a
+> `Player.FRUTA_INICIAL` passou para a `ope_ope`. Boa parte do trabalho desta
+> página foi feita sob a premissa de que todo jogador começava com ela.
+>
+> **E a Pika continua sem árvore no mapa** — o item 51 de
+> [`LISTA_DE_CORRECOES.md`](../LISTA_DE_CORRECOES.md) deixou de ser urgente
+> (ninguém mais nasce com ela) mas não deixou de ser verdade: ela é a única
+> fruta jogável que não dá para pegar jogando.
+
+---
+
+## 🆕 Refeita no Skills Builder (06–07/10/2026)
+
+Pedido do dono: refazer a Pika **pelo editor**, menos o V. Desde então **Z, X e C saem do Builder** (`res://mapas/skills`: `pika_raio_z`, `pika_yata_x`, `pika_yasakani_c`, publicadas por `tools/criar_pika_pika.gd`); o **V continua o código** abaixo. Plano e números: [`docs/PIKA_BUILDER_PLANO.md`](../PIKA_BUILDER_PLANO.md).
+
+| tecla | agora | dano (arena) | recarga |
+|---|---|---|---|
+| Z | **Raio de Luz** (rodada 2, 07/10): segurar acende na mão uma estrela de quatro pontas que cresce (carga cheia em 1,5 s); **soltar** dispara um feixe dourado instantâneo **da mão** até o retículo do momento (40 m), que pára na parede; empurrão de 1× (toque) a 1,5× (carga cheia) | 98 | 5 s (do disparo) |
+| X | **Yata no Kagami**: sobe 6 m (se estiver no chão), vira luz, zigue-zague esquerda/direita/esquerda (21 m) e atira para baixo uma esfera que explode no chão (raio 4,5 m). Rodada 2: um inimigo a até 6 m (no plano) do caminho encerra a viagem **em cima dele** (a esfera cai nele); sem inimigo, **pára antes do vazio** | 160 | 7 s |
+| C | **Yasakani no Magatama** (rodada 2): sobe 7 m e, enquanto a tecla está apertada, **chove** bolinhas amarelas na área mirada (8 ondas de 14, círculo de 9 m em volta do chão mirado); cada uma estoura (1,6 m) e fere; soltar pára as ondas, e o que já saiu cai | 40 por estouro (alvo parado no meio, segurando tudo: ~7 = 280) | 10 s |
+| V | Chuva de Luz (código, raios guiados até 50 m) | — | — |
+| F | **Voo de Luz** (rodada 3, 07/10): segurar F sobe 1,5 m se estiver no chão, o corpo vira cometa e voa a 30 m/s para onde a câmera aponta (até 6 s); soltar pára e cai | — | 4 s (2 % + 5 %/s de energia) |
+
+Entre um golpe de fruta e outro: 0,5 s (todas as frutas, desde 07/10/2026). Q no ar: dash de 8 m (era 12, até 07/10/2026).
+
+As tabelas e seções abaixo descrevem o Z/X/C **antigos** (código guardado, sem uso).
 
 ---
 

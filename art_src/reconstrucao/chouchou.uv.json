@@ -1,0 +1,794 @@
+{
+ "id": "chouchou",
+ "atlas": [
+  64,
+  64
+ ],
+ "regra": "pixel transparente = nada; cada cubo é uma caixa com 6 faces (topo/base/frente/tras/direita/esquerda); frente = -Z",
+ "cubos": [
+  {
+   "indice": 0,
+   "cubo": "tronco",
+   "osso": "body",
+   "tamanho_px": [
+    7,
+    7,
+    14
+   ],
+   "cor_sugerida": "#b5651d",
+   "faces": {
+    "frente": [
+     14,
+     14,
+     21,
+     21
+    ],
+    "direita": [
+     0,
+     14,
+     14,
+     21
+    ],
+    "tras": [
+     35,
+     14,
+     42,
+     21
+    ],
+    "esquerda": [
+     21,
+     14,
+     35,
+     21
+    ],
+    "topo": [
+     14,
+     0,
+     21,
+     14
+    ],
+    "base": [
+     21,
+     0,
+     28,
+     14
+    ]
+   }
+  },
+  {
+   "indice": 1,
+   "cubo": "juba",
+   "osso": "body",
+   "tamanho_px": [
+    9,
+    8,
+    6
+   ],
+   "cor_sugerida": "#c97a2b",
+   "faces": {
+    "frente": [
+     6,
+     27,
+     15,
+     35
+    ],
+    "direita": [
+     0,
+     27,
+     6,
+     35
+    ],
+    "tras": [
+     21,
+     27,
+     30,
+     35
+    ],
+    "esquerda": [
+     15,
+     27,
+     21,
+     35
+    ],
+    "topo": [
+     6,
+     21,
+     15,
+     27
+    ],
+    "base": [
+     15,
+     21,
+     24,
+     27
+    ]
+   }
+  },
+  {
+   "indice": 2,
+   "cubo": "cranio",
+   "osso": "head",
+   "tamanho_px": [
+    7,
+    6,
+    6
+   ],
+   "cor_sugerida": "#c97a2b",
+   "faces": {
+    "frente": [
+     36,
+     27,
+     43,
+     33
+    ],
+    "direita": [
+     30,
+     27,
+     36,
+     33
+    ],
+    "tras": [
+     49,
+     27,
+     56,
+     33
+    ],
+    "esquerda": [
+     43,
+     27,
+     49,
+     33
+    ],
+    "topo": [
+     36,
+     21,
+     43,
+     27
+    ],
+    "base": [
+     43,
+     21,
+     50,
+     27
+    ]
+   }
+  },
+  {
+   "indice": 3,
+   "cubo": "bochechas",
+   "osso": "head",
+   "tamanho_px": [
+    9,
+    5,
+    4
+   ],
+   "cor_sugerida": "#b5651d",
+   "faces": {
+    "frente": [
+     4,
+     50,
+     13,
+     55
+    ],
+    "direita": [
+     0,
+     50,
+     4,
+     55
+    ],
+    "tras": [
+     17,
+     50,
+     26,
+     55
+    ],
+    "esquerda": [
+     13,
+     50,
+     17,
+     55
+    ],
+    "topo": [
+     4,
+     46,
+     13,
+     50
+    ],
+    "base": [
+     13,
+     46,
+     22,
+     50
+    ]
+   }
+  },
+  {
+   "indice": 4,
+   "cubo": "focinho",
+   "osso": "head",
+   "tamanho_px": [
+    4,
+    3,
+    3
+   ],
+   "cor_sugerida": "#a8581a",
+   "faces": {
+    "frente": [
+     29,
+     49,
+     33,
+     52
+    ],
+    "direita": [
+     26,
+     49,
+     29,
+     52
+    ],
+    "tras": [
+     36,
+     49,
+     40,
+     52
+    ],
+    "esquerda": [
+     33,
+     49,
+     36,
+     52
+    ],
+    "topo": [
+     29,
+     46,
+     33,
+     49
+    ],
+    "base": [
+     33,
+     46,
+     37,
+     49
+    ]
+   }
+  },
+  {
+   "indice": 5,
+   "cubo": "nariz",
+   "osso": "head",
+   "tamanho_px": [
+    2,
+    1,
+    1
+   ],
+   "cor_sugerida": "#111111",
+   "faces": {
+    "frente": [
+     41,
+     56,
+     43,
+     57
+    ],
+    "direita": [
+     40,
+     56,
+     41,
+     57
+    ],
+    "tras": [
+     44,
+     56,
+     46,
+     57
+    ],
+    "esquerda": [
+     43,
+     56,
+     44,
+     57
+    ],
+    "topo": [
+     41,
+     55,
+     43,
+     56
+    ],
+    "base": [
+     43,
+     55,
+     45,
+     56
+    ]
+   }
+  },
+  {
+   "indice": 6,
+   "cubo": "orelha_d",
+   "osso": "head",
+   "tamanho_px": [
+    2,
+    2,
+    2
+   ],
+   "cor_sugerida": "#8a4b14",
+   "faces": {
+    "frente": [
+     26,
+     57,
+     28,
+     59
+    ],
+    "direita": [
+     24,
+     57,
+     26,
+     59
+    ],
+    "tras": [
+     30,
+     57,
+     32,
+     59
+    ],
+    "esquerda": [
+     28,
+     57,
+     30,
+     59
+    ],
+    "topo": [
+     26,
+     55,
+     28,
+     57
+    ],
+    "base": [
+     28,
+     55,
+     30,
+     57
+    ]
+   }
+  },
+  {
+   "indice": 7,
+   "cubo": "orelha_e",
+   "osso": "head",
+   "tamanho_px": [
+    2,
+    2,
+    2
+   ],
+   "cor_sugerida": "#8a4b14",
+   "faces": {
+    "frente": [
+     34,
+     57,
+     36,
+     59
+    ],
+    "direita": [
+     32,
+     57,
+     34,
+     59
+    ],
+    "tras": [
+     38,
+     57,
+     40,
+     59
+    ],
+    "esquerda": [
+     36,
+     57,
+     38,
+     59
+    ],
+    "topo": [
+     34,
+     55,
+     36,
+     57
+    ],
+    "base": [
+     36,
+     55,
+     38,
+     57
+    ]
+   }
+  },
+  {
+   "indice": 8,
+   "cubo": "mandibula",
+   "osso": "bone2",
+   "tamanho_px": [
+    4,
+    1,
+    4
+   ],
+   "cor_sugerida": "#a8581a",
+   "faces": {
+    "frente": [
+     4,
+     59,
+     8,
+     60
+    ],
+    "direita": [
+     0,
+     59,
+     4,
+     60
+    ],
+    "tras": [
+     12,
+     59,
+     16,
+     60
+    ],
+    "esquerda": [
+     8,
+     59,
+     12,
+     60
+    ],
+    "topo": [
+     4,
+     55,
+     8,
+     59
+    ],
+    "base": [
+     8,
+     55,
+     12,
+     59
+    ]
+   }
+  },
+  {
+   "indice": 9,
+   "cubo": "lingua",
+   "osso": "bone",
+   "tamanho_px": [
+    2,
+    3,
+    2
+   ],
+   "cor_sugerida": "#3a4f8f",
+   "faces": {
+    "frente": [
+     18,
+     57,
+     20,
+     60
+    ],
+    "direita": [
+     16,
+     57,
+     18,
+     60
+    ],
+    "tras": [
+     22,
+     57,
+     24,
+     60
+    ],
+    "esquerda": [
+     20,
+     57,
+     22,
+     60
+    ],
+    "topo": [
+     18,
+     55,
+     20,
+     57
+    ],
+    "base": [
+     20,
+     55,
+     22,
+     57
+    ]
+   }
+  },
+  {
+   "indice": 10,
+   "cubo": "rabo_base",
+   "osso": "tail",
+   "tamanho_px": [
+    3,
+    3,
+    3
+   ],
+   "cor_sugerida": "#c97a2b",
+   "faces": {
+    "frente": [
+     43,
+     49,
+     46,
+     52
+    ],
+    "direita": [
+     40,
+     49,
+     43,
+     52
+    ],
+    "tras": [
+     49,
+     49,
+     52,
+     52
+    ],
+    "esquerda": [
+     46,
+     49,
+     49,
+     52
+    ],
+    "topo": [
+     43,
+     46,
+     46,
+     49
+    ],
+    "base": [
+     46,
+     46,
+     49,
+     49
+    ]
+   }
+  },
+  {
+   "indice": 11,
+   "cubo": "rabo_curva",
+   "osso": "tail",
+   "tamanho_px": [
+    3,
+    3,
+    3
+   ],
+   "cor_sugerida": "#c97a2b",
+   "faces": {
+    "frente": [
+     55,
+     49,
+     58,
+     52
+    ],
+    "direita": [
+     52,
+     49,
+     55,
+     52
+    ],
+    "tras": [
+     61,
+     49,
+     64,
+     52
+    ],
+    "esquerda": [
+     58,
+     49,
+     61,
+     52
+    ],
+    "topo": [
+     55,
+     46,
+     58,
+     49
+    ],
+    "base": [
+     58,
+     46,
+     61,
+     49
+    ]
+   }
+  },
+  {
+   "indice": 12,
+   "cubo": "pata_td_d",
+   "osso": "leg1",
+   "tamanho_px": [
+    3,
+    8,
+    3
+   ],
+   "cor_sugerida": "#a8581a",
+   "faces": {
+    "frente": [
+     3,
+     38,
+     6,
+     46
+    ],
+    "direita": [
+     0,
+     38,
+     3,
+     46
+    ],
+    "tras": [
+     9,
+     38,
+     12,
+     46
+    ],
+    "esquerda": [
+     6,
+     38,
+     9,
+     46
+    ],
+    "topo": [
+     3,
+     35,
+     6,
+     38
+    ],
+    "base": [
+     6,
+     35,
+     9,
+     38
+    ]
+   }
+  },
+  {
+   "indice": 13,
+   "cubo": "pata_td_e",
+   "osso": "leg2",
+   "tamanho_px": [
+    3,
+    8,
+    3
+   ],
+   "cor_sugerida": "#a8581a",
+   "faces": {
+    "frente": [
+     15,
+     38,
+     18,
+     46
+    ],
+    "direita": [
+     12,
+     38,
+     15,
+     46
+    ],
+    "tras": [
+     21,
+     38,
+     24,
+     46
+    ],
+    "esquerda": [
+     18,
+     38,
+     21,
+     46
+    ],
+    "topo": [
+     15,
+     35,
+     18,
+     38
+    ],
+    "base": [
+     18,
+     35,
+     21,
+     38
+    ]
+   }
+  },
+  {
+   "indice": 14,
+   "cubo": "pata_fr_d",
+   "osso": "leg3",
+   "tamanho_px": [
+    3,
+    8,
+    3
+   ],
+   "cor_sugerida": "#a8581a",
+   "faces": {
+    "frente": [
+     27,
+     38,
+     30,
+     46
+    ],
+    "direita": [
+     24,
+     38,
+     27,
+     46
+    ],
+    "tras": [
+     33,
+     38,
+     36,
+     46
+    ],
+    "esquerda": [
+     30,
+     38,
+     33,
+     46
+    ],
+    "topo": [
+     27,
+     35,
+     30,
+     38
+    ],
+    "base": [
+     30,
+     35,
+     33,
+     38
+    ]
+   }
+  },
+  {
+   "indice": 15,
+   "cubo": "pata_fr_e",
+   "osso": "leg4",
+   "tamanho_px": [
+    3,
+    8,
+    3
+   ],
+   "cor_sugerida": "#a8581a",
+   "faces": {
+    "frente": [
+     39,
+     38,
+     42,
+     46
+    ],
+    "direita": [
+     36,
+     38,
+     39,
+     46
+    ],
+    "tras": [
+     45,
+     38,
+     48,
+     46
+    ],
+    "esquerda": [
+     42,
+     38,
+     45,
+     46
+    ],
+    "topo": [
+     39,
+     35,
+     42,
+     38
+    ],
+    "base": [
+     42,
+     35,
+     45,
+     38
+    ]
+   }
+  }
+ ]
+}

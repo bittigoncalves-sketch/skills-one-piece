@@ -21,5 +21,5 @@ func physics_update(_delta: float) -> void:
 		if player.get("_melee"):
 			player.get("_melee").pedir(player._yaw)
 		state_machine.transition_to("AttackStartup")
-	elif player.get("_dash") and player.get("_dash").ativo():
+	elif player.has_method("esquivando") and player.esquivando():
 		state_machine.transition_to("Dashing")

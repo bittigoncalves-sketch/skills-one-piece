@@ -1,4 +1,125 @@
-# Editor de Animação — Skills One Piece
+# Estúdio de animação — Skills One Piece
+
+O atalho **Editor de Animação** agora abre o estúdio 3D em Godot, com o corpo
+atual do jogo e a **Yoru real**, prontos numa pose de guarda. São 126 articulações
+do `base_v2_runtime.glb`, mais a espada presa à pega direita. A interface Python
+anterior permanece disponível com `--legacy`.
+
+[Ver captura do estúdio](docs/estudio.png) · [Plano de implementação](PLANO_STUDIO.md)
+
+```bash
+./tools/anim_editor/abrir.sh
+```
+
+O lançador encontra o Godot instalado por `find_godot.sh`; também aceita a
+variável `GODOT`. Não precisa instalar pacotes Python nem exportar caixas ou
+malhas intermediárias. O estúdio carrega os GLBs originais diretamente.
+
+## Primeira animação com a Yoru
+
+1. Clique em **Novo** e dê um nome. A primeira pose já segura a Yoru.
+2. Selecione uma peça no corpo ou use a árvore à esquerda. A busca aceita nomes
+   como **mão**, **braço**, `Wrist_R` ou `Index`; os grupos separam dedos, rosto,
+   encaixes e espada.
+3. Em **Animar**, escolha **Mover**, **Girar** ou **Tamanho**. Arraste os eixos
+   coloridos no 3D ou digite os valores X/Y/Z. Alterar a pose já grava o ponto
+   no tempo atual. **F** aproxima a seleção.
+4. Avance na timeline e ajuste outra pose. **+ Ponto** guarda a pose completa
+   mesmo sem alterar valores. Nomeie as fases: Preparar, Cortar, Recuperar.
+5. Cada ponto **segura a pose até o próximo**. Ligue **Transição suave** para
+   mover gradualmente até ele. O último ponto vale até o fim da animação.
+6. Arraste o marcador para mudar seu início, ou edite **Começa em**. **Duplicar**
+   e **Apagar** atuam sobre a pose inteira. Roda sobre a timeline aproxima;
+   Shift + roda percorre os trechos. Os novos tempos seguem a grade de 30 fps.
+7. Use **Tocar**, **Loop** e **Fechar loop**. O checkbox muda a repetição sem
+   pausar. Fechar loop copia a primeira pose para o fim; escolha transições
+   suaves onde desejar movimento contínuo.
+8. **Salvar** preserva poses, montagem, espada e nomes dos pontos em um projeto
+   JSON. **Exportar para o jogo** grava `assets/animations/studio_<nome>.tres`.
+   No jogo, use modo estilo → **Teste de Animação** para reproduzir.
+
+**Câmera:** botão direito orbita, botão do meio desloca a vista, roda aproxima.
+**Enquadrar** mostra corpo e espada inteiros. Frente/Lado/Perspectiva mudam a
+vista. O botão **Ossos** oculta as juntas para avaliar a silhueta limpa.
+
+**Yoru:** selecione pela malha ou por **Selecionar Yoru**. Ela acompanha a mão,
+mas também pode receber posição, rotação e tamanho próprios na animação.
+**Guarda com Yoru** recoloca as duas mãos no cabo; **Fechar mão/Abrir mão** atua
+no lado selecionado. A guarda é uma pose inicial, não uma restrição permanente:
+ao editar os braços individualmente, a outra mão não é reposicionada por IK.
+
+## Ajustar o corpo e os pivôs
+
+No seletor do painel direito, troque **Animar** por **Ajustar corpo**.
+
+| Ferramenta | Resultado |
+| --- | --- |
+| Mover | Muda a posição da junta e leva seus descendentes junto. |
+| Girar | Muda a orientação de montagem. |
+| Tamanho | Escala a peça e sua cadeia de descendentes. |
+| Pivô | Move a junta e compensa os filhos, mantendo a geometria no lugar. |
+
+Os ajustes são salvos **dentro do projeto da animação**, incluindo pivôs da
+espada; os GLBs originais não são regravados. Ao mudar a montagem, as faixas já
+existentes são ajustadas para a nova pose de referência. **Salvar** inclui tudo,
+sem precisar lembrar de um segundo botão de rig.
+
+## Salvar, recuperar e importar
+
+- Projetos novos ficam, por padrão, em `tools/anim_editor/projects/`.
+- **Abrir** aceita os 33 clipes JSON antigos em `clips/`. Salvar um importado
+  propõe uma cópia em projetos, preservando o original.
+- **Desfazer/Refazer** cobre pose, montagem e timeline. Um arraste inteiro é uma
+  única operação. Há até 80 operações no histórico da sessão.
+- Alterações pendentes recebem `•` no botão Salvar. Novo, Abrir e fechar janela
+  pedem confirmação quando existe trabalho não salvo.
+- A recuperação automática grava a cada 15 segundos em `sessions/recovery.json`.
+  Após uma interrupção, a próxima abertura oferece recuperar. O projeto salvo
+  continua sendo a referência; a recuperação é uma cópia temporária.
+
+Atalhos: **Ctrl+N/O/S**, **Ctrl+Shift+S**, **Ctrl+Z**, **Ctrl+Shift+Z**,
+**Ctrl+F**, **W/E/R**, **F**, **K/P**, **Delete**, **Espaço**, **←/→**. Letras e
+exclusão não acionam ferramentas enquanto você digita em um campo.
+
+## Integração e limite deste estágio
+
+A exportação contém posição, rotação e escala de todos os ossos e da Yoru,
+além da montagem. `src/anim/StudioPlayback.gd` reproduz os arquivos marcados
+como `studio_version=2`; assim os ossos extras não dependem da lista reduzida
+do animador procedural e uma posição nunca é interpretada como rotação.
+O carregamento autoral tem prioridade sobre um `.res` de mesmo nome. Ao terminar
+a prévia, o corpo e a arma anterior são restaurados. O teste de estilo toca um
+ciclo, como antes; o recurso conserva sua configuração de loop.
+
+Os segmentos segurados são exportados com uma chave imediatamente antes da
+transição (até 10 microssegundos), mantendo a compatibilidade com a interpolação
+de faixas do Godot. A troca no instante do ponto assume o valor novo.
+
+Este estágio é a base de autoria de **animações e fases nomeadas de skills**.
+Dano, hitboxes, efeitos, rede e associação a teclas continuam no sistema de
+combate; exportar uma animação não cadastra automaticamente uma skill jogável.
+
+Arquitetura: `studio/main.gd` (interface/histórico), `document.gd` (dados e
+exportação), `rig_scene.gd` (malhas e montagem), `view.gd` (câmera/seleção/eixos),
+`timeline.gd` (pontos). O plano está em [PLANO_STUDIO.md](PLANO_STUDIO.md).
+
+Testes, a partir da raiz de `skills-one-piece`:
+
+```bash
+GODOT_BIN="$(bash find_godot.sh)"
+"$GODOT_BIN" --headless --path tools/anim_editor/studio -s test_studio.gd
+"$GODOT_BIN" --headless --path . -s tools/dev_tests/test_studio_playback.gd
+# Teste real da janela e captura em /tmp/anim-studio.png:
+"$GODOT_BIN" --path tools/anim_editor/studio -s test_studio.gd -- --capture
+```
+
+O primeiro teste cria os arquivos temporários usados pelo segundo em `/tmp`.
+O segundo compara inclusive as transformações de mundo do corpo e da espada
+no editor e no jogo. A versão legada continua coberta por `test_rigger.py`.
+
+---
+
+## Referência da versão Python (`--legacy`)
 
 Editor de keyframes para o rig de 13 papéis do jogo. Carrega o personagem,
 mostra o esqueleto em 3D, e grava direto em `assets/animations/<nome>.tres`,

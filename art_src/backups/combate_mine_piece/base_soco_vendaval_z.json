@@ -1,0 +1,403 @@
+{
+	"animacao": {
+		"clipe": "Ataque",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.0
+	},
+	"ativacao": {
+		"andar_segurando": true,
+		"carga": 0.5,
+		"empurrao_carga_max": 1.0,
+		"modo": "Pressionar",
+		"paralisar_segurando": false,
+		"ponto_segurar": 0.5,
+		"repetir": false,
+		"segurar_max": 5.0,
+		"tecla": "Z"
+	},
+	"audio": {
+		"som": "Impacto",
+		"tom": 1.0,
+		"volume": -12.0
+	},
+	"camera": {
+		"tremor": 0.2,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 60.0,
+		"exige_alvo": false,
+		"exige_chao": false,
+		"nivel_minimo": 1,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 22.0,
+		"custo": 12.0,
+		"custo_por_segundo": 0.0,
+		"duracao": 1.0,
+		"fim_sobre_alvo": 0.0,
+		"flutuar": false,
+		"inicio_do_fim": -1.0,
+		"intervalo_depois": 0.5,
+		"mirar_no_alvo": false,
+		"parar_no_vazio": false,
+		"recarga": 5.0
+	},
+	"dano": {
+		"atordoamento": 0.5,
+		"congelar": 0.0,
+		"critico": 0.0,
+		"cura_do_dano": 0.0,
+		"duracao_efeito": 1.0,
+		"empurrao": 24.0,
+		"lentidao": 0.0,
+		"multiplicador": 2.0,
+		"tipo": "Físico",
+		"valor": 90.0
+	},
+	"eventos": [
+		{
+			"duracao": 0.45,
+			"habilitado": true,
+			"id": "recuo",
+			"inicio": 0.0,
+			"parametros": {
+				"pose": "pose_1",
+				"transicao": 0.18
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.45,
+			"habilitado": true,
+			"id": "ar_no_punho",
+			"inicio": 0.05,
+			"parametros": {
+				"ancora": "Osso do jogador",
+				"escala": 1.0,
+				"estilo": "Carga",
+				"osso": "Mão direita"
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.5,
+			"habilitado": true,
+			"id": "anel_no_chao",
+			"inicio": 0.1,
+			"parametros": {
+				"altura": 0.08,
+				"ancora": "Mundo",
+				"escala": 0.9,
+				"estilo": "Anel"
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_carga",
+			"inicio": 0.0,
+			"parametros": {
+				"som": "Vento",
+				"tom": 0.8,
+				"volume": -12.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "soco",
+			"inicio": 0.45,
+			"parametros": {
+				"pose": "pose_2",
+				"transicao": 0.04
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.05,
+			"habilitado": true,
+			"id": "rajada",
+			"inicio": 0.5,
+			"parametros": {
+
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "estouro_do_soco",
+			"inicio": 0.5,
+			"parametros": {
+				"ancora": "Osso do jogador",
+				"escala": 1.1,
+				"estilo": "Vento",
+				"osso": "Mão direita"
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_soco",
+			"inicio": 0.5,
+			"parametros": {
+				"som": "Disparo",
+				"tom": 0.7,
+				"volume": -4.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.28,
+			"habilitado": true,
+			"id": "tremor",
+			"inicio": 0.5,
+			"parametros": {
+				"tremor": 0.26
+			},
+			"tipo": "camera"
+		},
+		{
+			"duracao": 0.2,
+			"habilitado": true,
+			"id": "fim",
+			"inicio": 0.8,
+			"parametros": {
+				"pose": "pose_3",
+				"transicao": 0.2
+			},
+			"tipo": "animacao"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 3.0,
+		"forma": "Esfera",
+		"largura": 3.0,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 1.5,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": -2.0
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "Recua o punho e solta um soco tão forte que lança uma rajada de vento à frente, empurrando quem atravessar.",
+		"dono": "Jogador",
+		"fruta": "estilo_de_combate_base",
+		"id": "base_soco_vendaval_z",
+		"modelo": "Base",
+		"nome": "Soco do Vendaval"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 2.0,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 6.0
+	},
+	"poses": [
+		{
+			"id": "pose_1",
+			"nome": "Recuo",
+			"ossos": {
+				"ForeArm_L": [
+					75.0,
+					0.0,
+					0.0
+				],
+				"ForeArm_R": [
+					110.0,
+					0.0,
+					0.0
+				],
+				"Shin_L": [
+					-44.0,
+					0.0,
+					0.0
+				],
+				"Shin_R": [
+					-26.0,
+					0.0,
+					0.0
+				],
+				"Thigh_L": [
+					34.0,
+					0.0,
+					-5.0
+				],
+				"Thigh_R": [
+					-20.0,
+					0.0,
+					6.0
+				],
+				"Torso": [
+					4.0,
+					-42.0,
+					0.0
+				],
+				"UpperArm_L": [
+					40.0,
+					0.0,
+					-20.0
+				],
+				"UpperArm_R": [
+					-70.0,
+					0.0,
+					14.0
+				]
+			}
+		},
+		{
+			"id": "pose_2",
+			"nome": "Soco",
+			"ossos": {
+				"ForeArm_L": [
+					78.0,
+					0.0,
+					0.0
+				],
+				"ForeArm_R": [
+					2.0,
+					0.0,
+					0.0
+				],
+				"Shin_L": [
+					-58.0,
+					0.0,
+					0.0
+				],
+				"Shin_R": [
+					-14.0,
+					0.0,
+					0.0
+				],
+				"Thigh_L": [
+					46.0,
+					0.0,
+					-5.0
+				],
+				"Thigh_R": [
+					-30.0,
+					0.0,
+					6.0
+				],
+				"Torso": [
+					12.0,
+					36.0,
+					0.0
+				],
+				"UpperArm_L": [
+					-28.0,
+					0.0,
+					-24.0
+				],
+				"UpperArm_R": [
+					96.0,
+					0.0,
+					3.0
+				]
+			}
+		},
+		{
+			"id": "pose_3",
+			"nome": "Recuperar",
+			"ossos": {
+				"ForeArm_R": [
+					34.0,
+					0.0,
+					0.0
+				],
+				"Shin_L": [
+					-14.0,
+					0.0,
+					0.0
+				],
+				"Shin_R": [
+					-8.0,
+					0.0,
+					0.0
+				],
+				"Thigh_L": [
+					14.0,
+					0.0,
+					0.0
+				],
+				"Thigh_R": [
+					-8.0,
+					0.0,
+					0.0
+				],
+				"Torso": [
+					6.0,
+					10.0,
+					0.0
+				],
+				"UpperArm_R": [
+					38.0,
+					0.0,
+					8.0
+				]
+			}
+		}
+	],
+	"projeteis": {
+		"abertura": 0.0,
+		"area_chuva": 8.0,
+		"direcao_disparo": "Frente",
+		"explosao": 0.0,
+		"giro": 0.0,
+		"gravidade": 0.0,
+		"imunidade_gelo": true,
+		"modelo": "",
+		"perfurar": true,
+		"quantidade": 1,
+		"raio": 1.5,
+		"raio_de_acerto": 0.65,
+		"raio_do_anel": 2.5,
+		"rastro": "Vento",
+		"sai_de": "Mão direita",
+		"sem_dano": false,
+		"som_explosao": "Impacto",
+		"velocidade": 32.0,
+		"vida": 0.6,
+		"visual": "Rajada"
+	},
+	"transformacao": {
+		"alvo": "Usuário",
+		"cor": "#dce9ff",
+		"escala": 1.0,
+		"modelo": "",
+		"raio": 8.0,
+		"visual": "Fumaça"
+	},
+	"versao": 1,
+	"vfx": {
+		"altura": 1.0,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#bfe6ff",
+		"cor_2": "#ffffff",
+		"escala": 1.0,
+		"estilo": "Impacto",
+		"frente": 1.0,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "Mão direita",
+		"projetil_de": ""
+	}
+}

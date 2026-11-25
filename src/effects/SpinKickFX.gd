@@ -12,6 +12,8 @@ static func disparar(mundo: Node, pos: Vector3, frente: Vector3, caster: Node) -
 	# O salto da aú levanta o centro do jogador, mas o calcanhar passa baixo no
 	# meio da roda. A zona fica nessa faixa para ainda conectar em alvo no chão.
 	zona.global_position = pos + frente * 0.95 + Vector3.UP * 0.22
+	# Aú é um M1 (Espaço + clique): quem reage a corpo a corpo (o Boss) conta o acerto.
+	zona.corpo_a_corpo = true
 	zona.setup(104.0, 26.0, frente * 26.0 + Vector3.UP * 5.0, 0.24, caster, 2.85, null, 0.24)
 	# A área de dano fica no mundo, mas os rastros são filhos do lutador: o
 	# giro continua abraçado ao corpo mesmo avançando durante os 0,42 s.

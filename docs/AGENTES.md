@@ -31,7 +31,7 @@ não dependem um do outro, então rodam juntos.
 | Especialidade | Território | Arquivos típicos |
 |---|---|---|
 | **Pipeline de animação** | FBX → glTF → `.res`; Blender headless; bake | `tools/fbx_to_glb.py`, `tools/bake_mixamo.gd`, `assets/animations*/` |
-| **Rig e anatomia** | 13 papéis, `Skeleton3D`, Z-up dos Meshy, escala | `src/anim/`, `CharacterBuilder.gd`, `data/characters.json` |
+| **Rig e anatomia** | 13 papéis, `Skeleton3D`, Z-up dos Meshy, escala | `src/anim/`, `CharacterBuilder.gd` |
 | **Animação procedural** | marcha, parkour, poses de golpe, blend | `src/anim/ProceduralAnimator.gd` |
 | **Combate e rede** | dano, knockback, autoridade servidor, RPC | `Player.gd`, `src/combat/`, `src/effects/DamageZone.gd`, `network/` |
 | **VFX e assets 3D** | partículas, luz, modelagem no Blender | `src/effects/`, `tools/blender/`, `assets/models/` |

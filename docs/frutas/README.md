@@ -14,7 +14,8 @@ cada parte e o que está quebrado nela.
 ## Por que a documentação foi dividida assim
 
 A pasta `docs/` cresceu **por data**: `MUDANCAS_2026-08-06`, `…-08-10`,
-`…-08-10_PARTE2`, `…-08-11`, `PEDIDO_2026-08-12`. É o formato certo para
+`…-08-10_PARTE2`, `…-08-11`, `PEDIDO_2026-08-12` (os `MUDANCAS_*` moraram na
+raiz de `docs/` até 2026-09-12; hoje estão em [`../historico/`](../historico/)). É o formato certo para
 registrar *o que aconteceu numa sessão* e o errado para responder *como a Gura
 Gura funciona*: a resposta estava espalhada em cinco arquivos e em nenhum
 índice. O `PEDIDO_2026-08-12.md` sozinho tem 458 linhas e sete tarefas sem
@@ -47,6 +48,14 @@ não couber em um arquivo de fruta, ela é mudança de **sistema** e vai para
 
 ---
 
+> 📘 **Frutas Mine Piece do Modo História (Ope, Hie, Moku, Pika, Nikyu, Luta):** descrição técnica a técnica em [`SKILLS_MINE_PIECE_MODO_HISTORIA.md`](SKILLS_MINE_PIECE_MODO_HISTORIA.md).
+
+> 🍡 **Mochi Mochi (Modo História):** rosquinhas e braços esticados em [`mochi_mochi.md`](mochi_mochi.md).
+
+> 🔎 **Pesquisa do anime (15/11/2026, fonte: One Piece Wiki):** [`../PESQUISA_ANIME_FRUTAS_NATIVAS.md`](../PESQUISA_ANIME_FRUTAS_NATIVAS.md) (Hie, Moku, Pika, Nikyu, Ope) ·
+> [`../PESQUISA_ANIME_FRUTAS_DA_ARENA.md`](../PESQUISA_ANIME_FRUTAS_DA_ARENA.md) (Mera, Goro, Gura, Yami, Suna) · [`../PESQUISA_ANIME_GOMU_GOMU.md`](../PESQUISA_ANIME_GOMU_GOMU.md) · [`../PESQUISA_ANIME_MOCHI_MOCHI.md`](../PESQUISA_ANIME_MOCHI_MOCHI.md).
+> 📊 **Medição de visibilidade das skills:** [`MEDICAO_VISIBILIDADE_FRUTAS.md`](MEDICAO_VISIBILIDADE_FRUTAS.md) · descrição de cada técnica: [`SKILLS_MINE_PIECE_MODO_HISTORIA.md`](SKILLS_MINE_PIECE_MODO_HISTORIA.md) e [`SKILLS_FRUTAS_DO_MOD_GERADO.md`](SKILLS_FRUTAS_DO_MOD_GERADO.md).
+
 ## Estado de cada fruta
 
 Medido em código (2026-08-14). A coluna "hitbox" é o critério 5 do
@@ -54,17 +63,21 @@ Medido em código (2026-08-14). A coluna "hitbox" é o critério 5 do
 
 | fruta | árvore no mapa | Z/X/C/V com hitbox | em revisão | arquivo |
 |---|---|---|---|---|
+| **Ope Ope** (2026-09-07) | sim | Z/X utilitários; C/V com dano limitado ao ROOM | kit próprio | [`ope_ope.md`](ope_ope.md) |
 | **Gura Gura** | sim | 4/4 | **🔧 sim, hoje** | [`gura_gura.md`](gura_gura.md) |
 | Gomu Gomu | sim | 4/4 | — | [`gomu_gomu.md`](gomu_gomu.md) |
 | Mera Mera | sim | 4/4 | — | [`mera_mera.md`](mera_mera.md) |
+| Magu Magu (história, 13/10/2026) | sim | Z/X/C/V, água e transformação | — | [`magu_magu.md`](magu_magu.md) |
+| Nikyu Nikyu (Builder, 14/10/2026) | sim | Z/X/C/V pelo Skills Builder | — | [`nikyu_nikyu.md`](nikyu_nikyu.md) |
 | Bomu Bomu | sim | 2/2 (C/V desativados) | — | [`bomu_bomu.md`](bomu_bomu.md) |
 | Hie Hie | sim | 4/4 | — | [`hie_hie.md`](hie_hie.md) |
 | Goro Goro | sim | 4/4 | — | [`goro_goro.md`](goro_goro.md) |
 | Yami Yami | sim | 4/4 | — | [`yami_yami.md`](yami_yami.md) |
 | Suna Suna | sim | 4/4 | — | [`suna_suna.md`](suna_suna.md) |
-| Bara Bara | sim | 4/4 | — | [`bara_bara.md`](bara_bara.md) |
+| Bara Bara | sim | 4/4 (legado) | [redesenho em planejamento](../PLANO_BARA_BARA.md) | [`bara_bara.md`](bara_bara.md) |
 | Buki Buki | sim | 4/4 (arsenal) | — | [`buki_buki.md`](buki_buki.md) |
 | **Pika Pika** | **não — ver abaixo** | 4/4 | — | [`pika_pika.md`](pika_pika.md) |
+| **Rocket** (22/09/2026) | sim (arena) | arena 4/4; **Modo História: Z, X, C e F prontos** (sem V, como a referência) | kit próprio por modo | [`rocket.md`](rocket.md) |
 
 > ⚠️ **A Pika Pika é a única fruta com kit completo e SEM árvore no mapa.** Ela
 > é a fruta INICIAL (`Player.FRUTA_INICIAL`), e `TreeAndFruitGenerator` não tem
@@ -97,8 +110,9 @@ arquivo.
 `hito_hito_nika` · `uo_uo_seiryu` — **11 ids**, mais o órfão
 `gura_gura_alt` (item 5 da lista de correções), que não é fruta nenhuma.
 
-São 21 passivas contra 9 frutas com golpe. Três delas (`ope_ope`,
-`hito_hito_nika`, `tori_tori_phoenix`) **têm árvore desenhada**, hoje filtrada
+O placar de 21 passivas contra 9 frutas com golpe é histórico. A Ope Ope saiu
+do estoque em 2026-09-07, com árvore e quatro técnicas próprias.
+`hito_hito_nika` e `tori_tori_phoenix` **têm árvore desenhada**, hoje filtrada
 do mapa por `TreeAndFruitGenerator.get_tree_definitions()` — a arte fica
 guardada, a árvore só volta quando a fruta tiver poderes.
 
@@ -300,8 +314,8 @@ Nada foi movido. Estes continuam sendo a fonte do *porquê*:
 | [`../PLANO_FRUTAS.md`](../PLANO_FRUTAS.md) | os 6 critérios de "fruta funcional" e como o trabalho é dividido |
 | [`../AUDITORIA_FRUTAS.md`](../AUDITORIA_FRUTAS.md) | o placar **medido** de 2026-08-10 e as ressalvas do método |
 | [`../PEDIDO_2026-08-12.md`](../PEDIDO_2026-08-12.md) | charge-up, Goro repaginada, Black Hole nos pés, Buki/luneta, Karatê Tritão |
-| [`../MUDANCAS_2026-08-11.md`](../MUDANCAS_2026-08-11.md) | a Buki Buki virou kit de FPS com munição |
-| [`../MUDANCAS_2026-08-10.md`](../MUDANCAS_2026-08-10.md) | armas da Buki viraram asset `.glb` |
-| [`../MUDANCAS_2026-08-06.md`](../MUDANCAS_2026-08-06.md) | a Buki Buki substituiu a Gasu Gasu |
+| [`../historico/MUDANCAS_2026-08-11.md`](../historico/MUDANCAS_2026-08-11.md) | a Buki Buki virou kit de FPS com munição |
+| [`../historico/MUDANCAS_2026-08-10.md`](../historico/MUDANCAS_2026-08-10.md) | armas da Buki viraram asset `.glb` |
+| [`../historico/MUDANCAS_2026-08-06.md`](../historico/MUDANCAS_2026-08-06.md) | a Buki Buki substituiu a Gasu Gasu |
 | [`../erros.md`](../erros.md) | todo defeito de fruta com causa raiz e como detectar |
 | [`../LISTA_DE_CORRECOES.md`](../LISTA_DE_CORRECOES.md) | o que está quebrado e **não** foi corrigido |

@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dxqo5a6a1gt5w"
-path="res://.godot/imported/rabbit_16rabbittexture.png-1535c077ca1d5d82a462e2c7507bbe5b.ctex"
+path.bptc="res://.godot/imported/rabbit_16rabbittexture.png-1535c077ca1d5d82a462e2c7507bbe5b.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "40fd966f91f6021757e926411cccff76"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/rabbit_16rabbittexture.png"
-dest_files=["res://.godot/imported/rabbit_16rabbittexture.png-1535c077ca1d5d82a462e2c7507bbe5b.ctex"]
+dest_files=["res://.godot/imported/rabbit_16rabbittexture.png-1535c077ca1d5d82a462e2c7507bbe5b.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

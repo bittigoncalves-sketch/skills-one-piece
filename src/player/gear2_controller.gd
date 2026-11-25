@@ -85,12 +85,18 @@ func ativar() -> void:
 		# Reativar RENOVA o relógio em vez de empilhar. Empilhar duração é a
 		# porta de entrada para "fiquei transformado a partida inteira".
 		_restante = DURACAO
+		if _dono and is_instance_valid(_dono):
+			GomuAudio.play(_dono, _dono.global_position, "gear2_steam", 1.0)
 		return
 	_ativo = true
 	_restante = DURACAO
 	_pintar_pele()
 	_ligar_fumaca()
 	_por_chapeu()
+	if _dono and is_instance_valid(_dono):
+		GomuAudio.play(_dono, _dono.global_position, "gear2_steam", 1.0)
+		_dono.set_meta("custom_pose", "gomu_gear2_pump")
+		_dono.set_meta("gomu_pose_t", 0.0)
 	mudou.emit(true)
 	print("⚙️  GEAR 2 ativado — %.0f s" % DURACAO)
 
@@ -103,6 +109,9 @@ func desativar() -> void:
 	_restaurar_pele()
 	_desligar_fumaca()
 	_tirar_chapeu()
+	if _dono and is_instance_valid(_dono):
+		if _dono.get_meta("custom_pose", "") == "gomu_gear2_pump":
+			_dono.set_meta("custom_pose", "")
 	mudou.emit(false)
 	print("⚙️  Gear 2 encerrado")
 

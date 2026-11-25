@@ -36,7 +36,7 @@ func _init() -> void:
 	for rpc in RPCS:
 		print("[CTX CLI] %s configurado=%s" % [rpc, str(config is Dictionary and config.has(rpc))])
 	# Posição e orientação chegam ao servidor pela mesma autoridade do jogador.
-	# A distância deixa o host dentro da esfera frontal do cotovelo.
+	# A distância deixa o host dentro da esfera frontal do golpe.
 	_meu.global_position = _host.global_position + Vector3(0.0, 0.0, 2.55)
 	_meu.velocity = Vector3.ZERO
 	_meu._yaw = 0.0
@@ -44,24 +44,21 @@ func _init() -> void:
 	while not _meu.is_on_floor() and Time.get_ticks_msec() < espera_chao:
 		await process_frame
 	await _esperar(0.70)
-	var iniciou = _meu.iniciar_ataque_contextual("context_elbow", 0.0)
-	# ⚠️ MEDIR DENTRO DA JANELA DO GOLPE. Esta espera era de 0,70 s, e o
-	# `context_elbow` dura 0,42 s no total (0,14 startup + 0,08 ativo + 0,20
-	# recuperação): a sonda fotografava o estado DEPOIS de o ataque terminar e
-	# via a apresentação já limpa — que é o comportamento CERTO, aferido pelo
-	# `test_ataques_contextuais`. Ela reprovava a limpeza correta.
-	#
-	# 0,18 s cai no fim do startup / começo do ativo: a pose e o VFX estão no ar
-	# e ainda falta mais da metade da ação.
+	# A cotovelada (W + clique) foi apagada em 2026-09-13; o Lançamento é a
+	# variação de solo que resta e percorre o mesmo caminho de rede.
+	var iniciou = _meu.iniciar_ataque_contextual("context_launcher", 0.0)
+	# ⚠️ MEDIR DENTRO DA JANELA DO GOLPE: o Lançamento dura 0,53 s (0,18 startup +
+	# 0,09 ativo + 0,26 recuperação). 0,18 s cai no fim do startup: pose e VFX
+	# estão no ar. Medir depois do fim reprovaria a limpeza, que é o correto.
 	await _esperar(0.18)
-	var apresentou := String(_meu.get("_contextual_attack_id")) == "context_elbow" \
-		or _meu.get_node_or_null("ContextualMeleeFX_context_elbow") != null
+	var apresentou := String(_meu.get("_contextual_attack_id")) == "context_launcher" \
+		or _meu.get_node_or_null("ContextualMeleeFX_context_launcher") != null
 
 	# E o inverso, para a asserção não passar com uma apresentação que nunca sai:
 	# depois do fim, ela TEM de ter sido limpa.
 	await _esperar(0.55)
 	var limpou := String(_meu.get("_contextual_attack_id")) == "" \
-		and _meu.get_node_or_null("ContextualMeleeFX_context_elbow") == null
+		and _meu.get_node_or_null("ContextualMeleeFX_context_launcher") == null
 	print("[CTX CLI] limpou depois do fim=%s" % str(limpou))
 	var rpc_ok: bool = config is Dictionary and config.has(RPCS[0]) and config.has(RPCS[1])
 	print("[CTX CLI] iniciou=%s on_floor=%s apresentação=%s => %s" % [

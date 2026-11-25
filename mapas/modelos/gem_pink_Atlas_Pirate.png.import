@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://44okb5ddpsi5"
-path="res://.godot/imported/gem_pink_Atlas_Pirate.png-64c1b20b4e86a55ef43c2bc5fa3bcf8d.ctex"
+path.bptc="res://.godot/imported/gem_pink_Atlas_Pirate.png-64c1b20b4e86a55ef43c2bc5fa3bcf8d.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "219f43be043845c1039f47f20d5b6de4"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/gem_pink_Atlas_Pirate.png"
-dest_files=["res://.godot/imported/gem_pink_Atlas_Pirate.png-64c1b20b4e86a55ef43c2bc5fa3bcf8d.ctex"]
+dest_files=["res://.godot/imported/gem_pink_Atlas_Pirate.png-64c1b20b4e86a55ef43c2bc5fa3bcf8d.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

@@ -111,9 +111,9 @@ func _set_dash_bar(fill: BarraHud, label: Label, cd) -> void:
 	var r: float = clampf(1.0 - (float(cd) / mx), 0.0, 1.0)
 	fill.valor(r)
 	if r >= 1.0:
-		label.text = "DASH  [PRONTO]"
+		label.text = "ROLL  [PRONTO]"
 	else:
-		label.text = "DASH  [%.1fs]" % cd
+		label.text = "ROLL  [%.1fs]" % cd
 
 func _set_bar(fill: BarraHud, label: Label, val, mx, nome: String) -> void:
 	if val == null or mx == null:

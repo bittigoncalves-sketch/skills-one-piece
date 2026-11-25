@@ -1,0 +1,38 @@
+{
+	"_leia": "Plantio INICIAL de árvores, frutíferas e complementos de floresta na Ilha Inicial (01/10/2026). FONTE de tools/mapa_ilha/plantar_natureza.gd, que SOMA as peças ao mapa vivo (nunca regenera a ilha). Regiões em metros (+X leste, -Z norte), retângulos [x_min, x_max, z_min, z_max]. Decisão do dono: pomares de frutíferas perto da vila e das fazendas; o Free Forest enriquece a floresta oeste. 'espaco' = distância mínima entre peças desta linha e qualquer outra peça; 'variar' = escala aleatória ± fração.",
+	"semente": 20261001,
+	"regioes": {
+		"pomar_norte_vila": {"retangulo": [110, 200, -78, -45]},
+		"pomar_fazenda": {"retangulo": [28, 66, -200, -110]},
+		"pinhal_morros": {"retangulo": [-125, -60, -238, -192]},
+		"floresta_oeste": {"retangulo": [-236, -58, -62, 216], "fora": [[-150, 150, 54]]}
+	},
+	"plantio": [
+		{"regiao": "pomar_norte_vila", "modelos": ["arvore_verde_adulta"], "quantidade": 7, "espaco": 9, "variar": 0.12},
+		{"regiao": "pomar_norte_vila", "modelos": ["cerejeira_adulta"], "quantidade": 3, "espaco": 9, "variar": 0.12},
+		{"regiao": "pomar_norte_vila", "modelos": ["arvore_verde_jovem", "cerejeira_muda", "arvore_verde_muda"], "quantidade": 5, "espaco": 6, "variar": 0.15},
+		{"regiao": "pomar_fazenda", "modelos": ["arvore_verde_adulta"], "quantidade": 4, "espaco": 9, "variar": 0.12},
+		{"regiao": "pomar_fazenda", "modelos": ["cerejeira_adulta"], "quantidade": 2, "espaco": 9, "variar": 0.12},
+		{"regiao": "pinhal_morros", "modelos": ["pinheiro_adulto"], "quantidade": 6, "espaco": 10, "variar": 0.15},
+		{"regiao": "pinhal_morros", "modelos": ["pinheiro_jovem", "pinheiro_muda"], "quantidade": 4, "espaco": 6, "variar": 0.15},
+		{"regiao": "floresta_oeste", "modelos": ["arvore_gigante"], "quantidade": 2, "espaco": 14, "variar": 0.08},
+		{"regiao": "floresta_oeste", "modelos": ["floresta_tree_oak_large_green", "floresta_tree_oak_medium_green", "floresta_tree_oak_small_green",
+			"floresta_tree_birch_large_green", "floresta_tree_birch_medium_green", "floresta_tree_birch_small_green",
+			"floresta_tree_spruce_large", "floresta_tree_spruce_medium", "floresta_tree_spruce_small",
+			"floresta_tree_pine_large", "floresta_tree_pine_medium", "floresta_tree_pine_small",
+			"floresta_tree_cypress_medium", "floresta_tree_elm_green", "floresta_tree_maple_red",
+			"floresta_tree_windswept_dark_green", "floresta_tree_with_mistletoe", "floresta_tree_simple_medium",
+			"floresta_tree_park_medium_green", "floresta_tree_oak_hero_green", "floresta_tree_birch_hero_green", "floresta_tree_pine_hero"],
+			"quantidade": 36, "espaco": 7, "variar": 0.15},
+		{"regiao": "floresta_oeste", "modelos": ["floresta_bush_small", "floresta_bush_medium", "floresta_bush_large",
+			"floresta_bush_clumps_small", "floresta_bush_clumps_medium", "floresta_bush_clumps_large", "floresta_bush_with_flowers"],
+			"quantidade": 24, "espaco": 3, "variar": 0.2},
+		{"regiao": "floresta_oeste", "modelos": ["floresta_mushroom_brown_small", "floresta_mushroom_brown_medium", "floresta_mushroom_brown_large",
+			"floresta_mushroom_red_small", "floresta_mushroom_red_large"], "quantidade": 18, "espaco": 1.5, "variar": 0.2},
+		{"regiao": "floresta_oeste", "modelos": ["floresta_rock_01", "floresta_rock_03", "floresta_rock_05", "floresta_rock_06", "floresta_rock_07",
+			"floresta_rock_02", "floresta_rock_04", "floresta_rock_08"], "quantidade": 14, "espaco": 3, "variar": 0.2},
+		{"regiao": "floresta_oeste", "modelos": ["floresta_flowers_red"], "quantidade": 10, "espaco": 2, "variar": 0.2},
+		{"regiao": "floresta_oeste", "modelos": ["floresta_grass_small", "floresta_grass_medium", "floresta_grass_large"], "quantidade": 30, "espaco": 1.2, "variar": 0.25},
+		{"regiao": "floresta_oeste", "modelos": ["floresta_fallen_log", "floresta_tree_stump"], "quantidade": 4, "espaco": 6, "variar": 0.1}
+	]
+}

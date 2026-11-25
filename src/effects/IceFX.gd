@@ -10,7 +10,14 @@ extends RefCounted
 #   C: Investida de Gelo — Dash congelante; ao atingir o alvo, congela por 5s.
 #   V: Ice Age — Congela o chão por 50 segundos. Qualquer um que pise
 #      (menos o conjurador) é congelado por 5s, ganha 2s de imunidade e recongela.
+#
+#  07/10/2026 (Hie refeita no Skills Builder, pedido do dono): TODOS os golpes
+#  congelam 0,7 s (`CONGELAR`), com 0,5 s de imunidade depois (`IMUNIDADE`) — o Z
+#  (agora do Builder), o X, o C e o campo do V. Os "5 s/2 s" acima são o de antes.
 # ============================================================================
+
+const CONGELAR := 0.7
+const IMUNIDADE := 0.5
 
 const FROST := [
 	Color(0.85, 0.95, 1.0, 0.95), # azul gelo brilhante
@@ -223,6 +230,8 @@ static func _iceberg(world: Node, origin: Vector3, dir: Vector3, damage: float, 
 	zone.add_child(FxUtil.particles(120, 1.2, false, _frost_proc(2.0, 3.0), FxUtil.grain(0.4)))
 	zone.setup(spec.dano, 25.0, fwd * 22.0, 1.8, caster, 2.5)
 	spec.marcar(zone)
+	# Todos os golpes da Hie congelam (07/10/2026): o acerto é do servidor (`hit_landed`).
+	zone.hit_landed.connect(func(alvo: Node) -> void: congelar(alvo))
 
 # ---------- C: Investida de Gelo (Dash + Congelamento por 5s no Alvo) ----------
 static func _investida_de_gelo(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
@@ -250,9 +259,9 @@ static func _investida_de_gelo(world: Node, origin: Vector3, dir: Vector3, damag
 	# CONGELAR continua sendo a mecânica do golpe. Conectado ANTES do `setup` para
 	# rodar antes do `_on_body` da própria DamageZone.
 	zone.body_entered.connect(func(body: Node3D):
-		if body == caster:
+		if body == caster or not _decide(world):
 			return
-		_congelar_alvo(world, body, 5.0, 2.0)
+		congelar(body)
 	)
 
 	# KNOCKBACK ZERO de propósito: a investida PRENDE o alvo num bloco de gelo.
@@ -266,6 +275,11 @@ static func _ice_age(world: Node, center_pos: Vector3, damage: float, caster: No
 		spec: DamageSpec = null) -> void:
 	if spec == null:
 		spec = DamageSpec.avulso(damage)
+	# Modo História (10/10/2026, pedido do dono): o V vira o LUGAR em gelo — relevo, casas e
+	# árvores branco-azulados num raio FIXO, sem crescer (`EraDoGelo`). Na arena, o de antes.
+	if world != null and world.is_inside_tree() and world.get_tree().get_first_node_in_group("modo_historia") != null:
+		EraDoGelo.lancar(world, center_pos, caster, spec)
+		return
 	var floor_pos := Vector3(center_pos.x, 0.05, center_pos.z)
 
 	# HITBOX: a ERUPÇÃO inicial, quando a placa rompe o chão.
@@ -357,7 +371,10 @@ static func _ice_age(world: Node, center_pos: Vector3, damage: float, caster: No
 		for body in area.get_overlapping_bodies():
 			if body == caster:
 				continue
-			if not (body is CharacterBody3D):
+			# COMBATENTE é quem tem `take_damage` (o mesmo critério de `_congelar_alvo`),
+			# não "quem é CharacterBody3D": o inimigo do mapa do Modo História é corpo
+			# ESTÁTICO e levava só o impacto, nunca o campo (medido em 05/10/2026).
+			if not body.has_method("take_damage"):
 				continue
 			# ⚠️ ERA `take_damage()` DIRETO, com um `* DamageZone.DAMAGE_SCALE` colado
 			# à mão para compensar estar fora do funil. O remendo funcionava e era a
@@ -366,14 +383,42 @@ static func _ice_age(world: Node, center_pos: Vector3, damage: float, caster: No
 			# ficar no campo chega aos 768 em ~16 tiques e a partir daí o gelo é só
 			# controle, congelando e recongelando sem executar.
 			CombatResolver.aplicar(body, spec.dano, spec.cast_id, spec.teto, floor_pos)
-			_congelar_alvo(world, body, 5.0, 2.0)
+			if _decide(world):
+				congelar(body)
 	)
 
 	# Auto-destruição após 50 SEGUNDOS no chão
 	FxUtil.autofree(age_zone, 50.0)
 
+## Congela `alvo` (combatente) por `segundos`, com `IMUNIDADE` depois. Quem decide é o
+## servidor (o acerto). Jogador remoto: o corpo é do cliente dono, então o servidor
+## espalha (`Player.congelar_em_rede`) — o dono trava e todos veem o bloco de gelo.
+## Bicho, inimigo e boneco não leem `is_frozen`: a física deles (IA e movimento) pára
+## enquanto o gelo dura (ver `_congelar_alvo`).
+##
+## `imunidade` (10/10/2026, Z da Hie no Modo História): quanto de imunidade o acerto deixa
+## ao descongelar — o Z só dá imunidade na 3ª salva (as duas primeiras passam 0).
+## `estender`: um acerto em quem JÁ está congelado estica o gelo até o fim deste novo
+## (a sequência de salvas prende sem soltar no meio) e a imunidade do fim fica a MAIOR
+## pedida. Sem `estender` (arena e o resto), o acerto em congelado é ignorado, como antes.
+static func congelar(alvo: Node, segundos: float = CONGELAR, espalhar := true,
+		imunidade: float = IMUNIDADE, estender := false) -> void:
+	if alvo == null or not is_instance_valid(alvo) or not alvo.has_method("take_damage"):
+		return
+	if espalhar and alvo.has_method("congelar_em_rede") and alvo.is_inside_tree() \
+			and alvo.multiplayer.has_multiplayer_peer() and alvo.multiplayer.is_server():
+		alvo.congelar_em_rede(segundos)
+	_congelar_alvo(null, alvo as Node3D, segundos, imunidade, estender)
+
+
+## Este peer decide o congelamento? (o servidor, ou o jogo sem rede)
+static func _decide(no: Node) -> bool:
+	return no == null or not no.is_inside_tree() or not no.multiplayer.has_multiplayer_peer() or no.multiplayer.is_server()
+
+
 # ---------- Helper: Congela Alvo com Bloco de Gelo 3D e Imunidade ----------
-static func _congelar_alvo(world: Node, target: Node3D, freeze_duration: float, immunity_duration: float) -> void:
+static func _congelar_alvo(world: Node, target: Node3D, freeze_duration: float, immunity_duration: float,
+		estender := false) -> void:
 	if not target:
 		return
 
@@ -390,10 +435,18 @@ static func _congelar_alvo(world: Node, target: Node3D, freeze_duration: float, 
 
 	# Checa se já está congelado no momento
 	if target.has_meta("is_frozen") and target.get_meta("is_frozen"):
+		if estender:
+			var ate := Time.get_ticks_msec() + int(freeze_duration * 1000.0)
+			if ate > int(target.get_meta("congelado_ate", 0)):
+				target.set_meta("congelado_ate", ate)
+			target.set_meta("imunidade_ao_descongelar", maxf(float(target.get_meta("imunidade_ao_descongelar", 0.0)), immunity_duration))
+			StatusFX.aplicar(target, StatusFX.CONGELADO, freeze_duration)
 		return
 
 	# Marca como congelado
 	target.set_meta("is_frozen", true)
+	target.set_meta("congelado_ate", Time.get_ticks_msec() + int(freeze_duration * 1000.0))
+	target.set_meta("imunidade_ao_descongelar", immunity_duration)
 	StatusFX.aplicar(target, StatusFX.CONGELADO, freeze_duration)
 	print("❄️ ALVO CONGELADO! Bloco de Gelo gerado por ", freeze_duration, "s em: ", target.name)
 
@@ -405,7 +458,13 @@ static func _congelar_alvo(world: Node, target: Node3D, freeze_duration: float, 
 	ice_block.mesh = box
 	ice_block.material_override = _crystal_mat()
 	target.add_child(ice_block)
-	ice_block.position = Vector3(0, 0.8, 0)
+	# No MEIO do corpo (07/10/2026, foto): o jogador e o boneco têm a origem no meio da
+	# cápsula, e o +0,8 de antes punha o bloco em cima da cabeça. Bicho tem a origem no pé
+	# e diz onde é o meio (`centro_do_corpo`).
+	if target.has_method("centro_do_corpo"):
+		ice_block.global_position = target.call("centro_do_corpo")
+	else:
+		ice_block.position = Vector3.ZERO
 
 	# Animação de criação do bloco
 	ice_block.scale = Vector3(0.2, 0.2, 0.2)
@@ -415,23 +474,50 @@ static func _congelar_alvo(world: Node, target: Node3D, freeze_duration: float, 
 	# Paralisa velocidade se for CharacterBody3D
 	if target is CharacterBody3D:
 		(target as CharacterBody3D).velocity = Vector3.ZERO
+	# Não-jogador (bicho, inimigo, boneco de duelo) não lê `is_frozen`: pára a física
+	# dele — IA, movimento e golpes — enquanto o gelo dura (07/10/2026; antes o bloco de
+	# gelo aparecia e o boneco seguia lutando dentro dele).
+	var parou := false
+	if not target.is_in_group("player") and target.is_physics_processing():
+		target.set_physics_process(false)
+		parou = true
 
-	# Timer para DESCONGELAR após 5 segundos
+	# Timer para DESCONGELAR. Referências FRACAS (07/10/2026): o alvo pode sumir congelado
+	# (inimigo que morre, boneco removido) e uma função anônima segurando o nó liberado
+	# enchia o console de "Lambda capture ... was freed".
 	var freeze_timer := target.get_tree().create_timer(freeze_duration)
-	freeze_timer.timeout.connect(func():
-		if is_instance_valid(ice_block):
-			var tw_out := target.create_tween()
-			tw_out.tween_property(ice_block, "scale", Vector3.ZERO, 0.12)
-			tw_out.tween_callback(ice_block.queue_free)
+	freeze_timer.timeout.connect(_descongelar.bind(weakref(target), weakref(ice_block), parou, immunity_duration))
 
-		target.set_meta("is_frozen", false)
-		target.set_meta("ice_immune", true)
-		print("🛡️ DESCONGELADO! Imunidade a gelo ativada por ", immunity_duration, "s.")
 
-		# Timer para FIM DA IMUNIDADE após 2 segundos
-		var immunity_timer := target.get_tree().create_timer(immunity_duration)
-		immunity_timer.timeout.connect(func():
-			target.set_meta("ice_immune", false)
-			print("⚡ Fim da Imunidade ao Gelo.")
-		)
-	)
+static func _descongelar(alvo_ref: WeakRef, bloco_ref: WeakRef, parou: bool, imunidade: float) -> void:
+	var target := alvo_ref.get_ref() as Node
+	if target == null or not target.is_inside_tree():
+		return
+	# Esticado por um acerto novo (`estender`): o gelo fica o que falta.
+	var falta := (int(target.get_meta("congelado_ate", 0)) - Time.get_ticks_msec()) / 1000.0
+	if falta > 0.01:
+		target.get_tree().create_timer(falta).timeout.connect(_descongelar.bind(alvo_ref, bloco_ref, parou, imunidade))
+		return
+	imunidade = float(target.get_meta("imunidade_ao_descongelar", imunidade))
+	if parou:
+		target.set_physics_process(true)
+	var bloco := bloco_ref.get_ref() as Node3D
+	if bloco != null:
+		var tw_out := target.create_tween()
+		tw_out.tween_property(bloco, "scale", Vector3.ZERO, 0.12)
+		tw_out.tween_callback(bloco.queue_free)
+	target.set_meta("is_frozen", false)
+	if imunidade <= 0.0:
+		print("🧊 DESCONGELADO (sem imunidade: pode congelar de novo).")
+		return
+	target.set_meta("ice_immune", true)
+	print("🛡️ DESCONGELADO! Imunidade a gelo ativada por ", imunidade, "s.")
+	target.get_tree().create_timer(imunidade).timeout.connect(_fim_da_imunidade.bind(weakref(target)))
+
+
+static func _fim_da_imunidade(alvo_ref: WeakRef) -> void:
+	var target := alvo_ref.get_ref() as Node
+	if target == null:
+		return
+	target.set_meta("ice_immune", false)
+	print("⚡ Fim da Imunidade ao Gelo.")

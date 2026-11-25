@@ -1,0 +1,60 @@
+{
+  "bara_bara_fruit": {
+    "sha256": "5e82332db9d7d477faf179641f5038999ba662cfc34af601ddf609d86d14785e",
+    "triangles": 47540,
+    "meshes": 4,
+    "surfaces": 8,
+    "images_embedded": 2,
+    "bytes": 1301472,
+    "godot_min": [
+      -0.4090691804885864,
+      -0.3700000047683716,
+      -0.4090873897075653
+    ],
+    "godot_max": [
+      0.4090646803379059,
+      0.6184734106063843,
+      0.4090430438518524
+    ]
+  },
+  "cannon": {
+    "sha256": "3d1d62d3bddb4c639a23c0bf1416a7a1f0beb5c2e2b8af66dae8fb20ab88eece",
+    "triangles": 29560,
+    "meshes": 2,
+    "surfaces": 9,
+    "images_embedded": 1,
+    "bytes": 885788,
+    "godot_min": [
+      -0.5659999847412109,
+      -0.013999998569488525,
+      -0.8999998569488525
+    ],
+    "godot_max": [
+      0.5660001039505005,
+      0.9779868125915527,
+      0.8250000476837158
+    ],
+    "outer_radial_normal_min": 0.999995466522,
+    "inner_radial_normal_max": -0.9964063403987877
+  },
+  "buggy_ball": {
+    "sha256": "abdd824e91734358bed3658074a3a243e7b7d2ada69b788ca3c3e0eee60cdbd1",
+    "triangles": 18692,
+    "meshes": 1,
+    "surfaces": 5,
+    "images_embedded": 0,
+    "bytes": 472972,
+    "godot_min": [
+      -0.2099999189376831,
+      -0.20999997854232788,
+      -0.2499999850988388
+    ],
+    "godot_max": [
+      0.2099999487400055,
+      0.2526400685310364,
+      0.20999987423419952
+    ]
+  },
+  "checks_passed": 90,
+  "source_sha256": "5eb35d7c3c123bbf1edbbb942d9ea5a55fc56df76678387fcd94b32c1f52d86f"
+}

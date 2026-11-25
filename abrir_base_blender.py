@@ -6,10 +6,16 @@ Uso:
 Passe --unrigged na linha de comando para abrir o base.glb cru em vez do rigado.
 """
 import bpy
+import os
 import sys
 
-RIGADO   = "/home/administrador/dev/skills-one-piece/assets/models/base_rigged.glb"
-CRU      = "/home/administrador/dev/skills-one-piece/assets/models/base.glb"
+# O caminho sai da posicao DESTE arquivo, nunca de um absoluto: o script ja
+# nasceu apontando para `/home/administrador/`, um usuario que nao existe nesta
+# maquina, e falhava na primeira linha. Ver docs/erros.md.
+_RAIZ = os.path.dirname(os.path.abspath(__file__))
+
+RIGADO   = os.path.join(_RAIZ, "assets/models/base_rigged.glb")
+CRU      = os.path.join(_RAIZ, "assets/models/base.glb")
 
 caminho = CRU if "--unrigged" in sys.argv else RIGADO
 

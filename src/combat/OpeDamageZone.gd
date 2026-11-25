@@ -23,10 +23,10 @@ func _physics_process(delta: float) -> void:
 
 
 func _on_body(body: Node3D) -> void:
-	if body == caster or not _room_valid():
+	if body == caster or is_queued_for_deletion() or not _room_valid():
 		return
 	var room: Node = room_ref.get_ref()
-	if not room.contains_point(body.global_position):
+	if body.has_method("take_damage") and not room.contains_point(body.global_position):
 		return
 	super._on_body(body)
 	if stop_on_collision:

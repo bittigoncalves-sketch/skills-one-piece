@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://crycmdc37s1qn"
-path="res://.godot/imported/fruta_cereja_Image_3.png-ed32c0b01619b75b6c336f1530ca78cf.ctex"
+path.bptc="res://.godot/imported/fruta_cereja_Image_3.png-ed32c0b01619b75b6c336f1530ca78cf.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "edee362ed34681e4232e5f4a1d15352b"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/fruta_cereja_Image_3.png"
-dest_files=["res://.godot/imported/fruta_cereja_Image_3.png-ed32c0b01619b75b6c336f1530ca78cf.ctex"]
+dest_files=["res://.godot/imported/fruta_cereja_Image_3.png-ed32c0b01619b75b6c336f1530ca78cf.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

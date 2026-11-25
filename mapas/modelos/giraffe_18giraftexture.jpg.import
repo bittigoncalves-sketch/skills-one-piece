@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dpeumr2pd2gfq"
-path="res://.godot/imported/giraffe_18giraftexture.jpg-3901a00164106bc94a7393fea01612e8.ctex"
+path.bptc="res://.godot/imported/giraffe_18giraftexture.jpg-3901a00164106bc94a7393fea01612e8.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "edd7eb0b23080c114210a4905d4cccce"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/giraffe_18giraftexture.jpg"
-dest_files=["res://.godot/imported/giraffe_18giraftexture.jpg-3901a00164106bc94a7393fea01612e8.ctex"]
+dest_files=["res://.godot/imported/giraffe_18giraftexture.jpg-3901a00164106bc94a7393fea01612e8.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

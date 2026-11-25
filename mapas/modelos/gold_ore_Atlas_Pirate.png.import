@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b1ryuip4tp4xf"
-path="res://.godot/imported/gold_ore_Atlas_Pirate.png-600fa1399b72fc0a01107a97aa27580a.ctex"
+path.bptc="res://.godot/imported/gold_ore_Atlas_Pirate.png-600fa1399b72fc0a01107a97aa27580a.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "219f43be043845c1039f47f20d5b6de4"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/gold_ore_Atlas_Pirate.png"
-dest_files=["res://.godot/imported/gold_ore_Atlas_Pirate.png-600fa1399b72fc0a01107a97aa27580a.ctex"]
+dest_files=["res://.godot/imported/gold_ore_Atlas_Pirate.png-600fa1399b72fc0a01107a97aa27580a.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

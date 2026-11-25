@@ -1,0 +1,193 @@
+{
+	"animacao": {
+		"clipe": "punching",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.1
+	},
+	"ativacao": {
+		"andar_segurando": false,
+		"carga": 1.2,
+		"empurrao_carga_max": 1.5,
+		"modo": "Carregar e soltar",
+		"paralisar_segurando": true,
+		"ponto_segurar": 0.5,
+		"repetir": false,
+		"segurar_max": 4.0,
+		"tecla": "V"
+	},
+	"audio": {
+		"som": "Disparo",
+		"tom": 1.05,
+		"volume": -8.0
+	},
+	"camera": {
+		"tremor": 0.2,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 25.0,
+		"exige_alvo": false,
+		"exige_chao": false,
+		"nivel_minimo": 1,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 25.0,
+		"custo": 20.0,
+		"custo_por_segundo": 0.0,
+		"duracao": 0.85,
+		"fim_sobre_alvo": 0.0,
+		"flutuar": false,
+		"inicio_do_fim": -1.0,
+		"intervalo_depois": 0.5,
+		"mirar_no_alvo": false,
+		"parar_no_vazio": false,
+		"recarga": 12.0
+	},
+	"dano": {
+		"atordoamento": 0.2,
+		"critico": 0.0,
+		"duracao_efeito": 1.0,
+		"empurrao": 0.5,
+		"lentidao": 0.0,
+		"multiplicador": 2.0,
+		"tipo": "Vento",
+		"valor": 100.0
+	},
+	"eventos": [
+		{
+			"duracao": 0.6,
+			"habilitado": true,
+			"id": "pose",
+			"inicio": 0.0,
+			"parametros": {
+				"pose": "",
+				"transicao": 0.08
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.5,
+			"habilitado": true,
+			"id": "chao",
+			"inicio": 0.3,
+			"parametros": {
+				"escala": 2.0,
+				"estilo": "Rachadura",
+				"na_mao": false
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "area",
+			"inicio": 0.35,
+			"parametros": {
+				"altura": 6.0,
+				"forma": "Esfera",
+				"largura": 24.0,
+				"mirar": true,
+				"na_mao": false,
+				"profundidade": 24.0,
+				"unicos": true,
+				"x": 0.0,
+				"y": 1.0,
+				"z": -10.0
+			},
+			"tipo": "hitbox"
+		},
+		{
+			"duracao": 0.5,
+			"habilitado": true,
+			"id": "som",
+			"inicio": 0.3,
+			"parametros": {
+				"som": "Gelo: disparo",
+				"tom": 0.8,
+				"volume": -5.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.25,
+			"habilitado": true,
+			"id": "tremor",
+			"inicio": 0.35,
+			"parametros": {
+				"tremor": 0.12
+			},
+			"tipo": "camera"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 3.0,
+		"forma": "Esfera",
+		"largura": 3.0,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 1.5,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": -2.0
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "[RASCUNHO Mine Piece, a revisar] Prende o usuário por 0,6 s e faz nascer 5 a 11 estacas de gelo do chão num raio de até 12 m em volta do alvo mirado.",
+		"dono": "Jogador",
+		"fruta": "hie_hie",
+		"id": "hie_estacas_do_solo",
+		"modelo": "Base",
+		"nome": "Estacas do Solo"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 2.0,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 6.0
+	},
+	"poses": [],
+	"projeteis": {
+		"abertura": 20.0,
+		"area_chuva": 8.0,
+		"direcao_disparo": "Mira",
+		"explosao": 2.8,
+		"giro": 0.0,
+		"gravidade": 0.0,
+		"modelo": "",
+		"perfurar": false,
+		"quantidade": 1,
+		"raio": 0.45,
+		"rastro": "Fumaça",
+		"sem_dano": false,
+		"som_explosao": "Impacto",
+		"velocidade": 26.0,
+		"vida": 2.5,
+		"visual": "Bala de canhão"
+	},
+	"versao": 1,
+	"vfx": {
+		"altura": 1.2,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#dcdde1",
+		"cor_2": "#8395a7",
+		"escala": 1.2,
+		"estilo": "Anel",
+		"frente": 1.0,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "Mão direita",
+		"projetil_de": ""
+	}
+}

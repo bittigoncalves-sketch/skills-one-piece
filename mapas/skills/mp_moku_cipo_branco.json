@@ -1,0 +1,229 @@
+{
+	"animacao": {
+		"clipe": "Ataque",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.0
+	},
+	"ativacao": {
+		"andar_segurando": false,
+		"carga": 0.5,
+		"empurrao_carga_max": 1.0,
+		"modo": "Pressionar",
+		"paralisar_segurando": true,
+		"ponto_segurar": 0.5,
+		"repetir": false,
+		"segurar_max": 5.0,
+		"tecla": "Z"
+	},
+	"audio": {
+		"som": "Impacto",
+		"tom": 1.0,
+		"volume": -12.0
+	},
+	"camera": {
+		"tremor": 0.2,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 60.0,
+		"exige_alvo": false,
+		"exige_chao": false,
+		"nivel_minimo": 1,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 20.0,
+		"custo": 18.0,
+		"custo_por_segundo": 0.0,
+		"duracao": 1.25,
+		"fim_sobre_alvo": 0.0,
+		"flutuar": false,
+		"inicio_do_fim": -1.0,
+		"intervalo_depois": 0.5,
+		"mirar_no_alvo": false,
+		"parar_no_vazio": false,
+		"recarga": 7.0
+	},
+	"dano": {
+		"atordoamento": 0.3,
+		"congelar": 0.0,
+		"critico": 0.0,
+		"cura_do_dano": 0.0,
+		"duracao_efeito": 1.0,
+		"empurrao": 5.0,
+		"lentidao": 40.0,
+		"multiplicador": 2.0,
+		"tipo": "Vento",
+		"valor": 60.0
+	},
+	"eventos": [
+		{
+			"duracao": 0.9,
+			"habilitado": true,
+			"id": "giro",
+			"inicio": 0.0,
+			"parametros": {
+				"clipe": "roundhouse_kick",
+				"pose": "",
+				"velocidade": 1.1
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.4,
+			"habilitado": true,
+			"id": "arco",
+			"inicio": 0.2,
+			"parametros": {
+				"escala": 1.8,
+				"estilo": "Vento"
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.15,
+			"habilitado": true,
+			"id": "corte",
+			"inicio": 0.25,
+			"parametros": {
+				"altura": 2.0,
+				"forma": "Caixa",
+				"largura": 6.0,
+				"mirar": false,
+				"na_mao": false,
+				"profundidade": 3.5,
+				"unicos": true,
+				"x": 0.0,
+				"y": 1.0,
+				"z": -1.5
+			},
+			"tipo": "hitbox"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_corte",
+			"inicio": 0.25,
+			"parametros": {
+				"som": "Vento",
+				"tom": 1.2,
+				"volume": -6.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.05,
+			"habilitado": true,
+			"id": "redemoinho",
+			"inicio": 0.45,
+			"parametros": {
+
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_redemoinho",
+			"inicio": 0.45,
+			"parametros": {
+				"som": "Vento",
+				"tom": 0.7,
+				"volume": -5.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.15,
+			"habilitado": true,
+			"id": "tremor",
+			"inicio": 0.25,
+			"parametros": {
+				"tremor": 0.1
+			},
+			"tipo": "camera"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 3.0,
+		"forma": "Esfera",
+		"largura": 3.0,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 1.5,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": -2.0
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "Gira o braço num arco de fumaça que corta em volta e solta à frente um redemoinho que atravessa os inimigos.",
+		"dono": "Jogador",
+		"fruta": "moku_moku_no_mi_mine_piece",
+		"id": "mp_moku_cipo_branco",
+		"modelo": "Base",
+		"nome": "Cipó Branco"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 2.0,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 6.0
+	},
+	"poses": [],
+	"projeteis": {
+		"abertura": 0.0,
+		"area_chuva": 8.0,
+		"direcao_disparo": "Mira",
+		"explosao": 0.0,
+		"giro": 0.0,
+		"gravidade": 0.0,
+		"imunidade_gelo": true,
+		"modelo": "",
+		"perfurar": true,
+		"quantidade": 1,
+		"raio": 1.0,
+		"raio_de_acerto": 0.7,
+		"raio_do_anel": 2.5,
+		"rastro": "Fumaça",
+		"sai_de": "Corpo",
+		"sem_dano": false,
+		"som_explosao": "Impacto",
+		"velocidade": 14.0,
+		"vida": 1.4,
+		"visual": "Energia"
+	},
+	"transformacao": {
+		"alvo": "Usuário",
+		"cor": "#dce9ff",
+		"escala": 1.0,
+		"modelo": "",
+		"raio": 8.0,
+		"visual": "Fumaça"
+	},
+	"versao": 1,
+	"vfx": {
+		"altura": 1.0,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#f4f6f8",
+		"cor_2": "#ffffff",
+		"escala": 1.0,
+		"estilo": "Impacto",
+		"frente": 1.0,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "Mão direita",
+		"projetil_de": ""
+	}
+}

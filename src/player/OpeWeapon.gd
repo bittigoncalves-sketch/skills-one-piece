@@ -5,7 +5,6 @@ extends Node3D
 const ASSET := "res://assets/models/ope_ope/kikoku.glb"
 var _player: Node3D
 var _weapon: Node3D
-var _last_model: Node3D
 var _time := 0.0
 
 
@@ -33,16 +32,17 @@ func _process(delta: float) -> void:
 			add_child(_weapon)
 	if _weapon == null:
 		return
-	_last_model = model
 	var anchor := torso_transform(_player)
-	# 1.7 m no avatar padrão de 1.5 m: nodachi longa, ainda sem atravessar o chão.
+	# A empunhadura repousa acima do ombro esquerdo; a lâmina desce em diagonal.
+	# Rotação composta explícita: no Euler YXZ, Z depois de X não inclina -Z.
 	var anim = _player.get("_proc_anim")
-	var size := 0.70
+	var size := 0.60
 	if anim:
-		size *= clampf(float(anim._m.get("leg_len", 0.47)) / 0.47, 0.75, 1.5)
+		size *= clampf(float(anim._m.get("leg_len", 0.47)) / 0.47, 0.85, 1.15)
 	var sway := sin(_time * 2.1) * 0.008
-	global_transform = Transform3D(anchor.basis * Basis.from_euler(Vector3(-PI * 0.5, 0.0, 0.44 + sway)),
-		anchor.origin + anchor.basis * Vector3(-0.35, 0.31, 0.24))
+	var diagonal := Basis(Vector3.BACK, 0.60 + sway) * Basis(Vector3.RIGHT, -PI * 0.5)
+	global_transform = Transform3D(anchor.basis * diagonal,
+		anchor.origin + anchor.basis * Vector3(-0.38, 0.80, 0.35))
 	_weapon.scale = Vector3.ONE * size
 
 
@@ -51,6 +51,9 @@ static func hand_transform(player: Node3D, side: String = "R") -> Transform3D:
 	var anim = player.get("_proc_anim")
 	if not is_instance_valid(model) or anim == null:
 		return Transform3D(player.global_basis.orthonormalized(), player.global_position + Vector3.UP * 0.45)
+	var authored_grip := model.find_child("Grip_" + side, true, false) as Node3D
+	if authored_grip:
+		return Transform3D(authored_grip.global_basis.orthonormalized(), authored_grip.global_position)
 	var role := "ForeArm_" + side
 	var nodes: Dictionary = anim._n
 	if not nodes.has(role):
@@ -77,6 +80,12 @@ static func hand_transform(player: Node3D, side: String = "R") -> Transform3D:
 			return Transform3D(basis, elbow - basis.y * float(anim._m.get("upper_arm", 0.25)))
 	var arm_length := float(anim._m.get("upper_arm", 0.25)) * 1.1
 	var fore_basis := forearm.global_basis.orthonormalized()
+	# Usa o punho nomeado pelo PlayerRig. A esquerda tem a mesma medida local,
+	# mas não recebe item_handle porque as armas convencionais usam a direita.
+	var right: Node3D = nodes.get("ForeArm_R")
+	var grip := right.get_node_or_null("Hand_R") as Node3D if right else null
+	if grip:
+		return Transform3D(fore_basis, forearm.global_transform * grip.position)
 	return Transform3D(fore_basis, forearm.global_position - fore_basis.y * arm_length)
 
 
@@ -89,6 +98,7 @@ static func torso_transform(player: Node3D) -> Transform3D:
 	var driver = anim._driver
 	if driver != null and driver._bone.has("Torso"):
 		var skel: Skeleton3D = driver._skel
+		skel.force_update_all_bone_transforms()
 		var origin: Vector3 = skel.global_transform * skel.get_bone_global_pose(driver._bone["Torso"]).origin
 		var basis := model.global_basis.orthonormalized() * Basis.from_euler(torso.rotation)
 		return Transform3D(basis, origin)

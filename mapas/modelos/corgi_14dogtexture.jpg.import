@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cblb7qcgagv71"
-path="res://.godot/imported/corgi_14dogtexture.jpg-d91e1e808ea0892bd298fff60fb9b7ff.ctex"
+path.bptc="res://.godot/imported/corgi_14dogtexture.jpg-d91e1e808ea0892bd298fff60fb9b7ff.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "510d17eee5f20a4584174c96e2223999"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/corgi_14dogtexture.jpg"
-dest_files=["res://.godot/imported/corgi_14dogtexture.jpg-d91e1e808ea0892bd298fff60fb9b7ff.ctex"]
+dest_files=["res://.godot/imported/corgi_14dogtexture.jpg-d91e1e808ea0892bd298fff60fb9b7ff.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

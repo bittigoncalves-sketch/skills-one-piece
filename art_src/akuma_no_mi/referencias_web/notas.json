@@ -1,0 +1,656 @@
+{
+  "gomu_gomu": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/gomu_gomu_no_mi.png",
+    "fonte_contexto": "https://onepiece.fandom.com/wiki/Gomu_Gomu_no_Mi",
+    "referencias": [
+      "gomu_gomu_1.png"
+    ],
+    "procedencia": "Ilustração em enciclopédia de fãs; aparência corroborada pela descrição da wiki.",
+    "forma": "Esfera violeta, similar a melão; gomos profundos não são parte marcante da referência.",
+    "caule": "Comprido, em T, com ponta espiralada; verde amarelado.",
+    "cores": [
+      "#8b6cc4",
+      "#c7abed",
+      "#8a9f51"
+    ],
+    "padrao": "Espirais curvas sobre toda a casca."
+  },
+  "mera_mera": {
+    "fonte": "https://opwiki.org/images/Feuerfrucht.jpg",
+    "fonte_contexto": "https://opwiki.org/wiki?filetimestamp=20140119101115&title=Datei%3AFeuerfrucht.jpg",
+    "referencias": [
+      "mera_mera_1.png"
+    ],
+    "procedencia": "Quadro do anime disponibilizado por wiki de fãs.",
+    "forma": "Esférica, formada por muitos volumes com aspecto de chamas.",
+    "caule": "Verde, curvo e espiralado.",
+    "cores": [
+      "#e77820",
+      "#ffbb50",
+      "#4a8b65"
+    ],
+    "padrao": "Línguas de fogo curvas entrelaçadas, com espirais."
+  },
+  "hie_hie": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/hie_hie_no_mi.png",
+    "fontes_adicionais": [
+      "https://cd-opf.pages.dev/fruits/80a9b2ad-0669-4063-92db-e49fc1ac1e29.webp"
+    ],
+    "referencias": [
+      "hie_hie_1.png",
+      "hie_hie_2.png"
+    ],
+    "procedencia": "Duas interpretações online contraditórias; aparência oficial não confirmada nesta pesquisa. Não tratar qualquer uma como canônica.",
+    "forma": "Não confirmada; modelo atual em forma de pera é interpretação provisória.",
+    "caule": "Não confirmado; representação provisória.",
+    "cores": [
+      "#75bcd9",
+      "#d2f1f5",
+      "#3e809f"
+    ],
+    "padrao": "Espirais em tons de gelo; interpretação própria, não comprovada por fonte oficial."
+  },
+  "goro_goro": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/goro_goro_no_mi.png",
+    "fonte_contexto": "https://onepiece.fandom.com/wiki/Goro_Goro_no_Mi",
+    "referencias": [
+      "goro_goro_1.png"
+    ],
+    "procedencia": "Imagem de enciclopédia de fãs; a wiki atribui o design à One Piece Magazine vol. 17.",
+    "forma": "Arredondada, levemente em pera, com numerosos espinhos irregulares como raios.",
+    "caule": "Verde, em zigue-zague, semelhante a relâmpago.",
+    "cores": [
+      "#e6b928",
+      "#fff097",
+      "#529562"
+    ],
+    "padrao": "Espirais amarelas sobre casca dourada; pontas como faíscas."
+  },
+  "ope_ope": {
+    "fonte": "https://ss-images.saostar.vn/w1200/pc/1600871612484/one-piece-ope-ope-no-mi-1%281%29.jpg",
+    "fonte_contexto": "https://onepiece.fandom.com/wiki/Ope_Ope_no_Mi",
+    "referencias": [
+      "ope_ope_1.png"
+    ],
+    "procedencia": "Quadro do anime reproduzido em artigo; descrição da wiki confirma coração vermelho.",
+    "forma": "Coração vermelho, parecido com morango.",
+    "caule": "Verde, curvado em espiral.",
+    "cores": [
+      "#c6414a",
+      "#f17b80",
+      "#57945f"
+    ],
+    "padrao": "Espirais curvas distribuídas sobre o coração."
+  },
+  "pika_pika": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/pika_pika_no_mi.png",
+    "referencias": [
+      "pika_pika_1.png"
+    ],
+    "procedencia": "Ilustração de enciclopédia de fãs; aparência oficial não confirmada nesta pesquisa.",
+    "forma": "Não confirmada; esfera atual é provisória e não representa necessariamente a imagem da referência.",
+    "caule": "Não confirmado; representação provisória.",
+    "cores": [
+      "#eacb41",
+      "#fff4a0",
+      "#638b62"
+    ],
+    "padrao": "Traços luminosos; interpretação própria para o poder de luz."
+  },
+  "yami_yami": {
+    "fonte": "https://assets.pikiran-rakyat.com/crop/0x0%3A0x0/1200x675/photo/2024/02/07/741801910.jpg",
+    "fonte_contexto": "https://onepiece.fandom.com/wiki/Yami_Yami_no_Mi",
+    "referencias": [
+      "yami_yami_1.png"
+    ],
+    "procedencia": "Imagem reproduzida por artigo; descrição da fruta verificada em wiki de fãs.",
+    "forma": "Oval arredondada, composta por muitos gomos em forma de gotas; lembra um cacho ou abacaxi.",
+    "caule": "Coroa de folhas verdes no topo.",
+    "cores": [
+      "#9978b5",
+      "#d4b2e4",
+      "#598151"
+    ],
+    "padrao": "Pequenas gotas sobrepostas, cada uma com espiral."
+  },
+  "magu_magu": {
+    "fonte": "https://www.laboutique-onepiece.com/_i/136023/p%7B1280%7D-129726/19/28/encyclopedie-fruit-demon-boutique-one-piece-blog-4.jpeg",
+    "referencias": [
+      "magu_magu_1.png"
+    ],
+    "procedencia": "Ilustração de publicação sobre frutas; não foi confirmada como design oficial de Oda/anime.",
+    "forma": "Não confirmada; gota atual é interpretação provisória.",
+    "caule": "Não confirmado; representação provisória.",
+    "cores": [
+      "#9d3229",
+      "#f07737",
+      "#521e22"
+    ],
+    "padrao": "Rachaduras de magma; interpretação própria."
+  },
+  "suna_suna": {
+    "fonte": "https://pbs.twimg.com/media/E-p6dpkUUAA3htP.jpg",
+    "fontes_adicionais": [
+      "https://staticg.sportskeeda.com/editor/2022/12/0a760-16700948162008.png?w=1600"
+    ],
+    "fonte_contexto": "https://onepiece.fandom.com/wiki/Suna_Suna_no_Mi",
+    "referencias": [
+      "suna_suna_1.png",
+      "suna_suna_2.png"
+    ],
+    "procedencia": "Imagem divulgada pela conta oficial One Piece Magazine e ilustração em site de fãs; wiki atribui o design à revista vol. 12.",
+    "forma": "Cacto arredondado bege, com dois braços curtos voltados para cima.",
+    "caule": "Pequena coroa superior verde; braços da mesma família do corpo.",
+    "cores": [
+      "#c99a61",
+      "#efd09a",
+      "#9b714c"
+    ],
+    "padrao": "Gomos verticais de cacto e marcas discretas."
+  },
+  "bara_bara": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/bara_bara_no_mi.png",
+    "fonte_contexto": "https://onepiece.fandom.com/wiki/Bara_Bara_no_Mi",
+    "referencias": [
+      "bara_bara_1.png"
+    ],
+    "procedencia": "Ilustração de enciclopédia de fãs; forma e cor conferidas na descrição da wiki.",
+    "forma": "Oval, composta de pequenas bagas arredondadas, como uma framboesa ou pequeno abacaxi.",
+    "caule": "Folhagem verde no topo.",
+    "cores": [
+      "#bc4b36",
+      "#ef8762",
+      "#4f8049"
+    ],
+    "padrao": "Espiral em cada pequena baga vermelho alaranjada."
+  },
+  "bomu_bomu": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/bomu_bomu_no_mi.png",
+    "fonte_contexto": "https://onepiece.fandom.com/wiki/Bomu_Bomu_no_Mi",
+    "referencias": [
+      "bomu_bomu_1.png"
+    ],
+    "procedencia": "Ilustração de enciclopédia de fãs; descrição consultada separadamente. Detalhes sem corroboração não são tratados como oficiais.",
+    "forma": "Maçã redonda roxo escuro; referência lembra bomba.",
+    "caule": "Cordão curvado, semelhante a pavio.",
+    "cores": [
+      "#332653",
+      "#bb5e73"
+    ],
+    "padrao": "Espirais em S."
+  },
+  "gura_gura": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/gura_gura_no_mi.png",
+    "fonte_contexto": "https://onepiece.fandom.com/wiki/Gura_Gura_no_Mi",
+    "referencias": [
+      "gura_gura_1.png"
+    ],
+    "procedencia": "Ilustração de enciclopédia de fãs; descrição consultada separadamente. Detalhes sem corroboração não são tratados como oficiais.",
+    "forma": "Pera azul com a região inferior rachada; fendas ficam a cargo do atlas.",
+    "caule": "Caule verde curvo.",
+    "cores": [
+      "#365b96",
+      "#b5dbeb"
+    ],
+    "padrao": "Linhas de rachadura e espirais."
+  },
+  "horo_horo": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/horo_horo_no_mi.png",
+    "fonte_contexto": "https://onepiece.fandom.com/wiki/Horo_Horo_no_Mi",
+    "referencias": [
+      "horo_horo_1.png"
+    ],
+    "procedencia": "Ilustração de enciclopédia de fãs; descrição consultada separadamente. Detalhes sem corroboração não são tratados como oficiais.",
+    "forma": "A referência de fã apresenta cacho de formas alongadas como fantasmas; esfera atual precisa de revisão com a fonte oficial.",
+    "caule": "Haste esverdeada em T.",
+    "cores": [
+      "#e7d6a0",
+      "#fff5cf"
+    ],
+    "padrao": "Espirais e faces pequenas; simplificação na textura."
+  },
+  "kage_kage": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/kage_kage_no_mi.png",
+    "fonte_contexto": "https://onepiece.fandom.com/wiki/Kage_Kage_no_Mi",
+    "referencias": [
+      "kage_kage_1.png"
+    ],
+    "procedencia": "Ilustração de enciclopédia de fãs; descrição consultada separadamente. Detalhes sem corroboração não são tratados como oficiais.",
+    "forma": "Esfera preta, conforme descrição da wiki; a ilustração de fã acrescenta folhas externas.",
+    "caule": "Caule verde curvo.",
+    "cores": [
+      "#252328",
+      "#5f565f"
+    ],
+    "padrao": "Espirais discretas."
+  },
+  "kiro_kiro": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/kiro_kiro_no_mi.png",
+    "fonte_contexto": "https://onepiece.fandom.com/wiki/Kiro_Kiro_no_Mi",
+    "referencias": [
+      "kiro_kiro_1.png"
+    ],
+    "procedencia": "Ilustração de enciclopédia de fãs; descrição consultada separadamente. Detalhes sem corroboração não são tratados como oficiais.",
+    "forma": "Cilindro rosado com cantos arredondados.",
+    "caule": "Verde, curvo e espesso.",
+    "cores": [
+      "#d78091",
+      "#f4bdc3"
+    ],
+    "padrao": "Espirais claras sobre a pele rosa."
+  },
+  "mochi_mochi": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/mochi_mochi_no_mi.png",
+    "fonte_contexto": "https://onepiece.fandom.com/wiki/Mochi_Mochi_no_Mi",
+    "referencias": [
+      "mochi_mochi_1.png"
+    ],
+    "procedencia": "Ilustração de enciclopédia de fãs; descrição consultada separadamente. Detalhes sem corroboração não são tratados como oficiais.",
+    "forma": "Redonda e branco-creme; a figura mostra um pequeno lóbulo embaixo.",
+    "caule": "Verde, em T espiralado.",
+    "cores": [
+      "#e6ddc9",
+      "#fff8e9"
+    ],
+    "padrao": "Espirais discretas."
+  },
+  "supa_supa": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/supa_supa_no_mi.png",
+    "fonte_contexto": "https://daddyjim.com/one-piece/ability/Supa-Supa-no-Mi",
+    "referencias": [
+      "supa_supa_1.png"
+    ],
+    "procedencia": "Ilustração de enciclopédia de fãs; descrição consultada separadamente. Detalhes sem corroboração não são tratados como oficiais.",
+    "forma": "Cacho de bananas compridas em forma de lâminas; modelo atual de três gomos é aproximação.",
+    "caule": "Verde e espiralado.",
+    "cores": [
+      "#aab5cf",
+      "#f3f2e4"
+    ],
+    "padrao": "Lâminas pálidas com partes azuladas; referência de fã."
+  },
+  "uo_uo_seiryu": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/uo_uo_no_mi_model_seiryu.png",
+    "fonte_contexto": "https://onepiece.fandom.com/wiki/Uo_Uo_no_Mi%2C_Model%3A_Seiryu",
+    "referencias": [
+      "uo_uo_seiryu_1.png"
+    ],
+    "procedencia": "Ilustração de enciclopédia de fãs; descrição consultada separadamente. Detalhes sem corroboração não são tratados como oficiais.",
+    "forma": "Fruta oval azul coberta por escamas sobrepostas; modelo de gomos é aproximação.",
+    "caule": "Caule curvo com ornamento no topo.",
+    "cores": [
+      "#268eb1",
+      "#a8dbe7"
+    ],
+    "padrao": "Escamas com espirais."
+  },
+  "uta_uta": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/uta_uta_no_mi.png",
+    "fonte_contexto": "https://one-piecewiki.com/wiki/uta-uta-no-mi/",
+    "referencias": [
+      "uta_uta_1.png"
+    ],
+    "procedencia": "Ilustração de enciclopédia de fãs; descrição consultada separadamente. Detalhes sem corroboração não são tratados como oficiais.",
+    "forma": "Esfera rosa com faixas claras; formato geral corroborado pela wiki.",
+    "caule": "Verde, como uma nota musical; o atual reto não reproduz a nota.",
+    "cores": [
+      "#e79eb8",
+      "#ffd9e1"
+    ],
+    "padrao": "Espirais em rosa claro."
+  },
+  "neko_neko_leopard": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/neko_neko_no_mi_model_leopard.png",
+    "fonte_contexto": "https://otakusnotes.com/devil-fruit-designs-in-one-piece/",
+    "referencias": [
+      "neko_neko_leopard_1.png"
+    ],
+    "procedencia": "Ilustração de enciclopédia de fãs; descrição consultada separadamente. Detalhes sem corroboração não são tratados como oficiais.",
+    "forma": "Referência de fã sugere cabeça de felino com orelhas; forma atual em pera não representa as orelhas.",
+    "caule": "Verde espiralado.",
+    "cores": [
+      "#e3b346",
+      "#664123"
+    ],
+    "padrao": "Manchas de leopardo e espirais."
+  },
+  "batto_batto": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/batto_batto_no_mi_model_vampire.png",
+    "referencias": [
+      "batto_batto_1.png"
+    ],
+    "procedencia": "Ilustração em enciclopédia de fãs; detalhes que não foram corroborados são interpretações, não evidência de design oficial.",
+    "forma": "Ilustração de fã: esfera roxa. A espécie/modelo desta Batto precisa de identificação antes de tratar a imagem como oficial.",
+    "caule": "Haste verde curvada.",
+    "cores": [
+      "#762d7b",
+      "#b96db5"
+    ],
+    "padrao": "Espirais roxas."
+  },
+  "bisu_bisu": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/bisu_bisu_no_mi.png",
+    "referencias": [
+      "bisu_bisu_1.png"
+    ],
+    "procedencia": "Ilustração em enciclopédia de fãs; detalhes que não foram corroborados são interpretações, não evidência de design oficial.",
+    "forma": "Ilustração de fã: fruto castanho arredondado com placas; não confirmei a aparência em fonte oficial.",
+    "caule": "Caule marrom ondulado.",
+    "cores": [
+      "#ba8c4e",
+      "#e4bd7c"
+    ],
+    "padrao": "Placas e espirais, lembrando biscoito."
+  },
+  "inu_inu_okuchi_no_makami": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/inu_inu_no_mi_model_okuchi_no_makami.png",
+    "referencias": [
+      "inu_inu_okuchi_no_makami_1.png"
+    ],
+    "procedencia": "Ilustração em enciclopédia de fãs; detalhes que não foram corroborados são interpretações, não evidência de design oficial.",
+    "forma": "A imagem de referência mostra fruto alaranjado achatado com cálice escuro; atual forma de pera difere.",
+    "caule": "Caule curvado alaranjado.",
+    "cores": [
+      "#d5772a",
+      "#f6b55e"
+    ],
+    "padrao": "Espirais discretas; cor/forma a conferir com material oficial."
+  },
+  "inu_inu_wolf": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/inu_inu_no_mi_model_wolf.png",
+    "referencias": [
+      "inu_inu_wolf_1.png"
+    ],
+    "procedencia": "Ilustração em enciclopédia de fãs; detalhes que não foram corroborados são interpretações, não evidência de design oficial.",
+    "forma": "Ilustração de fã mostra esfera achatada lilás; aparência oficial não confirmada nesta pesquisa.",
+    "caule": "Haste espiralada cinza-violeta.",
+    "cores": [
+      "#8b809f",
+      "#c3b9d1"
+    ],
+    "padrao": "Espirais."
+  },
+  "kira_kira": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/kira_kira_no_mi.png",
+    "referencias": [
+      "kira_kira_1.png"
+    ],
+    "procedencia": "Ilustração em enciclopédia de fãs; detalhes que não foram corroborados são interpretações, não evidência de design oficial.",
+    "forma": "Ilustração de fã sugere gota azul com faceta central; aparência oficial não confirmada e o formato atual difere.",
+    "caule": "Caule verde.",
+    "cores": [
+      "#6eaccf",
+      "#d6f3ff"
+    ],
+    "padrao": "Facetas que evocam diamante, interpretação provisória."
+  },
+  "moku_moku": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/moku_moku_no_mi.png",
+    "referencias": [
+      "moku_moku_1.png"
+    ],
+    "procedencia": "Ilustração em enciclopédia de fãs; detalhes que não foram corroborados são interpretações, não evidência de design oficial.",
+    "forma": "Ilustração de fã mostra esfera de nuvens brancas; formato oficial não confirmado nesta pesquisa.",
+    "caule": "Haste verde em espiral.",
+    "cores": [
+      "#d5d9e1",
+      "#f7f8fb"
+    ],
+    "padrao": "Espirais que evocam fumaça."
+  },
+  "mori_mori": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/mori_mori_no_mi.png",
+    "referencias": [
+      "mori_mori_1.png"
+    ],
+    "procedencia": "Ilustração em enciclopédia de fãs; detalhes que não foram corroborados são interpretações, não evidência de design oficial.",
+    "forma": "Ilustração de fã mostra globo de folhas rosadas verdes sobre base trançada; design oficial não confirmado.",
+    "caule": "Caule verde.",
+    "cores": [
+      "#9d485d",
+      "#df8f9a"
+    ],
+    "padrao": "Gomos como folhas sobrepostas."
+  },
+  "neko_neko_sabertiger": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/neko_neko_no_mi_model_saber_tiger.png",
+    "referencias": [
+      "neko_neko_sabertiger_1.png"
+    ],
+    "procedencia": "Ilustração em enciclopédia de fãs; detalhes que não foram corroborados são interpretações, não evidência de design oficial.",
+    "forma": "Ilustração de fã mostra esfera amarela com orelhas e duas presas; a atual esfera lisa difere. Aparência oficial não confirmada.",
+    "caule": "Caule verde curvado.",
+    "cores": [
+      "#deb74b",
+      "#f7e090"
+    ],
+    "padrao": "Espirais e manchas; presas são geometria ausente."
+  },
+  "nikyu_nikyu": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/nikyu_nikyu_no_mi.png",
+    "referencias": [
+      "nikyu_nikyu_1.png"
+    ],
+    "procedencia": "Ilustração em enciclopédia de fãs; detalhes que não foram corroborados são interpretações, não evidência de design oficial.",
+    "forma": "Ilustração de fã mostra corpo rosa com três gomos como dedos de pata; o formato atual é aproximação.",
+    "caule": "Caule verde curvo.",
+    "cores": [
+      "#db72b8",
+      "#ffc3e5"
+    ],
+    "padrao": "Espirais pequenas; cor e proporções a conferir com fonte oficial."
+  },
+  "riki_riki": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/riki_riki_no_mi.png",
+    "referencias": [
+      "riki_riki_1.png"
+    ],
+    "procedencia": "Ilustração em enciclopédia de fãs; detalhes que não foram corroborados são interpretações, não evidência de design oficial.",
+    "forma": "Ilustração de fã mostra gota magenta; aparência oficial não confirmada nesta pesquisa.",
+    "caule": "Haste verde-azulada em espiral.",
+    "cores": [
+      "#d13ca4",
+      "#fb92da"
+    ],
+    "padrao": "Espirais pequenas."
+  },
+  "aro_aro": {
+    "fonte": "https://gamek.mediacdn.vn/133514250583805952/2025/3/16/aro-aro-no-mi-gunko-one-piece-176ea96ef6da09acc22ce2f4d6ce4fad-1742091460646-1742091460728409059683-1742101355398-174210135566454637605.jpg",
+    "referencias": [
+      "aro_aro_1.png"
+    ],
+    "procedencia": "Fonte visual de fã ou imagem contextual; ver forma para limites de confirmação.",
+    "forma": "A imagem mostra o poder de setas de Gunko, não a fruta; aparência oficial da fruta não identificada. A esfera é interpretação própria.",
+    "caule": "Caule verde provisório.",
+    "cores": [
+      "#9a516d",
+      "#eea1aa"
+    ],
+    "padrao": "Traços como setas, interpretação do poder."
+  },
+  "buki_buki": {
+    "fonte": "https://staticg.sportskeeda.com/editor/2022/10/80e55-16662755973117.png",
+    "referencias": [
+      "buki_buki_1.png"
+    ],
+    "procedencia": "Fonte visual de fã ou imagem contextual; ver forma para limites de confirmação.",
+    "forma": "A imagem mostra Baby 5 usando armas, não a fruta; aparência da fruta não identificada. Gomos atuais são provisórios.",
+    "caule": "Caule marrom provisório.",
+    "cores": [
+      "#85909e",
+      "#d9e0e7"
+    ],
+    "padrao": "Marcas metálicas, interpretação própria."
+  },
+  "hito_hito_daibutsu": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/hito_hito_no_mi_model_daibutsu.png",
+    "referencias": [
+      "hito_hito_daibutsu_1.png"
+    ],
+    "procedencia": "Fonte visual de fã ou imagem contextual; ver forma para limites de confirmação.",
+    "forma": "Ilustração de fã mostra cachos dourados alongados; a gota atual difere. Aparência oficial não confirmada nesta pesquisa.",
+    "caule": "Caule castanho em T.",
+    "cores": [
+      "#b89129",
+      "#ecd16b"
+    ],
+    "padrao": "Espirais douradas."
+  },
+  "imu": {
+    "fonte": "https://cdn.cloudtek.vn/images/2023/06/07/hocmarketing-org-og-8076-the-shocking-truth-about-imus-powers-in-one-piece.jpg?tr=w-770%2Ch-433",
+    "referencias": [
+      "imu_1.png"
+    ],
+    "procedencia": "Fonte visual de fã ou imagem contextual; ver forma para limites de confirmação.",
+    "forma": "A imagem mostra personagem e fruta ilustrativa de fã, sem comprovação de que pertença a Imu. Design atual é interpretação provisória.",
+    "caule": "Caule roxo provisório.",
+    "cores": [
+      "#352b43",
+      "#8b667c"
+    ],
+    "padrao": "Espirais escuras."
+  },
+  "mero_mero": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/mero_mero_no_mi.png",
+    "referencias": [
+      "mero_mero_1.png"
+    ],
+    "procedencia": "Fonte visual de fã ou imagem contextual; ver forma para limites de confirmação.",
+    "forma": "Par de corações como cerejas, compartilhando hastes; o modelo de duas esferas é aproximação.",
+    "caule": "Hastes verde-claras ligadas.",
+    "cores": [
+      "#d9789c",
+      "#f3bccb"
+    ],
+    "padrao": "Espirais nos dois frutos.",
+    "fonte_contexto": "https://onepiece.fandom.com/wiki/Mero_Mero_no_Mi"
+  },
+  "rocket": {
+    "fonte": "https://cdn.shopify.com/s/files/1/0815/2068/9482/files/BladeFruit.webp?v=1751819771",
+    "referencias": [
+      "rocket_1.png"
+    ],
+    "procedencia": "Fonte visual de fã ou imagem contextual; ver forma para limites de confirmação.",
+    "forma": "A imagem vem de página comercial de jogo de fãs e sua rotulagem não confirma o formato da fruta neste projeto; gota atual é interpretação própria.",
+    "caule": "Caule verde provisório.",
+    "cores": [
+      "#705594",
+      "#c7b4e7"
+    ],
+    "padrao": "Marcas angulares, interpretação."
+  },
+  "ryu_ryu_brachiosaurus": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/ryu_ryu_no_mi_model_brachiosaurus.png",
+    "referencias": [
+      "ryu_ryu_brachiosaurus_1.png"
+    ],
+    "procedencia": "Fonte visual de fã ou imagem contextual; ver forma para limites de confirmação.",
+    "forma": "Ilustração de fã mostra cacho oval amarelo com escamas; formato oficial não confirmado nesta pesquisa.",
+    "caule": "Caule claro curvo.",
+    "cores": [
+      "#a29b32",
+      "#d6ce68"
+    ],
+    "padrao": "Escamas com espirais."
+  },
+  "ryu_ryu_pachycephalosaurus": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/ryu_ryu_no_mi_model_pachycephalosaurus.png",
+    "referencias": [
+      "ryu_ryu_pachycephalosaurus_1.png"
+    ],
+    "procedencia": "Fonte visual de fã ou imagem contextual; ver forma para limites de confirmação.",
+    "forma": "Ilustração de fã mostra cacho verde com coroa azul; formato oficial não confirmado nesta pesquisa.",
+    "caule": "Coroa azul e verde.",
+    "cores": [
+      "#65a845",
+      "#b3df7c"
+    ],
+    "padrao": "Escamas de múltiplos gomos."
+  },
+  "ryu_ryu_pteranodon": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/ryu_ryu_no_mi_model_pteranodon.png",
+    "referencias": [
+      "ryu_ryu_pteranodon_1.png"
+    ],
+    "procedencia": "Fonte visual de fã ou imagem contextual; ver forma para limites de confirmação.",
+    "forma": "Ilustração de fã mostra cacho roxo com formas laterais de asas; esfera atual difere. Formato oficial não confirmado.",
+    "caule": "Haste roxa curvada.",
+    "cores": [
+      "#8e80b5",
+      "#c9b9e0"
+    ],
+    "padrao": "Gomos com espirais."
+  },
+  "soru_soru": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/soru_soru_no_mi.png",
+    "referencias": [
+      "soru_soru_1.png"
+    ],
+    "procedencia": "Fonte visual de fã ou imagem contextual; ver forma para limites de confirmação.",
+    "forma": "Ilustração de fã mostra cacho claro de gomos com folha verde; formato oficial não confirmado.",
+    "caule": "Folhas verdes e caule em espiral.",
+    "cores": [
+      "#cbd1cb",
+      "#f5f3e9"
+    ],
+    "padrao": "Espirais pretas em gomos claros."
+  },
+  "suke_suke": {
+    "fonte": "https://i.pinimg.com/736x/68/c7/57/68c757dad2fa8e42a49bd9fa55983d78.jpg",
+    "referencias": [
+      "suke_suke_1.png"
+    ],
+    "procedencia": "Fonte visual de fã ou imagem contextual; ver forma para limites de confirmação.",
+    "forma": "A imagem é um cartaz de fã com fruta translúcida; aparência oficial não confirmada. A textura é opaca, com azul claro para representar invisibilidade.",
+    "caule": "Caule claro provisório.",
+    "cores": [
+      "#8acdd2",
+      "#d6f4f1"
+    ],
+    "padrao": "Espirais discretas."
+  },
+  "tori_tori_phoenix": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/tori_tori_no_mi_model_phoenix.png",
+    "referencias": [
+      "tori_tori_phoenix_1.png"
+    ],
+    "procedencia": "Fonte visual de fã ou imagem contextual; ver forma para limites de confirmação.",
+    "forma": "Oval verde de gomos como abacaxi com coroa em chamas; o modelo atual aproxima a forma mas não inclui chamas tridimensionais.",
+    "caule": "Coroa de folhas e chamas azuladas.",
+    "cores": [
+      "#67a64e",
+      "#b6d57d"
+    ],
+    "padrao": "Espiral em cada gomo verde.",
+    "fonte_contexto": "https://onepiece.fandom.com/wiki/Tori_Tori_no_Mi%2C_Model%3A_Phoenix"
+  },
+  "ushi_ushi_giraffe": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/ushi_ushi_no_mi_model_giraffe.png",
+    "referencias": [
+      "ushi_ushi_giraffe_1.png"
+    ],
+    "procedencia": "Fonte visual de fã ou imagem contextual; ver forma para limites de confirmação.",
+    "forma": "Cacho vermelho de bananas compridas, conforme descrição da wiki.",
+    "caule": "Caule verde-claro.",
+    "cores": [
+      "#a23855",
+      "#db7792"
+    ],
+    "padrao": "Espirais nos segmentos alongados.",
+    "fonte_contexto": "https://onepiece.fandom.com/wiki/Ushi_Ushi_no_Mi%2C_Model%3A_Giraffe"
+  },
+  "zushi_zushi": {
+    "fonte": "https://devilfruit.io/assets/images/fruits/zushi_zushi_no_mi.png",
+    "referencias": [
+      "zushi_zushi_1.png"
+    ],
+    "procedencia": "Fonte visual de fã ou imagem contextual; ver forma para limites de confirmação.",
+    "forma": "Ilustração de fã mostra esfera rosa-amarronzada e gomos; aparência oficial não confirmada nesta pesquisa.",
+    "caule": "Haste curva rosada.",
+    "cores": [
+      "#a87871",
+      "#e4b3a8"
+    ],
+    "padrao": "Espirais em gomos."
+  }
+}

@@ -1,0 +1,397 @@
+extends SceneTree
+## Sonda de MEDICAO da Bara Bara (auditoria onda 1). Nao altera o projeto.
+## Saida: linhas "MEAS ..." parseaveis.
+const BARA := preload("res://src/combat/BaraController.gd")
+const HOME := Vector3(0, 101, 0)
+const DUMMY_Y := 100.81
+var actor: Node3D
+var dummy: Node3D
+var token := 5000
+var far := HOME + Vector3(25, -0.19, 25)
+
+func out(s: String) -> void:
+	print("MEAS " + s)
+
+func f3(v: Vector3) -> String:
+	return "(%.3f,%.3f,%.3f)" % [v.x, v.y, v.z]
+
+func _init() -> void:
+	await process_frame
+	create_timer(900.0, true, false, true).timeout.connect(func():
+		print("MEAS TIMEOUT")
+		quit(3))
+	var flow := root.get_node("GameFlow")
+	flow.dummies["TrainingDummy"] = true
+	flow.dummies["AutoDummy"] = false
+	flow.start_singleplayer()
+	await create_timer(2).timeout
+	actor = get_first_node_in_group("player")
+	dummy = get_first_node_in_group("dummy")
+	out("boss_nodes=%d players=%d dummies=%d" % [get_nodes_in_group("boss").size(), get_nodes_in_group("player").size(), get_nodes_in_group("dummy").size()])
+	if actor == null or dummy == null:
+		out("FATAL sem actor/dummy")
+		quit(1)
+		return
+	actor.set_physics_process(false)
+	dummy.set_physics_process(false)
+	actor.equip_fruit("bara_bara")
+	actor.combat_mode = "fruit"
+	box(Vector3(0, 99.7, 0), Vector3(60, 0.6, 60))
+	out("physics_hz=%d ENERGY_SKILL=%s max_health=%s" % [Engine.physics_ticks_per_second, str(actor.ENERGY_SKILL), str(actor.max_health)])
+	await reset(far, false)
+	var b = BARA.binding_for(actor)
+	out("binding_valid=%s model=%s" % [str(b.valid), str(actor.get("_char_model"))])
+	out("socket_L=%s socket_R=%s actor=%s" % [f3(b.socket(0).origin), f3(b.socket(1).origin), f3(actor.global_position)])
+
+	# ---------------- A: tempos em vazio (60 Hz) ----------------
+	var traj := {}
+	for slot in ["Z", "X", "V", "C"]:
+		await reset(far, false)
+		var r: Dictionary = await trace(slot, Vector3.FORWARD, "whiff60_" + slot)
+		traj[slot] = r.traj
+	# cooldown/energia no aceite
+	for slot in ["Z", "X", "C", "V"]:
+		await reset(far, false)
+		var e0: float = actor.energy
+		request(slot)
+		out("accept slot=%s energy_paid=%.1f cooldown=%.2f server_next_ms_delta=%d" % [slot, e0 - actor.energy, float(actor._fruit_cooldowns.get(slot, -1.0)), int(actor._server_cast_next_ms.get("fruit/bara_bara/" + slot, 0)) - Time.get_ticks_msec()])
+		# pedido imediato repetido
+		var e1: float = actor.energy
+		token += 1
+		actor._do_server_cast(slot, Vector3.FORWARD, actor.global_position, 0.0, token, "fruit", "bara_bara")
+		out("repeat_during_action slot=%s energy_paid_again=%.1f feedback=%s" % [slot, e1 - actor.energy, str(actor.get_meta("bara_feedback", ""))])
+		actor.clear_spawned_skills()
+		await frames(3)
+
+	# ---------------- B: alvo parado a 3 m, dummy com fisica ----------------
+	for slot in ["Z", "X", "V"]:
+		await reset(HOME + Vector3.FORWARD * 3 + Vector3(0, DUMMY_Y - HOME.y, 0), true)
+		await trace(slot, Vector3.FORWARD, "hit3m_" + slot)
+	# V contra alvo a 3 m em 30/120 Hz, e whiff em 30/120 Hz (relancamento)
+	for hz in [30, 120]:
+		Engine.physics_ticks_per_second = hz
+		await reset(HOME + Vector3.FORWARD * 3 + Vector3(0, DUMMY_Y - HOME.y, 0), true)
+		await trace("V", Vector3.FORWARD, "hit3m_%dHz_V" % hz)
+		await reset(far, false)
+		await trace("V", Vector3.FORWARD, "whiff%dHz_V" % hz)
+	Engine.physics_ticks_per_second = 60
+	await frames(2)
+	# alvo a 1,5 m (contato mais cedo -> retorno mais cedo)
+	await reset(HOME + Vector3.FORWARD * 1.5 + Vector3(0, DUMMY_Y - HOME.y, 0), true)
+	await trace("V", Vector3.FORWARD, "hit1p5m_V")
+	# X com as duas maos no mesmo alvo (ponto de convergencia 6 m) -> teto
+	await reset(HOME + Vector3.FORWARD * 6 + Vector3(0, DUMMY_Y - HOME.y, 0), false)
+	await trace("X", Vector3.FORWARD, "hit6m_X")
+
+	# ---------------- C: alcance maximo e raio lateral ----------------
+	for d in [6.5, 7.0, 7.25, 7.5, 7.75, 8.0]:
+		var hp: float = await single_hit("Z", HOME + Vector3.FORWARD * d + Vector3(0, DUMMY_Y - HOME.y, 0))
+		out("reach slot=Z dummy_center_forward=%.2f damage=%.0f" % [d, hp])
+	for d in [7.5, 8.0, 8.25, 8.5, 8.75, 9.0]:
+		var hp: float = await single_hit("V", HOME + Vector3.FORWARD * d + Vector3(0, DUMMY_Y - HOME.y, 0))
+		out("reach slot=V dummy_center_forward=%.2f damage=%.0f" % [d, hp])
+	for d in [5.5, 6.0, 6.5, 6.75, 7.0]:
+		var hp: float = await single_hit("X", HOME + Vector3.FORWARD * d + Vector3(0, DUMMY_Y - HOME.y, 0))
+		out("reach slot=X dummy_center_forward=%.2f damage=%.0f" % [d, hp])
+	await radius_bisect("Z", 1, 3.5, 0.3, 2.0, traj["Z"])
+	await radius_bisect("X", 1, 3.0, 1.0, 3.0, traj["X"])
+	await radius_bisect("V", 0, 3.0, 0.0, 2.0, traj["V"])
+
+	# ---------------- D: canhao C ----------------
+	for aim in [Vector3.FORWARD, Vector3(0, 0.15, -1).normalized(), Vector3(0, -0.12, -1).normalized()]:
+		await reset(far, false)
+		await trace("C", aim, "range_C_aim%s" % f3(aim))
+	# fixture do teste que falha: dummy em HOME+(2,-0.2,-16), mira (0,-0.12,-1)
+	await reset(HOME + Vector3(2, -0.2, -16), false)
+	await trace("C", Vector3(0, -0.12, -1).normalized(), "testfixture_C")
+	out("testfixture_C dummy_health=%.0f" % dummy.health)
+	# raio da explosao contra parede a 8 m
+	var wall := box(HOME + Vector3(0, 0, -8.2), Vector3(24, 6, 0.4))
+	await frames(2)
+	await reset(far, false)
+	var rc: Dictionary = await trace("C", Vector3.FORWARD, "wall8m_C")
+	var P: Vector3 = rc.explosion
+	var lo := 3.0
+	var hi := 5.0
+	for i in 8:
+		var mid := (lo + hi) * 0.5
+		var dmg: float = await c_hit_at(Vector3(P.x + mid, DUMMY_Y, P.z))
+		out("blast_bisect r_center=%.3f damage=%.0f" % [mid, dmg])
+		if dmg > 0: lo = mid
+		else: hi = mid
+	out("blast_radius center_distance_hit<=%.3f miss>=%.3f dummy_box_halfwidth=0.5 -> sphere_radius_to_box_face~%.3f..%.3f" % [lo, hi, lo - 0.5, hi - 0.5])
+	# vertical: alvo abaixo? (so centro do dummy no plano)
+	wall.queue_free()
+	await frames(2)
+	# autodano: parede colada e mira para o chao, com fisica do ator ligada
+	for kase in ["wall1p5", "floor_down", "wall3"]:
+		var w: Node3D = null
+		if kase == "wall1p5": w = box(HOME + Vector3(0, 0, -1.7), Vector3(6, 6, 0.4))
+		if kase == "wall3": w = box(HOME + Vector3(0, 0, -3.2), Vector3(6, 6, 0.4))
+		await frames(2)
+		await reset(far, false)
+		actor.set_physics_process(true)
+		await frames(20)
+		actor.health = actor.max_health
+		var p0: Vector3 = actor.global_position
+		var aim := Vector3.FORWARD if kase != "floor_down" else Vector3(0, -0.8, -0.6).normalized()
+		var r2: Dictionary = await trace("C", aim, "self_" + kase)
+		await frames(10)
+		out("self_damage case=%s explosion=%s dist_to_actor=%.2f actor_health_loss=%.1f actor_disp=%s actor_vel=%s" % [kase, f3(r2.explosion), r2.explosion.distance_to(p0), actor.max_health - actor.health, f3(actor.global_position - p0), f3(actor.velocity)])
+		actor.set_physics_process(false)
+		if w: w.queue_free()
+		await frames(2)
+
+	# ---------------- E: M1 com maos fora ----------------
+	await m1_probe()
+
+	print("MEAS DONE")
+	current_scene.queue_free()
+	await create_timer(0.2).timeout
+	quit(0)
+
+# ---------------------------------------------------------------------------
+func trace(slot: String, aim: Vector3, label: String) -> Dictionary:
+	token += 1
+	actor._do_server_cast(slot, aim, actor.global_position, 0.0, token, "fruit", "bara_bara")
+	var e = BARA.action_for(actor)
+	var res := {"traj": [[], []], "explosion": Vector3.INF, "hits": []}
+	if e == null:
+		out("%s REJECTED feedback=%s" % [label, str(actor.get_meta("bara_feedback", ""))])
+		return res
+	var prev_states := ["attached", "attached"]
+	var prev_time := [0.0, 0.0]
+	var last_elapsed := 0.0
+	var hp_prev: float = dummy.health
+	var casting_prev := true
+	var ball_prev := false
+	var emitted_prev := 0
+	var hits := []
+	var hz := Engine.physics_ticks_per_second
+	while true:
+		await physics_frame
+		if not is_instance_valid(e) or e.is_queued_for_deletion():
+			out("%s hz=%d END last_elapsed=%.3f" % [label, hz, last_elapsed])
+			break
+		var el: float = e.elapsed
+		last_elapsed = el
+		for side in e.hands.size():
+			var h: Dictionary = e.hands[side]
+			var st := str(h.state)
+			var sock: Vector3 = e.binding.socket(side).origin
+			var o: Vector3 = h.transform.origin
+			if st != "attached":
+				res.traj[side].append(o)
+			var relaunch: bool = st == "outbound" and float(h.time) < float(prev_time[side]) and prev_states[side] == "outbound"
+			if st != prev_states[side] or relaunch:
+				out("%s hz=%d t=%.3f hand=%d %s->%s dist_from_socket=%.2f dist_from_actor=%.2f pos=%s" % [label, hz, el, side, prev_states[side], st, o.distance_to(sock), (o - actor.global_position).length(), f3(o)])
+				if st == "outbound" and prev_states[side] == "returning":
+					out("%s RELAUNCH_WHILE_RETURNING hz=%d t=%.3f hand=%d prev_dist_from_socket=%.2f" % [label, hz, el, side, float(res.get("lastdist%d" % side, -1.0))])
+				if relaunch:
+					out("%s RELAUNCH_WHILE_OUTBOUND hz=%d t=%.3f hand=%d" % [label, hz, el, side])
+			res["lastdist%d" % side] = o.distance_to(sock)
+			prev_states[side] = st
+			prev_time[side] = float(h.time)
+		var casting: bool = actor.get_meta("is_casting", false)
+		if casting != casting_prev:
+			out("%s hz=%d t=%.3f is_casting=%s" % [label, hz, el, str(casting)])
+			casting_prev = casting
+		if slot == "C":
+			if e._emitted != emitted_prev:
+				out("%s hz=%d t=%.3f C_fired ball_start=%s" % [label, hz, el, f3(e._ball_start)])
+				emitted_prev = e._emitted
+			if e._ball_active != ball_prev:
+				if not e._ball_active:
+					res.explosion = e._ball_position
+					var hd := Vector2(e._ball_position.x - actor.global_position.x, e._ball_position.z - actor.global_position.z).length()
+					out("%s hz=%d t=%.3f C_explode at=%s horiz_dist=%.2f height_above_floor=%.2f" % [label, hz, el, f3(e._ball_position), hd, e._ball_position.y - 100.0])
+				ball_prev = e._ball_active
+		if dummy.health < hp_prev:
+			var amount: float = hp_prev - dummy.health
+			var hs: float = dummy._hitstun_timer
+			var pose_t := float(dummy.get_meta("_dano_pose_t")) if dummy.has_meta("_dano_pose_t") else -1.0
+			var hands_s := ""
+			for side in e.hands.size():
+				hands_s += "%d:%s " % [side, str(e.hands[side].state)]
+			out("%s HIT hz=%d t=%.3f dmg=%.1f total=%.1f dummy_hitstun_timer=%.3f dummy_pose_t=%.3f hitstop=%.3f pending_kb=%s dummy_pos=%s hands=[%s]" % [label, hz, el, amount, 2048.0 - dummy.health, hs, pose_t, float(dummy._hitstop_timer), f3(dummy._pending_knockback), f3(dummy.global_position), hands_s])
+			hits.append({"t": el, "pos": dummy.global_position})
+			hp_prev = dummy.health
+	res.hits = hits
+	# pos-acao: deslocamento e fim do hitstun do dummy
+	if dummy.is_physics_processing() and hits.size() > 0:
+		var p_first: Vector3 = hits[0].pos
+		var t_wait := 0.0
+		var hs_end := -1.0
+		var maxv := 0.0
+		while t_wait < 1.2:
+			await physics_frame
+			t_wait += 1.0 / Engine.physics_ticks_per_second
+			maxv = maxf(maxv, Vector2(dummy.velocity.x, dummy.velocity.z).length())
+			if hs_end < 0 and dummy._hitstun_timer <= 0.0: hs_end = t_wait
+		out("%s POST total_damage=%.1f hits=%d dummy_disp_from_first_hit=%s horiz=%.2f max_planar_speed_post=%.2f" % [label, 2048.0 - dummy.health, hits.size(), f3(dummy.global_position - p_first), Vector2(dummy.global_position.x - p_first.x, dummy.global_position.z - p_first.z).length(), maxv])
+		for i in range(1, hits.size()):
+			var a: Vector3 = hits[i - 1].pos
+			var bb: Vector3 = hits[i].pos
+			out("%s disp_between_hit%d_and_hit%d horiz=%.3f" % [label, i, i + 1, Vector2(bb.x - a.x, bb.z - a.z).length()])
+	out("%s is_casting_after=%s hitboxes_left=%d" % [label, str(actor.get_meta("is_casting", false)), get_nodes_in_group("hitbox").size()])
+	return res
+
+func single_hit(slot: String, at: Vector3) -> float:
+	await reset(at, false)
+	request(slot)
+	var e = BARA.action_for(actor)
+	while is_instance_valid(e) and not e.is_queued_for_deletion():
+		await physics_frame
+	await frames(2)
+	return 2048.0 - dummy.health
+
+func c_hit_at(at: Vector3) -> float:
+	await reset(at, false)
+	request("C")
+	var e = BARA.action_for(actor)
+	var seen_active := false
+	while is_instance_valid(e) and not e.is_queued_for_deletion():
+		await physics_frame
+		if is_instance_valid(e):
+			if e._ball_active: seen_active = true
+			elif seen_active: break
+	await frames(3)
+	var d: float = 2048.0 - dummy.health
+	actor.clear_spawned_skills()
+	await frames(2)
+	return d
+
+## Bisseccao do deslocamento lateral (+X) do centro do dummy, e raio efetivo
+## calculado contra a trajetoria registrada da mao `side` no ensaio em vazio.
+func radius_bisect(slot: String, side: int, fwd: float, lo: float, hi: float, trj: Array) -> void:
+	var sgn := 1.0 if side == 1 else -1.0
+	# garante bracket: lo acerta, hi erra
+	var dlo: float = await single_hit(slot, HOME + Vector3.FORWARD * fwd + Vector3(sgn * lo, DUMMY_Y - HOME.y, 0))
+	var dhi: float = await single_hit(slot, HOME + Vector3.FORWARD * fwd + Vector3(sgn * hi, DUMMY_Y - HOME.y, 0))
+	out("radius %s side=%d fwd=%.2f bracket lo=%.2f dmg=%.0f hi=%.2f dmg=%.0f" % [slot, side, fwd, lo, dlo, hi, dhi])
+	if not (dlo > 0 and dhi == 0):
+		out("radius %s bracket_invalid" % slot)
+		return
+	for i in 7:
+		var mid := (lo + hi) * 0.5
+		var d: float = await single_hit(slot, HOME + Vector3.FORWARD * fwd + Vector3(sgn * mid, DUMMY_Y - HOME.y, 0))
+		if d > 0: lo = mid
+		else: hi = mid
+	var pts: Array = trj[side]
+	var dist_lo := path_box_distance(pts, HOME + Vector3.FORWARD * fwd + Vector3(sgn * lo, DUMMY_Y - HOME.y, 0))
+	var dist_hi := path_box_distance(pts, HOME + Vector3.FORWARD * fwd + Vector3(sgn * hi, DUMMY_Y - HOME.y, 0))
+	out("radius %s side=%d fwd=%.2f lateral_hit<=%.3f miss>=%.3f path_to_box_gap_at_hit=%.3f at_miss=%.3f -> effective_hand_radius in [%.3f, %.3f] (samples=%d)" % [slot, side, fwd, lo, hi, dist_lo, dist_hi, dist_lo, dist_hi, pts.size()])
+
+func path_box_distance(pts: Array, center: Vector3) -> float:
+	var best := INF
+	var half := Vector3(0.5, 0.8, 0.5)
+	for i in range(1, pts.size()):
+		var a: Vector3 = pts[i - 1]
+		var b: Vector3 = pts[i]
+		for k in 21:
+			var p := a.lerp(b, k / 20.0) - center
+			var q := Vector3(clampf(p.x, -half.x, half.x), clampf(p.y, -half.y, half.y), clampf(p.z, -half.z, half.z))
+			best = minf(best, p.distance_to(q))
+	return best
+
+func m1_probe() -> void:
+	actor.set_physics_process(true)
+	await reset(far, false)
+	await frames(30)
+	var yaw: float = actor._yaw
+	var facing := Vector3(-sin(yaw), 0, -cos(yaw))
+	out("m1 actor_yaw=%.3f facing_guess=%s" % [yaw, f3(facing)])
+	var front := actor.global_position + Vector3.FORWARD * 1.1
+	front.y = DUMMY_Y
+	# controle: sem Bara
+	var ctrl: float = await m1_once(front, "", 0.0, Vector3.BACK, "control_front")
+	if ctrl <= 0.0:
+		var back := actor.global_position + Vector3.BACK * 1.1
+		back.y = DUMMY_Y
+		ctrl = await m1_once(back, "", 0.0, Vector3.BACK, "control_back")
+		if ctrl > 0.0: front = back
+	var away := (actor.global_position - front)
+	away.y = 0
+	away = away.normalized()
+	await m1_once(front, "Z", 0.10, away, "Z_windup_t0.10")
+	await m1_once(front, "Z", 0.30, away, "Z_outbound_t0.30")
+	await m1_once(front, "Z", 0.68, away, "Z_returning_t0.68")
+	await m1_once(front, "X", 0.60, away, "X_outbound_t0.60")
+	await m1_once(front, "V", 0.70, away, "V_hands_out_t0.70")
+	await m1_once(front, "V", 1.40, away, "V_hands_out_t1.40")
+	actor.set_physics_process(false)
+
+func m1_once(target: Vector3, slot: String, at: float, aim: Vector3, label: String) -> float:
+	await reset(target, false)
+	actor.set_physics_process(true)
+	# espera o FSM voltar ao Idle e a janela do combo expirar
+	var guard := 0
+	while guard < 240 and actor._fsm.state.name != "Idle":
+		await physics_frame
+		guard += 1
+	var e = null
+	if slot != "":
+		request(slot, aim)
+		e = BARA.action_for(actor)
+		while is_instance_valid(e) and float(e.elapsed) < at:
+			await physics_frame
+	var hands_s := ""
+	if is_instance_valid(e):
+		for side in e.hands.size(): hands_s += "%d:%s " % [side, str(e.hands[side].state)]
+	var hp0: float = dummy.health
+	actor._request_melee()
+	var states := {}
+	var passo_seen := -1
+	var hitboxes_max := 0
+	for i in 45:
+		await physics_frame
+		states[str(actor._fsm.state.name)] = true
+		if actor.get("_melee") and int(actor._melee._passo_em_curso) >= 0: passo_seen = int(actor._melee._passo_em_curso)
+		hitboxes_max = maxi(hitboxes_max, get_nodes_in_group("hitbox").size())
+	var dmg: float = hp0 - dummy.health
+	var alive: bool = is_instance_valid(e) and not e.is_queued_for_deletion()
+	out("m1 case=%s bara_elapsed_at_click=%.3f hands=[%s] fsm_states=%s melee_step=%d hitbox_nodes_max=%d dummy_damage=%.1f bara_action_still_alive=%s" % [label, float(e.elapsed) if is_instance_valid(e) else -1.0, hands_s, str(states.keys()), passo_seen, hitboxes_max, dmg, str(alive)])
+	actor.clear_spawned_skills()
+	await frames(40)
+	return dmg
+
+func frames(n: int) -> void:
+	for i in n: await physics_frame
+
+func reset(dummy_at: Vector3, dummy_physics: bool) -> void:
+	actor.clear_spawned_skills()
+	await process_frame
+	actor.global_position = HOME
+	actor.velocity = Vector3.ZERO
+	actor.net_velocity = Vector3.ZERO
+	actor.health = actor.max_health
+	actor.energy = actor.max_energy
+	actor._fruit_cooldowns.clear()
+	actor._server_cast_next_ms.clear()
+	actor._fruit_damage_lock_timer = 0.0
+	actor._trava_pos_fruta = 0.0
+	actor.set_meta("is_casting", false)
+	dummy.set_physics_process(dummy_physics)
+	dummy.global_position = dummy_at
+	dummy.velocity = Vector3.ZERO
+	dummy._hitstun_timer = 0.0
+	dummy._hitstop_timer = 0.0
+	dummy._pending_knockback = Vector3.ZERO
+	dummy.health = 2048.0
+	await physics_frame
+	await physics_frame
+
+func request(slot: String, direction: Vector3 = Vector3.FORWARD) -> void:
+	token += 1
+	actor._do_server_cast(slot, direction, actor.global_position, 0.0, token, "fruit", "bara_bara")
+
+func box(at: Vector3, size: Vector3) -> Node3D:
+	var body := StaticBody3D.new()
+	var col := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = size
+	col.shape = shape
+	body.add_child(col)
+	current_scene.add_child(body)
+	body.global_position = at
+	return body

@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dn01u34wutqtf"
-path="res://.godot/imported/frog_11frogtexture.jpg-acea5e3c5364dabc7d0800f984eadbcd.ctex"
+path.bptc="res://.godot/imported/frog_11frogtexture.jpg-acea5e3c5364dabc7d0800f984eadbcd.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "d6f74c786e31843b670dc0ae1be31f05"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/frog_11frogtexture.jpg"
-dest_files=["res://.godot/imported/frog_11frogtexture.jpg-acea5e3c5364dabc7d0800f984eadbcd.ctex"]
+dest_files=["res://.godot/imported/frog_11frogtexture.jpg-acea5e3c5364dabc7d0800f984eadbcd.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

@@ -1,5 +1,40 @@
 # Customização — acessórios e cor
 
+> ## 🔒 BLOQUEADA desde 2026-09-08 — personagem padronizado
+>
+> Pedido do dono: **o modelo do personagem vai ser atualizado**, então até lá
+> todo mundo joga com o mesmo boneco — **sem acessório, raça Humano, corpo e
+> cabelo cinza** (`Color(0.55, 0.55, 0.57)`).
+>
+> **O interruptor é um só:** `Visual.PADRONIZADO`, em
+> [`src/customizacao/Visual.gd`](../src/customizacao/Visual.gd). Vire para
+> `false` e o sistema inteiro volta como estava.
+>
+> **Nada foi apagado.** `Visual.salvar()` fica desligado enquanto a trava vale,
+> justamente para não gravar o boneco forçado por cima do personagem que o
+> jogador montou — o `user://visual.cfg` dele continua lá, intacto.
+>
+> **Por que a trava mora no `Visual` e não na tela:** `Visual` é o ponto único
+> por onde a prévia do menu **e** o modelo do Player passam. Bloquear só no menu
+> deixaria a partida continuar montando o personagem salvo — que é exatamente o
+> defeito de 2026-08-29 que esta classe veio consertar. O botão do menu fica
+> visível e esmaecido, dizendo "EM ATUALIZAÇÃO"; sumir com ele faria o jogador
+> achar que o recurso foi removido.
+>
+> **A precedência importa:** `aplicar()` força `raca = "humano"` **antes** de
+> pintar, porque `cor_do_corpo()` dá prioridade à pele da raça — sem isso, um
+> "oni" vindo do disco pintaria o corpo de vermelho e o cinza nunca apareceria.
+>
+> ⚠️ **Consequência em partida:** a cor de time deixa de distinguir jogadores,
+> porque o cinza sobrescreve o `_tingir_modelo` do Player. É efeito direto do
+> pedido, não descuido.
+>
+> **Os testes:** `medir_customizacao.gd` fecha em **126 conferem / 0 divergem /
+> 7 pulados**. As sete afirmam o comportamento que a trava desliga — ficam
+> marcadas `⏭` com o motivo, e voltam sozinhas quando `PADRONIZADO` virar
+> `false`. Contá-las como falha faria a próxima sessão caçar regressão que não
+> existe.
+
 Menu novo no menu inicial, pedido pelo dono em 2026-08-27.
 
 - [`src/ui/CustomizacaoMenu.gd`](../src/ui/CustomizacaoMenu.gd) — a tela

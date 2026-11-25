@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <!-- Pistola de pederneira -->
+  <g stroke="#1b1712" stroke-width="2" stroke-linejoin="round">
+    <path d="M6 16 H38 V22 H6 Z" fill="#8a929a"/>
+    <path d="M24 22 H34 L30 26 L22 26 Z" fill="#6d747b"/>
+    <path d="M26 22 L34 22 L38 40 L28 40 L24 28 Z" fill="#7a4a28"/>
+    <circle cx="37" cy="14" r="2.6" fill="#c9a24a"/>
+    <path d="M26 30 q-4 0 -4 4" fill="none" stroke-width="1.8"/>
+  </g>
+</svg>

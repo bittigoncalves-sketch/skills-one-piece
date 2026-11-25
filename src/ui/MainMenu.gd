@@ -8,13 +8,14 @@ extends Control
 var _open := false
 var _hud_ref: Node = null
 
-const COLOR_BG := Color(0.98, 0.98, 0.98, 1.0)
-const COLOR_TEXT_DARK := Color(0.1, 0.1, 0.1, 1.0)
-const COLOR_TEXT_LIGHT := Color(0.5, 0.5, 0.5, 1.0)
-const COLOR_BLUE := Color(0.2, 0.5, 1.0, 1.0)
-const COLOR_BORDER := Color(0.85, 0.85, 0.85, 1.0)
-const COLOR_CARD_BG := Color(1.0, 1.0, 1.0, 1.0)
-const COLOR_CARD_HOVER := Color(0.95, 0.96, 0.98, 1.0)
+## Paleta: a clara de sempre; com o tema do Minecraft (12/11/2026) vira a das telas de opções — fundo grafite, cartões escuros, texto branco.
+static var COLOR_BG := Color(0.18, 0.18, 0.18, 1.0) if GuiMinecraft.disponivel() else Color(0.98, 0.98, 0.98, 1.0)
+static var COLOR_TEXT_DARK := Color(0.88, 0.88, 0.88, 1.0) if GuiMinecraft.disponivel() else Color(0.1, 0.1, 0.1, 1.0)
+static var COLOR_TEXT_LIGHT := Color(0.63, 0.63, 0.63, 1.0) if GuiMinecraft.disponivel() else Color(0.5, 0.5, 0.5, 1.0)
+static var COLOR_BLUE := Color(0.2, 0.5, 1.0, 1.0)
+static var COLOR_BORDER := Color(0.0, 0.0, 0.0, 1.0) if GuiMinecraft.disponivel() else Color(0.85, 0.85, 0.85, 1.0)
+static var COLOR_CARD_BG := Color(0.12, 0.12, 0.12, 1.0) if GuiMinecraft.disponivel() else Color(1.0, 1.0, 1.0, 1.0)
+static var COLOR_CARD_HOVER := Color(0.22, 0.22, 0.22, 1.0) if GuiMinecraft.disponivel() else Color(0.95, 0.96, 0.98, 1.0)
 
 var _device_options: Array = []
 var _online_input: LineEdit
@@ -24,6 +25,8 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_ui()
+	GuiMinecraft.limpar_emojis(self)
+	MonitorDeCarga.marco("menu principal montado (%s)" % ("cena principal" if _hud_ref == null else "menu em jogo"))
 	if _hud_ref == null:
 		# Estamos na cena principal (MainMenu.tscn)
 		call_deferred("open_menu")
@@ -121,9 +124,7 @@ func _build_ui() -> void:
 	left_vbox.add_theme_constant_override("separation", 10)
 	center_hbox.add_child(left_vbox)
 
-	var btn_single = _create_main_button("JOGAR SINGLEPLAYER", "COMECE SUA AVENTURA", "☠️", true)
-	btn_single.gui_input.connect(_on_btn_input.bind(btn_single, _on_singleplayer_pressed))
-	left_vbox.add_child(btn_single)
+	left_vbox.add_child(_create_play_card())
 
 	var btn_online = _create_main_button("ONLINE", "CRIE UMA SALA OU ENTRE POR ID", "🌐", false)
 	var online_vbox_parent: VBoxContainer = btn_online.get_meta("content_vbox")
@@ -210,8 +211,23 @@ func _build_ui() -> void:
 	left_vbox.add_child(btn_online)
 	_online_input.text_submitted.connect(func(_t): _on_join_pressed())
 
-	var btn_custom = _create_main_button("CUSTOMIZAÇÃO", "ACESSÓRIOS E COR DO PERSONAGEM", "🎩", true)
-	btn_custom.gui_input.connect(_on_btn_input.bind(btn_custom, _on_customizacao_pressed))
+	# ⚠️ CUSTOMIZAÇÃO BLOQUEADA enquanto o modelo do personagem é atualizado
+	# (2026-09-08). O botão continua na tela, mas dizendo POR QUE não abre — some
+	# do menu seria pior: o jogador acharia que o recurso foi removido.
+	#
+	# Quem manda é `Visual.PADRONIZADO`, não este arquivo. A trava real está lá,
+	# no ponto por onde o jogo TAMBÉM passa; aqui é só a porta da frente. Ligar
+	# só aqui deixaria a partida continuar montando o personagem salvo.
+	var btn_custom = _create_main_button(
+		"CUSTOMIZAÇÃO",
+		"EM ATUALIZAÇÃO — PERSONAGEM PADRÃO POR ENQUANTO" if Visual.PADRONIZADO \
+			else "ACESSÓRIOS E COR DO PERSONAGEM",
+		"🎩", true)
+	if Visual.PADRONIZADO:
+		btn_custom.modulate = Color(1, 1, 1, 0.45)
+		btn_custom.mouse_default_cursor_shape = Control.CURSOR_FORBIDDEN
+	else:
+		btn_custom.gui_input.connect(_on_btn_input.bind(btn_custom, _on_customizacao_pressed))
 	left_vbox.add_child(btn_custom)
 
 	var btn_config = _create_main_button("CONFIGURAÇÕES", "AJUSTE AS OPÇÕES DO JOGO", "⚙️", true)
@@ -267,6 +283,13 @@ func _build_ui() -> void:
 	lbl_dev_info.add_theme_color_override("font_color", COLOR_TEXT_LIGHT)
 	right_vbox.add_child(lbl_dev_info)
 
+	var builder := _play_button("SKILLS BUILDER", Color(0.13, 0.35, 0.31), _on_skills_builder_pressed)
+	builder.name = "SkillsBuilder"
+	builder.tooltip_text = "Criar, editar e testar habilidades em uma arena própria"
+	builder.custom_minimum_size.y = 44
+	builder.visible = SkillsPublicadas.ativo()      # desativado por padrão (27/10/2026)
+	right_vbox.add_child(builder)
+
 	# --- RODAPÉ ---
 	var footer := Control.new()
 	footer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -287,9 +310,11 @@ func _build_ui() -> void:
 	social_hbox.add_theme_constant_override("separation", 15)
 	footer.add_child(social_hbox)
 
-	social_hbox.add_child(_create_social_btn("👾")) # Discord
-	social_hbox.add_child(_create_social_btn("🐙")) # GitHub
-	social_hbox.add_child(_create_social_btn("📖")) # Wiki/Docs
+	# Com o tema do Minecraft a fonte pixel não tem emoji: os botões levam uma sigla de texto.
+	var vanilla := GuiMinecraft.disponivel()
+	social_hbox.add_child(_create_social_btn("DC" if vanilla else "👾")) # Discord
+	social_hbox.add_child(_create_social_btn("GH" if vanilla else "🐙")) # GitHub
+	social_hbox.add_child(_create_social_btn("?" if vanilla else "📖")) # Wiki/Docs
 
 	# --- BONECOS DE TREINO (canto inferior direito, logo acima do SAIR) ---
 	#
@@ -339,6 +364,69 @@ func _build_ui() -> void:
 	btn_exit.add_theme_stylebox_override("hover", _hover_style(exit_style))
 	btn_exit.pressed.connect(_on_quit_pressed)
 	footer.add_child(btn_exit)
+
+
+## JOGAR — os modos de um jogador e o editor de mapa num card só (2026-09-14,
+## escolha do dono).
+##
+## ⚠️ MEDIDO, NÃO ESCOLHIDO A OLHO. Sem o Modo História o menu somava 716 px numa
+## tela de 720; um card a mais (99 px + 10 de espaço) levou a 825 e empurrou
+## CONFIGURAÇÕES para fora. Empilhar os dois botões dentro do card dava ~185 px
+## e também não cabia. Lado a lado, o card tem a altura do botão antigo.
+## Quem acrescentar outro modo aqui: rode `tools/dev_tests/medir_menu_principal.gd`.
+func _create_play_card() -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.name = "CardJogar"
+	var style := StyleBoxFlat.new()
+	style.bg_color = COLOR_CARD_BG
+	style.border_color = COLOR_BORDER
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(8)
+	style.shadow_color = Color(0, 0, 0, 0.05)
+	style.shadow_size = 10
+	panel.add_theme_stylebox_override("panel", style)
+
+	var m := MarginContainer.new()
+	for lado in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
+		m.add_theme_constant_override(lado, 18 if lado.ends_with("left") or lado.ends_with("right") else 16)
+	panel.add_child(m)
+
+	var linha := HBoxContainer.new()
+	linha.add_theme_constant_override("separation", 8)
+	m.add_child(linha)
+	# Azul e vermelho do logo: os dois modos ficam distintos entre si e do azul
+	# mais claro do CRIAR SERVIDOR, logo abaixo. O editor é ferramenta, não modo de
+	# jogo: cinza-escuro, para não disputar atenção com os dois.
+	linha.add_child(_play_button("☠️ SINGLEPLAYER", Color(0.10, 0.37, 0.71), _on_singleplayer_pressed))
+	linha.add_child(_play_button("📜 MODO HISTÓRIA", Color(0.75, 0.11, 0.16), _on_story_pressed))
+	linha.add_child(_play_button("✏️ EDITOR", Color(0.22, 0.24, 0.28), _on_map_editor_pressed))
+	return panel
+
+
+func _play_button(texto: String, cor: Color, ao_clicar: Callable) -> Button:
+	var botao := Button.new()
+	botao.text = texto
+	botao.custom_minimum_size = Vector2(0, 56)
+	botao.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	botao.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var estilo := StyleBoxFlat.new()
+	estilo.bg_color = cor
+	estilo.border_color = cor.darkened(0.25)
+	estilo.set_border_width_all(1)
+	estilo.set_corner_radius_all(6)
+	botao.add_theme_stylebox_override("normal", estilo)
+	# Não usa `_hover_style`: ele troca o fundo por quase-branco, e com texto
+	# branco o rótulo sumiria justamente sob o mouse.
+	var sob_mouse := estilo.duplicate() as StyleBoxFlat
+	sob_mouse.bg_color = cor.lightened(0.15)
+	botao.add_theme_stylebox_override("hover", sob_mouse)
+	botao.add_theme_stylebox_override("pressed", estilo)
+	botao.add_theme_stylebox_override("focus", estilo)
+	botao.add_theme_color_override("font_color", Color(1, 1, 1))
+	botao.add_theme_color_override("font_hover_color", Color(1, 1, 1))
+	botao.add_theme_font_size_override("font_size", 14)
+	botao.pressed.connect(ao_clicar)
+	return botao
 
 
 func _create_main_button(title: String, subtitle: String, icon: String, center_y: bool) -> PanelContainer:
@@ -502,6 +590,15 @@ func _on_device_selected(event: InputEvent, panel: PanelContainer) -> void:
 # --- MODOS (via fachada GameFlow) ---
 func _on_singleplayer_pressed() -> void:
 	GameFlow.start_singleplayer()
+
+func _on_story_pressed() -> void:
+	GameFlow.start_story()
+
+func _on_map_editor_pressed() -> void:
+	GameFlow.start_map_editor()
+
+func _on_skills_builder_pressed() -> void:
+	GameFlow.start_skills_builder()
 
 func _on_create_server_pressed() -> void:
 	# Cria a sala (host). O ID gerado (codifica o IP do host) aparece no HUD do jogo.

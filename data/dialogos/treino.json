@@ -1,0 +1,18 @@
+{
+  "id": "treino",
+  "estados": {
+    "primeira": [
+      {"falante": "Instrutor", "texto": "Todo lutador começa pelo básico. Vamos treinar seus socos?"},
+      {"falante": "Instrutor", "texto": "Acerte a tecla indicada antes que o tempo acabe."},
+      {"falante": "Instrutor", "texto": "Mantenha o foco. Cada acerto conta."}
+    ],
+    "repeticao": [
+      {"falante": "Instrutor", "texto": "De volta ao campo? Vamos aperfeiçoar seus golpes."},
+      {"falante": "Instrutor", "texto": "Observe a tecla e ataque no momento certo."}
+    ],
+    "recusa_nivel": [
+      {"falante": "Instrutor", "texto": "Sua força excede este campo. Não tenho mais o que lhe ensinar aqui."},
+      {"falante": "Instrutor", "texto": "Continue sua jornada e encontre desafios à sua altura."}
+    ]
+  }
+}

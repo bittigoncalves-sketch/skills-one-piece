@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://chpbuc3gt5cpn"
-path="res://.godot/imported/pedra_low-poly+rock+3d+model_basecolor.jpg-eff72528d5af71d2c2a9fd2ddb0ff625.ctex"
+path.bptc="res://.godot/imported/pedra_low-poly+rock+3d+model_basecolor.jpg-eff72528d5af71d2c2a9fd2ddb0ff625.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "867d57bca52e3454a5dd4f25abc1dcc6"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/pedra_low-poly+rock+3d+model_basecolor.jpg"
-dest_files=["res://.godot/imported/pedra_low-poly+rock+3d+model_basecolor.jpg-eff72528d5af71d2c2a9fd2ddb0ff625.ctex"]
+dest_files=["res://.godot/imported/pedra_low-poly+rock+3d+model_basecolor.jpg-eff72528d5af71d2c2a9fd2ddb0ff625.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

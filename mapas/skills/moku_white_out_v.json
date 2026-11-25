@@ -1,0 +1,249 @@
+{
+	"animacao": {
+		"clipe": "smash",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.1
+	},
+	"ativacao": {
+		"andar_segurando": false,
+		"carga": 0.4,
+		"empurrao_carga_max": 1.0,
+		"modo": "Pressionar",
+		"ponto_segurar": 0.4,
+		"repetir": false,
+		"segurar_max": 5.0,
+		"tecla": "V"
+	},
+	"audio": {
+		"som": "Impacto",
+		"tom": 0.8,
+		"volume": -5.0
+	},
+	"camera": {
+		"tremor": 0.6,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 30.0,
+		"exige_alvo": false,
+		"exige_chao": false,
+		"nivel_minimo": 1,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 16.0,
+		"custo": 32.0,
+		"custo_por_segundo": 0.0,
+		"duracao": 2.0,
+		"fim_sobre_alvo": 0.0,
+		"flutuar": false,
+		"inicio_do_fim": -1.0,
+		"intervalo_depois": 0.5,
+		"mirar_no_alvo": false,
+		"parar_no_vazio": false,
+		"recarga": 12.0
+	},
+	"dano": {
+		"atordoamento": 0.5,
+		"critico": 0.0,
+		"duracao_efeito": 2.0,
+		"empurrao": 8.5,
+		"lentidao": 30.0,
+		"multiplicador": 2.0,
+		"tipo": "Vento",
+		"valor": 280.0
+	},
+	"eventos": [
+		{
+			"duracao": 0.45,
+			"habilitado": true,
+			"id": "anim_carga",
+			"inicio": 0.0,
+			"parametros": {
+				"clipe": "bouncing_fight_idle",
+				"intensidade": 1.0,
+				"velocidade": 1.0
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.4,
+			"habilitado": true,
+			"id": "vfx_carga",
+			"inicio": 0.0,
+			"parametros": {
+				"altura": 1.0,
+				"cor": "#dcdde1",
+				"cor_2": "#8395a7",
+				"escala": 1.5,
+				"estilo": "Carga",
+				"frente": 0.0
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 1.5,
+			"habilitado": true,
+			"id": "anim_impacto",
+			"inicio": 0.4,
+			"parametros": {
+				"clipe": "smash",
+				"intensidade": 1.0,
+				"velocidade": 1.2
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.7,
+			"habilitado": true,
+			"id": "som_impacto_massivo",
+			"inicio": 0.42,
+			"parametros": {
+				"som": "Impacto",
+				"tom": 0.8,
+				"volume": -5.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 1.2,
+			"habilitado": true,
+			"id": "vfx_explosao_fumaca",
+			"inicio": 0.42,
+			"parametros": {
+				"altura": 1.0,
+				"cor": "#dcdde1",
+				"cor_2": "#8395a7",
+				"escala": 4.5,
+				"estilo": "Explos\u00e3o",
+				"frente": 0.0
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.8,
+			"habilitado": true,
+			"id": "vfx_anel_onda",
+			"inicio": 0.45,
+			"parametros": {
+				"altura": 0.5,
+				"cor": "#dcdde1",
+				"escala": 5.0,
+				"estilo": "Anel",
+				"frente": 0.0
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.8,
+			"habilitado": true,
+			"id": "som_vento_onda",
+			"inicio": 0.45,
+			"parametros": {
+				"som": "Vento",
+				"tom": 0.85,
+				"volume": -6.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.6,
+			"habilitado": true,
+			"id": "hitbox_onda_360",
+			"inicio": 0.44,
+			"parametros": {
+				"altura": 3.0,
+				"forma": "Esfera",
+				"largura": 3.0,
+				"profundidade": 3.0,
+				"raio": 5.8,
+				"unicos": true,
+				"x": 0.0,
+				"y": 1.0,
+				"z": 0.0
+			},
+			"tipo": "hitbox"
+		},
+		{
+			"duracao": 0.6,
+			"habilitado": true,
+			"id": "tremor_impacto",
+			"inicio": 0.42,
+			"parametros": {
+				"tremor": 0.6,
+				"zoom": 40.0
+			},
+			"tipo": "camera"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 3.0,
+		"forma": "Esfera",
+		"largura": 3.0,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 5.8,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": 0.0
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "Libera uma colossal massa de fuma\u00e7a sob extrema press\u00e3o ao redor do usu\u00e1rio, gerando uma detona\u00e7\u00e3o em 360 graus que arremessa e causa dano massivo.",
+		"dono": "Jogador",
+		"fruta": "moku_moku",
+		"id": "moku_white_out_v",
+		"modelo": "Base",
+		"nome": "Tempestade de Fuma\u00e7a"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 2.0,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 6.0
+	},
+	"poses": [],
+	"projeteis": {
+		"abertura": 20.0,
+		"area_chuva": 8.0,
+		"direcao_disparo": "Mira",
+		"explosao": 0.0,
+		"giro": 0.0,
+		"gravidade": 0.0,
+		"modelo": "",
+		"perfurar": false,
+		"quantidade": 1,
+		"raio": 0.4,
+		"rastro": "Nenhum",
+		"sem_dano": false,
+		"som_explosao": "Impacto",
+		"velocidade": 12.0,
+		"vida": 2.0,
+		"visual": "Energia"
+	},
+	"versao": 1,
+	"vfx": {
+		"altura": 1.0,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#dcdde1",
+		"cor_2": "#8395a7",
+		"escala": 4.5,
+		"estilo": "Explos\u00e3o",
+		"frente": 0.0,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "M\u00e3o direita",
+		"projetil_de": ""
+	}
+}

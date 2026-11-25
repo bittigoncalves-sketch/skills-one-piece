@@ -1,0 +1,112 @@
+{
+  "versao": 1,
+  "nome": "Resgate do bau — proposta de texturas 16x16",
+  "convencoes": {
+    "origem": "canto superior esquerdo; 16 linhas, 16 colunas",
+    "transparencia": ". = #00000000; todos os demais pixels sao opacos",
+    "uso": "Cada grade e uma textura 16x16 INDEPENDENTE, nao um atlas ou malha; aplicar UV apropriado em cada superficie e usar filtragem nearest. A grade da boca e interior, nao textura do corpo inteiro.",
+    "aviso": "Refere-se a conceito; testar escala, orientacao e dentes em modelo real."
+  },
+  "paleta": {
+    ".": "#00000000",
+    "D": "#36221C",
+    "A": "#80502F",
+    "B": "#A86A3B",
+    "C": "#C7864B",
+    "M": "#7F8586",
+    "L": "#B7BDB7",
+    "G": "#E2B650",
+    "H": "#8A622B",
+    "O": "#220F16",
+    "I": "#481923",
+    "T": "#FFF1CE",
+    "P": "#E87580",
+    "R": "#AA3F52"
+  },
+  "texturas": {
+    "tampa_disfarce": {
+      "grade": [
+        "DDDDDDDDDDDDDDDD",
+        "DBABMABBABBMBBAD",
+        "DABBMBBABBAMBABD",
+        "DAAAMAAAAAAMAAAD",
+        "DAAAMAAAAAAMAAAD",
+        "DDDDMDDDDDDMDDDD",
+        "DAAAMAAAAAAMAAAD",
+        "DBABMABBABBMBBAD",
+        "DABBMBBABBAMBABD",
+        "DAAAMAAAAAAMAAAD",
+        "DAAAMAAAAAAMAAAD",
+        "DDDDMDHHHHDMDDDD",
+        "DAAAMAHGGHAMAAAD",
+        "DMMMMMHGGHMMMMMD",
+        "DMMMMMHHHHMMMMMD",
+        "DDDDDDDDDDDDDDDD"
+      ],
+      "descricao": "Face frontal da tampa fechada; sem dentes aparentes."
+    },
+    "corpo_disfarce": {
+      "grade": [
+        "DDDDDDDDDDDDDDDD",
+        "DMMMMMHHHHMMMMMD",
+        "DMMMMMHGGHMMMMMD",
+        "DAAAMAHGGHAMAAAD",
+        "DAAAMAHHHHAMAAAD",
+        "DDDDMDDDDDDMDDDD",
+        "DAAAMAAAAAAMAAAD",
+        "DBABMABBABBMBBAD",
+        "DABBMBBABBAMBABD",
+        "DAAAMAAAAAAMAAAD",
+        "DAAAMAAAAAAMAAAD",
+        "DDDDMDDDDDDMDDDD",
+        "DAAAMAAAAAAMAAAD",
+        "DBABMABBABBMBBAD",
+        "DAAAMAAAAAAMAAAD",
+        "DDDDDDDDDDDDDDDD"
+      ],
+      "descricao": "Face frontal do corpo; continua a cinta vertical da tampa."
+    },
+    "boca_revelada": {
+      "grade": [
+        "DDDDDDDDDDDDDDDD",
+        "DOOOOOOOOOOOOOOD",
+        "DITTITTITTITTTTD",
+        "DITTITTITTITTTTD",
+        "DOOOOOOOOOOOOOOD",
+        "DOOOOOOOOOOOOOOD",
+        "DOOOOOOOOOOOOOOD",
+        "DOOOOOOOOOOOOOOD",
+        "DOOOOOPPPPOOOOOD",
+        "DOOOORPRPPROOOOD",
+        "DOOOORPRPPROOOOD",
+        "DOOOORPPPPROOOOD",
+        "DITTIRRRRRRTTTTD",
+        "DITTITTITTITTTTD",
+        "DOOOOOOOOOOOOOOD",
+        "DDDDDDDDDDDDDDDD"
+      ],
+      "descricao": "Interior escuro, dentes superiores e inferiores, lingua no centro inferior."
+    },
+    "icone_bau_misterioso": {
+      "grade": [
+        "................",
+        "................",
+        "................",
+        "................",
+        "...DDDDDDDDDD...",
+        "..DBMBBBBBBMBD..",
+        "..DBMCCBBBBMBD..",
+        "..DBMBBGGBBMBD..",
+        "..DDDDDGGDDDDD..",
+        "..DAMAAHHAAMAD..",
+        "..DAMBBAAAAMAD..",
+        "..DAMAAAABBMAD..",
+        "..DAMAAAAAAMAD..",
+        "..DDDDDDDDDDDD..",
+        "................",
+        "................"
+      ],
+      "descricao": "Icone de inventario; fundo transparente. O brilho do drop no mundo e efeito separado."
+    }
+  }
+}

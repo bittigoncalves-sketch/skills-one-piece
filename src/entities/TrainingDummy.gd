@@ -54,6 +54,9 @@ func _ready() -> void:
 	_fit_model()
 
 func _physics_process(delta: float) -> void:
+	# Apresentação local em todos os peers; física/dano seguem na autoridade.
+	if _rig and _rig.visual_definition and _rig.procedural() and _hitstop_timer <= 0.0:
+		_rig.procedural().update(velocity, is_on_floor(), false, delta, 0.0, false, false, "", "", false, 0.0, 0.0, -1, 0.0, str(get_meta("custom_pose", "")))
 	# ⚠️ SÓ A AUTORIDADE SIMULA (2026-08-22). Desde que o boneco passou a nascer
 	# pelo `MultiplayerSpawner` (Main.gd), ele existe também no cliente — e sem
 	# esta guarda o cliente rodaria gravidade, atrito, knockback e reset por conta
@@ -108,10 +111,22 @@ func _physics_process(delta: float) -> void:
 		_hitstun_timer -= delta
 		if _hitstun_timer <= 0.0:
 			print("[TESTING] Dummy se recuperou do hitstun. Max KB Speed: ", snapped(_max_kb_speed, 0.1), " m/s")
-	if global_position.y < VOID_Y:
+	if global_position.y < Scoreboard.void_y_de(self):
 		_reset(false)                # caiu -> volta pro topo (mantém HP)
 	elif health <= 0.0 or _since_damage >= RESET_AFTER:
 		_reset(true)                 # morreu ou 30s sem dano -> HP cheio + centro
+
+## Esquiva com dash contra a Buki Buki (22/11/2026): lado, recarga de 3 s e efeito em `EsquivaDeDisparo`; o impulso entra na `velocity`
+## (o atrito da física do boneco o freia). 8,5 m/s dão o mesmo alcance dos demais só se o atrito for ~10 m/s²: ver o teste.
+func esquivar_de_disparo(rumo: Vector3, _chegada_em := 0.0) -> bool:
+	if health <= 0.0 or not is_on_floor():
+		return false
+	var lateral := EsquivaDeDisparo.tentar(self, rumo)
+	if lateral == Vector3.ZERO:
+		return false
+	velocity += lateral * EsquivaDeDisparo.IMPULSO
+	return true
+
 
 func take_damage(amount: float, _from_pos: Vector3 = Vector3.ZERO, knockback: Vector3 = Vector3.ZERO, hitstun: float = 0.0) -> void:
 	if get_meta("damage_immune", false) or get_meta("custom_pose", "") == "hibashira" or get_meta("in_black_hole", false):
@@ -173,6 +188,10 @@ func _reset(full: bool) -> void:
 # ---- ajuste do modelo (mesma ideia do Player._fit_model_to_body) ----
 func _fit_model() -> void:
 	if _model == null:
+		return
+	if _rig and _rig.visual_definition:
+		# PlayerRig já ajustou altura, pivô e escala uniforme deste recurso.
+		_base_scale = _model.scale
 		return
 	var ab := _model_aabb(_model)
 	var ky := 1.0

@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bu7kub0qqa8qu"
-path="res://.godot/imported/arvore_verde_broto_Image_0.png-226a7f1036270dad14c69090f9a46150.ctex"
+path.bptc="res://.godot/imported/arvore_verde_broto_Image_0.png-226a7f1036270dad14c69090f9a46150.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "d9d5bb08b32438f31276c07a602b03a3"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/arvore_verde_broto_Image_0.png"
-dest_files=["res://.godot/imported/arvore_verde_broto_Image_0.png-226a7f1036270dad14c69090f9a46150.ctex"]
+dest_files=["res://.godot/imported/arvore_verde_broto_Image_0.png-226a7f1036270dad14c69090f9a46150.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

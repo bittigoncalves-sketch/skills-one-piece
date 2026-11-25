@@ -34,11 +34,19 @@ extends RefCounted
 #  componentes criados no `_ready()` (medido na Fase 5: pai=7, filho=1).
 # ============================================================================
 
+const BARA_NET := preload("res://src/player/BaraNetwork.gd")
+const OPE := preload("res://src/combat/OpeController.gd")
+## Kit do Builder (06/10/2026): uma ativação viva por tecla apertada.
+const ATIVACAO_DO_KIT := preload("res://src/skills_builder/ativacao_do_kit.gd")
+
 var _dono: Node = null
 
 # SILÊNCIO (Yami Yami): enquanto vale, nenhuma habilidade sai. É estado do
 # domínio de HABILIDADES — quem o liga é um golpe, e quem o consulta são os
 # portões de cast. Por isso mora aqui, e não no Player.
+## MODO HISTÓRIA: o slot com a tecla SEGURADA, mirando. Vazio = ninguém mirando.
+## Na arena isto nunca sai do vazio (lá o toque dispara, decisão do dono).
+var _mira_fruta := ""
 var _suprimido: bool = false
 var _suprimido_t: float = 0.0
 
@@ -61,6 +69,7 @@ var _token: int = 0
 # Guardo o efeito vivo aqui porque quem sabe a hora de soltar é o input, e quem
 # sabe a direção é a mira do INSTANTE da soltura.
 var _carregado: Node = null
+var _kit_ativacoes := {}        # tecla → ativação do Kit do Builder em curso
 var _slot_carregado := ""
 
 # Quais golpes são carregáveis. Tabela em vez de `if` espalhado: quando a
@@ -83,6 +92,44 @@ func montar_em(dono: Node) -> void:
 
 # ------------------------------------------------------------------ leitura
 func suprimido() -> bool:  return _suprimido
+## Que slot está sendo mirado agora (vazio se nenhum). Quem acende o indicador lê daqui.
+## A mira CAI SOZINHA quando o corpo perde a condição — morrer, levar dano, ser
+## silenciado, trocar de modo ou perder a fruta. É de propósito que a checagem more no
+## getter e não num tick: assim não existe caminho em que o estado fique preso porque
+## ninguém chamou o tick (item 23, morrer segurando a tecla).
+func mirando() -> String:
+	if _mira_fruta != "" and not _mira_ainda_vale(_mira_fruta):
+		_mira_fruta = ""
+	return _mira_fruta
+
+
+func _mira_ainda_vale(slot: String) -> bool:
+	if not _mira_de_fruta_vale(slot):
+		return false
+	var rocket = _dono.get("_rocket")
+	return rocket == null or rocket.disponivel()
+
+
+## A tecla MIRA em vez de disparar? Só onde existe ficha de modo — o `PerfilDeFrutas` é
+## nulo na arena, e é isso que mantém a arena disparando no toque. O F (voo) não passa
+## por aqui: ele é locomoção, entra direto por `pedir_voo_de_fruta`.
+func _mira_de_fruta_vale(slot: String) -> bool:
+	if _dono.current_fruit_id != "rocket" or _dono.combat_mode != "fruit":
+		return false
+	var perfil = _dono.get("perfil_de_frutas")
+	return perfil != null and perfil.tem(slot)
+
+
+## Larga a mira sem disparar (menu aberto, morte, perder a fruta, trocar de modo).
+func cancelar_mira() -> void:
+	_mira_fruta = ""
+
+
+## A HUD manda o KEY-UP mesmo com o menu aberto, de propósito (senão a técnica fica presa
+## com a tecla "segurada"). Soltar com o menu aberto CANCELA a mira em vez de atirar.
+func _menu_aberto() -> bool:
+	var hud = _dono.get_tree().get_first_node_in_group("hud")
+	return hud != null and hud.has_method("is_menu_open") and hud.is_menu_open()
 func tempo_de_silencio() -> float: return _suprimido_t
 func carregando() -> bool: return _carregando
 func carregando_skill() -> bool: return is_instance_valid(_carregado)
@@ -254,8 +301,45 @@ func _comecar_pacifista(slot_pedido: String) -> void:
 	_dono.gastar_energia(_dono.ENERGY_SKILL)
 	pedir_cast(slot_pedido, _token)
 
+## A Ope começa no toque. A confirmação do servidor cobra energia/recarga;
+## pedidos sem ROOM, alvo ou espaço livre deixam ambos intactos.
+func _comecar_ope(slot_pedido: String) -> void:
+	if not _dono._is_authority or _carregando or _dono.get_meta("is_casting", false):
+		return
+	if Time.get_ticks_msec() < int(_dono.get_meta("ope_pending_until", 0)):
+		return
+	var mira: Dictionary = _dono.mira_do_cast()
+	var reason := OPE.validation_reason(_dono, slot_pedido, mira["aim"])
+	if reason == "" and float(_dono.energy) < float(_dono.custo_de_energia_do_cast(slot_pedido)):
+		reason = "Energia insuficiente."
+	if reason != "":
+		OPE.feedback(_dono, reason)
+		return
+	_token += 1
+	_dono.set_meta("ope_pending_until", Time.get_ticks_msec() + 1500)
+	_dono.set_meta("ope_pending_token", _token)
+	_dono.pedir_cast_no_servidor(slot_pedido, mira["aim"], mira["origem"], 0.0, _token)
+
+
 # Usado pelo respawn/troca de fruta: aborta sem disparar nada.
 func abortar() -> void:
+	if is_instance_valid(_dono) and (_dono.has_meta("magu_acao") and is_instance_valid(_dono.get_meta("magu_acao"))):
+		_dono.get_meta("magu_acao").encerrar()
+	for tecla in _kit_ativacoes.keys():
+		var ativ: Variant = _kit_ativacoes[tecla]
+		if is_instance_valid(ativ):
+			(ativ as Node).call("soltar")
+	_kit_ativacoes.clear()
+	if is_instance_valid(_dono) and _dono.get("_rocket") != null:
+		_dono._rocket.cancelar()
+	if is_instance_valid(_dono):
+		var bara = (_dono.get_meta("bara_action") if _dono.has_meta("bara_action") else null)
+		if is_instance_valid(bara): bara.cancel()
+	if is_instance_valid(_dono):
+		_dono.set_meta("ope_pending_until", 0)
+		var ope_action = (_dono.get_meta("ope_action") if _dono.has_meta("ope_action") else null)
+		if is_instance_valid(ope_action):
+			ope_action.cancel()
 	var px_slot := str(_dono.get_meta("px_skill_ativa", "")) if is_instance_valid(_dono) else ""
 	if px_slot != "":
 		var meta_ativa := _meta_ativa_pacifista(px_slot)
@@ -300,6 +384,10 @@ func abortar() -> void:
 
 # --------------------------------------------- começar a segurar a tecla
 func comecar(slot_pedido: String) -> void:
+	if _dono.has_meta("combate_mine_piece"):
+		return
+	if (_dono.has_meta("magu_acao") and is_instance_valid(_dono.get_meta("magu_acao"))):
+		return
 	if _suprimido:
 		print("❌ Poderes desativados (Yami Yami).")
 		return
@@ -317,6 +405,10 @@ func comecar(slot_pedido: String) -> void:
 	# e checá-la depois deixaria passar um slot que estivesse com recarga zerada.
 	if _dono.combat_mode == "fruit" and float(_dono.get("_trava_pos_fruta")) > 0.0:
 		return
+	# INTERVALO ENTRE GOLPES (07/10/2026): outro golpe de fruta só 0,5 s depois do último.
+	if _dono.combat_mode == "fruit" and float(_dono.get("_intervalo_golpe")) > 0.0:
+		print("⏳ Aguarde %.1fs entre golpes." % float(_dono.get("_intervalo_golpe")))
+		return
 	if _dono._skill_cooldowns.get(slot_pedido, 0.0) > 0.0:
 		print("⏳ Habilidade [%s] em recarga! Aguarde %.1fs." % [
 			slot_pedido, _dono._skill_cooldowns[slot_pedido]])
@@ -331,6 +423,38 @@ func comecar(slot_pedido: String) -> void:
 
 	var fruta: String = _dono.current_fruit_id
 	var na_fruta: bool = _dono.combat_mode == "fruit"
+	# Por TECLA (06/10/2026): na Pika refeita no Builder, Z/X/C são do Builder e o V segue
+	# o código dela (com o portão de sustentação de sempre).
+	if na_fruta and KitDoBuilder.pelo_builder(fruta, slot_pedido):
+		_comecar_kit(slot_pedido)
+		return
+	if na_fruta and fruta == "tori_tori_phoenix":
+		if not _dono._phoenix.pode(slot_pedido): return
+		var custo: float = _dono.custo_de_energia_do_cast(slot_pedido)
+		if _dono.energy < custo: return
+		_dono.gastar_energia(custo)
+		_token += 1
+		pedir_cast(slot_pedido, _token)
+		return
+	if na_fruta and fruta == "rocket":
+		# MODO HISTÓRIA (23/09): segurar MIRA, soltar dispara. Chegar até aqui já
+		# significa que recarga, supressão, bloqueio por dano e trava pós-fruta
+		# passaram — por isso a mira é armada AQUI, e não antes das travas.
+		if _mira_de_fruta_vale(slot_pedido):
+			if _dono.energy < _dono.custo_de_energia_do_cast(slot_pedido):
+				return # sem energia nem acende o indicador; quem julga de novo é o `pedir`
+			_mira_fruta = slot_pedido
+			return
+		_token += 1
+		_dono._rocket.pedir(slot_pedido, _token)
+		return
+	if na_fruta and fruta == "bara_bara":
+		_token += 1
+		BARA_NET.request(_dono, slot_pedido, _token)
+		return
+	if na_fruta and fruta == "ope_ope":
+		_comecar_ope(slot_pedido)
+		return
 
 	# PACIFISTA: os quatro golpes comecam no PRESS. Z e X continuam respondendo
 	# ao RELEASE (canal/rajada); C e V ja foram emitidos e nao duplicam na solta.
@@ -356,19 +480,10 @@ func comecar(slot_pedido: String) -> void:
 		_dono.congelar_para_cast()
 		pedir_cast(slot_pedido)
 		return
-	if slot_pedido == "C" and na_fruta and fruta == "bara_bara":
-		if _dono.has_method("pedir_iniciar_hold"):
-			_dono.pedir_iniciar_hold(slot_pedido, fruta)
-		_carregando = true
-		_slot = slot_pedido
-		_token += 1
-		_dono.set_meta("is_casting", true)
-		pedir_cast(slot_pedido)
-		return
 	# PIKA C: nasce no PRESS, teleporta/seleciona o alvo dentro do efeito e
 	# continua somente enquanto esta meta estiver ativa. O key-up a replica.
 	if slot_pedido == "C" and na_fruta and fruta == "pika_pika":
-		if float(_dono.energy) + 0.001 < float(_dono.ENERGY_SKILL):
+		if float(_dono.energy) + 0.001 < float(_dono.custo_de_energia_do_cast(slot_pedido)):
 			print("⚡ Energia insuficiente para Yasakani no Magatama.")
 			return
 		_carregando = true
@@ -379,7 +494,7 @@ func comecar(slot_pedido: String) -> void:
 		_dono.set_meta("active_skill", "C")
 		_dono.set_meta("is_casting", true)
 		_dono.congelar_para_cast()
-		_dono.gastar_energia(_dono.ENERGY_SKILL)
+		_dono.gastar_energia(_dono.custo_de_energia_do_cast(slot_pedido))
 		if _dono.has_method("pedir_iniciar_hold"):
 			_dono.pedir_iniciar_hold("C", "pika_pika")
 		pedir_cast("C", _token)
@@ -409,7 +524,7 @@ func comecar(slot_pedido: String) -> void:
 		_token += 1
 		_dono.set_meta("is_casting", true)
 		_dono.trigger_skill_cooldown(slot_pedido)
-		_dono.gastar_energia(_dono.ENERGY_SKILL)
+		_dono.gastar_energia(_dono.custo_de_energia_do_cast(slot_pedido))
 		var mira_c: Dictionary = _dono.mira_do_cast()
 		# ⚠️ A spec nasce AQUI, no aperto, e não na soltura. Duas razões:
 		#   • o efeito 3D do charge-up já existe enquanto a tecla está segurada
@@ -418,7 +533,7 @@ func comecar(slot_pedido: String) -> void:
 		#     soltaria com um orçamento diferente do que começou.
 		# `tempo_de_carga` da tabela é quem define a carga cheia — as três skills
 		# carregáveis tinham três curvas diferentes antes disto.
-		var spec_c := Balance.novo(fruta, slot_pedido)
+		var spec_c := Balance.novo(fruta, slot_pedido, _dono.escala_de_dano_da_fruta(fruta))
 		if spec_c == null:
 			spec_c = DamageSpec.avulso(0.0)
 		var dano_c: float = spec_c.dano
@@ -515,7 +630,7 @@ func comecar(slot_pedido: String) -> void:
 	# — o Gatling nunca nascia, nem segurando a tecla pelos 2,2s inteiros
 	# (medido em 2026-08-18 com `tools/dev_tests/probe_gomu_c.gd`).
 	if slot_pedido == "C" and na_fruta and fruta == "gomu_gomu":
-		_dono.gastar_energia(_dono.ENERGY_SKILL)
+		_dono.gastar_energia(_dono.custo_de_energia_do_cast("C"))
 		pedir_cast("C")
 		return
 	if _dono.combat_mode == "style" and _dono.estilo_atual() == "teste_animacao":
@@ -534,6 +649,31 @@ func comecar(slot_pedido: String) -> void:
 
 # ----------------------------------------------- soltar a tecla -> dispara
 func soltar(slot_pedido: String) -> void:
+	# MODO HISTÓRIA: a tecla segurada estava MIRANDO — é AQUI que o golpe sai. A mira
+	# some em qualquer caso, inclusive quando o disparo é recusado: estado que só se
+	# apaga pelo caminho que ele fecha é o item 23 (morrer segurando a tecla).
+	if _mira_fruta != "":
+		# Soltar OUTRA tecla não mexe na mira em curso: com Z segurado, apertar X troca a
+		# mira para o X, e largar o Z depois não podia cancelar o X.
+		if _mira_fruta != slot_pedido:
+			return
+		_mira_fruta = ""
+		if _mira_ainda_vale(slot_pedido) and not _menu_aberto():
+			# `pedir` continua sendo o juiz: morte, supressão, energia, dano e o
+			# controlador ocupado são recusados lá, como no toque da arena.
+			_token += 1
+			_dono._rocket.pedir(slot_pedido, _token)
+		return
+	if _kit_ativacoes.has(slot_pedido):
+		# Sem tipo: a ativação de "Pressionar" já se liberou sozinha, e atribuir nó
+		# liberado a variável tipada é erro.
+		var ativ: Variant = _kit_ativacoes[slot_pedido]
+		_kit_ativacoes.erase(slot_pedido)
+		if is_instance_valid(ativ):
+			(ativ as Node).call("soltar")
+		return
+	if _dono.combat_mode == "fruit" and _dono.current_fruit_id in ["ope_ope", "bara_bara", "rocket"]:
+		return # execução completa no toque, recuperação pertence ao controlador
 	# O modo pode ter mudado entre press e release; a identidade da acao e mais
 	# confiavel do que consultar o estilo atual outra vez.
 	if str(_dono.get_meta("px_skill_ativa", "")) == slot_pedido:
@@ -572,15 +712,6 @@ func soltar(slot_pedido: String) -> void:
 		_slot = ""
 		_dono.set_meta("is_casting", false)
 		return
-	if slot_pedido == "C" and _dono.combat_mode == "fruit" and _dono.current_fruit_id == "bara_bara":
-		if _dono.has_meta("bara_cleave_active"):
-			_dono.set_meta("bara_cleave_active", false)
-		if _dono.has_method("pedir_cancelar_hold"):
-			_dono.pedir_cancelar_hold(slot_pedido, "bara_bara")
-		_carregando = false
-		_slot = ""
-		_dono.set_meta("is_casting", false)
-		return
 	if slot_pedido == "C" and _pika_c_ativa():
 		finalizar_pika_c(int(_dono.get_meta("pika_c_token", 0)))
 		return
@@ -598,7 +729,7 @@ func soltar(slot_pedido: String) -> void:
 		return
 	_carregando = false
 	_dono.pausar_animacao(false)
-	_dono.gastar_energia(_dono.ENERGY_SKILL)   # skill consome energia
+	_dono.gastar_energia(_dono.custo_de_energia_do_cast(slot_pedido))   # skill consome energia
 	pedir_cast(slot_pedido)
 
 # Solta o golpe carregado na direção da mira ATUAL.
@@ -621,12 +752,65 @@ func _liberar_carregado() -> void:
 # todas as outras skills, que são canceladas. Decisão do dono: "libera com a
 # carga que tiver". Chamado do `Player.take_damage`.
 func liberar_por_dano() -> void:
+	var bara = (_dono.get_meta("bara_action") if _dono.has_meta("bara_action") else null)
+	if is_instance_valid(bara): bara.cancel()
 	if is_instance_valid(_carregado):
 		print("⚡ Charge-up interrompido por dano — sai com a carga que tem.")
 		_liberar_carregado()
 
 # Disparo imediato, sem segurar (compat + atalhos).
+## Tecla do Kit do Builder apertada: a ativação (condições, energia, recarga, carga e
+## repetição) mora em `ativacao_do_kit.gd`, com a semântica da prévia do Builder.
+## Alguma tecla do Builder segurando uma skill que não deixa andar (07/10/2026).
+func kit_prende_o_andar() -> bool:
+	for ativ in _kit_ativacoes.values():
+		if is_instance_valid(ativ) and ativ.prende_o_andar():
+			return true
+	return false
+
+
+## Alguma tecla do Builder segurando uma skill que PARALISA o corpo, até no ar (10/10/2026).
+## Esta tecla tem uma skill do Builder em curso AGORA? Só vale depois de `comecar`: a skill
+## recusada (recarga, energia, condição) não deixa ativação — é como o Player sabe que o
+## golpe saiu e a tecla pode prender o corpo (14/10/2026).
+func kit_em_curso(slot_pedido: String) -> bool:
+	return _kit_ativacoes.has(slot_pedido) and is_instance_valid(_kit_ativacoes[slot_pedido])
+
+
+func kit_paralisa() -> bool:
+	for ativ in _kit_ativacoes.values():
+		if is_instance_valid(ativ) and ativ.paralisa():
+			return true
+	return false
+
+
+func _comecar_kit(slot_pedido: String) -> void:
+	var fruta: String = _dono.current_fruit_id
+	var s := KitDoBuilder.skill(slot_pedido, fruta)
+	if s.is_empty():
+		print("🛠 Kit do Builder: a tecla %s não tem skill publicada." % slot_pedido)
+		return
+	if _kit_ativacoes.has(slot_pedido) and is_instance_valid(_kit_ativacoes[slot_pedido]):
+		return
+	var ativ: Node = ATIVACAO_DO_KIT.new()
+	ativ.dono = _dono
+	ativ.slot = slot_pedido
+	ativ.skill = s
+	_dono.add_child(ativ)
+	var motivo: String = ativ.iniciar()
+	if not motivo.is_empty():
+		print("🛠 %s: %s" % [KitDoBuilder.nome_da_tecla(slot_pedido, fruta), motivo])
+		var hud := _dono.get_tree().get_first_node_in_group("hud")
+		if hud != null and hud.has_method("avisar"):
+			hud.avisar("%s: %s" % [KitDoBuilder.nome_da_tecla(slot_pedido, fruta), motivo])
+		return
+	_kit_ativacoes[slot_pedido] = ativ
+
+
 func conjurar_direto(slot_pedido: String) -> void:
+	if _dono.combat_mode == "fruit" and _dono.current_fruit_id in ["ope_ope", "bara_bara", "rocket"]:
+		comecar(slot_pedido)
+		return
 	if _suprimido or _dono._skill_cooldowns.get(slot_pedido, 0.0) > 0.0:
 		return
 	if _dono.has_method("fruta_bloqueada_por_dano") and _dono.fruta_bloqueada_por_dano():
@@ -639,6 +823,9 @@ func conjurar_direto(slot_pedido: String) -> void:
 # ------------------------------------------------------- pedido ao servidor
 # Calcula a mira e entrega ao Player, que fala com a rede.
 func pedir_cast(slot_pedido: String, cast_token: int = 0) -> void:
+	if _dono.combat_mode == "fruit" and _dono.current_fruit_id in ["ope_ope", "bara_bara", "rocket"]:
+		comecar(slot_pedido)
+		return
 	if not _dono._is_authority or _suprimido:
 		_dono.set_meta("is_casting", false)
 		return
@@ -653,16 +840,11 @@ func pedir_cast(slot_pedido: String, cast_token: int = 0) -> void:
 	if _dono._skill_cooldowns.get(slot_pedido, 0.0) > 0.0:
 		_dono.set_meta("is_casting", false)
 		return
-	if slot_pedido == "V" and _dono.current_fruit_id == "bara_bara" and _dono.get_meta("bara_v_active", false):
-		_dono.set_meta("is_casting", false)
-		return
 	# ⚠️ BUKI BUKI: aqui o slot está sendo EMPUNHADO, não gasto. A recarga dele só
 	# começa quando a arma é LARGADA (troca, desistência ou munição zerada). Ligar
 	# o cooldown no saque poria em recarga a arma que acabou de ir para a mão.
 	if not _dono._buki_ativa():
-		var eh_bara_v = (slot_pedido == "V" and _dono.current_fruit_id == "bara_bara")
-		if not eh_bara_v:
-			_dono.trigger_skill_cooldown(slot_pedido)
+		_dono.trigger_skill_cooldown(slot_pedido)
 	if slot_pedido != "Z" and _dono._yami_pistol_active:
 		_dono.guardar_pistola_da_yami()
 

@@ -1,0 +1,1010 @@
+{
+ "formato": "skills-one-piece/spawn-natural-mine-piece",
+ "versao": 1,
+ "origem": {
+  "mod": "MinePiece-ver14-forge-1.20.1.jar",
+  "sha256": "349b36cdc4dacfe066e385f9ba05205eeb90551a743cf742cf95bfc7a3fbd765",
+  "extraido_por": "tools/mine_piece/extrair_spawn_natural.py"
+ },
+ "entradas": [
+  {
+   "id": "ace_1",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "alvida_2",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "aokiji",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "arlong",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "east_blue",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "bananawani",
+   "peso": 2,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": false,
+   "biomas": "desert",
+   "regra": "superficie",
+   "categoria": "CREATURE"
+  },
+  {
+   "id": "bandit",
+   "peso": 1,
+   "minimo": 4,
+   "maximo": 6,
+   "qualquer_bioma": false,
+   "biomas": [
+    "birch_forest",
+    "dark_forest",
+    "flower_forest",
+    "forest",
+    "old_growth_birch_forest",
+    "warped_forest",
+    "windswept_forest",
+    "windswept_gravelly_hills",
+    "windswept_hills"
+   ],
+   "regra": "superficie",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "bellamy_grand_line",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "bellamy_new_world",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "boa_hancock",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "bon_clay",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "brogy",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "brook",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "buchi",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "east_blue",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "buggy",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "east_blue",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "cabaji",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "east_blue",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "charlos",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "superficie_rara",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "charlotte_linlin_wano_country",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "chinjao",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "chouchou",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "superficie",
+   "categoria": "CREATURE"
+  },
+  {
+   "id": "chu",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "east_blue",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "coby_2",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "coby",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "corps_marine",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "corpo_marinha",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "corps_pirates",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "corpo_piratas",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "crocodile",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "crocodile_cross_guild",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "dorry",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "elizabello_ii",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "fighting_fish",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": false,
+   "biomas": [
+    "cold_ocean",
+    "deep_cold_ocean",
+    "deep_frozen_ocean",
+    "deep_lukewarm_ocean",
+    "deep_ocean",
+    "frozen_ocean",
+    "lukewarm_ocean",
+    "ocean",
+    "warm_ocean",
+    "frozen_river",
+    "river"
+   ],
+   "regra": "grand_line",
+   "categoria": "WATER_CREATURE"
+  },
+  {
+   "id": "foxy",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "franky",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "fullbody",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "east_blue",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "gin",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "east_blue",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "girl_icecream",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "superficie",
+   "categoria": "CREATURE"
+  },
+  {
+   "id": "gunko",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "hatchan",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "east_blue",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "helmeppo_2",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "helmeppo",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "east_blue",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "hiking_bear",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": false,
+   "biomas": [
+    "snowy_slopes",
+    "snowy_beach",
+    "snowy_plains",
+    "snowy_taiga",
+    "ice_spikes",
+    "deep_frozen_ocean",
+    "frozen_ocean",
+    "frozen_peaks",
+    "frozen_river",
+    "cold_ocean",
+    "deep_cold_ocean"
+   ],
+   "regra": "superficie",
+   "categoria": "CREATURE"
+  },
+  {
+   "id": "island_whale",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": false,
+   "biomas": [
+    "cold_ocean",
+    "deep_cold_ocean",
+    "deep_frozen_ocean",
+    "deep_lukewarm_ocean",
+    "deep_ocean",
+    "frozen_ocean",
+    "lukewarm_ocean",
+    "ocean",
+    "warm_ocean"
+   ],
+   "regra": "west_e_novo_mundo",
+   "categoria": "WATER_CREATURE"
+  },
+  {
+   "id": "jango",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "east_blue",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "jango_marine",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "jinbe",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "red_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "kalgara",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "killer",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "komachiyo",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "superficie",
+   "categoria": "CREATURE"
+  },
+  {
+   "id": "krieg",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "east_blue",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "kumacy",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "kungfu_jugon",
+   "peso": 8,
+   "minimo": 1,
+   "maximo": 4,
+   "qualquer_bioma": false,
+   "biomas": [
+    "cold_ocean",
+    "deep_cold_ocean",
+    "deep_frozen_ocean",
+    "deep_lukewarm_ocean",
+    "deep_ocean",
+    "frozen_ocean",
+    "lukewarm_ocean",
+    "ocean",
+    "warm_ocean",
+    "beach",
+    "snowy_beach",
+    "desert"
+   ],
+   "regra": "superficie",
+   "categoria": "CREATURE"
+  },
+  {
+   "id": "kuro",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "east_blue",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "kuroobi",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "east_blue",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "kuzan",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "kyros",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "marine",
+   "peso": 1,
+   "minimo": 2,
+   "maximo": 4,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "superficie",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "mihawk",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "mihawk_cross_guild",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "monkey_d_garp",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "mont_blanc_noland",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "morgan",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "east_blue",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "mr_13",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "mr_1",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "mr_5",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "mr_9",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "ms_goldenweek",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "ms_valentine",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "pacifista",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "perona",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "pirate",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 4,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "superficie",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "queen",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "richie",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "east_blue",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "ryokugyu",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "sabo",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "sabo_flame_emperor",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "sentomaru",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "sham",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "east_blue",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "shamrock",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "shanks_knightsof_god",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "smoker_2_years",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "smoker",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "super_penguin",
+   "peso": 2,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": false,
+   "biomas": [
+    "ice_spikes",
+    "cold_ocean",
+    "deep_cold_ocean",
+    "deep_frozen_ocean",
+    "frozen_ocean",
+    "frozen_peaks",
+    "frozen_river",
+    "snowy_slopes",
+    "snowy_beach",
+    "snowy_plains",
+    "snowy_taiga"
+   ],
+   "regra": "superficie",
+   "categoria": "CREATURE"
+  },
+  {
+   "id": "suzume",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "superficie",
+   "categoria": "CREATURE"
+  },
+  {
+   "id": "tashigi_2_years",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "tashigi",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "east_blue",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "trafalgar_d_water_law_grand_line",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "trafalgar_d_water_law_seven_warlordsofthe_sea",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "trafalgar_d_water_law_wano_country",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "urouge_san",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "vergo",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "waporu",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "grand_line",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "yamato",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "zephyr",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "novo_mundo",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "zoro_1",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "east_blue",
+   "categoria": "MONSTER"
+  },
+  {
+   "id": "zoro_east_blue",
+   "peso": 1,
+   "minimo": 1,
+   "maximo": 1,
+   "qualquer_bioma": true,
+   "biomas": null,
+   "regra": "east_blue",
+   "categoria": "MONSTER"
+  }
+ ]
+}

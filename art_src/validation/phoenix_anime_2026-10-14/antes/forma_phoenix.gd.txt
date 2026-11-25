@@ -1,0 +1,178 @@
+extends Node3D
+## Fonte editável: penas curvas com nervura, asas articuladas e cauda em fitas.
+## Frente -Z. A silhueta continua legível sem depender do bloom.
+var asas: Array[Node3D] = []
+var caudas: Array[Node3D] = []
+var tempo := 0.0
+var voando := false
+var ataque := 0.0
+
+static func chama() -> ShaderMaterial:
+	var m := ShaderMaterial.new()
+	m.shader = preload("res://src/effects/phoenix/chama_phoenix.gdshader")
+	return m
+
+static func material(cor: Color, brilho := 0.6) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = cor
+	m.roughness = 0.38
+	m.metallic = 0.0
+	m.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+	m.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	m.emission_enabled = true
+	m.emission = cor
+	m.emission_energy_multiplier = brilho
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	return m
+
+static func volume(pai: Node3D, pos: Vector3, tamanho: Vector3, mat: Material) -> MeshInstance3D:
+	var n := MeshInstance3D.new()
+	var m := SphereMesh.new()
+	m.radial_segments = 24
+	m.rings = 12
+	m.radius = 0.5
+	m.height = 1.0
+	n.mesh = m
+	n.material_override = mat
+	pai.add_child(n)
+	n.position = pos
+	n.scale = tamanho
+	return n
+
+## Uma pena aponta ao longo de +Y; centro arqueado e duas faces em quilha.
+static func pena(comprimento: float, largura: float, curva: float, mat: Material) -> MeshInstance3D:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in 12:
+		var a := float(i) / 12.0
+		var b := float(i + 1) / 12.0
+		for lado in [-1.0, 1.0]:
+			var ca := Vector3(curva*a*a, comprimento*a, 0.07*sin(PI*a))
+			var cb := Vector3(curva*b*b, comprimento*b, 0.07*sin(PI*b))
+			var ea := ca + Vector3(lado*largura*pow(sin(PI*a), 0.7), 0, -0.07*sin(PI*a))
+			var eb := cb + Vector3(lado*largura*pow(sin(PI*b), 0.7), 0, -0.07*sin(PI*b))
+			for v: Vector3 in [ca, ea, eb, ca, eb, cb]: st.add_vertex(v)
+	st.generate_normals()
+	var n := MeshInstance3D.new()
+	n.mesh = st.commit()
+	n.material_override = mat
+	return n
+
+const Geo := preload("res://src/effects/phoenix/geometria_phoenix.gd")
+var pontas: Array[Node3D] = []
+var cauda_fogo: Array[Node3D] = []
+
+func _ready() -> void:
+	# Referências do usuário (14/10): corpo esguio, asas erguidas em leque,
+	# crista inteira de fogo e caudas de energia. Frente = -Z.
+	var azul := material(Color("069dd7"), 0.22)
+	var claro := material(Color("64e9ed"), 0.25)
+	var luz := material(Color("a1f9eb"), 0.3)
+	var sombra := material(Color("087199"), 0.1)
+	var ouro := material(Color("ffe181"), 0.6)
+	var fogo := chama()
+	var fogo_ouro := chama()
+	fogo_ouro.set_shader_parameter("azul", Color("ffb739"))
+	fogo_ouro.set_shader_parameter("ouro", Color("fff2a1"))
+	# Silhueta contínua: peito, pescoço comprido, cabeça afilada; sem esferas empilhadas.
+	add_child(Geo.tubo(PackedVector3Array([
+		Vector3(0,-0.45,0.25),Vector3(0,-0.25,0.13),Vector3(0,0.2,0),
+		Vector3(0,0.65,-0.06),Vector3(0,1.05,-0.12),Vector3(0,1.45,-0.21),
+		Vector3(0,1.85,-0.28),Vector3(0,2.12,-0.3),Vector3(0,2.28,-0.28)]),
+		PackedVector2Array([Vector2(0.05,0.08),Vector2(0.29,0.25),Vector2(0.5,0.43),
+		Vector2(0.48,0.4),Vector2(0.27,0.27),Vector2(0.16,0.18),Vector2(0.19,0.23),
+		Vector2(0.18,0.24),Vector2(0.03,0.04)]),azul))
+	# Peito claro comprido, delimitado por penas sobrepostas nos flancos.
+	add_child(Geo.fita(Vector3(0,-0.26,-0.2),Vector3(0,0.2,-0.54),Vector3(0,0.9,-0.57),Vector3(0,1.7,-0.42),0.41,claro))
+	for lado in [-1.0,1.0]:
+		for i in 8:
+			var a := Vector3(lado*(0.23+sin(i*0.4)*0.18),0.95-i*0.12,-0.35)
+			add_child(Geo.fita(a,a+Vector3(lado*0.12,-0.12,-0.06),a+Vector3(lado*0.05,-0.35,0),a+Vector3(-lado*0.12,-0.52,0.1),0.115,claro))
+		# Olhos em cunha e sobrancelha escura: expressão de ave de rapina.
+		add_child(Geo.placa(PackedVector3Array([Vector3(lado*0.035,2.075,-0.522),Vector3(lado*0.16,2.14,-0.44),Vector3(lado*0.125,2.015,-0.47)]),luz))
+		add_child(Geo.placa(PackedVector3Array([Vector3(lado*0.07,2.07,-0.525),Vector3(lado*0.105,2.08,-0.51),Vector3(lado*0.09,2.035,-0.52)]),sombra))
+		# Pernas e três garras curvas, claras como as referências.
+		add_child(Geo.tubo(PackedVector3Array([Vector3(lado*0.23,-0.05,-0.03),Vector3(lado*0.29,-0.38,-0.15),Vector3(lado*0.32,-0.62,-0.27)]),PackedVector2Array([Vector2(.12,.12),Vector2(.09,.09),Vector2(.06,.06)]),claro,12))
+		for dedo in 3:
+			var a := Vector3(lado*0.32+(dedo-1)*0.10,-0.57,-0.26)
+			add_child(Geo.fita(a,a+Vector3(0,-0.05,-0.22),a+Vector3(0,-0.16,-0.4),a+Vector3(0,-0.35,-0.3),0.07,luz))
+		_montar_asa(lado, claro, azul, sombra, fogo, fogo_ouro)
+	# Bico pálido longo e curvado para baixo, em duas faces com quilha.
+	add_child(Geo.placa(PackedVector3Array([Vector3(-.10,2.03,-.5),Vector3(.10,2.03,-.5),Vector3(.07,1.87,-.65),Vector3(0,1.67,-.64),Vector3(-.07,1.87,-.65)]),luz))
+	# Marca azul do peito presente nas duas referências: haste e braços curvos.
+	add_child(Geo.fita(Vector3(0,.1,-.51),Vector3(0,.3,-.56),Vector3(0,.6,-.57),Vector3(0,.86,-.5),.065,sombra))
+	add_child(Geo.fita(Vector3(-.3,.63,-.48),Vector3(-.13,.59,-.57),Vector3(.13,.59,-.57),Vector3(.3,.63,-.48),.055,sombra))
+	# Crista de fogo: uma massa irregular, com línguas secundárias, não penas amarelas.
+	for i in 3:
+		var x := (i-1)*0.14
+		var a := Vector3(x,2.2,-.26)
+		var altura := 1.20-absf(i-1)*.23
+		add_child(Geo.fita(a,a+Vector3(-.34,.35,.03),a+Vector3(.38,.7,.05),a+Vector3(-.2,altura,.08),.30 if i==1 else .19,fogo_ouro,true))
+	# Três caudas principais e duas fitas finas; todas alongadas e ondulantes.
+	for i in 5:
+		var cauda := Node3D.new()
+		add_child(cauda)
+		cauda.position = Vector3((i-2)*.14,-.15,.3)
+		caudas.append(cauda)
+		var lado := float(i-2)
+		var fim := Vector3(lado*.8,.25,4.8-absf(lado)*.35)
+		cauda.add_child(Geo.fita(Vector3.ZERO,Vector3(lado*.5,-.2,1.5),Vector3(lado*.7,.75,3.5),fim,.33 if i%2==0 else .16,fogo,true))
+		cauda.add_child(Geo.fita(Vector3(0,0,-.02),Vector3(lado*.5,-.12,1.5),Vector3(lado*.7,.8,3.5),fim+Vector3(0,.04,0),.13 if i%2==0 else .065,fogo_ouro,true))
+	# Labaredas junto aos ombros, como a primeira referência.
+	for lado in [-1.0,1.0]:
+		var a := Vector3(lado*.38,.65,.1)
+		add_child(Geo.fita(a,a+Vector3(lado*.6,.2,0),a+Vector3(lado*.7,1.2,0),a+Vector3(lado*.25,1.55,0),.27,fogo_ouro,true))
+
+func _montar_asa(lado: float, claro: Material, azul: Material, contorno: Material, fogo: Material, ouro: Material) -> void:
+	var asa := Node3D.new()
+	add_child(asa)
+	asa.position = Vector3(lado*.37,.74,.08)
+	asas.append(asa)
+	# Arco ósseo e cobertura: ombro -> cotovelo -> punho -> ponta.
+	var raiz := Vector3.ZERO
+	var cotovelo := Vector3(lado*1.25,.38,.12)
+	var punho := Vector3(lado*2.2,1.15,.2)
+	var ponta := Vector3(lado*3.7,2.0,.3)
+	asa.add_child(Geo.fita(raiz,cotovelo,punho,ponta,.42,azul))
+	for i in 19:
+		var t := float(i)/18.0
+		var base := Geo.curva(raiz,cotovelo,punho,ponta,t*.94)
+		var comprimento := 1.15+sin(t*PI)*.5
+		# Penas internas caem; as externas se abrem para fora formando um leque longo.
+		var fim := base+Vector3(lado*(.32+t*1.15),-comprimento*(1-t*.65),.18+t*.13)
+		var b := base+Vector3(lado*.2,-.25,-.025)
+		var c := fim+Vector3(-lado*.32,.28,-.025)
+		var largura := .26 if t<.7 else .20
+		var borda := Geo.fita(base,b,c,fim,largura*1.10,contorno)
+		asa.add_child(borda)
+		var pena_clara := Geo.fita(base,b,c,fim,largura,claro)
+		asa.add_child(pena_clara)
+		pena_clara.position.z = -.012
+		if i%3==0:
+			var chama_fim := fim+Vector3(lado*.55,-.2,0)
+			var labareda := Geo.fita(base,b,c,chama_fim,largura*1.15,fogo,true)
+			asa.add_child(labareda)
+			labareda.position.z = .025
+			var miolo := Geo.fita(base,b,c,chama_fim,.065,ouro,true)
+			asa.add_child(miolo)
+			miolo.position.z = -.035
+	# Duas fileiras de penas curtas fazem as transições do ombro ao leque.
+	for fileira in 2:
+		for i in 14:
+			var t := float(i)/14.0
+			var base := Geo.curva(raiz,cotovelo,punho,ponta,t*.85)+Vector3(0,-fileira*.17,-.09-fileira*.03)
+			var fim := base+Vector3(lado*.30,-.65,.01)
+			asa.add_child(Geo.fita(base,base+Vector3(lado*.2,-.1,0),fim+Vector3(0,.15,0),fim,.105,azul if fileira==0 else claro))
+	# Fogo contorna a ponta superior, separado do volume principal das penas.
+	asa.add_child(Geo.fita(cotovelo,punho+Vector3(0,.35,0),ponta+Vector3(lado*.5,.1,0),ponta+Vector3(lado*1.1,.6,0),.24,fogo,true))
+	asa.add_child(Geo.fita(cotovelo,punho+Vector3(0,.38,-.02),ponta+Vector3(lado*.5,.1,-.02),ponta+Vector3(lado*1.1,.6,0),.09,ouro,true))
+
+func _process(delta: float) -> void:
+	tempo += delta
+	for i in asas.size():
+		var lado := -1.0 if i==0 else 1.0
+		asas[i].rotation.z = lado*(sin(tempo*(5.8 if voando else 2.6))*(.22 if voando else .065)-ataque*.4)
+		asas[i].rotation.y = lado*(.10+sin(tempo*2.6)*.07)
+	for i in caudas.size():
+		caudas[i].rotation.x = sin(tempo*2.8-i*.65)*.07
+		caudas[i].rotation.y = sin(tempo*2.2-i*.48)*.11

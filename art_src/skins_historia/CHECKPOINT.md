@@ -1,0 +1,5 @@
+Objetivo entregue: baú colecionável com ícone 2D integrado ao catálogo/inventário/save; skins masculina/feminina texturizadas e cabelo longo feminino em 3D.
+Decisões: manter rig/proporções/mãos; restante do visual por textura; baú colecionável pois abertura com loot não foi confirmada. Catálogo BLOCOS > Itens de exploração fornece o item.
+Arquivos: ver README.md nesta pasta. Além dos assets/fontes, foram ajustados corpo_historia, escolha_corpo_historia, regras_de_itens, naufragios, PreviaDoPersonagem, mochila_minecraft, JanelaDeStatus e catalogo_de_blocos. Testes: test_corpo_historia, test_bau_tesouros; render do ícone: capturar_bau_icone.
+Validação: corpos 148/148; baú/catálogo/UI 22/22; capturas da campanha revisadas. Compilação global tem 11 falhas externas; teste do mapa vivo dos naufrágios não encontrou os cinco registros esperados. Avisos idle no respawn e recursos no encerramento registrados.
+Próximo passo opcional: decisão do usuário sobre abertura do item e loot; corrigir carregamento dos naufrágios em tarefa própria; revisão artística pelo usuário.

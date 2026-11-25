@@ -52,6 +52,7 @@ func _init() -> void:
 	await _troca_de_arma()
 	await _municao_zerada()
 	await _servidor_sem_bala()
+	await _fps_volta()
 
 	print("\n==========================================")
 	if _falhas == 0:
@@ -67,6 +68,14 @@ func _saque() -> void:
 	await _esperar(0.4)
 	_ok(_p.buki_arma() == "Z", "a arma FICA na mão depois do saque (arma='%s')" % _p.buki_arma())
 	# REGRA NOVA (2026-08-11): sacar NÃO atira -> a pistola sai com as 12 balas.
+	# FPS (22/11/2026): arma na mão = 1ª pessoa + arma na frente da tela; guardar devolve a câmera.
+	_ok(_p._camera.em_primeira_pessoa(), "com a arma na mão a câmera está em 1ª pessoa (FPS)")
+	var vm = _p.buki_viewmodel
+	_ok(vm != null and vm.ativo() and vm.get_parent() == _p._cam, "a arma aparece na frente da tela (viewmodel na câmera)")
+	var cano = (vm.boca() - _p._cam.global_position) if vm != null else Vector3.ZERO
+	_ok(cano.dot(-_p._cam.global_transform.basis.z) > 0.2, "a boca do cano fica À FRENTE da câmera (%.2f m)" % cano.dot(-_p._cam.global_transform.basis.z))
+	var antes_f5 = _p._camera.alternar_perspectiva()
+	_ok(antes_f5 and _p._camera.em_primeira_pessoa(), "F5 não tira da 1ª pessoa enquanto a arma está na mão")
 	_ok(_p.buki_municao() == 12, "munição do dono = 12 de 12 (o saque não gasta bala) — deu %d" % _p.buki_municao())
 	_ok(int(_p.get("_srv_buki_municao")) == 12,
 		"o SERVIDOR carregou o mesmo número (%d)" % int(_p.get("_srv_buki_municao")))
@@ -78,6 +87,12 @@ func _saque() -> void:
 		"o slot empunhado NÃO está em recarga (recarga é do slot LARGADO) — %.1fs" % float(_p._skill_cooldowns["Z"]))
 
 # ---------------------------------------------------------- 2. cada tiro conta
+func _fps_volta() -> void:
+	_p._buki.guardar()
+	await _esperar(0.2)
+	_ok(not _p._camera.em_primeira_pessoa(), "guardar a arma devolve a câmera de 3ª pessoa")
+	_ok(_p.buki_viewmodel == null or not _p.buki_viewmodel.visible, "e a arma some da frente da tela")
+
 func _decremento() -> void:
 	print("\n-- 2. cada disparo gasta uma bala --")
 	var antes: int = _p.buki_municao()
@@ -142,7 +157,7 @@ func _servidor_sem_bala() -> void:
 	await _esperar(0.4)
 	var base := _zonas(cena)
 	_p._buki.atirar()
-	await _esperar(0.3)
+	await physics_frame   # a bala agora some ao bater em algo (explosão, 22/11/2026): conta logo após o disparo
 	_ok(_zonas(cena) > base, "com bala, o disparo cria DamageZone (%d -> %d)" % [base, _zonas(cena)])
 	_ok(_p.buki_arma() == "C" and _visivel("C"), "a sniper ficou empunhada entre os tiros")
 

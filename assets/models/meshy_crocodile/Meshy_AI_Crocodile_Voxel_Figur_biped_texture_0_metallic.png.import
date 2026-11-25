@@ -3,20 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cvf1cac8ljss2"
-path="res://.godot/imported/Meshy_AI_Crocodile_Voxel_Figur_biped_texture_0_metallic.png-c1e86436736a2ee81450b3036c31a298.ctex"
+path.bptc="res://.godot/imported/Meshy_AI_Crocodile_Voxel_Figur_biped_texture_0_metallic.png-c1e86436736a2ee81450b3036c31a298.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/models/meshy_crocodile/Meshy_AI_Crocodile_Voxel_Figur_biped_texture_0_metallic.png"
-dest_files=["res://.godot/imported/Meshy_AI_Crocodile_Voxel_Figur_biped_texture_0_metallic.png-c1e86436736a2ee81450b3036c31a298.ctex"]
+dest_files=["res://.godot/imported/Meshy_AI_Crocodile_Voxel_Figur_biped_texture_0_metallic.png-c1e86436736a2ee81450b3036c31a298.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

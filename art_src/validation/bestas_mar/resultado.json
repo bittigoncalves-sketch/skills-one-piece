@@ -1,0 +1,23 @@
+{
+  "captura": "PASS",
+  "importacao": "PASS",
+  "contratos": "PASS",
+  "imagens": [
+    "bovina_corpo.png",
+    "bovina_rosto.png",
+    "girafa_corpo.png",
+    "girafa_rosto.png",
+    "javali_corpo.png",
+    "javali_rosto.png",
+    "serpente_corpo.png",
+    "serpente_rosto.png",
+    "bovina_esqueleto.png",
+    "galeria_mar.png",
+    "editor_loja.png",
+    "serpente_repouso.png",
+    "serpente_ameaca.png"
+  ],
+  "exportacoes_iguais": true,
+  "mapa_e_catalogo_preservados": true,
+  "resultado": "PASS"
+}

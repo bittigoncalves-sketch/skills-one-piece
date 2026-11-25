@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c4nas2unwr0hj"
-path="res://.godot/imported/beagle_20dogtexture.jpg-43c42350c17c9e0b600c6734aa795097.ctex"
+path.bptc="res://.godot/imported/beagle_20dogtexture.jpg-43c42350c17c9e0b600c6734aa795097.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "2fd719eb905425e59335d96212674603"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/beagle_20dogtexture.jpg"
-dest_files=["res://.godot/imported/beagle_20dogtexture.jpg-43c42350c17c9e0b600c6734aa795097.ctex"]
+dest_files=["res://.godot/imported/beagle_20dogtexture.jpg-43c42350c17c9e0b600c6734aa795097.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

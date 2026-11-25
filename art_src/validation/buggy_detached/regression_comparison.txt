@@ -1,0 +1,3 @@
+Base completa de recepção: net_mp_probe, test_balance, test_buki_buki, test_compila, test_corte_horizontal, test_mera_z_saque, test_morte_limpa_cast, test_ope_animacoes, test_studio_playback, test_trava_fruta_dano
+Finalizador: net_mp_probe, test_balance, test_buki_buki, test_compila, test_corte_horizontal, test_mera_z_saque, test_morte_limpa_cast, test_ope_animacoes, test_studio_playback, test_trava_fruta_dano
+Novas falhas: []

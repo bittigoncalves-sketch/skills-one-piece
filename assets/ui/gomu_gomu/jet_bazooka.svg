@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <!-- Steam propulsion jets behind hands -->
+  <path d="M4 18h16M4 46h16" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+  <path d="M6 12h10M6 52h10" stroke="#ff8a80" stroke-width="2"/>
+  <!-- Twin Jet Palms -->
+  <rect x="22" y="10" width="16" height="18" rx="4" fill="#e53935" stroke="#ffcdd2" stroke-width="2"/>
+  <rect x="22" y="36" width="16" height="18" rx="4" fill="#e53935" stroke="#ffcdd2" stroke-width="2"/>
+  <!-- Fiery pressure & sonic blast -->
+  <path d="M42 16l14 16-14 16" stroke="#ff5252" stroke-width="3" stroke-linecap="round"/>
+  <ellipse cx="48" cy="32" rx="7" ry="24" stroke="#ffeb3b" stroke-width="2"/>
+  <path d="M48 22l10-8M50 32h10M48 42l10 8" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

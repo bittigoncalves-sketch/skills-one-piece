@@ -1,0 +1,9 @@
+{
+  "mapa": "mapas/historia/baseplate.json",
+  "sha256": "363d3dd285b472ace85bb62271ec0466c58a94ad226fe89308c84c4f70c8dbb0",
+  "backup": "/home/gabriel-bitti/dev/sop-snapshots/2026-10-08-floresta-loja/baseplate_363d3dd285b4.json",
+  "sha256_final": "4b55ec61d324020342c7c604b5dd4802a37d78806404178c2a22bdaf15c8d4b1",
+  "removidas": 123,
+  "novas": 676,
+  "total": 1240
+}

@@ -1,0 +1,21 @@
+{
+	"formato": "skills-one-piece/mapa",
+	"versao": 1,
+	"nome": "Baseplate",
+	"spawn": {
+		"posicao": [0, 3, 0]
+	},
+	"pecas": [
+		{
+			"id": "baseplate",
+			"tipo": "caixa",
+			"posicao": [0, -1, 0],
+			"rotacao_graus": [0, 0, 0],
+			"tamanho": [512, 2, 512],
+			"cor": "#767676",
+			"material": "grade",
+			"grade_celula": 4,
+			"colisao": true
+		}
+	]
+}

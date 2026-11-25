@@ -1,0 +1,330 @@
+{
+	"animacao": {
+		"clipe": "Ataque",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.0
+	},
+	"ativacao": {
+		"andar_segurando": false,
+		"carga": 1.0,
+		"empurrao_carga_max": 1.5,
+		"modo": "Carregar e soltar",
+		"paralisar_segurando": true,
+		"ponto_segurar": 0.35,
+		"repetir": false,
+		"segurar_max": 4.0,
+		"tecla": "Z"
+	},
+	"audio": {
+		"som": "Impacto",
+		"tom": 1.0,
+		"volume": -12.0
+	},
+	"camera": {
+		"tremor": 0.2,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 60.0,
+		"exige_alvo": false,
+		"exige_chao": false,
+		"nivel_minimo": 1,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 12.0,
+		"custo": 12.0,
+		"custo_por_segundo": 0.0,
+		"duracao": 0.95,
+		"fim_sobre_alvo": 0.0,
+		"flutuar": false,
+		"inicio_do_fim": -1.0,
+		"intervalo_depois": 0.5,
+		"mirar_no_alvo": false,
+		"parar_no_vazio": false,
+		"recarga": 6.0
+	},
+	"dano": {
+		"atordoamento": 0.4,
+		"congelar": 0.0,
+		"critico": 0.0,
+		"cura_do_dano": 0.0,
+		"duracao_efeito": 1.0,
+		"empurrao": 14.0,
+		"lentidao": 0.0,
+		"multiplicador": 2.0,
+		"tipo": "Físico",
+		"valor": 100.0
+	},
+	"eventos": [
+		{
+			"duracao": 0.35,
+			"habilitado": true,
+			"id": "recolher",
+			"inicio": 0.0,
+			"parametros": {
+				"pose": "pose_1",
+				"transicao": 0.12
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.4,
+			"habilitado": true,
+			"id": "pata_cresce",
+			"inicio": 0.0,
+			"parametros": {
+				"ancora": "Osso do jogador",
+				"escala": 1.2,
+				"estilo": "Carga",
+				"osso": "Mão direita"
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_carga",
+			"inicio": 0.0,
+			"parametros": {
+				"som": "Vento",
+				"tom": 0.8,
+				"volume": -10.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.5,
+			"habilitado": true,
+			"id": "tapa",
+			"inicio": 0.35,
+			"parametros": {
+				"pose": "pose_2",
+				"transicao": 0.04
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.05,
+			"habilitado": true,
+			"id": "pata",
+			"inicio": 0.38,
+			"parametros": {
+
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_tapa",
+			"inicio": 0.38,
+			"parametros": {
+				"som": "Disparo",
+				"tom": 0.6,
+				"volume": -3.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.2,
+			"habilitado": true,
+			"id": "tremor",
+			"inicio": 0.38,
+			"parametros": {
+				"tremor": 0.2
+			},
+			"tipo": "camera"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 3.0,
+		"forma": "Esfera",
+		"largura": 3.0,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 1.5,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": -2.0
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "Segure para a pata crescer na palma (até 1 s); solte e um tapa de pata enorme varre a frente e arremessa.",
+		"dono": "Jogador",
+		"fruta": "nikyu_nikyu_no_mi_mine_piece",
+		"id": "mp_nikyu_tapa_de_pata",
+		"modelo": "Base",
+		"nome": "Tapa de Pata"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 2.0,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 6.0
+	},
+	"poses": [
+		{
+			"id": "pose_1",
+			"nome": "Recolher",
+			"ossos": {
+				"ForeArm_L": [
+					105.0,
+					0.0,
+					0.0
+				],
+				"ForeArm_R": [
+					105.0,
+					0.0,
+					0.0
+				],
+				"Shin_L": [
+					-44.0,
+					0.0,
+					0.0
+				],
+				"Shin_R": [
+					-30.0,
+					0.0,
+					0.0
+				],
+				"Thigh_L": [
+					26.0,
+					0.0,
+					-10.0
+				],
+				"Thigh_R": [
+					-14.0,
+					0.0,
+					10.0
+				],
+				"Torso": [
+					-6.0,
+					0.0,
+					0.0
+				],
+				"UpperArm_L": [
+					-45.0,
+					0.0,
+					-14.0
+				],
+				"UpperArm_R": [
+					-50.0,
+					0.0,
+					14.0
+				]
+			}
+		},
+		{
+			"id": "pose_2",
+			"nome": "Tapa",
+			"ossos": {
+				"ForeArm_L": [
+					38.0,
+					0.0,
+					0.0
+				],
+				"ForeArm_R": [
+					4.0,
+					0.0,
+					0.0
+				],
+				"Head": [
+					-4.0,
+					12.0,
+					0.0
+				],
+				"Shin_L": [
+					-22.0,
+					0.0,
+					0.0
+				],
+				"Shin_R": [
+					-12.0,
+					0.0,
+					0.0
+				],
+				"Thigh_L": [
+					22.0,
+					0.0,
+					0.0
+				],
+				"Thigh_R": [
+					-10.0,
+					0.0,
+					0.0
+				],
+				"Torso": [
+					8.0,
+					-18.0,
+					0.0
+				],
+				"UpperArm_L": [
+					18.0,
+					0.0,
+					-12.0
+				],
+				"UpperArm_R": [
+					88.0,
+					0.0,
+					6.0
+				]
+			}
+		}
+	],
+	"projeteis": {
+		"abertura": 0.0,
+		"area_chuva": 8.0,
+		"direcao_disparo": "Mira",
+		"explosao": 0.0,
+		"giro": 0.0,
+		"gravidade": 0.0,
+		"imunidade_gelo": true,
+		"modelo": "",
+		"perfurar": false,
+		"quantidade": 1,
+		"raio": 1.8,
+		"raio_de_acerto": 1.0,
+		"raio_do_anel": 2.5,
+		"rastro": "Vento",
+		"sai_de": "Mão direita",
+		"sem_dano": false,
+		"som_explosao": "Impacto",
+		"velocidade": 22.0,
+		"vida": 0.55,
+		"visual": "Pata"
+	},
+	"transformacao": {
+		"alvo": "Usuário",
+		"cor": "#dce9ff",
+		"escala": 1.0,
+		"modelo": "",
+		"raio": 8.0,
+		"visual": "Fumaça"
+	},
+	"versao": 1,
+	"vfx": {
+		"altura": 1.0,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#ff8fb8",
+		"cor_2": "#ffffff",
+		"escala": 1.0,
+		"estilo": "Impacto",
+		"frente": 1.0,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "Mão direita",
+		"projetil_de": ""
+	}
+}

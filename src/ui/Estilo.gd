@@ -19,6 +19,22 @@ const LINHA := Color(0.04, 0.05, 0.09, 1.0)
 const FUNDO := Color(0.05, 0.07, 0.12, 0.72)
 
 const VIDA := Color(0.30, 0.90, 0.38)
+## A vida muda de cor com a fração: cheia verde, na metade amarela, baixa vermelha (30/10/2026, pedido do dono).
+const VIDA_AMARELA := Color(0.98, 0.85, 0.22)
+const VIDA_VERMELHA := Color(0.95, 0.24, 0.20)
+## Abaixo disto a vida é "vermelha": é também o limite para a pokébola capturar (`Recrutamento.capturar`).
+const LIMITE_VERMELHO := 0.25
+const LIMITE_AMARELO := 0.5
+
+
+## Verde de 100 % até amarelo em 50 %; amarelo até vermelho em 25 %; vermelho puro abaixo disso. Contínua: não pula.
+static func cor_da_vida(fracao: float) -> Color:
+	var f := clampf(fracao, 0.0, 1.0)
+	if f >= LIMITE_AMARELO:
+		return VIDA_AMARELA.lerp(VIDA, (f - LIMITE_AMARELO) / (1.0 - LIMITE_AMARELO))
+	if f > LIMITE_VERMELHO:
+		return VIDA_VERMELHA.lerp(VIDA_AMARELA, (f - LIMITE_VERMELHO) / (LIMITE_AMARELO - LIMITE_VERMELHO))
+	return VIDA_VERMELHA
 const ENERGIA := Color(0.32, 0.62, 1.0)
 const DASH := Color(0.85, 0.85, 0.90)
 const AVISO := Color(1.0, 0.82, 0.25)

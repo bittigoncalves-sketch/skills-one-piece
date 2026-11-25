@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://hkneiu6qsk2y"
-path="res://.godot/imported/sol3D_normal.jpg-a2e03a19d949a8b8857e4b48d2062e85.ctex"
+path.bptc="res://.godot/imported/sol3D_normal.jpg-a2e03a19d949a8b8857e4b48d2062e85.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "f38c810e7ae1f56de80a56eee58b5a97"
@@ -14,17 +15,17 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/environment/sol3D_normal.jpg"
-dest_files=["res://.godot/imported/sol3D_normal.jpg-a2e03a19d949a8b8857e4b48d2062e85.ctex"]
+dest_files=["res://.godot/imported/sol3D_normal.jpg-a2e03a19d949a8b8857e4b48d2062e85.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
-compress/normal_map=0
+compress/normal_map=1
 compress/channel_pack=0
 mipmaps/generate=true
 mipmaps/limit=-1

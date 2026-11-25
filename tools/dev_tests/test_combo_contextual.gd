@@ -1,14 +1,14 @@
 extends SceneTree
 # ============================================================================
-#  SEGURAR W E CLICAR VÁRIAS VEZES DÁ UM COMBO, NÃO A MESMA COTOVELADA
+#  SEGURAR W E CLICAR VÁRIAS VEZES DÁ O COMBO M1
 #
-#  Relato do dono (2026-09-01): "ao segurar W e clicar, o jogador só dá um tipo
-#  de soco; caso outro soco seja dado, mesmo apertando W, os socos normais devem
-#  ser dados, resultando numa sequência de movimentos que originam um combo".
+#  Relato do dono (2026-09-01): segurar W repetia a mesma cotovelada. Em
+#  2026-09-13 o dono pediu para apagar de vez as variações de movimento simples
+#  (W/A/S/D + clique): andar + clique é o combo M1, e o único W que muda o
+#  clique é o do QUARTO golpe, que vira Lançamento.
 #
-#  ⚠️ ESTE TESTE MEDE A SEQUÊNCIA, não um golpe. O defeito só aparece no
-#  SEGUNDO clique: o primeiro está certo (é a cotovelada mesmo). Um teste que
-#  clicasse uma vez passaria com o bug inteiro no lugar.
+#  ⚠️ ESTE TESTE MEDE A SEQUÊNCIA, não um golpe: a troca só aparece no quarto
+#  clique.
 #
 #      DISPLAY=:1 godot --path . -s tools/dev_tests/test_combo_contextual.gd
 # ============================================================================
@@ -49,17 +49,8 @@ func _init() -> void:
 	_tecla(KEY_W, false)
 	await _quadros(20)
 
-	_ok("o 1º clique com W dá a cotovelada", saiu[0] == "context_elbow")
-	# ⚠️ O CORAÇÃO DO RELATO: o segundo não pode repetir o primeiro.
-	_ok("o 2º clique NÃO repete a cotovelada", saiu[1] != "context_elbow")
-	_ok("o 3º clique NÃO repete a cotovelada", saiu[2] != "context_elbow")
-	var repetidos := 0
-	for id in saiu:
-		if id == "context_elbow":
-			repetidos += 1
-	print("   cotoveladas em 4 cliques: %d" % repetidos)
-	_ok("a cotovelada sai UMA vez na sequência", repetidos == 1)
-	_ok("os cliques seguintes viram combo M1", saiu[1] == "m1" and saiu[2] == "m1")
+	_ok("os três primeiros cliques com W são combo M1", saiu[0] == "m1" and saiu[1] == "m1" and saiu[2] == "m1")
+	_ok("o 4º clique com W vira o Lançamento", saiu[3] == "context_launcher")
 
 	print("\n%d conferem | %d divergem" % [_ok_n, _falhas])
 	quit(1 if _falhas > 0 else 0)

@@ -1,5 +1,9 @@
 class_name GoroFX
 extends RefCounted
+
+## A coreografia da fruta. `preload` em vez de `class_name` pelo mesmo motivo
+## que o `ProceduralAnimator` faz assim: não depender do cache global.
+const GoroPoses = preload("res://src/anim/GoroPoses.gd")
 # ============================================================================
 #  GORO GORO NO MI — Trovão. Paleta, oficina de raios e os golpes do dia a dia.
 #
@@ -59,6 +63,47 @@ static func storm_material(col: Color) -> StandardMaterial3D:
 	m.albedo_color = col
 	m.disable_receive_shadows = true
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	return m
+
+## Anima o sumiço de um material de nuvem, seja ele qual for.
+##
+## ⚠️ EXISTE PORQUE O TIPO MUDOU E O CÓDIGO ANTIGO FALHAVA CALADO. Os dois
+## `_fechar_ceu`/`_dissipar` faziam `if m is StandardMaterial3D: tween(...)` —
+## com o `ShaderMaterial` novo a condição simplesmente não casava, nenhum erro
+## aparecia, e a nuvem ficava pendurada no céu para sempre.
+static func dissipar_material(tw: Tween, m: Material, dur: float) -> void:
+	if m is ShaderMaterial:
+		tw.tween_property(m, "shader_parameter/presence", 0.0, dur)
+	elif m is StandardMaterial3D:
+		tw.tween_property(m, "albedo_color:a", 0.0, dur)
+
+const STORM_SHADER := preload("res://src/fx/shaders/goro_storm.gdshader")
+const MARCA_SHADER := preload("res://src/fx/shaders/goro_marca.gdshader")
+
+## Material da MARCA DE AVISO no chão do V. Feito para um `PlaneMesh` deitado:
+## o shader desenha aro, raias e o pulso a partir da UV.
+static func marca_material() -> ShaderMaterial:
+	var m := ShaderMaterial.new()
+	m.shader = MARCA_SHADER
+	m.set_shader_parameter("mark_color", LIGHTNING_CYAN)
+	m.set_shader_parameter("presence", 1.0)
+	m.set_shader_parameter("charge", 0.0)
+	return m
+
+## Material de nuvem COM VOLUME (2026-09-12). O `storm_material` acima pinta a
+## esfera de cor chapada, e de longe a nuvem virava uma mancha plana; este dá
+## densidade por ângulo de visão e acende o relâmpago POR DENTRO.
+##
+## ⚠️ Quem dissipa a nuvem anima `shader_parameter/presence`, NÃO
+## `albedo_color:a` — `ShaderMaterial` não tem `albedo_color`, e um tween nessa
+## propriedade falharia EM SILÊNCIO, deixando a nuvem pendurada no céu.
+static func storm_material_volumetrico(col: Color) -> ShaderMaterial:
+	var m := ShaderMaterial.new()
+	m.shader = STORM_SHADER
+	m.set_shader_parameter("cloud_color", col)
+	m.set_shader_parameter("bolt_color", LIGHTNING_CYAN)
+	m.set_shader_parameter("presence", 1.0)
+	m.set_shader_parameter("charge", 0.0)
 	return m
 
 # Pontos em zigue-zague entre dois pontos (coordenadas LOCAIS do nó do raio).
@@ -147,7 +192,7 @@ static func storm_cloud(radius: float, puffs: int, col: Color, achatamento: floa
 	sph.rings = 6
 	mm.mesh = sph
 	mmi.multimesh = mm
-	mmi.material_override = storm_material(col)
+	mmi.material_override = storm_material_volumetrico(col)
 	for i in range(puffs):
 		var ang: float = randf() * TAU
 		var r: float = radius * sqrt(randf())
@@ -377,8 +422,19 @@ static func _sango(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 	tw_luz.tween_property(luz, "base_energy", 0.0, 0.25)
 	FxUtil.autofree(saida, 0.75)
 
+	# A pose acompanha o feixe: o braço estende no quadro em que o raio sai.
+	if is_instance_valid(caster):
+		caster.set_meta("custom_pose", GoroPoses.SANGO)
+		# ⚠️ REMOVE a meta do relógio, não a zera. O animador PREFERE o valor da
+		# meta quando ela existe; setá-la em 0.0 e nunca mais atualizar congela a
+		# pose no primeiro quadro — o braço nem chega a subir. Só o V publica esse
+		# relógio, porque a carga dele não tem duração prevista.
+		caster.remove_meta("goro_pose_t")
+		FxUtil.limpar_pose(caster, GoroPoses.SANGO, GoroPoses.DURATIONS[GoroPoses.SANGO])
+
 	AudioFX.snap(world, origin, 1.55)
 	AudioFX.impact(world, origin, 1.35)
+	GoroAudio.play(world, origin, "sango")
 	_screen_flash(world, Color(0.85, 0.95, 1.0), 0.30)
 	_shake(caster, 0.22)
 
@@ -386,7 +442,32 @@ static func _sango(world: Node, origin: Vector3, dir: Vector3, damage: float, ca
 	spec.marcar(zone)
 
 # ---------- C: Shunshin — Dash / Teleporte Elétrico Instantâneo ----------
-# NÃO MEXER: decisão do dono do projeto — o C fica para bem mais tarde.
+# O dono liberou o C em 06/10/2026 para consertar o teleporte (estava "NÃO MEXER").
+const SHUNSHIN_DISTANCIA := 12.0
+
+## O corpo vai até SHUNSHIN_DISTANCIA pela mira, varrendo a própria cápsula pelo
+## caminho (`move_and_collide`): desliza em chão inclinado e PARA em parede ou corpo.
+## Antes era `global_position += fwd × 12` às cegas: mirando um alvo próximo, a mira
+## desce ~11°, o corpo ia 2,4 m para baixo do chão e morria no vazio, e também
+## atravessava parede (medido em 05/10/2026). No chão, a parte da mira que aponta
+## para BAIXO é descartada: quem está de pé corre rente ao solo; no ar, desce até ele.
+static func _teleportar(corpo: CharacterBody3D, fwd: Vector3) -> void:
+	var rumo := fwd
+	if corpo.is_on_floor() and rumo.y < 0.0:
+		rumo.y = 0.0
+		if rumo.length_squared() < 0.0001:
+			return                     # mirando reto para baixo, de pé: não há para onde ir
+		rumo = rumo.normalized()
+	var resto := rumo * SHUNSHIN_DISTANCIA
+	for i in 3:
+		var batida := corpo.move_and_collide(resto)
+		if batida == null:
+			return
+		var normal := batida.get_normal()
+		if normal.y < 0.6:
+			return                     # parede ou corpo: o teleporte termina encostado
+		resto = batida.get_remainder().slide(normal)
+
 static func _shunshin(world: Node, origin: Vector3, dir: Vector3, damage: float, caster: Node,
 		spec: DamageSpec = null) -> void:
 	if spec == null:
@@ -410,9 +491,17 @@ static func _shunshin(world: Node, origin: Vector3, dir: Vector3, damage: float,
 	var flash := FxUtil.particles(200, 0.4, true, pm, FxUtil.grain(0.4))
 	zone.add_child(flash)
 
-	# Se o invocador for o jogador, projeta o corpo 12m pra frente
+	# O som sai da ORIGEM, não do destino: as duas faíscas do `shunshin` são o
+	# sumiço e o reaparecimento, e o sumiço acontece aqui.
+	GoroAudio.play(world, origin, "shunshin")
+
+	if is_instance_valid(caster):
+		caster.set_meta("custom_pose", GoroPoses.SHUNSHIN)
+		caster.remove_meta("goro_pose_t")   # ver o comentário no Sango
+		FxUtil.limpar_pose(caster, GoroPoses.SHUNSHIN, GoroPoses.DURATIONS[GoroPoses.SHUNSHIN])
+
 	if caster is CharacterBody3D:
-		(caster as CharacterBody3D).global_position += fwd * 12.0
+		_teleportar(caster as CharacterBody3D, fwd)
 
 	zone.setup(spec.dano, 10.0, fwd * 25.0, 0.6, caster, 1.2)
 	spec.marcar(zone)

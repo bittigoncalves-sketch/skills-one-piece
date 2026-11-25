@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dcjuromxldvk4"
-path="res://.godot/imported/ace_meshy_walk_0.png-e53b9ccc806e6c5401e925c77fe6acbe.ctex"
+path.bptc="res://.godot/imported/ace_meshy_walk_0.png-e53b9ccc806e6c5401e925c77fe6acbe.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "3364280e4d4fd9c8850c5e7e752383ae"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/meshy_ace/ace_meshy_walk_0.png"
-dest_files=["res://.godot/imported/ace_meshy_walk_0.png-e53b9ccc806e6c5401e925c77fe6acbe.ctex"]
+dest_files=["res://.godot/imported/ace_meshy_walk_0.png-e53b9ccc806e6c5401e925c77fe6acbe.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

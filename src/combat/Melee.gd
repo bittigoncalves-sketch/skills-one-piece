@@ -280,6 +280,64 @@ const COMBO := [
 ]
 
 # ============================================================================
+#  CLIQUE RÁPIDO — O COMBATE DO MINECRAFT 1.8 NO M1 DO PUNHO (2026-11-10)
+# ============================================================================
+#  Pedido do dono: trazer o combate do Minecraft com cliques rápidos. Medido no
+#  `Player.attack` / `LivingEntity.hurt` do 1.20.1 (jar remapeado): no 1.8 não há
+#  barra de ataque — todo clique bate; o que limita a cadência é o ALVO
+#  (invulnerável 10 ticks, ver `CombatResolver.filtro_minecraft`), não o atacante.
+#
+#  Por isso esta tabela NÃO tem peso de golpe: startup 0,06 s (o soco sai no
+#  clique), ativo 0,06, recuperação 0,04 → trava de 0,16 s (~6 cliques/s de teto
+#  do atacante; o BUFFER de 0,18 s do MeleeController segura o clique que chegar
+#  um pouco cedo). Dano e empurrão são IGUAIS nos quatro passos, como no vanilla
+#  (sem finalizador, sem knockdown). `vel` = pico/startup comprime o clipe
+#  assado para o braço chegar ao pico no fim do startup (inicio = 0).
+#
+#  ⚠️ Vale só para o PUNHO. A espada (Yoru) segue na tabela própria.
+#  ⚠️ A decisão é dado, não código: `clique_rapido = false` devolve o combo com
+#  peso de antes (Jab/Soco/Chute/Finalizador) sem tocar em mais nada.
+#  GATILHO: se o dono aprovar o clique rápido em jogo, apagar `COMBO` antigo.
+const DANO_CLIQUE := 50.0
+const KB_CLIQUE := 11.0
+## O 4º golpe (antigo Finalizador) segue empurrando mais que o dobro do soco: é a ferramenta de
+## ring-out da arena (`test_arena`, `passo(3)`). Único desvio do vanilla, declarado — sem knockdown.
+const KB_QUARTO_CLIQUE := 26.0
+static var clique_rapido := true
+static var COMBO_RAPIDO: Array = _montar_combo_rapido()
+
+## Clipes do Epic Fight (convertidos por tools/epic_fight/, LOCAIS, fora do git) para os 4 passos do
+## clique rápido, com o instante de pico medido por cinemática direta nos dados originais
+## (a mão avança até ~0,133 s; o passo 0 usa 0,100 s porque o teste de arena mede a extensão do ÂNGULO do braço, que
+## pica antes do avanço do corpo). Clipes de 0,5 s. Sem a extração local, vale o clipe antigo.
+const PASTA_EF := "res://assets/epic_fight/res/"
+## Passo 3 (chute) fica com o clipe do projeto: o Epic Fight não tem chute no punho (fist_auto3 é outro soco de esquerda).
+## fist_auto2 = direita, fist_auto1 = esquerda (medido: qual Tool_* avança mais à frente no pico).
+const EF_PUNHO := [["ef_fist_auto2", 0.100], ["ef_fist_auto1", 0.133], [], ["ef_fist_auto2", 0.133]]
+
+static func _montar_combo_rapido() -> Array:
+	var lista: Array = []
+	for g: Dictionary in COMBO:
+		var d := g.duplicate()
+		var ef: Array = EF_PUNHO[lista.size()]
+		if not ef.is_empty() and ResourceLoader.exists(PASTA_EF + String(ef[0]) + ".res"):
+			d["anim"] = ef[0]
+			d["pico"] = ef[1]
+		d["startup"] = 0.06
+		d["ativo"] = 0.06
+		d["recuperacao"] = 0.04
+		d["vel"] = float(d["pico"]) / 0.06
+		d["hitstun"] = 0.35
+		# Atordoamento do mod (item 3): o hitstun sai do TIPO de stun do clipe do Epic Fight (SHORT = 0,35 s).
+		if EpicFightDados.disponivel() and d.get("anim", "").begins_with("ef_"):
+			d["hitstun"] = float(EpicFightDados.atordoamento(EpicFightDados.stun_do_ataque("combat/" + String(d["anim"]).trim_prefix("ef_")))["hitstun"])
+		d["dano"] = DANO_CLIQUE
+		d["kb"] = KB_QUARTO_CLIQUE if lista.size() == 3 else KB_CLIQUE
+		d.erase("derruba")
+		lista.append(d)
+	return lista
+
+# ============================================================================
 #  COMBO DA ESPADA — HORIZONTAL, DEPOIS VERTICAL (2026-09-06)
 # ============================================================================
 #  Pedido do dono: *"vamos começar com um corte horizontal e em seguida um
@@ -360,7 +418,8 @@ static var _cache: Dictionary = {}   # "anim|espelhado" -> Animation
 static func passo(i: int, weapon: String = "") -> Dictionary:
 	if weapon == "sword":
 		return COMBO_SWORD[clampi(i, 0, COMBO_SWORD.size() - 1)]
-	return COMBO[clampi(i, 0, COMBO.size() - 1)]
+	var tabela: Array = COMBO_RAPIDO if clique_rapido else COMBO
+	return tabela[clampi(i, 0, tabela.size() - 1)]
 
 # ============================================================================
 #  ACESSORES DE FRAME DATA
@@ -595,10 +654,13 @@ static func clipe(i: int, weapon: String = "") -> Animation:
 	# "clipe ausente" e o golpe ficava sem animação nenhuma, com um warning que
 	# some no meio do log.
 	var caminho := ""
-	for ext in [".tres", ".res"]:
-		var tentativa: String = "res://assets/animations/%s%s" % [g["anim"], ext]
-		if ResourceLoader.exists(tentativa):
-			caminho = tentativa
+	for pasta in ["res://assets/animations/", PASTA_EF]:
+		for ext in [".tres", ".res"]:
+			var tentativa: String = "%s%s%s" % [pasta, g["anim"], ext]
+			if ResourceLoader.exists(tentativa):
+				caminho = tentativa
+				break
+		if caminho != "":
 			break
 	if caminho == "":
 		push_warning("[Melee] clipe ausente (nem .tres nem .res): " + String(g["anim"]))
@@ -687,7 +749,7 @@ static func golpear(world: Node, caster: Node3D, i: int, origem: Vector3, dir: V
 				# aqui o "um acerto por corpo por golpe" é garantido pelo
 				# `_ja_acertou` da própria lâmina.
 				fio.armar(float(g["dano"]) * s, float(g["kb"]) * s,
-					hitstun(i, weapon), 0, 0.0)
+					hitstun(i, weapon), 0, 0.0, true)
 				# `hit_confirmed` alimenta a punição de whiff e o counter hit —
 				# o caminho da caixa o marcava por `hit_landed`, e o do fio
 				# marca pelo `acertou`. Mesma informação, outra fonte.
@@ -744,6 +806,7 @@ static func golpear(world: Node, caster: Node3D, i: int, origem: Vector3, dir: V
 		# da zona e precisa estar escrito ANTES do `setup`, porque é o `_on_body`
 		# — disparado já no primeiro quadro de sobreposição — que o lê.
 		zone.derruba = derruba(i, weapon)
+		zone.corpo_a_corpo = true
 
 		# vel = 0: a hitbox do corpo a corpo fica onde nasceu; alcance é o braço,
 		# não um projétil.

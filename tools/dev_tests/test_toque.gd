@@ -210,7 +210,7 @@ func _o_layout(toque: ToqueHud) -> void:
 	# celular", palavras do dono. A asserção antiga exigia `y > 60% da tela` e
 	# reprovava o layout novo, que é o certo.
 	var barra_topo := toque._barra().get_global_rect().position.y if toque._barra() else t.y
-	for idx in [1, 2, 3]:      # PULO, DASH, F
+	for idx in [1, 2, 3, 4]:   # PULO, ROLL, F, DESLIZA
 		var c := toque._centro_do_botao(idx)
 		var nome := String(toque._dados_do_botao(idx)["nome"])
 		print("   %s em %s" % [nome, str(c)])

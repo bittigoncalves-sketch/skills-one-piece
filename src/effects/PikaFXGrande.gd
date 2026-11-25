@@ -44,8 +44,18 @@ const V_CHUVA_INICIO := 2.00
 const V_MAX_INICIO := 11.00
 const V_CHUVA_FIM := 12.00
 const V_TOTAL := 14.00
-const V_RAIO_ARENA := 44.0
 const V_ALTURA := 28.0
+# RAIOS GUIADOS — pedido do dono (06/10/2026): o V atinge TODOS os alvos até 50 m do
+# jogador. A chuva aleatória sozinha tinha ~0,25 % por descarga de cair num alvo de
+# 0,5 m (~25 % por uso). Agora, a cada V_GUIA_INTERVALO, todo alvo vivo dentro de
+# V_ALCANCE_ALVOS leva um raio próprio: 25 raios de 32 em 10 s fecham o teto do slot
+# (768, por ALVO — `CombatResolver._cobrar`) no fim da chuva. Sair do raio é a defesa.
+const V_ALCANCE_ALVOS := 50.0
+const V_GUIA_INTERVALO := 0.40
+const V_RAIO_GUIADO := 1.3
+# A chuva visual cobre o mesmo raio dos raios guiados (era 44 m, fixo no ponto do
+# lançamento): o que se vê caindo é a área que machuca, e ela anda com o jogador.
+const V_RAIO_ARENA := V_ALCANCE_ALVOS
 
 # Vários jogadores podem manter uma Chuva de Luz ao mesmo tempo. O céu usa a
 # maior intensidade ativa e só volta ao azul quando o último controlador sair.
@@ -134,7 +144,7 @@ static func _teleportar_e_alvejar(world: Node, caster: Node,
 	var distancia := C_ALCANCE_ALVO
 	var arvore := corpo.get_tree()
 	if arvore != null:
-		for grupo in ["enemy", "player"]:
+		for grupo in ["enemy", "player", AlvosDeGolpe.GRUPO]:
 			for candidato in arvore.get_nodes_in_group(grupo):
 				if candidato == caster or not (candidato is Node3D) \
 						or not is_instance_valid(candidato):
@@ -689,6 +699,7 @@ class ChuvaDeLuzController extends Node3D:
 	var _rng := RandomNumberGenerator.new()
 	var _t := 0.0
 	var _proximo := V_CHUVA_INICIO
+	var _proximo_guiado := V_CHUVA_INICIO
 	var _indice := 0
 	var _luz: OmniLight3D = null
 	var _campo: GPUParticles3D = null
@@ -711,6 +722,7 @@ class ChuvaDeLuzController extends Node3D:
 
 	func _process(delta: float) -> void:
 		_t += delta
+		_seguir_caster()
 		var dourado := 0.0
 		if _t >= 0.55 and _t < V_CHUVA_FIM:
 			dourado = smoothstep(0.55, 1.75, _t)
@@ -734,6 +746,9 @@ class ChuvaDeLuzController extends Node3D:
 				if _t >= V_MAX_INICIO:
 					intervalo = 0.038
 				_proximo += intervalo
+			while _t >= _proximo_guiado:
+				_raios_guiados()
+				_proximo_guiado += V_GUIA_INTERVALO
 		if _t >= V_CHUVA_FIM and not _dissipando:
 			_dissipando = true
 			_campo.emitting = false
@@ -872,6 +887,41 @@ class ChuvaDeLuzController extends Node3D:
 			0.22, caster, raio)
 		spec.marcar(zona)
 		_indice += 1
+
+	## O centro da chuva acompanha o jogador no plano (a altura fica a do lançamento).
+	func _seguir_caster() -> void:
+		if is_instance_valid(caster) and caster is Node3D:
+			var p := (caster as Node3D).global_position
+			global_position = Vector3(p.x, global_position.y, p.z)
+
+	## Um raio em cada alvo vivo a até V_ALCANCE_ALVOS do jogador (o mesmo critério de
+	## alvo das outras frutas: `AlvosDeGolpe`, que inclui o grupo `alvo_de_golpe`).
+	func _raios_guiados() -> void:
+		if not is_instance_valid(caster) or not (caster is Node3D):
+			return
+		var de := (caster as Node3D).global_position
+		for alvo in AlvosDeGolpe.todos(get_tree()):
+			if alvo == caster or not (alvo is Node3D) or not is_instance_valid(alvo):
+				continue
+			if "health" in alvo and float(alvo.get("health")) <= 0.0:
+				continue
+			var meio := AlvosDeGolpe.centro(alvo as Node3D)
+			if meio.distance_to(de) > V_ALCANCE_ALVOS:
+				continue
+			_raio_no_alvo(meio)
+
+	func _raio_no_alvo(meio: Vector3) -> void:
+		_criar_feixe_visual(to_local(meio), true)
+		Impacto.criar(self, meio, false, false, V_RAIO_GUIADO)
+		PikaAudio.play(self, meio, "chuva", 0.90 + float(_indice % 9) * 0.025)
+		var zona := DamageZone.new()
+		add_child(zona)
+		zona.global_position = meio
+		# SEM impulso: a zona nasce no centro do alvo, e o empurrão de 8 m/s (o da chuva
+		# aleatória) o arrastava para fora dos 50 m em ~4 s — o boneco a 4 m parou em
+		# 59 m com 35 de 94 (medido em 06/10/2026). Raio do céu não arrasta pelo chão.
+		zona.setup(spec.valor_do_hit(), 0.0, Vector3.ZERO, 0.22, caster, V_RAIO_GUIADO)
+		spec.marcar(zona)
 
 	func _ponto_da_arena() -> Vector3:
 		var ang := _rng.randf() * TAU

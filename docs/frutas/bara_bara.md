@@ -1,5 +1,7 @@
 # Bara Bara no Mi — desmembramento
 
+**Redesenho em planejamento (13/09/2026):** [fruta, kit, direção visual e etapas de implementação](../PLANO_BARA_BARA.md). O plano propõe separação de membros reais com acabamento de referência Ope. Ainda não implementado; esta página continua descrevendo o kit executado atualmente.
+
 **Id:** `bara_bara` · **Tipo:** Paramecia · **Passiva declarada:** Esquiva
 Desmembrada (35% de chance de esquivar dano cortante/frontal).
 

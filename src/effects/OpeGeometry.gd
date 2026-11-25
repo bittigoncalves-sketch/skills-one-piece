@@ -68,3 +68,36 @@ static func fade(material: StandardMaterial3D, alpha: float) -> void:
 	var color := material.albedo_color
 	color.a = clampf(alpha, 0.0, 1.0)
 	material.albedo_color = color
+
+static func arc(parent: Node3D, radius: float, start: float, end: float,
+		width: float, material: Material, steps: int = 32) -> MeshInstance3D:
+	var points := PackedVector3Array()
+	for i: int in range(steps + 1):
+		var angle := lerpf(start, end, float(i) / float(steps))
+		points.append(Vector3(cos(angle) * radius, 0.0, sin(angle) * radius))
+	return line(parent, points, width, material)
+
+static func mote(parent: Node3D, size: float, material: Material) -> MeshInstance3D:
+	var mesh := SphereMesh.new()
+	mesh.radius = size
+	mesh.height = size * 2.0
+	mesh.radial_segments = 8
+	mesh.rings = 4
+	return instance(parent, mesh, material)
+
+static func needle(parent: Node3D, length: float, width: float, material: Material) -> MeshInstance3D:
+	# Four planar facets give the surgical blade a crisp diamond silhouette.
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var cross_section := [Vector3(width, 0, -length * 0.12),
+		Vector3(0, width * 0.28, -length * 0.12),
+		Vector3(-width, 0, -length * 0.12), Vector3(0, -width * 0.28, -length * 0.12)]
+	for i: int in range(4):
+		surface.add_vertex(cross_section[i])
+		surface.add_vertex(cross_section[(i + 1) % 4])
+		surface.add_vertex(Vector3(0, 0, -length))
+		surface.add_vertex(cross_section[(i + 1) % 4])
+		surface.add_vertex(cross_section[i])
+		surface.add_vertex(Vector3.ZERO)
+	surface.generate_normals()
+	return instance(parent, surface.commit(), material)

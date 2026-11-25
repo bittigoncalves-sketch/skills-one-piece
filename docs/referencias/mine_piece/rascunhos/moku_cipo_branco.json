@@ -1,0 +1,172 @@
+{
+	"animacao": {
+		"clipe": "punching",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.1
+	},
+	"ativacao": {
+		"andar_segurando": false,
+		"carga": 0.0,
+		"empurrao_carga_max": 1.5,
+		"modo": "Pressionar",
+		"paralisar_segurando": false,
+		"ponto_segurar": 0.5,
+		"repetir": false,
+		"segurar_max": 4.0,
+		"tecla": "V"
+	},
+	"audio": {
+		"som": "Disparo",
+		"tom": 1.05,
+		"volume": -8.0
+	},
+	"camera": {
+		"tremor": 0.2,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 12.0,
+		"exige_alvo": false,
+		"exige_chao": false,
+		"nivel_minimo": 1,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 12.0,
+		"custo": 18.0,
+		"custo_por_segundo": 0.0,
+		"duracao": 1.3,
+		"fim_sobre_alvo": 0.0,
+		"flutuar": false,
+		"inicio_do_fim": -1.0,
+		"intervalo_depois": 0.5,
+		"mirar_no_alvo": false,
+		"parar_no_vazio": false,
+		"recarga": 7.0
+	},
+	"dano": {
+		"atordoamento": 0.2,
+		"critico": 0.0,
+		"duracao_efeito": 1.0,
+		"empurrao": 1.0,
+		"lentidao": 0.0,
+		"multiplicador": 2.0,
+		"tipo": "Vento",
+		"valor": 86.0
+	},
+	"eventos": [
+		{
+			"duracao": 0.5,
+			"habilitado": true,
+			"id": "pose",
+			"inicio": 0.0,
+			"parametros": {
+				"pose": "",
+				"transicao": 0.08
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.5,
+			"habilitado": true,
+			"id": "arco",
+			"inicio": 0.5,
+			"parametros": {
+				"escala": 2.0,
+				"estilo": "Tornado",
+				"na_mao": false
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.75,
+			"habilitado": true,
+			"id": "tornado",
+			"inicio": 0.5,
+			"parametros": {},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.4,
+			"habilitado": true,
+			"id": "som",
+			"inicio": 0.5,
+			"parametros": {
+				"som": "Vento",
+				"tom": 1.0,
+				"volume": -6.0
+			},
+			"tipo": "audio"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 3.0,
+		"forma": "Esfera",
+		"largura": 3.0,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 1.5,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": -2.0
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "[RASCUNHO Mine Piece, a revisar] Busca alvo em 8 m; em ~0,5 s lança um redemoinho de fumaça (tornado) e abre um corte horizontal em arco.",
+		"dono": "Jogador",
+		"fruta": "moku_moku",
+		"id": "moku_cipo_branco",
+		"modelo": "Base",
+		"nome": "Cipó Branco"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 2.0,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 6.0
+	},
+	"poses": [],
+	"projeteis": {
+		"abertura": 20.0,
+		"area_chuva": 8.0,
+		"direcao_disparo": "Mira",
+		"explosao": 1.5,
+		"giro": 0.0,
+		"gravidade": 0.0,
+		"modelo": "",
+		"perfurar": true,
+		"quantidade": 1,
+		"raio": 1.2,
+		"rastro": "Fumaça",
+		"sem_dano": false,
+		"som_explosao": "Impacto",
+		"velocidade": 14.0,
+		"vida": 1.5,
+		"visual": "Energia"
+	},
+	"versao": 1,
+	"vfx": {
+		"altura": 1.2,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#dcdde1",
+		"cor_2": "#8395a7",
+		"escala": 1.2,
+		"estilo": "Anel",
+		"frente": 1.0,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "Mão direita",
+		"projetil_de": ""
+	}
+}

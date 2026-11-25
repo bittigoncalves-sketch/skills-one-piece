@@ -61,6 +61,18 @@
 		{
 			"id": "npcs",
 			"nome": "NPCs"
+		},
+		{
+			"id": "naufragios",
+			"nome": "naufragios"
+		},
+		{
+			"id": "east_blue_mine_piece",
+			"nome": "East Blue (Mine Piece)"
+		},
+		{
+			"id": "estruturas_mine_piece",
+			"nome": "Estruturas (Mine Piece)"
 		}
 	],
 	"modelos": [
@@ -116,7 +128,7 @@
 				"comportamento": "territorial",
 				"corpo": "quadrupede",
 				"boss": false,
-				"xp": 1.0,
+				"xp": 60.0,
 				"item": "none",
 				"altura_voo": 0.0,
 				"nome": "Búfalo",
@@ -231,6 +243,56 @@
 				2.68643093109131,
 				0.75,
 				0.896550953388214
+			]
+		},
+		{
+			"id": "boneco_de_treino_voxel",
+			"nome": "Boneco de treino (voxel)",
+			"arquivo": "boneco_de_treino_voxel.glb",
+			"sha256": "f343fb21a02202b7daf63b78398688301188a38206f239956a8a5283dce0fab6",
+			"centro": [
+				-0.0299999993294477,
+				1.07000005245209,
+				0.0
+			],
+			"tamanho": [
+				2.3199999332428,
+				2.14000010490417,
+				1.62000000476837
+			],
+			"triangulos": 2376,
+			"categorias": [
+				"construao"
+			],
+			"tamanho_padrao": [
+				2.3199999332428,
+				2.14000010490417,
+				1.62000000476837
+			]
+		},
+		{
+			"id": "centro_treino_voxel",
+			"nome": "Centro de treino (voxel)",
+			"arquivo": "centro_treino_voxel.glb",
+			"sha256": "43853fb06803c95b7d58c518d24d89156df6dd9a33f67171d2e4703630402166",
+			"centro": [
+				0.0,
+				2.41499996185303,
+				-2.84500002861023
+			],
+			"tamanho": [
+				11.1000003814697,
+				4.82999992370605,
+				12.9100008010864
+			],
+			"triangulos": 2304,
+			"categorias": [
+				"construao"
+			],
+			"tamanho_padrao": [
+				11.1000003814697,
+				4.82999992370605,
+				12.9100008010864
 			]
 		},
 		{
@@ -2563,18 +2625,18 @@
 			"id": "palm_tree",
 			"nome": "Palm Tree",
 			"arquivo": "palm_tree.glb",
-			"sha256": "b02dc9c28a8ec98dcce6660affa8ae8ae8e6951f9ee871ca44b4d64c849936f4",
+			"sha256": "dc9f456c8815acb68fe8106a5dbf6c2e84ccb20f5d52ccd71cb1a62d1ef7c044",
 			"centro": [
-				0.363085091114044,
+				0.363085269927979,
 				1.79915380477905,
-				-0.139704346656799
+				-0.139704465866089
 			],
 			"tamanho": [
-				2.60968565940857,
+				2.60968589782715,
 				3.58735823631287,
 				2.5181941986084
 			],
-			"triangulos": 3208,
+			"triangulos": 2852,
 			"tamanho_padrao": [
 				6.18347120285034,
 				8.5,
@@ -2585,7 +2647,7 @@
 			"id": "palm_tree-a6ckjyfsib",
 			"nome": "Palm Tree-A6cKJYFsIb",
 			"arquivo": "palm_tree-a6ckjyfsib.glb",
-			"sha256": "ae8c66e5e2206c5efd12c2cf96b9064f643076c2d8bac5f3c5f457b2ee6491ca",
+			"sha256": "8616f1be2a33ccb43315b78f9b498467d9ead925e80fc916f69ecf434e221d1d",
 			"centro": [
 				0.231803417205811,
 				1.34749925136566,
@@ -2596,7 +2658,7 @@
 				2.68873906135559,
 				2.75341463088989
 			],
-			"triangulos": 3134,
+			"triangulos": 3992,
 			"tamanho_padrao": [
 				7.98540258407593,
 				7.5,
@@ -2607,18 +2669,18 @@
 			"id": "palm_tree-p0tgwyxbgr",
 			"nome": "Palm Tree-P0tgwyXBgr",
 			"arquivo": "palm_tree-p0tgwyxbgr.glb",
-			"sha256": "56ce27c93426e137e996844a7e99457218e513468e5a567046590c183224b436",
+			"sha256": "5038b3c06b6e4e44ee1e8c65a50886932c75eca8e0b6096de63330a86885ec7f",
 			"centro": [
 				0.714783132076263,
 				1.3467561006546,
-				0.0403985977172852
+				0.0403984785079956
 			],
 			"tamanho": [
 				2.63627171516418,
 				2.68527269363403,
 				2.57766199111938
 			],
-			"triangulos": 2924,
+			"triangulos": 4008,
 			"tamanho_padrao": [
 				7.85401582717896,
 				8.0,
@@ -4550,18 +4612,18 @@
 			"id": "pine_trees",
 			"nome": "Pine Trees",
 			"arquivo": "pine_trees.glb",
-			"sha256": "aea959025a31b0d250d7c94c96cf9456f9fcdaf9fb269790029d85adae3703c4",
+			"sha256": "74050bd38e03fdd0376d6373be8127bacbc9620d1ca9a5c8058cb557985dae30",
 			"centro": [
 				0.0227222442626953,
-				0.390265434980392,
-				0.0300544500350952
+				0.390265375375748,
+				0.0300543308258057
 			],
 			"tamanho": [
 				1.7797269821167,
-				0.788228452205658,
+				0.788228690624237,
 				1.72573852539062
 			],
-			"triangulos": 3666,
+			"triangulos": 2772,
 			"tamanho_padrao": [
 				29.352466583252,
 				12.9999990463257,
@@ -5340,18 +5402,18 @@
 			"id": "trees",
 			"nome": "Trees",
 			"arquivo": "trees.glb",
-			"sha256": "a61c2378b7a103276c8deb8ddbeda0d5b21d7cc638bca48500b97baabdf651d5",
+			"sha256": "bb6f7615f2692854409510ffda227846d4cfb70547fc382f11f5f89135514692",
 			"centro": [
 				-0.0113836526870728,
-				0.465246677398682,
+				0.465246617794037,
 				0.0817977786064148
 			],
 			"tamanho": [
 				1.96989977359772,
-				0.926502645015717,
-				1.86357581615448
+				0.92650294303894,
+				1.86357593536377
 			],
-			"triangulos": 4776,
+			"triangulos": 2920,
 			"tamanho_padrao": [
 				23.3878421783447,
 				11.0,
@@ -5363,18 +5425,18 @@
 			"id": "trees_cut",
 			"nome": "Trees cut",
 			"arquivo": "trees_cut.glb",
-			"sha256": "0821d2dc0eea14eb8c8a0248205baa4b0101f519fca2e116db00038dd3325551",
+			"sha256": "be180691df96d34d76da3bf621b5ae9adbbe38ea91a37219dff9189ba5c0d870",
 			"centro": [
 				0.0450543165206909,
-				0.0999738201498985,
+				0.0999738126993179,
 				0.0628848075866699
 			],
 			"tamanho": [
 				1.48507237434387,
-				0.211552649736404,
+				0.211552992463112,
 				1.48256468772888
 			],
-			"triangulos": 968,
+			"triangulos": 4692,
 			"tamanho_padrao": [
 				5.99999952316284,
 				0.85471647977829,
@@ -5385,18 +5447,18 @@
 			"id": "trees_cut-zhm3d5kkrh",
 			"nome": "Trees cut-zhm3D5KKRh",
 			"arquivo": "trees_cut-zhm3d5kkrh.glb",
-			"sha256": "e64ec26fce1999d02ad792d29b9cb97079cef0fbd56574de95d0d58d6c305fa9",
+			"sha256": "63e55e8e098c63dd1219e64000d7f33c7503719beddf42e3e4e527a4466636b6",
 			"centro": [
 				0.0292202234268188,
-				0.0791973695158958,
+				0.0791973546147346,
 				0.189914166927338
 			],
 			"tamanho": [
 				1.53249061107635,
-				0.169999331235886,
-				1.83534264564514
+				0.169999733567238,
+				1.83534252643585
 			],
-			"triangulos": 736,
+			"triangulos": 4588,
 			"tamanho_padrao": [
 				5.00993299484253,
 				0.555752336978912,
@@ -5924,7 +5986,7 @@
 				"comportamento": "territorial",
 				"corpo": "caranguejo",
 				"boss": false,
-				"xp": 1.0,
+				"xp": 30.0,
 				"item": "none",
 				"altura_voo": 0.0,
 				"nome": "Caranguejo gigante",
@@ -6008,7 +6070,7 @@
 				"comportamento": "territorial",
 				"corpo": "quadrupede",
 				"boss": false,
-				"xp": 1.0,
+				"xp": 12.0,
 				"item": "none",
 				"altura_voo": 0.0,
 				"nome": "Macaco",
@@ -6044,15 +6106,15 @@
 				"pets"
 			],
 			"tamanho_padrao": [
-				0.107955694198608,
-				0.5,
-				0.538865506649017
+				0.215911388397217,
+				1.0,
+				1.07773101329803
 			],
 			"animal": {
 				"comportamento": "domestico",
 				"corpo": "quadrupede",
 				"boss": false,
-				"xp": 1.0,
+				"xp": 4.0,
 				"item": "none",
 				"altura_voo": 0.0,
 				"nome": "Beagle",
@@ -6095,7 +6157,7 @@
 				"comportamento": "predador",
 				"corpo": "quadrupede",
 				"boss": false,
-				"xp": 1.0,
+				"xp": 77.0,
 				"item": "none",
 				"altura_voo": 0.0,
 				"nome": "Urso",
@@ -6130,9 +6192,9 @@
 				"animais"
 			],
 			"tamanho_padrao": [
-				0.600000023841858,
-				0.079893596470356,
-				0.373257786035538
+				1.20000004768372,
+				0.159787192940712,
+				0.746515572071075
 			],
 			"animal": {
 				"comportamento": "presa",
@@ -6173,9 +6235,9 @@
 				"animais"
 			],
 			"tamanho_padrao": [
-				0.600000023841858,
-				0.236962422728539,
-				0.364120215177536
+				1.20000004768372,
+				0.473924845457077,
+				0.728240430355072
 			],
 			"animal": {
 				"comportamento": "presa",
@@ -6224,7 +6286,7 @@
 				"comportamento": "territorial",
 				"corpo": "quadrupede",
 				"boss": false,
-				"xp": 1.0,
+				"xp": 60.0,
 				"item": "none",
 				"altura_voo": 0.0,
 				"nome": "Bisão",
@@ -6259,15 +6321,15 @@
 				"animais"
 			],
 			"tamanho_padrao": [
-				0.085176520049572,
-				0.349999994039536,
-				0.369002729654312
+				0.170353040099144,
+				0.699999988079071,
+				0.738005459308624
 			],
 			"animal": {
 				"comportamento": "domestico",
 				"corpo": "quadrupede",
 				"boss": false,
-				"xp": 1.0,
+				"xp": 2.0,
 				"item": "none",
 				"altura_voo": 0.0,
 				"nome": "Gato",
@@ -6397,7 +6459,7 @@
 				"comportamento": "domestico",
 				"corpo": "quadrupede",
 				"boss": false,
-				"xp": 1.0,
+				"xp": 4.0,
 				"item": "none",
 				"altura_voo": 0.0,
 				"nome": "Corgi",
@@ -6440,7 +6502,7 @@
 				"comportamento": "domestico",
 				"corpo": "quadrupede",
 				"boss": false,
-				"xp": 1.0,
+				"xp": 12.0,
 				"item": "none",
 				"altura_voo": 0.0,
 				"nome": "Vaca",
@@ -6483,7 +6545,7 @@
 				"comportamento": "presa",
 				"corpo": "quadrupede",
 				"boss": false,
-				"xp": 1.0,
+				"xp": 5.0,
 				"item": "none",
 				"altura_voo": 0.0,
 				"nome": "Cervo",
@@ -6526,7 +6588,7 @@
 				"comportamento": "presa",
 				"corpo": "quadrupede",
 				"boss": false,
-				"xp": 1.0,
+				"xp": 6.0,
 				"item": "none",
 				"altura_voo": 0.0,
 				"nome": "Alce",
@@ -6570,7 +6632,7 @@
 				"comportamento": "domestico",
 				"corpo": "quadrupede",
 				"boss": false,
-				"xp": 1.0,
+				"xp": 4.0,
 				"item": "none",
 				"altura_voo": 0.0,
 				"nome": "Cão",
@@ -6614,7 +6676,7 @@
 				"comportamento": "domestico",
 				"corpo": "quadrupede",
 				"boss": false,
-				"xp": 1.0,
+				"xp": 4.0,
 				"item": "none",
 				"altura_voo": 0.0,
 				"nome": "Cão de guarda",
@@ -6658,7 +6720,7 @@
 				"comportamento": "domestico",
 				"corpo": "quadrupede",
 				"boss": false,
-				"xp": 1.0,
+				"xp": 4.0,
 				"item": "none",
 				"altura_voo": 0.0,
 				"nome": "Vira-lata",
@@ -6744,7 +6806,7 @@
 				"comportamento": "presa",
 				"corpo": "quadrupede",
 				"boss": false,
-				"xp": 1.0,
+				"xp": 3.0,
 				"item": "none",
 				"altura_voo": 0.0,
 				"nome": "Raposa",
@@ -6849,7 +6911,7 @@
 				"comportamento": "domestico",
 				"corpo": "quadrupede",
 				"boss": false,
-				"xp": 1.0,
+				"xp": 12.0,
 				"item": "none",
 				"altura_voo": 0.0,
 				"nome": "Cavalo",
@@ -7013,7 +7075,7 @@
 				"comportamento": "domestico",
 				"corpo": "quadrupede",
 				"boss": false,
-				"xp": 1.0,
+				"xp": 5.0,
 				"item": "none",
 				"altura_voo": 0.0,
 				"nome": "Ovelha",
@@ -7056,7 +7118,7 @@
 				"comportamento": "predador",
 				"corpo": "voador",
 				"boss": false,
-				"xp": 1.0,
+				"xp": 18.0,
 				"item": "none",
 				"altura_voo": 14.0,
 				"nome": "Águia",
@@ -7100,7 +7162,7 @@
 				"comportamento": "predador",
 				"corpo": "quadrupede",
 				"boss": true,
-				"xp": 1.0,
+				"xp": 405.0,
 				"item": "none",
 				"altura_voo": 0.0,
 				"nome": "Gorila Rei",
@@ -7144,7 +7206,7 @@
 				"comportamento": "predador",
 				"corpo": "voador",
 				"boss": true,
-				"xp": 1.0,
+				"xp": 280.0,
 				"item": "none",
 				"altura_voo": 12.0,
 				"nome": "Harpia",
@@ -7208,7 +7270,7 @@
 				"comportamento": "domestico",
 				"corpo": "ave_chao",
 				"boss": false,
-				"xp": 1.0,
+				"xp": 4.0,
 				"item": "none",
 				"altura_voo": 0.0,
 				"nome": "Pelicano",
@@ -7251,7 +7313,7 @@
 				"comportamento": "domestico",
 				"corpo": "quadrupede",
 				"boss": false,
-				"xp": 1.0,
+				"xp": 5.0,
 				"item": "none",
 				"altura_voo": 0.0,
 				"nome": "Carneiro",
@@ -7390,7 +7452,7 @@
 			"id": "toco_pinheiro",
 			"nome": "Toco de pinheiro",
 			"arquivo": "toco_pinheiro.glb",
-			"sha256": "8f08db8d1fa74414bf3109d3c5911424d9d8a1e98dd4c1688853a8c70357dec7",
+			"sha256": "8fc1bc49eda49bf7fd5eaf6fde8c93fe30af61103ab6da0697e8fa8d383b5301",
 			"centro": [
 				-0.0000000596046447753906,
 				0.362041115760803,
@@ -7401,7 +7463,7 @@
 				0.724082231521606,
 				1.21461224555969
 			],
-			"triangulos": 96,
+			"triangulos": 828,
 			"categorias": [
 				"arvores"
 			],
@@ -7415,7 +7477,7 @@
 			"id": "toco_arvore_verde",
 			"nome": "Toco de árvore verde",
 			"arquivo": "toco_arvore_verde.glb",
-			"sha256": "7b8c2cce9b64aa4b526fe5659f3113eba188bfb1d95569191aa32d68e9f926e7",
+			"sha256": "04e6b1a1a6ec33a15d6f9f6e3b9c3fd0379d3117d48e2377a1cf43b2a825e8db",
 			"centro": [
 				-0.0000000596046447753906,
 				0.362041115760803,
@@ -7426,7 +7488,7 @@
 				0.724082231521606,
 				1.21461224555969
 			],
-			"triangulos": 96,
+			"triangulos": 828,
 			"categorias": [
 				"arvores"
 			],
@@ -7440,18 +7502,18 @@
 			"id": "palmeira_jovem",
 			"nome": "Palmeira — jovem",
 			"arquivo": "palmeira_jovem.glb",
-			"sha256": "857be6d8d826645999074cb9fd02138059016d82104554d8ff3658d700370d66",
+			"sha256": "2a248a8007026011c1bb94cae774f993a8f9c2d0bca1e0eaee2461f7e649575e",
 			"centro": [
-				0.000000119209289550781,
-				1.81304204463959,
+				0.00406324863433838,
+				1.80864691734314,
 				-0.000000119209289550781
 			],
 			"tamanho": [
-				3.79846811294556,
-				3.62608432769775,
+				3.79281044006348,
+				3.63824129104614,
 				3.05202913284302
 			],
-			"triangulos": 400,
+			"triangulos": 1736,
 			"categorias": [
 				"arvores"
 			],
@@ -7465,18 +7527,18 @@
 			"id": "palmeira_adulta",
 			"nome": "Palmeira (nova)",
 			"arquivo": "palmeira_adulta.glb",
-			"sha256": "f74b46ff56d94b70ef6e254e79e4d889bf8d1ae952895294e39e40c154dc90b5",
+			"sha256": "9447982ae9469408d7fe8051f73cf4e455c5f6dd6e8c990f0ca23b9df8c2d8e0",
 			"centro": [
-				0.000000238418579101562,
-				2.48661541938782,
+				0.00611281394958496,
+				2.48213529586792,
 				-0.000000357627868652344
 			],
 			"tamanho": [
-				4.87204647064209,
-				4.97323083877563,
+				4.86203718185425,
+				4.98341798782349,
 				3.58817529678345
 			],
-			"triangulos": 464,
+			"triangulos": 3700,
 			"categorias": [
 				"arvores"
 			],
@@ -7490,18 +7552,18 @@
 			"id": "toco_palmeira",
 			"nome": "Toco de palmeira",
 			"arquivo": "toco_palmeira.glb",
-			"sha256": "1e96223c63ca8317974a07ddde5267c87229983f153ffcc01aa86b1d1fb0ec16",
+			"sha256": "c53b22cb356f43f972482f1eccdc546942261d0605f24d488160275fd6b1e1e7",
 			"centro": [
-				0.000000298023223876953,
-				1.01979005336761,
+				-0.00238984823226929,
+				1.02202141284943,
 				-0.000000536441802978516
 			],
 			"tamanho": [
-				1.98229694366455,
-				2.03958010673523,
+				1.99058926105499,
+				2.03332614898682,
 				1.03918039798737
 			],
-			"triangulos": 64,
+			"triangulos": 756,
 			"categorias": [
 				"arvores"
 			],
@@ -7515,18 +7577,18 @@
 			"id": "palmeira_muda",
 			"nome": "Palmeira — muda",
 			"arquivo": "palmeira_muda.glb",
-			"sha256": "b93eeb2e4e36a1c9f6a2357a97f7c764f66975b0b467e057860e350f0b771baf",
+			"sha256": "8800f5a957f0a00bae31a09ec97bf90ebe82929f89b930a0bd255e7f004b7dd1",
 			"centro": [
 				0.000000238418579101562,
 				0.730928301811218,
 				-0.000000238418579101562
 			],
 			"tamanho": [
-				2.60700058937073,
+				2.60700082778931,
 				1.46185660362244,
 				2.69544553756714
 			],
-			"triangulos": 336,
+			"triangulos": 600,
 			"categorias": [
 				"arvores"
 			],
@@ -7540,18 +7602,18 @@
 			"id": "arvore_verde_adulta",
 			"nome": "Árvore verde (frutífera)",
 			"arquivo": "arvore_verde_adulta.glb",
-			"sha256": "5eb52b597696460312b6622bd42648264559e83f611b1b86c5d6d50f33a6d754",
+			"sha256": "a02216e211e53fb723c0ae2e1dc07e171d03eb404fd18b2775401d81cafbfe1e",
 			"centro": [
 				0.0,
-				1.54997384548187,
+				1.54997360706329,
 				0.0
 			],
 			"tamanho": [
 				3.24332046508789,
-				3.09994769096375,
+				3.09994721412659,
 				3.54068088531494
 			],
-			"triangulos": 2448,
+			"triangulos": 3156,
 			"categorias": [
 				"arvores"
 			],
@@ -7570,18 +7632,18 @@
 			"id": "pinheiro_adulto",
 			"nome": "Pinheiro (dá pinha)",
 			"arquivo": "pinheiro_adulto.glb",
-			"sha256": "86e8a2d935491f18758201e3d53f8f7aa8bea73d6919754586b19716e958875f",
+			"sha256": "005f45bea93585ea9497339811b8efb3c29d0664e9ee6e562cf3ca2888eb1c4b",
 			"centro": [
-				0.000000119209289550781,
-				1.84473407268524,
+				0.000000238418579101562,
+				1.84473419189453,
 				0.000000476837158203125
 			],
 			"tamanho": [
-				2.19163250923157,
-				3.68946814537048,
+				2.19163274765015,
+				3.68946838378906,
 				2.1916332244873
 			],
-			"triangulos": 432,
+			"triangulos": 2164,
 			"categorias": [
 				"arvores"
 			],
@@ -7598,7 +7660,7 @@
 			"id": "arvore_gigante",
 			"nome": "Árvore gigante (dá bolota)",
 			"arquivo": "arvore_gigante.glb",
-			"sha256": "9749a786af0840585900b8b240bd41caddee2de77dec8dfd39fcea566f5e6382",
+			"sha256": "fd095ed4be8e19729af5269b6a903d0b2dc446636c7f27b8fba07632afb5a771",
 			"centro": [
 				0.0,
 				2.39621663093567,
@@ -7609,7 +7671,7 @@
 				4.79243326187134,
 				5.64171981811523
 			],
-			"triangulos": 5520,
+			"triangulos": 5660,
 			"categorias": [
 				"arvores"
 			],
@@ -7626,18 +7688,18 @@
 			"id": "arvore_verde_jovem",
 			"nome": "Árvore verde — jovem",
 			"arquivo": "arvore_verde_jovem.glb",
-			"sha256": "79ea7fc447a26bd78579e92cb61940b30733ee63384aba1fb2eea5ecfef708e8",
+			"sha256": "fcd9f48f9dcec797fb1fe5a7867104905b2cc209c881a0ae01ee784f04a6415f",
 			"centro": [
 				0.0,
-				1.2349956035614,
+				1.23499548435211,
 				0.0
 			],
 			"tamanho": [
-				2.57463884353638,
-				2.4699912071228,
+				2.57463908195496,
+				2.46999096870422,
 				2.81069278717041
 			],
-			"triangulos": 2448,
+			"triangulos": 1340,
 			"categorias": [
 				"arvores"
 			],
@@ -7651,9 +7713,9 @@
 			"id": "pinheiro_jovem",
 			"nome": "Pinheiro — jovem",
 			"arquivo": "pinheiro_jovem.glb",
-			"sha256": "e30716ada5bf0da91ccdab341e6e0a63c34b222c18a5b95a362c0ec7f398c260",
+			"sha256": "e1d9a6d3a2c5d6570d6826ecc9b085399be2ca64754769136796e28a5d7a2631",
 			"centro": [
-				-0.0000000596046447753906,
+				-0.000000119209289550781,
 				1.24016535282135,
 				0.0
 			],
@@ -7662,7 +7724,7 @@
 				2.4803307056427,
 				1.72467470169067
 			],
-			"triangulos": 304,
+			"triangulos": 836,
 			"categorias": [
 				"arvores"
 			],
@@ -7676,18 +7738,18 @@
 			"id": "cerejeira_jovem",
 			"nome": "Cerejeira — jovem",
 			"arquivo": "cerejeira_jovem.glb",
-			"sha256": "c29b2452bb28ece7b947e05cdb7cb008e6d2a5ea0917d30596e5ec85484dcb2a",
+			"sha256": "739bcaeb269dc110a4635b1280820c348d724fa354b1b14dfae57a40e562dda4",
 			"centro": [
 				0.0,
-				1.0735627412796,
+				1.07356286048889,
 				-0.000000119209289550781
 			],
 			"tamanho": [
 				2.71913766860962,
-				2.1471254825592,
+				2.14712572097778,
 				2.39541625976562
 			],
-			"triangulos": 1740,
+			"triangulos": 988,
 			"categorias": [
 				"arvores"
 			],
@@ -7701,7 +7763,7 @@
 			"id": "cerejeira_adulta",
 			"nome": "Cerejeira (dá cereja)",
 			"arquivo": "cerejeira_adulta.glb",
-			"sha256": "4f8185efdef67a4cc4e2683f7dbf0975eb01e15c23996e7234ffa74c1ba3bb2a",
+			"sha256": "67c74b971bad52a57890b8763d93c3af13bfdb2cb486fdf950d6008f8a99b315",
 			"centro": [
 				0.0,
 				1.8016517162323,
@@ -7712,7 +7774,7 @@
 				3.6033034324646,
 				3.61882638931274
 			],
-			"triangulos": 2592,
+			"triangulos": 2868,
 			"categorias": [
 				"arvores"
 			],
@@ -7729,18 +7791,18 @@
 			"id": "toco_cerejeira",
 			"nome": "Toco de cerejeira",
 			"arquivo": "toco_cerejeira.glb",
-			"sha256": "3c39e18aaa98159f5bfd7cdc3584eee866b2d0a8ec8bb668bff01b5a3f30cdeb",
+			"sha256": "3bcd8dce0551ac2a34c9a14f2d20bd7558634fb0cb1cb106da0f7cf7cb75a91c",
 			"centro": [
 				-0.0000000596046447753906,
 				0.381409287452698,
-				-0.000000357627868652344
+				-0.000000298023223876953
 			],
 			"tamanho": [
 				1.23924040794373,
 				0.762818574905396,
 				1.43095183372498
 			],
-			"triangulos": 96,
+			"triangulos": 940,
 			"categorias": [
 				"arvores"
 			],
@@ -7754,9 +7816,9 @@
 			"id": "pinheiro_broto",
 			"nome": "Pinheiro — broto",
 			"arquivo": "pinheiro_broto.glb",
-			"sha256": "1783a348df65f92f361887a4dac1cf806cca8bc2800c13bc058f5383c44bd22f",
+			"sha256": "99182d4623d0186f337438a75591f615c0fa56d7834d836e4663b04c591982f5",
 			"centro": [
-				0.0,
+				-0.0000000298023223876953,
 				0.528521180152893,
 				0.000000238418579101562
 			],
@@ -7765,7 +7827,7 @@
 				1.05704236030579,
 				0.671504557132721
 			],
-			"triangulos": 184,
+			"triangulos": 132,
 			"categorias": [
 				"arvores"
 			],
@@ -7779,7 +7841,7 @@
 			"id": "cerejeira_broto",
 			"nome": "Cerejeira — broto",
 			"arquivo": "cerejeira_broto.glb",
-			"sha256": "632c67c8a0a17553c5350991f721236517c48353a1503c6d4fa73558c6829ae7",
+			"sha256": "15498f75e4dd30b88fa258a51fe757f7118109085e44197041d7419d42915650",
 			"centro": [
 				-0.000000119209289550781,
 				0.370139420032501,
@@ -7790,7 +7852,7 @@
 				0.740278840065002,
 				0.501133322715759
 			],
-			"triangulos": 168,
+			"triangulos": 244,
 			"categorias": [
 				"arvores"
 			],
@@ -7804,7 +7866,7 @@
 			"id": "palmeira_broto",
 			"nome": "Palmeira — broto",
 			"arquivo": "palmeira_broto.glb",
-			"sha256": "189722f7f04f20f1ffe52907df7ba97cdba27a7f5aed516ec3abb69b197388f8",
+			"sha256": "40d947e294f709afd04465927322b0d0ff26e101ef1bf63c663288ead12709fe",
 			"centro": [
 				-0.000000327825546264648,
 				0.290947496891022,
@@ -7815,7 +7877,7 @@
 				0.581894993782043,
 				0.432456701993942
 			],
-			"triangulos": 152,
+			"triangulos": 352,
 			"categorias": [
 				"arvores"
 			],
@@ -7829,18 +7891,18 @@
 			"id": "palmeira_broto_alto",
 			"nome": "Palmeira — broto alto",
 			"arquivo": "palmeira_broto_alto.glb",
-			"sha256": "6dc0f7f919be31c7b6744b547a37ce8925754d36d529a6330464bf0149eea26a",
+			"sha256": "7ccaa18518872767aad1e092631e8f9edd878d47c109d9821234764ee9767cd9",
 			"centro": [
 				0.0000000745058059692383,
-				0.515374481678009,
+				0.515374541282654,
 				-0.000000104308128356934
 			],
 			"tamanho": [
-				0.383393228054047,
-				1.03074896335602,
-				0.371199369430542
+				0.383393257856369,
+				1.03074908256531,
+				0.371199399232864
 			],
-			"triangulos": 56,
+			"triangulos": 156,
 			"categorias": [
 				"arvores"
 			],
@@ -7854,7 +7916,7 @@
 			"id": "arvore_verde_broto",
 			"nome": "Árvore verde — broto",
 			"arquivo": "arvore_verde_broto.glb",
-			"sha256": "6639ceec2599179ef39dfbaebc33ebbf7406c89fbee4a1912583e945c1d5ae2b",
+			"sha256": "e5c1b4cca9efaec1a2c1085815e8363c0953fcf0bd42100d9d095fb78ec00531",
 			"centro": [
 				-0.000000119209289550781,
 				0.370139420032501,
@@ -7865,7 +7927,7 @@
 				0.740278840065002,
 				0.501133322715759
 			],
-			"triangulos": 168,
+			"triangulos": 244,
 			"categorias": [
 				"arvores"
 			],
@@ -7957,18 +8019,18 @@
 			"id": "arvore_verde_muda",
 			"nome": "Árvore verde — muda",
 			"arquivo": "arvore_verde_muda.glb",
-			"sha256": "d2f66cfabfe301d8bef041c1f167153ea46e71640043a800afbe4adcc27fab38",
+			"sha256": "e766dca475b594f2e7e93c34dc387d6661979685f0071f365cb389e3f0851bc0",
 			"centro": [
 				-0.0000000596046447753906,
-				0.853462755680084,
+				0.853462696075439,
 				0.0000000596046447753906
 			],
 			"tamanho": [
 				1.95408546924591,
-				1.70692551136017,
+				1.70692539215088,
 				1.92665636539459
 			],
-			"triangulos": 904,
+			"triangulos": 396,
 			"categorias": [
 				"arvores"
 			],
@@ -7982,18 +8044,18 @@
 			"id": "pinheiro_muda",
 			"nome": "Pinheiro — muda",
 			"arquivo": "pinheiro_muda.glb",
-			"sha256": "6299ebc56e015a17883c8b85d393f4e15a6ed28f366a0875fb2f8057d68cc93a",
+			"sha256": "2065e920cf269f3b1b87e336d89af6b4281d4f4faf5b61cd56024803ddafb491",
 			"centro": [
 				0.0,
-				0.808423042297363,
+				0.808422982692719,
 				-0.0000000596046447753906
 			],
 			"tamanho": [
 				1.4602963924408,
-				1.61684608459473,
+				1.61684596538544,
 				1.46029686927795
 			],
-			"triangulos": 232,
+			"triangulos": 348,
 			"categorias": [
 				"arvores"
 			],
@@ -8007,18 +8069,18 @@
 			"id": "cerejeira_muda",
 			"nome": "Cerejeira — muda",
 			"arquivo": "cerejeira_muda.glb",
-			"sha256": "6d27ee3285a716335390cb1392fb6848fe9d41a7bb479a59418c954a97e4a182",
+			"sha256": "f4b3b2286ada42af9eedb5c9fa232284a57b53701e16a0dd00a5abc1aa7ca934",
 			"centro": [
-				-0.0000000596046447753906,
-				0.688494563102722,
+				0.0000000596046447753906,
+				0.688494503498077,
 				0.0
 			],
 			"tamanho": [
-				1.52482283115387,
-				1.37698912620544,
-				1.50219321250916
+				1.52482295036316,
+				1.37698900699615,
+				1.50219297409058
 			],
-			"triangulos": 904,
+			"triangulos": 300,
 			"categorias": [
 				"arvores"
 			],
@@ -8291,7 +8353,7 @@
 			"id": "floresta_tree_stump",
 			"nome": "Toco grande (floresta)",
 			"arquivo": "floresta_tree_stump.glb",
-			"sha256": "3a03b80fb11f308cae03c79e4a4e1f1fa471b080e7039c8ca4447ee8940f3502",
+			"sha256": "f57a67cb3e762ab76b5518fdb5c9b8245ebc704d0c48e84eccfd950c54ab98ea",
 			"centro": [
 				0.23609471321106,
 				0.735988140106201,
@@ -8302,7 +8364,7 @@
 				2.20721292495728,
 				4.26645278930664
 			],
-			"triangulos": 504,
+			"triangulos": 1180,
 			"categorias": [
 				"arvores"
 			],
@@ -8860,18 +8922,18 @@
 			"id": "floresta_tree_birch_hero_green",
 			"nome": "Bétula enorme (floresta)",
 			"arquivo": "floresta_tree_birch_hero_green.glb",
-			"sha256": "1ee4d7be54b271abbafd03c3129cd69d4da008f511e521bfda06680e9fa0a3c4",
+			"sha256": "bb6505e21d8af152675e954123361f0363aaa37ef92322710d8d79a502c2f895",
 			"centro": [
 				-0.407182216644287,
 				10.5172147750854,
-				-0.429179191589355
+				-0.429178953170776
 			],
 			"tamanho": [
 				6.80322456359863,
 				21.2117042541504,
-				7.12321519851685
+				7.123215675354
 			],
-			"triangulos": 4498,
+			"triangulos": 1128,
 			"categorias": [
 				"arvores"
 			],
@@ -8885,7 +8947,7 @@
 			"id": "floresta_tree_birch_large_green",
 			"nome": "Bétula grande (floresta)",
 			"arquivo": "floresta_tree_birch_large_green.glb",
-			"sha256": "28471cbe23e0f72b77771bd4f6f178c5ab4b1cae14d7a79221e335b56f8b288c",
+			"sha256": "b3c9759e9d0fe6929ca0bce8060a0b5fa916b49afec3a4947957994b3a599234",
 			"centro": [
 				-0.0400686264038086,
 				8.40499877929688,
@@ -8896,7 +8958,7 @@
 				16.8438968658447,
 				4.07724952697754
 			],
-			"triangulos": 539,
+			"triangulos": 700,
 			"categorias": [
 				"arvores"
 			],
@@ -8910,7 +8972,7 @@
 			"id": "floresta_tree_birch_medium_green",
 			"nome": "Bétula médio (floresta)",
 			"arquivo": "floresta_tree_birch_medium_green.glb",
-			"sha256": "eb15e83b7d4a7fb055d93a94cec1950dc2a8dc44d320eae6a92562a02126fe3e",
+			"sha256": "3ecf2004cab17717e7f7efaae064be11276c773b6b2fdd943f652f18cf8ce7b6",
 			"centro": [
 				-0.485308885574341,
 				7.44078397750854,
@@ -8921,7 +8983,7 @@
 				14.8820476531982,
 				3.19026184082031
 			],
-			"triangulos": 519,
+			"triangulos": 532,
 			"categorias": [
 				"arvores"
 			],
@@ -8935,7 +8997,7 @@
 			"id": "floresta_tree_birch_small_green",
 			"nome": "Bétula pequeno (floresta)",
 			"arquivo": "floresta_tree_birch_small_green.glb",
-			"sha256": "14395b7578873ba46c15736d35ca4b9aa327beedba221ecdc111ca25919c7a8a",
+			"sha256": "97e6278efe7670129d2356eeab6c762545a354fc1926ccae515fb459925ea039",
 			"centro": [
 				0.0123553276062012,
 				5.41649341583252,
@@ -8946,7 +9008,7 @@
 				10.8842086791992,
 				2.75832223892212
 			],
-			"triangulos": 314,
+			"triangulos": 304,
 			"categorias": [
 				"arvores"
 			],
@@ -8960,7 +9022,7 @@
 			"id": "floresta_tree_cypress_large",
 			"nome": "Cipreste grande (floresta)",
 			"arquivo": "floresta_tree_cypress_large.glb",
-			"sha256": "84174eb2c96564249e47a22ab45f0933a979241a2998cdd361284717b42c1848",
+			"sha256": "853e9bad41d14b07047c3920fade02cbd0968836618fb3c0a325fc349a875711",
 			"centro": [
 				-0.0425832271575928,
 				9.04675102233887,
@@ -8971,7 +9033,7 @@
 				18.1596393585205,
 				3.86790704727173
 			],
-			"triangulos": 106,
+			"triangulos": 564,
 			"categorias": [
 				"arvores"
 			],
@@ -8985,7 +9047,7 @@
 			"id": "floresta_tree_cypress_medium",
 			"nome": "Cipreste médio (floresta)",
 			"arquivo": "floresta_tree_cypress_medium.glb",
-			"sha256": "8fe3c68ed6a1b3f527e8c0edd43ac21f1016e47e02b971ecca3a6634f7665846",
+			"sha256": "1097b76a74ff05a81fc656a5132cc27f9a08f6a7891b9a8c4da36c76630b7142",
 			"centro": [
 				-0.00073397159576416,
 				6.35953140258789,
@@ -8996,7 +9058,7 @@
 				12.7485771179199,
 				2.44016933441162
 			],
-			"triangulos": 106,
+			"triangulos": 276,
 			"categorias": [
 				"arvores"
 			],
@@ -9010,7 +9072,7 @@
 			"id": "floresta_tree_cypress_small",
 			"nome": "Cipreste pequeno (floresta)",
 			"arquivo": "floresta_tree_cypress_small.glb",
-			"sha256": "bd8cc8e3302f7bd50ce9206f3552164fcd63a58841bd44aca5edb40bdc7a6a6b",
+			"sha256": "a25d18ed2c6c8fae91ad10f6a3b94f5490edc1747f78f455e57d61e60bd33357",
 			"centro": [
 				-0.093112587928772,
 				5.16911220550537,
@@ -9021,7 +9083,7 @@
 				10.3758678436279,
 				2.24611282348633
 			],
-			"triangulos": 62,
+			"triangulos": 188,
 			"categorias": [
 				"arvores"
 			],
@@ -9035,7 +9097,7 @@
 			"id": "floresta_tree_oak_hero_green",
 			"nome": "Carvalho enorme (floresta)",
 			"arquivo": "floresta_tree_oak_hero_green.glb",
-			"sha256": "f0b4b957503be4cab03f9d7361cb944eae967911ec1e714a61344231b2b7473d",
+			"sha256": "e107ba59f654cece74ca037a8c696496665713e190af6a116ba702c1997900f7",
 			"centro": [
 				0.759587287902832,
 				7.86245393753052,
@@ -9046,7 +9108,7 @@
 				16.3126888275146,
 				12.2987403869629
 			],
-			"triangulos": 1680,
+			"triangulos": 2660,
 			"categorias": [
 				"arvores"
 			],
@@ -9060,7 +9122,7 @@
 			"id": "floresta_tree_oak_large_green",
 			"nome": "Carvalho grande (floresta)",
 			"arquivo": "floresta_tree_oak_large_green.glb",
-			"sha256": "5256ccd24befbd63668f1176104039e8dade3acfd346b5f1db0588f0f38f3aaf",
+			"sha256": "868893531e9e614cad7afc593bd482364d85b8df0f0641def1c1d57803d6a8fc",
 			"centro": [
 				0.459718227386475,
 				7.36112689971924,
@@ -9071,7 +9133,7 @@
 				15.2357301712036,
 				8.81194019317627
 			],
-			"triangulos": 394,
+			"triangulos": 1740,
 			"categorias": [
 				"arvores"
 			],
@@ -9085,7 +9147,7 @@
 			"id": "floresta_tree_oak_medium_green",
 			"nome": "Carvalho médio (floresta)",
 			"arquivo": "floresta_tree_oak_medium_green.glb",
-			"sha256": "ddcce39f12e58afd0efeadbe5f101de9e28a998cdf738ae5c87e5b9f41d7a9a0",
+			"sha256": "be0b5bc407fec670a62ce3dde3f8e4df6ea15c37f5412819946991e28486c3e2",
 			"centro": [
 				0.36915397644043,
 				5.99890279769897,
@@ -9096,7 +9158,7 @@
 				12.5211381912231,
 				7.59960842132568
 			],
-			"triangulos": 302,
+			"triangulos": 1164,
 			"categorias": [
 				"arvores"
 			],
@@ -9110,7 +9172,7 @@
 			"id": "floresta_tree_oak_small_green",
 			"nome": "Carvalho pequeno (floresta)",
 			"arquivo": "floresta_tree_oak_small_green.glb",
-			"sha256": "4c5ab083a1b1e8a102bacdd14a4ede152d0e03e1303b97ba76955eda61fd2fd1",
+			"sha256": "f1c257c3ab2bbc2aec018218bc337faec3143bac933f12fb12410b97a59197b5",
 			"centro": [
 				0.168653249740601,
 				5.03459739685059,
@@ -9121,7 +9183,7 @@
 				10.2875080108643,
 				6.16825437545776
 			],
-			"triangulos": 126,
+			"triangulos": 684,
 			"categorias": [
 				"arvores"
 			],
@@ -9135,7 +9197,7 @@
 			"id": "floresta_tree_elm_green",
 			"nome": "Olmo (floresta)",
 			"arquivo": "floresta_tree_elm_green.glb",
-			"sha256": "35d5f6e7931c52231c14f6b6594c497c8a0764380edb98d7608f0a123e2d3ed6",
+			"sha256": "d8fb44224d0710158cd7c91623f059f2031e8ec99ca5945e188b3c9e5c53a289",
 			"centro": [
 				-0.591548919677734,
 				7.09588575363159,
@@ -9146,7 +9208,7 @@
 				14.3781032562256,
 				8.23777770996094
 			],
-			"triangulos": 464,
+			"triangulos": 1540,
 			"categorias": [
 				"arvores"
 			],
@@ -9160,7 +9222,7 @@
 			"id": "floresta_tree_maple_red",
 			"nome": "Bordo vermelho (floresta)",
 			"arquivo": "floresta_tree_maple_red.glb",
-			"sha256": "ce64e90768b8d08553c5a6d6e0131360b38ec2f030541f4dff8b60890993d69b",
+			"sha256": "7fa8a89cbfeac171447ccf2501391f37c3c58d2f1ea67fbc3101c17fdee8f0a7",
 			"centro": [
 				-0.128041744232178,
 				6.18620920181274,
@@ -9171,7 +9233,7 @@
 				12.4137210845947,
 				7.42361736297607
 			],
-			"triangulos": 260,
+			"triangulos": 1028,
 			"categorias": [
 				"arvores"
 			],
@@ -9185,7 +9247,7 @@
 			"id": "floresta_tree_windswept_dark_green",
 			"nome": "Árvore do vento (floresta)",
 			"arquivo": "floresta_tree_windswept_dark_green.glb",
-			"sha256": "b6fac13a66233a4abbdd8681d8c4e54278f82848f5184edd199fb0a98fa48dce",
+			"sha256": "c56bde4448e8e0250133c322ab475432d8dd1969ed43fda7dedae6343d876adc",
 			"centro": [
 				-1.56258296966553,
 				7.65417003631592,
@@ -9196,7 +9258,7 @@
 				15.3774938583374,
 				8.87775993347168
 			],
-			"triangulos": 773,
+			"triangulos": 1516,
 			"categorias": [
 				"arvores"
 			],
@@ -9210,7 +9272,7 @@
 			"id": "floresta_tree_with_mistletoe",
 			"nome": "Árvore com visco (floresta)",
 			"arquivo": "floresta_tree_with_mistletoe.glb",
-			"sha256": "ac2303fb6353b1dedb694ec799a9df8aeb66ecb3249f83d47c95fd6517351b52",
+			"sha256": "1e43d568555f42fb62a80605970769dbbc014227923bdb6291fe666133b8c3be",
 			"centro": [
 				0.411924839019775,
 				10.3169059753418,
@@ -9221,7 +9283,7 @@
 				20.7476806640625,
 				5.60956859588623
 			],
-			"triangulos": 1138,
+			"triangulos": 1112,
 			"categorias": [
 				"arvores"
 			],
@@ -9235,7 +9297,7 @@
 			"id": "floresta_tree_park_large_green",
 			"nome": "Árvore de parque grande (floresta)",
 			"arquivo": "floresta_tree_park_large_green.glb",
-			"sha256": "677aee08e7dba6a108218ef3c97b03f774a4519bf159007915f8d0774fe862ae",
+			"sha256": "8d03fd98ce29ce545eca995006be1618ff412c8c78b524f127bf151e52ee3327",
 			"centro": [
 				-0.104305267333984,
 				8.10363292694092,
@@ -9246,7 +9308,7 @@
 				16.4120121002197,
 				11.46657371521
 			],
-			"triangulos": 216,
+			"triangulos": 2028,
 			"categorias": [
 				"arvores"
 			],
@@ -9260,7 +9322,7 @@
 			"id": "floresta_tree_park_medium_green",
 			"nome": "Árvore de parque médio (floresta)",
 			"arquivo": "floresta_tree_park_medium_green.glb",
-			"sha256": "0f4bc0382486554980d7f25b5b64b0d91e1dac61d3e12f5e582c0801fa1a969c",
+			"sha256": "e7a82683d0fa3ecafb1de04797b523d921c770024d62b11edd64120ba108f3dc",
 			"centro": [
 				0.0522515773773193,
 				6.0221848487854,
@@ -9271,7 +9333,7 @@
 				12.1373157501221,
 				6.91935634613037
 			],
-			"triangulos": 216,
+			"triangulos": 916,
 			"categorias": [
 				"arvores"
 			],
@@ -9285,7 +9347,7 @@
 			"id": "floresta_tree_park_small_green",
 			"nome": "Árvore de parque pequeno (floresta)",
 			"arquivo": "floresta_tree_park_small_green.glb",
-			"sha256": "a335ecc9776e41aceb2a0a089530182105aeb25d5108ae3f066376ccc78a9ec2",
+			"sha256": "a063fa102d7208d88129b5c6ebb506bec95b86cbd3e4d7d27c474d3d10f4206e",
 			"centro": [
 				-0.189082384109497,
 				4.28363466262817,
@@ -9296,7 +9358,7 @@
 				8.67449474334717,
 				5.33760595321655
 			],
-			"triangulos": 216,
+			"triangulos": 524,
 			"categorias": [
 				"arvores"
 			],
@@ -9310,18 +9372,18 @@
 			"id": "floresta_tree_pine_hero",
 			"nome": "Pinheiro alto enorme (floresta)",
 			"arquivo": "floresta_tree_pine_hero.glb",
-			"sha256": "6797888fe5f806c59c9e3896d368d142635e6a6b79b409a3dd6651563f74e279",
+			"sha256": "6cebe1891e04b67ac025fa93c2111e58af53f7f2cf8602b5d067b4961f3457b9",
 			"centro": [
 				-0.161984920501709,
-				13.6581907272339,
+				13.6581916809082,
 				0.131301403045654
 			],
 			"tamanho": [
 				11.7374267578125,
-				27.5712566375732,
+				27.5712585449219,
 				9.92912673950195
 			],
-			"triangulos": 1236,
+			"triangulos": 1180,
 			"categorias": [
 				"arvores"
 			],
@@ -9335,18 +9397,18 @@
 			"id": "floresta_tree_pine_large",
 			"nome": "Pinheiro alto grande (floresta)",
 			"arquivo": "floresta_tree_pine_large.glb",
-			"sha256": "8e49ec1c8112c2418e5a83996964f7160de365bcc3e7a5a1355e58da96e5c260",
+			"sha256": "dc156c5f49ae8eb73daea5494ff739694cb4608019dc777e62f61441952f7cc0",
 			"centro": [
-				0.241211891174316,
-				12.3228807449341,
+				0.241211652755737,
+				12.3228797912598,
 				-0.0487003326416016
 			],
 			"tamanho": [
-				7.39401960372925,
-				24.8185253143311,
+				7.39401912689209,
+				24.8185234069824,
 				7.19760990142822
 			],
-			"triangulos": 1304,
+			"triangulos": 860,
 			"categorias": [
 				"arvores"
 			],
@@ -9360,7 +9422,7 @@
 			"id": "floresta_tree_pine_medium",
 			"nome": "Pinheiro alto médio (floresta)",
 			"arquivo": "floresta_tree_pine_medium.glb",
-			"sha256": "62e56749874d1c46dccedb866dc88c9323702f3bf00591c2ab6dd9e1259f780b",
+			"sha256": "8a3581c587cd69aae681b0ec1ee1eb8090a3ce2f54b035381f15e62cdf6a5ae4",
 			"centro": [
 				-0.21098518371582,
 				11.2701692581177,
@@ -9371,7 +9433,7 @@
 				22.6311073303223,
 				7.48776149749756
 			],
-			"triangulos": 1576,
+			"triangulos": 980,
 			"categorias": [
 				"arvores"
 			],
@@ -9385,7 +9447,7 @@
 			"id": "floresta_tree_pine_small",
 			"nome": "Pinheiro alto pequeno (floresta)",
 			"arquivo": "floresta_tree_pine_small.glb",
-			"sha256": "d155feba05b246ed57d8fa3eee1e3750cd3c40f5b0aa32c2a43b6dc3727da881",
+			"sha256": "ef26a4b847b46740fe11832313a2ad6b1405c84b089165a4b797eefaff100294",
 			"centro": [
 				-0.232768058776855,
 				8.29518413543701,
@@ -9396,7 +9458,7 @@
 				16.6816711425781,
 				8.18368148803711
 			],
-			"triangulos": 1576,
+			"triangulos": 1172,
 			"categorias": [
 				"arvores"
 			],
@@ -9410,7 +9472,7 @@
 			"id": "floresta_tree_simple_large",
 			"nome": "Árvore simples grande (floresta)",
 			"arquivo": "floresta_tree_simple_large.glb",
-			"sha256": "0d4ce9cd2b8622ef5e243d80aaa33aaa21119931caf9afa0d375d21c1d5d2553",
+			"sha256": "191227b8d336563217ff915dba9528887fecf9172a72428563f9b49174dbc3bd",
 			"centro": [
 				0.621728420257568,
 				8.82377910614014,
@@ -9421,7 +9483,7 @@
 				17.9409561157227,
 				11.4369764328003
 			],
-			"triangulos": 692,
+			"triangulos": 2396,
 			"categorias": [
 				"arvores"
 			],
@@ -9435,7 +9497,7 @@
 			"id": "floresta_tree_simple_medium",
 			"nome": "Árvore simples médio (floresta)",
 			"arquivo": "floresta_tree_simple_medium.glb",
-			"sha256": "59da29826b2951d17f9f0372278f3bb6439efeffc906ec3ef94b945c43aeaab0",
+			"sha256": "6618c047786e3e61873f8b16db2b695277c0a1f53defcb279f7d8db03dc221cb",
 			"centro": [
 				0.114004611968994,
 				5.66812610626221,
@@ -9446,7 +9508,7 @@
 				11.5454235076904,
 				7.93443632125854
 			],
-			"triangulos": 290,
+			"triangulos": 1052,
 			"categorias": [
 				"arvores"
 			],
@@ -9460,7 +9522,7 @@
 			"id": "floresta_tree_simple_small",
 			"nome": "Árvore simples pequeno (floresta)",
 			"arquivo": "floresta_tree_simple_small.glb",
-			"sha256": "1d1259c3740e239612d13545c4727b83aef83a7c545cc3651fb5952b64b61a4e",
+			"sha256": "d49f85187267deaec20b36456806b2d092b13b1d956677d9993cd2c3235c3bc0",
 			"centro": [
 				0.0615620613098145,
 				4.0428786277771,
@@ -9471,7 +9533,7 @@
 				8.31414127349854,
 				5.71653938293457
 			],
-			"triangulos": 160,
+			"triangulos": 580,
 			"categorias": [
 				"arvores"
 			],
@@ -9485,7 +9547,7 @@
 			"id": "floresta_tree_spruce_large",
 			"nome": "Abeto grande (floresta)",
 			"arquivo": "floresta_tree_spruce_large.glb",
-			"sha256": "9693e0c15d69191e7d62583d7331a173d4b1aaa573916336cbfce39b06e447b5",
+			"sha256": "8fca33002194af1eed7d5270707c640ab9f716c8bc07d06fcfa5f34f0b2066d0",
 			"centro": [
 				0.103245735168457,
 				8.28109836578369,
@@ -9496,7 +9558,7 @@
 				16.8551921844482,
 				6.74693393707275
 			],
-			"triangulos": 499,
+			"triangulos": 1028,
 			"categorias": [
 				"arvores"
 			],
@@ -9510,7 +9572,7 @@
 			"id": "floresta_tree_spruce_medium",
 			"nome": "Abeto médio (floresta)",
 			"arquivo": "floresta_tree_spruce_medium.glb",
-			"sha256": "2b1ab4e4794e5e84032684964e543889c27f105485ff7e0a762e45b471a0cdfb",
+			"sha256": "1c38b73e198765a7047e0a302c547b3538284be0ba8c578ce8c39032d6b927b5",
 			"centro": [
 				-0.0412476062774658,
 				6.18595552444458,
@@ -9521,7 +9583,7 @@
 				12.6413640975952,
 				5.72382831573486
 			],
-			"triangulos": 385,
+			"triangulos": 596,
 			"categorias": [
 				"arvores"
 			],
@@ -9535,7 +9597,7 @@
 			"id": "floresta_tree_spruce_small",
 			"nome": "Abeto pequeno (floresta)",
 			"arquivo": "floresta_tree_spruce_small.glb",
-			"sha256": "f8f9342dabd1339e3fd826db1d3ad58dc2e92ce10a7f9b011ffe52f826448e83",
+			"sha256": "e7f4306417ba91f35538688f54ac7643a0a696344f23138300a8673c50d63b9f",
 			"centro": [
 				-0.0922830104827881,
 				5.15685844421387,
@@ -9546,7 +9608,7 @@
 				10.5227022171021,
 				4.29986238479614
 			],
-			"triangulos": 387,
+			"triangulos": 388,
 			"categorias": [
 				"arvores"
 			],
@@ -9560,7 +9622,7 @@
 			"id": "besta_mar_bovina",
 			"nome": "Besta do mar — Bovina",
 			"arquivo": "besta_mar_bovina.glb",
-			"sha256": "bcc4e8f599d07003ea4aae8cc93def22812a5dbd0b7cf58e293ec19aef60a38f",
+			"sha256": "ed6ee40b8ecbf95e960ed63b2dc8a298d9f07fd965b42a24245e7d5efb139af9",
 			"centro": [
 				0.0,
 				7.23915100097656,
@@ -9574,13 +9636,14 @@
 			"triangulos": 54196,
 			"categorias": [
 				"bestas_do_mar"
-			]
+			],
+			"comportamento": "besta_do_mar"
 		},
 		{
 			"id": "besta_mar_girafa",
 			"nome": "Besta do mar — Girafa",
 			"arquivo": "besta_mar_girafa.glb",
-			"sha256": "d400c37bb264aa269e67e46e0bc18620ead98f1d370423625a04dd6e79aafd7d",
+			"sha256": "a7b51f0976a9dca2c46bb272488122e4c79b6a29268f34d0e3a4c797bc2d3d7e",
 			"centro": [
 				0.0,
 				8.75316524505615,
@@ -9594,13 +9657,14 @@
 			"triangulos": 89204,
 			"categorias": [
 				"bestas_do_mar"
-			]
+			],
+			"comportamento": "besta_do_mar"
 		},
 		{
 			"id": "besta_mar_javali",
 			"nome": "Besta do mar — Javali",
 			"arquivo": "besta_mar_javali.glb",
-			"sha256": "75ddcd687b3003ee9c5cb146c031a8d6db862250eb9453708c1ee1c656f52733",
+			"sha256": "8b7a2f25d2f6e4aed79335762e7b33f7b7ad568e01d49615e5b7ebb250e66644",
 			"centro": [
 				0.0,
 				6.83347845077515,
@@ -9614,13 +9678,14 @@
 			"triangulos": 50888,
 			"categorias": [
 				"bestas_do_mar"
-			]
+			],
+			"comportamento": "besta_do_mar"
 		},
 		{
 			"id": "besta_mar_serpente",
 			"nome": "Besta do mar — Serpente",
 			"arquivo": "besta_mar_serpente.glb",
-			"sha256": "c23a124b3786d4c338f2dbdb647da81b0b8e5c361e92635d834792413e1c71d7",
+			"sha256": "e59804a7ed8e1cceb34aabac09edb3c5e1edf610398ff295e16e5b9e52d05f81",
 			"centro": [
 				0.0,
 				10.7241716384888,
@@ -9634,7 +9699,8 @@
 			"triangulos": 92556,
 			"categorias": [
 				"bestas_do_mar"
-			]
+			],
+			"comportamento": "besta_do_mar"
 		},
 		{
 			"id": "npc_pescador",
@@ -9698,6 +9764,5742 @@
 				"npcs"
 			],
 			"comportamento": "npc_vendedor_frutas"
+		},
+		{
+			"id": "npc_corrida",
+			"nome": "Organizador da corrida",
+			"arquivo": "npc_corrida.glb",
+			"sha256": "7553dcbd6eb280ef3e50baf29a3182db97df83412c52c376565a1a0b23101b60",
+			"centro": [
+				0.0,
+				1.00174999237061,
+				-0.027075007557869
+			],
+			"tamanho": [
+				1.06500005722046,
+				1.97750008106232,
+				0.419149994850159
+			],
+			"triangulos": 3872,
+			"categorias": [
+				"npcs"
+			],
+			"comportamento": "npc_corrida"
+		},
+		{
+			"id": "bandido",
+			"nome": "Bandido",
+			"arquivo": "bandido.glb",
+			"sha256": "5125774be404e8f3298ae725f93e3b49f4ecfec8c595f3c59d709651be1e5063",
+			"centro": [
+				0.0,
+				1.00174999237061,
+				0.0225757509469986
+			],
+			"tamanho": [
+				1.06500005722046,
+				1.97750008106232,
+				0.518451511859894
+			],
+			"triangulos": 3980,
+			"categorias": [
+				"inimigos"
+			],
+			"comportamento": "bandido"
+		},
+		{
+			"id": "npc_missao_bandidos",
+			"nome": "Guarda da vila",
+			"arquivo": "npc_missao_bandidos.glb",
+			"sha256": "aa9d40aafbd46933320e84557494c23325620976b4a7e6788081c6410810f5b3",
+			"centro": [
+				0.0,
+				1.00174999237061,
+				-0.027075007557869
+			],
+			"tamanho": [
+				1.06500005722046,
+				1.97750008106232,
+				0.419149994850159
+			],
+			"triangulos": 3872,
+			"categorias": [
+				"npcs"
+			],
+			"comportamento": "npc_missao_bandidos"
+		},
+		{
+			"id": "npc_vendedor_barcos",
+			"nome": "Vendedor de barcos",
+			"arquivo": "npc_vendedor_barcos.glb",
+			"sha256": "0741a01c3daabc094021f10f35f4a69daa66d6d7855f649ad02df021c0a0fdc5",
+			"centro": [
+				0.0,
+				1.00174999237061,
+				-0.027075007557869
+			],
+			"tamanho": [
+				1.06500005722046,
+				1.97750008106232,
+				0.419149994850159
+			],
+			"triangulos": 3872,
+			"categorias": [
+				"npcs"
+			],
+			"comportamento": "npc_vendedor_barcos"
+		},
+		{
+			"id": "machado_lenhador",
+			"nome": "Machado de lenhador (anime)",
+			"arquivo": "machado_lenhador.glb",
+			"sha256": "840965757048a79ef9c7b7261edaea3d0934c73fd2a58a9d07f4f21699824dc2",
+			"centro": [
+				0.135000020265579,
+				0.359999984502792,
+				0.0
+			],
+			"tamanho": [
+				0.730000019073486,
+				1.1599999666214,
+				0.119999997317791
+			],
+			"triangulos": 1604,
+			"categorias": [
+				"itens"
+			],
+			"tamanho_padrao": [
+				0.730000019073486,
+				1.1599999666214,
+				0.119999997317791
+			]
+		},
+		{
+			"id": "tabuas_madeira",
+			"nome": "Tábuas de madeira (anime)",
+			"arquivo": "tabuas_madeira.glb",
+			"sha256": "8e1df3acdf0a6bdef231016ea3cd7ef01c8fee8df2c3428ef7ab4db87628a65a",
+			"centro": [
+				0.0,
+				0.0850050002336502,
+				0.0
+			],
+			"tamanho": [
+				1.20000004768372,
+				0.145009994506836,
+				0.710000038146973
+			],
+			"triangulos": 168,
+			"categorias": [
+				"itens"
+			],
+			"tamanho_padrao": [
+				1.20000004768372,
+				0.145009994506836,
+				0.710000038146973
+			]
+		},
+		{
+			"id": "naufragio_galeao",
+			"nome": "Naufrágio — galeão partido",
+			"arquivo": "naufragio_galeao.glb",
+			"sha256": "32a743f891aba9b0a7e81c40a4d19eb221078ce4f5758c20e656ffc28d4e2693",
+			"centro": [
+				0.0,
+				2.80234599113464,
+				0.0
+			],
+			"tamanho": [
+				25.0008182525635,
+				7.40469217300415,
+				16.137523651123
+			],
+			"triangulos": 10582,
+			"categorias": [
+				"naufragios"
+			]
+		},
+		{
+			"id": "naufragio_chalupa",
+			"nome": "Naufrágio — chalupa tombada",
+			"arquivo": "naufragio_chalupa.glb",
+			"sha256": "acbe0bf837af0554bcc706dd84e224fe8c970f2d11e34298a4ef9f6a18fa67ce",
+			"centro": [
+				0.0,
+				1.0449241399765,
+				0.0
+			],
+			"tamanho": [
+				10.3314304351807,
+				3.28984832763672,
+				7.26414632797241
+			],
+			"triangulos": 4834,
+			"categorias": [
+				"naufragios"
+			]
+		},
+		{
+			"id": "naufragio_bote",
+			"nome": "Naufrágio — bote emborcado",
+			"arquivo": "naufragio_bote.glb",
+			"sha256": "24127603c871a084b73bdca4356bc73cbbedd39cb5cbb75455e66b9e2324e4bf",
+			"centro": [
+				0.0,
+				0.258470147848129,
+				0.0
+			],
+			"tamanho": [
+				5.71516513824463,
+				1.21694028377533,
+				2.46243953704834
+			],
+			"triangulos": 2040,
+			"categorias": [
+				"naufragios"
+			]
+		},
+		{
+			"id": "npc_barba_negra",
+			"nome": "Barba Negra",
+			"arquivo": "npc_barba_negra.glb",
+			"sha256": "0d1e13bea8af7fb4030b7883002793bc03daac1dde387c372d944b348cab438d",
+			"centro": [
+				0.0,
+				1.00174999237061,
+				-0.027075007557869
+			],
+			"tamanho": [
+				1.06500005722046,
+				1.97750008106232,
+				0.419149994850159
+			],
+			"triangulos": 3872,
+			"categorias": [
+				"npcs"
+			],
+			"comportamento": "npc_barba_negra"
+		},
+		{
+			"id": "apple_green",
+			"nome": "Apple Green",
+			"arquivo": "apple_green.glb",
+			"sha256": "2cebdcc6879dbe37849de87b40a54f2bbc79dedc7b0e87d9548d3422ed25878a",
+			"centro": [
+				-0.0000292062759399414,
+				0.0316728353500366,
+				0.0
+			],
+			"tamanho": [
+				0.802451729774475,
+				0.851738572120667,
+				0.798704624176025
+			],
+			"triangulos": 440
+		},
+		{
+			"id": "avocado",
+			"nome": "Avocado",
+			"arquivo": "avocado.glb",
+			"sha256": "5927bf5279fccd40906dde57100d12f24dafe3bec864e9d762f4de474eec7421",
+			"centro": [
+				0.0,
+				0.209458619356155,
+				0.225570380687714
+			],
+			"tamanho": [
+				0.753142833709717,
+				1.09390544891357,
+				0.539752840995789
+			],
+			"triangulos": 256
+		},
+		{
+			"id": "bacon",
+			"nome": "Bacon",
+			"arquivo": "bacon.glb",
+			"sha256": "cb3b6d020454292819d84645bd2131012e0402651864dfc2aad0a456e9cb8a2e",
+			"centro": [
+				0.0181947350502014,
+				-0.010633822530508,
+				-0.085319921374321
+			],
+			"tamanho": [
+				1.15747857093811,
+				0.0500000007450581,
+				0.296763211488724
+			],
+			"triangulos": 564
+		},
+		{
+			"id": "banana",
+			"nome": "Banana",
+			"arquivo": "banana.glb",
+			"sha256": "21591aec9d58be6e10ba587b8638f8c832a1c1bc4dea30d54d2332ffb4a4162c",
+			"centro": [
+				-0.118975698947906,
+				0.2563596367836,
+				-0.0384209603071213
+			],
+			"tamanho": [
+				1.17539501190186,
+				1.40421044826508,
+				0.309479594230652
+			],
+			"triangulos": 348
+		},
+		{
+			"id": "bottle",
+			"nome": "Bottle",
+			"arquivo": "bottle.glb",
+			"sha256": "7245e26241cac72d63aa6ad9efb02b32c1d13ff2dd8648401ab14494b5d181f6",
+			"centro": [
+				-0.000000044703483581543,
+				0.780818343162537,
+				-0.000000104308128356934
+			],
+			"tamanho": [
+				0.451675891876221,
+				1.56380558013916,
+				0.451676070690155
+			],
+			"triangulos": 220
+		},
+		{
+			"id": "bottle-pc8dm9ja4v",
+			"nome": "Bottle-Pc8dM9Ja4V",
+			"arquivo": "bottle-pc8dm9ja4v.glb",
+			"sha256": "d77d36ae493681ca923f90c4dfa520ee93a219fbc8569f21c96516ab47c8b7e0",
+			"centro": [
+				-0.000000044703483581543,
+				0.810455620288849,
+				-0.000000104308128356934
+			],
+			"tamanho": [
+				0.451675891876221,
+				1.62308013439178,
+				0.451676070690155
+			],
+			"triangulos": 220
+		},
+		{
+			"id": "bread",
+			"nome": "Bread",
+			"arquivo": "bread.glb",
+			"sha256": "f8b2f48646f5f4b53f16c40e18a7746679736f7036d4b5f8bf674c2f7485fb66",
+			"centro": [
+				0.0,
+				0.430629521608353,
+				-0.0000000596046447753906
+			],
+			"tamanho": [
+				0.693338811397552,
+				0.847023606300354,
+				1.19904983043671
+			],
+			"triangulos": 412
+		},
+		{
+			"id": "bread_slice",
+			"nome": "Bread Slice",
+			"arquivo": "bread_slice.glb",
+			"sha256": "63dfa6804c55da034a10039b539610639ac621147af1cb189f1950732a310943",
+			"centro": [
+				-0.000716418027877808,
+				-0.0670531690120697,
+				0.00000000745058059692383
+			],
+			"tamanho": [
+				0.693338692188263,
+				0.847023487091064,
+				0.108277320861816
+			],
+			"triangulos": 368
+		},
+		{
+			"id": "broccoli",
+			"nome": "Broccoli",
+			"arquivo": "broccoli.glb",
+			"sha256": "451514b0a714674db5c28e7b923bf2660f0bd11aaba2fc19dd5945220aea782c",
+			"centro": [
+				-0.00309717655181885,
+				0.446521461009979,
+				0.0027538537979126
+			],
+			"tamanho": [
+				0.751462459564209,
+				0.899629473686218,
+				0.644405722618103
+			],
+			"triangulos": 270
+		},
+		{
+			"id": "burger",
+			"nome": "Burger",
+			"arquivo": "burger.glb",
+			"sha256": "e3bb26fddf44d337da0bad919905a6b52b39b0ada8af3d6a094fc54a29a0e634",
+			"centro": [
+				-0.0202600955963135,
+				0.112597733736038,
+				0.00960457324981689
+			],
+			"tamanho": [
+				1.65193605422974,
+				1.06522214412689,
+				1.70006763935089
+			],
+			"triangulos": 847
+		},
+		{
+			"id": "carrot",
+			"nome": "Carrot",
+			"arquivo": "carrot.glb",
+			"sha256": "35a93d9d035df040d52c6d880d11ccacd8fea08ca2e725e056f71b12e196405d",
+			"centro": [
+				0.00450316071510315,
+				0.402744889259338,
+				0.00932827591896057
+			],
+			"tamanho": [
+				0.94672679901123,
+				2.77854537963867,
+				0.931621849536896
+			],
+			"triangulos": 864
+		},
+		{
+			"id": "cheeseburger",
+			"nome": "Cheeseburger",
+			"arquivo": "cheeseburger.glb",
+			"sha256": "e85e29f9ca072568171e33f284e04ab9440a64cd06e97f8d68511daa74cc4ce7",
+			"centro": [
+				-0.000918328762054443,
+				0.0513624846935272,
+				-0.0203901529312134
+			],
+			"tamanho": [
+				1.46476340293884,
+				0.938188910484314,
+				1.54095888137817
+			],
+			"triangulos": 588
+		},
+		{
+			"id": "chicken_leg_2",
+			"nome": "Chicken Leg",
+			"arquivo": "chicken_leg_2.glb",
+			"sha256": "999b3f327d9a370512076b6ec629f4bec1166888b7d3df583f03558110e7535e",
+			"centro": [
+				-0.0890250205993652,
+				-0.00365749001502991,
+				0.0000000298023223876953
+			],
+			"tamanho": [
+				1.39896297454834,
+				0.581513226032257,
+				0.611947357654572
+			],
+			"triangulos": 288
+		},
+		{
+			"id": "chocolate_bar",
+			"nome": "Chocolate Bar",
+			"arquivo": "chocolate_bar.glb",
+			"sha256": "d34c9ac94fdce13ca2cb99110eb4a47451db8f1b9d12b32ea89d12f6c0686ff2",
+			"centro": [
+				0.0,
+				0.0598350837826729,
+				0.0
+			],
+			"tamanho": [
+				0.575210452079773,
+				0.0683120265603065,
+				0.87420243024826
+			],
+			"triangulos": 436
+		},
+		{
+			"id": "chopsticks",
+			"nome": "Chopsticks",
+			"arquivo": "chopsticks.glb",
+			"sha256": "df8733da8f859bff68357920dfca345749e7d81009400dbd7428b55bed86e20f",
+			"centro": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"tamanho": [
+				1.62981224060059,
+				0.0531716234982014,
+				0.126070111989975
+			],
+			"triangulos": 440
+		},
+		{
+			"id": "cooking_pot",
+			"nome": "Cooking Pot",
+			"arquivo": "cooking_pot.glb",
+			"sha256": "3836f63ea0a1135d1dbb6f8a942af6a1bc27912c21d5112c1820e88c64779995",
+			"centro": [
+				-0.0251775979995728,
+				0.12605232000351,
+				0.0
+			],
+			"tamanho": [
+				2.41755175590515,
+				1.07570052146912,
+				1.9921612739563
+			],
+			"triangulos": 260
+		},
+		{
+			"id": "cooking_pot-lmedeomg9l",
+			"nome": "Cooking Pot-lMEdEOMg9L",
+			"arquivo": "cooking_pot-lmedeomg9l.glb",
+			"sha256": "d1b117fbb1f80f758bc5a3b64ab4c9bbb25448ef287a13013eefec3776fb74c5",
+			"centro": [
+				0.0,
+				0.35269221663475,
+				0.0
+			],
+			"tamanho": [
+				2.29056787490845,
+				0.6224205493927,
+				1.9921612739563
+			],
+			"triangulos": 260
+		},
+		{
+			"id": "corndog",
+			"nome": "Corndog",
+			"arquivo": "corndog.glb",
+			"sha256": "d0f31a34a012772bf5cdc0b8804a4ebacbad0dee1c4d0da3c2959742379c9baf",
+			"centro": [
+				0.0,
+				0.675642490386963,
+				-0.0000000745058059692383
+			],
+			"tamanho": [
+				0.256156086921692,
+				1.35182249546051,
+				0.256156265735626
+			],
+			"triangulos": 284
+		},
+		{
+			"id": "croissant",
+			"nome": "Croissant",
+			"arquivo": "croissant.glb",
+			"sha256": "8c21c64c74783ee6db804a4ae05b23a179800ed432ca194e9563852f8dd880a8",
+			"centro": [
+				0.0,
+				0.0,
+				0.0903527140617371
+			],
+			"tamanho": [
+				1.30447340011597,
+				0.549784660339355,
+				0.73049008846283
+			],
+			"triangulos": 132
+		},
+		{
+			"id": "cupcake",
+			"nome": "Cupcake",
+			"arquivo": "cupcake.glb",
+			"sha256": "469a3d9948bd592dc0d53ebc15bc5cc53a2f097593f23a5f403a2ef693dbad07",
+			"centro": [
+				-0.0206350684165955,
+				0.343284696340561,
+				-0.00252833962440491
+			],
+			"tamanho": [
+				0.734157204627991,
+				0.931557536125183,
+				0.725800633430481
+			],
+			"triangulos": 412
+		},
+		{
+			"id": "donut",
+			"nome": "Donut",
+			"arquivo": "donut.glb",
+			"sha256": "cb8d0edad3f280cf4157d5b7253b6ac6355a5cf86ca8c018bd5ac9c722719728",
+			"centro": [
+				0.000707715749740601,
+				0.0182147026062012,
+				0.00882449746131897
+			],
+			"tamanho": [
+				0.859050095081329,
+				0.291382730007172,
+				0.869776606559753
+			],
+			"triangulos": 984
+		},
+		{
+			"id": "double_cheeseburger",
+			"nome": "Double Cheeseburger",
+			"arquivo": "double_cheeseburger.glb",
+			"sha256": "46500d8f55a2120719c7ea6bf7e822a93c7e5e0b2884e54f8ea4347599942d11",
+			"centro": [
+				-0.697593688964844,
+				0.226972430944443,
+				6.97836780548096
+			],
+			"tamanho": [
+				1.49408388137817,
+				1.19718790054321,
+				1.54095888137817
+			],
+			"triangulos": 860
+		},
+		{
+			"id": "egg",
+			"nome": "Egg",
+			"arquivo": "egg.glb",
+			"sha256": "e5b5b9e98efb77a1e32267e08ce3c6d7608563ad71bc28f5a17b13b9628a7c44",
+			"centro": [
+				0.0,
+				0.230033993721008,
+				-0.0000000298023223876953
+			],
+			"tamanho": [
+				0.363254010677338,
+				0.465891420841217,
+				0.363254070281982
+			],
+			"triangulos": 288
+		},
+		{
+			"id": "egg_fried",
+			"nome": "Egg Fried",
+			"arquivo": "egg_fried.glb",
+			"sha256": "6eafcf7b79e0ed698dd51f77a98abf9231a3fe9553658dc20e428cac64a83413",
+			"centro": [
+				0.127680599689484,
+				0.0404637418687344,
+				-0.0385357141494751
+			],
+			"tamanho": [
+				1.19213366508484,
+				0.107131086289883,
+				1.11671900749207
+			],
+			"triangulos": 101
+		},
+		{
+			"id": "eggplant",
+			"nome": "Eggplant",
+			"arquivo": "eggplant.glb",
+			"sha256": "ea841bdd7b4ca76831015138852df4f046c9b38de21447a99416078ddc0f8f92",
+			"centro": [
+				-0.0910360515117645,
+				0.153460681438446,
+				0.0
+			],
+			"tamanho": [
+				0.962236821651459,
+				1.75197923183441,
+				0.718007922172546
+			],
+			"triangulos": 368
+		},
+		{
+			"id": "fries",
+			"nome": "Fries",
+			"arquivo": "fries.glb",
+			"sha256": "e8c6c402c7df6cc79eda90bd6dfab652eaf006aadb284b8509bc6bccd72bbd78",
+			"centro": [
+				0.00863319635391235,
+				0.280923515558243,
+				-0.212177336215973
+			],
+			"tamanho": [
+				0.948837995529175,
+				0.585748791694641,
+				1.326287150383
+			],
+			"triangulos": 324
+		},
+		{
+			"id": "frying_pan",
+			"nome": "Frying Pan",
+			"arquivo": "frying_pan.glb",
+			"sha256": "94370dead85a92764d476f3c165b1878a2a7deb6ca2c37959efc64a1c15f2a4e",
+			"centro": [
+				0.0,
+				0.165751472115517,
+				0.48082709312439
+			],
+			"tamanho": [
+				1.73731780052185,
+				0.25302442908287,
+				2.78837871551514
+			],
+			"triangulos": 214
+		},
+		{
+			"id": "hotdog",
+			"nome": "Hotdog",
+			"arquivo": "hotdog.glb",
+			"sha256": "fc7d0152dfc685283819562029d0800b667e7ddc3b830268f379b7e90371fb07",
+			"centro": [
+				0.0,
+				-0.0996724367141724,
+				0.00287973880767822
+			],
+			"tamanho": [
+				0.785292863845825,
+				0.409370720386505,
+				1.66189408302307
+			],
+			"triangulos": 988
+		},
+		{
+			"id": "ice_cream",
+			"nome": "Ice Cream",
+			"arquivo": "ice_cream.glb",
+			"sha256": "cb5ccf1ab919f24133770af561bebfc7112cfd053be1da8e83a555e1ff468b7d",
+			"centro": [
+				0.00203582644462585,
+				0.308341324329376,
+				-0.00312921404838562
+			],
+			"tamanho": [
+				0.515547394752502,
+				0.927447974681854,
+				0.515547394752502
+			],
+			"triangulos": 1278
+		},
+		{
+			"id": "ketchup_bottle",
+			"nome": "Ketchup Bottle",
+			"arquivo": "ketchup_bottle.glb",
+			"sha256": "89b551c090be4a47056e52654f8cec2007b4d3d0bc47f0d1d030e0bf66d4172e",
+			"centro": [
+				0.0,
+				0.749598324298859,
+				-0.0000000894069671630859
+			],
+			"tamanho": [
+				0.499563574790955,
+				1.53269445896149,
+				0.499563753604889
+			],
+			"triangulos": 236
+		},
+		{
+			"id": "lettuce",
+			"nome": "Lettuce",
+			"arquivo": "lettuce.glb",
+			"sha256": "02708cb7bd5a88700824ce2646693d078dd50dac7cbbdb7590d262616be3b94e",
+			"centro": [
+				0.0,
+				-0.0500789880752563,
+				0.0
+			],
+			"tamanho": [
+				1.66124069690704,
+				1.36849665641785,
+				1.66124081611633
+			],
+			"triangulos": 592
+		},
+		{
+			"id": "mushroom_sliced",
+			"nome": "Mushroom Sliced",
+			"arquivo": "mushroom_sliced.glb",
+			"sha256": "3e465aed35de6d9615ba124d83dddcb2c3447bf319d9353a2a49ebbbad4870dd",
+			"centro": [
+				0.0000000149011611938477,
+				0.0782647877931595,
+				-0.092854380607605
+			],
+			"tamanho": [
+				0.413449048995972,
+				0.176490262150764,
+				0.416637122631073
+			],
+			"triangulos": 92
+		},
+		{
+			"id": "pancakes_stack",
+			"nome": "Pancakes Stack",
+			"arquivo": "pancakes_stack.glb",
+			"sha256": "790f594ceaa2bb38085ffacb64c32a87041c727cdfe69013438323a5cb0f4cad",
+			"centro": [
+				0.0520191192626953,
+				0.225499600172043,
+				-0.0719736218452454
+			],
+			"tamanho": [
+				1.58066177368164,
+				0.637432992458344,
+				1.62057018280029
+			],
+			"triangulos": 896
+		},
+		{
+			"id": "pepper_green",
+			"nome": "Pepper Green",
+			"arquivo": "pepper_green.glb",
+			"sha256": "65967854336cfe7a3d24cb9988b5d1c8ef5f5fde6a7262770bf64b2dcc42c6e0",
+			"centro": [
+				-0.0000791847705841064,
+				0.575989127159119,
+				-0.0000000894069671630859
+			],
+			"tamanho": [
+				0.674008727073669,
+				1.11658155918121,
+				0.711788415908813
+			],
+			"triangulos": 808
+		},
+		{
+			"id": "pizza",
+			"nome": "Pizza",
+			"arquivo": "pizza.glb",
+			"sha256": "95fa4d26089fd708ddd550c58267b74f17387f0358071f7ed764a3c98de2d97e",
+			"centro": [
+				0.00441479682922363,
+				0.0663574263453484,
+				-0.0148938894271851
+			],
+			"tamanho": [
+				3.3718376159668,
+				0.160933434963226,
+				3.35686206817627
+			],
+			"triangulos": 1200
+		},
+		{
+			"id": "pizza_slice",
+			"nome": "Pizza Slice",
+			"arquivo": "pizza_slice.glb",
+			"sha256": "9ced453f1b284414df8804beed642d9af4cf289669a1f7cc75a8c667a4470a90",
+			"centro": [
+				0.0,
+				0.0583946630358696,
+				-0.549676477909088
+			],
+			"tamanho": [
+				1.07185757160187,
+				0.112792946398258,
+				1.1637145280838
+			],
+			"triangulos": 392
+		},
+		{
+			"id": "plate_square",
+			"nome": "Plate Square",
+			"arquivo": "plate_square.glb",
+			"sha256": "277dd1da0970f54823a99c14b4e972339e889562d8cdb221884f9970ac2bb876",
+			"centro": [
+				0.0,
+				0.0739353895187378,
+				0.0
+			],
+			"tamanho": [
+				1.63704562187195,
+				0.131524115800858,
+				1.63704562187195
+			],
+			"triangulos": 204
+		},
+		{
+			"id": "popsicle",
+			"nome": "Popsicle",
+			"arquivo": "popsicle.glb",
+			"sha256": "4db4730a3fa17abe904ee5d0057a59d2f4197e8b6c52bdaf0e5dead135b801b4",
+			"centro": [
+				0.0,
+				0.231725066900253,
+				-0.0000000260770320892334
+			],
+			"tamanho": [
+				0.29110187292099,
+				0.990004479885101,
+				0.0798436105251312
+			],
+			"triangulos": 120
+		},
+		{
+			"id": "popsicle_chocolate",
+			"nome": "Popsicle Chocolate",
+			"arquivo": "popsicle_chocolate.glb",
+			"sha256": "2d433fe92d888842efebda1de636f27c692a06af0e8c62fb503fe7fb753b34d4",
+			"centro": [
+				0.0,
+				0.231725066900253,
+				-0.0000000260770320892334
+			],
+			"tamanho": [
+				0.29110187292099,
+				0.990004479885101,
+				0.0798436105251312
+			],
+			"triangulos": 84
+		},
+		{
+			"id": "pumpkin",
+			"nome": "Pumpkin",
+			"arquivo": "pumpkin.glb",
+			"sha256": "af4ae31ba704f8b05b69bec18726468feaf527a221e929bbfdf11d6b4c26bd0b",
+			"centro": [
+				0.031678318977356,
+				0.461343258619308,
+				-0.0000000596046447753906
+			],
+			"tamanho": [
+				1.49726390838623,
+				0.930945336818695,
+				1.51231181621552
+			],
+			"triangulos": 644
+		},
+		{
+			"id": "soda",
+			"nome": "Soda",
+			"arquivo": "soda.glb",
+			"sha256": "ec994a7a4bf924d225f5f50d28dfabe22dea05f1717bcf731dfc77a2bd1d8c29",
+			"centro": [
+				-0.0000000596046447753906,
+				0.965337693691254,
+				-0.000000119209289550781
+			],
+			"tamanho": [
+				0.911793828010559,
+				1.92292129993439,
+				0.911794066429138
+			],
+			"triangulos": 472
+		},
+		{
+			"id": "spoon",
+			"nome": "Spoon",
+			"arquivo": "spoon.glb",
+			"sha256": "083c09f6d86f7aa0d82254e347e158838ab2b272aca509275546d5477e172776",
+			"centro": [
+				-0.00146086513996124,
+				-0.0127613060176373,
+				-0.231178998947144
+			],
+			"tamanho": [
+				0.392811745405197,
+				0.0835427045822144,
+				1.88508272171021
+			],
+			"triangulos": 128
+		},
+		{
+			"id": "steak",
+			"nome": "Steak",
+			"arquivo": "steak.glb",
+			"sha256": "822fdf954e9652373b54bca593a2c68e09adcfcc44892d5f0ab470fd728a704e",
+			"centro": [
+				0.265491902828217,
+				-0.0000000149011611938477,
+				-0.0766671895980835
+			],
+			"tamanho": [
+				1.31991696357727,
+				0.339670717716217,
+				1.91266012191772
+			],
+			"triangulos": 412
+		},
+		{
+			"id": "sushi",
+			"nome": "Sushi",
+			"arquivo": "sushi.glb",
+			"sha256": "6801971eadf9bb213f1addc8f887d4766cd6410cb43b002ebe4a0d2170d64a14",
+			"centro": [
+				0.0,
+				0.0,
+				0.0
+			],
+			"tamanho": [
+				0.292591482400894,
+				0.154347449541092,
+				0.292591512203217
+			],
+			"triangulos": 140
+		},
+		{
+			"id": "sushi_nigiri",
+			"nome": "Sushi Nigiri",
+			"arquivo": "sushi_nigiri.glb",
+			"sha256": "f8997d8d21760085479c28ac3608f4429b370982088aec5297b4e0959797be06",
+			"centro": [
+				-0.032449334859848,
+				0.117971196770668,
+				0.00380992889404297
+			],
+			"tamanho": [
+				0.59760046005249,
+				0.234352514147758,
+				0.271574676036835
+			],
+			"triangulos": 196
+		},
+		{
+			"id": "tentacle_2",
+			"nome": "Tentacle-food",
+			"arquivo": "tentacle_2.glb",
+			"sha256": "be0ae4ab269a41435e7a21d804709b807be47917ab98d21f7bfbd1e4a706f05c",
+			"centro": [
+				0.0733085870742798,
+				-0.0360482037067413,
+				-0.00244998931884766
+			],
+			"tamanho": [
+				0.76201593875885,
+				0.275668144226074,
+				0.267310619354248
+			],
+			"triangulos": 612
+		},
+		{
+			"id": "tomato",
+			"nome": "Tomato",
+			"arquivo": "tomato.glb",
+			"sha256": "194b8f3c1870fa84a7023769ad7556532dc51af82f5b563df5a69ce37f2a8a6f",
+			"centro": [
+				-0.00000417232513427734,
+				0.0889408886432648,
+				-0.00000196695327758789
+			],
+			"tamanho": [
+				0.752480745315552,
+				0.62637859582901,
+				0.752480685710907
+			],
+			"triangulos": 344
+		},
+		{
+			"id": "tomato_slice",
+			"nome": "Tomato Slice",
+			"arquivo": "tomato_slice.glb",
+			"sha256": "b8aa19f83c7d28176cbe3214add20debd39b2bed9d2aebe28cda2678b353653a",
+			"centro": [
+				0.126323610544205,
+				0.017410246655345,
+				-0.158373266458511
+			],
+			"tamanho": [
+				0.80565345287323,
+				0.0764978900551796,
+				0.668596267700195
+			],
+			"triangulos": 670
+		},
+		{
+			"id": "turnip",
+			"nome": "Turnip",
+			"arquivo": "turnip.glb",
+			"sha256": "b89ad31623a4fd883c5779f8b974a760eac17ca90d4732a13461a669705908f9",
+			"centro": [
+				0.0022658109664917,
+				0.648101031780243,
+				0.0189457535743713
+			],
+			"tamanho": [
+				1.24826622009277,
+				2.39147448539734,
+				1.23368382453918
+			],
+			"triangulos": 976
+		},
+		{
+			"id": "waffle",
+			"nome": "Waffle",
+			"arquivo": "waffle.glb",
+			"sha256": "99252d433b2311e3ec698e08d3f3b016af58a1b78809c4d70223090c5a9b3fca",
+			"centro": [
+				-0.0000541210174560547,
+				0.0,
+				0.0000203847885131836
+			],
+			"tamanho": [
+				1.13400149345398,
+				0.232241109013557,
+				1.5291895866394
+			],
+			"triangulos": 1112
+		},
+		{
+			"id": "cozinheiro_sanji",
+			"nome": "Sanji",
+			"arquivo": "cozinheiro_sanji.glb",
+			"sha256": "52a9398b353cca20ff4ae2726b12530f745181a05976bf8b9beaa48739ce1352",
+			"centro": [
+				-0.0383095443248749,
+				1.0656076669693,
+				-0.0384505689144135
+			],
+			"tamanho": [
+				0.996049106121063,
+				2.12589454650879,
+				0.45517635345459
+			],
+			"triangulos": 50880,
+			"categorias": [
+				"npcs"
+			],
+			"comportamento": "exposicao_cozinheiro",
+			"tamanho_padrao": [
+				0.996049106121063,
+				2.12589454650879,
+				0.45517635345459
+			]
+		},
+		{
+			"id": "cozinheiro_beto",
+			"nome": "Beto · Mestre do fogão",
+			"arquivo": "cozinheiro_beto.glb",
+			"sha256": "afcc1b674d45b83f8612e9da5fddde8ee16402e71ed7abcd737b7d16e805cad9",
+			"centro": [
+				-0.0341301560401917,
+				1.05068838596344,
+				-0.0161170363426208
+			],
+			"tamanho": [
+				1.09216618537903,
+				2.09663653373718,
+				0.441796392202377
+			],
+			"triangulos": 50824,
+			"categorias": [
+				"npcs"
+			],
+			"comportamento": "exposicao_cozinheiro",
+			"tamanho_padrao": [
+				1.09216618537903,
+				2.09663653373718,
+				0.441796392202377
+			]
+		},
+		{
+			"id": "cozinheiro_iara",
+			"nome": "Iara · Confeiteira",
+			"arquivo": "cozinheiro_iara.glb",
+			"sha256": "341a5d9994bb413d3056c2b7d5cc67ec6ef3703c5baece477ddd89c367dd0ad0",
+			"centro": [
+				-0.0308901965618134,
+				0.920055866241455,
+				-0.0145870447158813
+			],
+			"tamanho": [
+				0.803145051002502,
+				1.83582139015198,
+				0.399856388568878
+			],
+			"triangulos": 45644,
+			"categorias": [
+				"npcs"
+			],
+			"comportamento": "exposicao_cozinheiro",
+			"tamanho_padrao": [
+				0.803145051002502,
+				1.83582139015198,
+				0.399856388568878
+			]
+		},
+		{
+			"id": "cozinheiro_ravi",
+			"nome": "Ravi · Cozinha do mar",
+			"arquivo": "cozinheiro_ravi.glb",
+			"sha256": "0d6a814a1154819997782a1a6b1f64f63577a8dd9357eebc86e27b55b082cbee",
+			"centro": [
+				-0.0450000166893005,
+				0.991249978542328,
+				-0.0169999897480011
+			],
+			"tamanho": [
+				0.953999996185303,
+				1.97749996185303,
+				0.466000020503998
+			],
+			"triangulos": 44800,
+			"categorias": [
+				"npcs"
+			],
+			"comportamento": "exposicao_cozinheiro",
+			"tamanho_padrao": [
+				0.953999996185303,
+				1.97749996185303,
+				0.466000020503998
+			]
+		},
+		{
+			"id": "cozinheiro_otto",
+			"nome": "Otto · Padeiro",
+			"arquivo": "cozinheiro_otto.glb",
+			"sha256": "0bb8a9a68f447fc8dbbc8e986b0cbae6f282052fdd15724037d7d3dd74a632f7",
+			"centro": [
+				-0.0330322980880737,
+				0.934307754039764,
+				-0.0321146845817566
+			],
+			"tamanho": [
+				0.957935094833374,
+				1.86402773857117,
+				0.394551813602448
+			],
+			"triangulos": 46580,
+			"categorias": [
+				"npcs"
+			],
+			"comportamento": "exposicao_cozinheiro",
+			"tamanho_padrao": [
+				0.957935094833374,
+				1.86402773857117,
+				0.394551813602448
+			]
+		},
+		{
+			"id": "npc_comida",
+			"nome": "Vendedor de provisões",
+			"arquivo": "npc_comida.glb",
+			"sha256": "57429414dd9c627830ad0f4a7e389243dc50cd04f3a104cacfb48dfa035bc01d",
+			"centro": [
+				0.0,
+				1.00174999237061,
+				-0.027075007557869
+			],
+			"tamanho": [
+				1.06500005722046,
+				1.97750008106232,
+				0.419149994850159
+			],
+			"triangulos": 3872,
+			"categorias": [
+				"npcs"
+			],
+			"comportamento": "npc_comida"
+		},
+		{
+			"id": "npc_ferreiro",
+			"nome": "Ferreiro",
+			"arquivo": "npc_ferreiro.glb",
+			"sha256": "3fd18451656451678458d7580eb64d2c4cfbe2fd817b51d66c4ff2a36e2f96da",
+			"centro": [
+				0.0,
+				1.00174999237061,
+				-0.027075007557869
+			],
+			"tamanho": [
+				1.06500005722046,
+				1.97750008106232,
+				0.419149994850159
+			],
+			"triangulos": 3872,
+			"categorias": [
+				"npcs"
+			],
+			"comportamento": "npc_ferreiro"
+		},
+		{
+			"id": "mp_alvida",
+			"nome": "Alvida",
+			"arquivo": "mp_alvida.glb",
+			"sha256": "1cf437ade607c4e2d8891c840c73d32733e0068ee9a2a7fc1a5993832f003d07",
+			"centro": [
+				0.0296875238418579,
+				1.0078125,
+				-0.4921875
+			],
+			"tamanho": [
+				1.09062504768372,
+				2.046875,
+				1.546875
+			],
+			"triangulos": 408,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_alvida_2",
+			"nome": "Alvida (Loguetown)",
+			"arquivo": "mp_alvida_2.glb",
+			"sha256": "af81c966376f8f088ed5b51d297b5e978e648a4fcf7ffda97275daf86390925b",
+			"centro": [
+				0.0,
+				1.09375,
+				-0.209480762481689
+			],
+			"tamanho": [
+				1.26065158843994,
+				2.1875,
+				2.11228847503662
+			],
+			"triangulos": 1004,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_arlong",
+			"nome": "Arlong",
+			"arquivo": "mp_arlong.glb",
+			"sha256": "58b9c87afbab908eb19eea16606d1d8a85eb1dadb29aa0810029a430be62ec05",
+			"centro": [
+				0.0,
+				1.01312506198883,
+				0.073744535446167
+			],
+			"tamanho": [
+				1.03062498569489,
+				2.03625011444092,
+				1.07729542255402
+			],
+			"triangulos": 252,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_bandit",
+			"nome": "Bandido da montanha",
+			"arquivo": "mp_bandit.glb",
+			"sha256": "7d78820ed193cc282375181daa1ba9391ad5eb02a6e754b9d5f30fb9d9adc265",
+			"centro": [
+				0.1796875,
+				1.0078125,
+				-0.1875
+			],
+			"tamanho": [
+				1.390625,
+				2.046875,
+				1.0
+			],
+			"triangulos": 3448,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_benn_beckman",
+			"nome": "Benn Beckman",
+			"arquivo": "mp_benn_beckman.glb",
+			"sha256": "8e65a4ad5e4227c51f373ab5dc16d12dee0e9e568ff723846b00304a7136acac",
+			"centro": [
+				0.0,
+				0.789408087730408,
+				0.0335774719715118
+			],
+			"tamanho": [
+				1.39027321338654,
+				2.48368358612061,
+				0.866963982582092
+			],
+			"triangulos": 798,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_bonk_punch",
+			"nome": "Bonk Punch",
+			"arquivo": "mp_bonk_punch.glb",
+			"sha256": "90db6dcb349c529d031e3a4942962baeb659b6da0c36a74ded654caeae56b59b",
+			"centro": [
+				0.0,
+				1.0078125,
+				0.0
+			],
+			"tamanho": [
+				1.03125,
+				2.046875,
+				0.5625
+			],
+			"triangulos": 168,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_buchi",
+			"nome": "Buchi",
+			"arquivo": "mp_buchi.glb",
+			"sha256": "d98454d2714458369591e2abb1268fdf88c2f8fa5713d23604d1e9d4bfa8023b",
+			"centro": [
+				0.0,
+				1.05493080615997,
+				-0.0328906178474426
+			],
+			"tamanho": [
+				1.43213510513306,
+				2.1120491027832,
+				0.736718773841858
+			],
+			"triangulos": 264,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_buggy",
+			"nome": "Buggy",
+			"arquivo": "mp_buggy.glb",
+			"sha256": "b59cd35c16f2b05bb46922c1e3cc01f4679278ddd4f2d4c0c5488b0ba7fc033c",
+			"centro": [
+				0.0,
+				1.13906252384186,
+				0.309138387441635
+			],
+			"tamanho": [
+				1.72442197799683,
+				2.29062509536743,
+				1.2620267868042
+			],
+			"triangulos": 748,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_building_snake",
+			"nome": "Building Snake",
+			"arquivo": "mp_building_snake.glb",
+			"sha256": "0d4e45030dce83529b38928ac33354863c59f112bd8bdb302f4799388565bfb7",
+			"centro": [
+				0.0,
+				1.0078125,
+				-0.652229070663452
+			],
+			"tamanho": [
+				1.03125,
+				2.046875,
+				1.8669581413269
+			],
+			"triangulos": 900,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_cabaji",
+			"nome": "Cabaji",
+			"arquivo": "mp_cabaji.glb",
+			"sha256": "9764dbc3e3c17ffaf1ace4ccff44b6752cd26488adc4c9f66e1fa101ba0f2a15",
+			"centro": [
+				0.0,
+				1.140625,
+				-0.35091233253479
+			],
+			"tamanho": [
+				1.0,
+				2.28125,
+				2.46959161758423
+			],
+			"triangulos": 984,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_chu",
+			"nome": "Chu",
+			"arquivo": "mp_chu.glb",
+			"sha256": "45f5c299a725566849f70eab78a45486c993f67e28b06437e3a62eef3b8e6151",
+			"centro": [
+				0.0,
+				1.0078125,
+				0.0
+			],
+			"tamanho": [
+				1.03125,
+				2.046875,
+				0.5625
+			],
+			"triangulos": 168,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_coby",
+			"nome": "Coby",
+			"arquivo": "mp_coby.glb",
+			"sha256": "4f5b979e33b612061db64fd0e7431d602b2774c0f178974f6eaa515b23c4fda5",
+			"centro": [
+				-0.0000000596046447753906,
+				1.00624990463257,
+				0.0
+			],
+			"tamanho": [
+				1.03499984741211,
+				2.04999995231628,
+				0.5625
+			],
+			"triangulos": 288,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_fullbody",
+			"nome": "Fullbody",
+			"arquivo": "mp_fullbody.glb",
+			"sha256": "67ffa599936282df40058bfb0aa6f02d584a3b3d914d96aa68a77d462a7e191c",
+			"centro": [
+				0.0,
+				1.05156254768372,
+				-0.118749856948853
+			],
+			"tamanho": [
+				1.03125,
+				2.13437509536743,
+				0.825000286102295
+			],
+			"triangulos": 224,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_gab",
+			"nome": "Gab",
+			"arquivo": "mp_gab.glb",
+			"sha256": "6a816f83e900f4d01fbd1fe6b7c3d52885d845b580a84d86a1dfa2d649e68a91",
+			"centro": [
+				0.0,
+				1.16867864131927,
+				0.258274376392365
+			],
+			"tamanho": [
+				1.03879976272583,
+				2.36860728263855,
+				1.12603330612183
+			],
+			"triangulos": 196,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_gin",
+			"nome": "Gin",
+			"arquivo": "mp_gin.glb",
+			"sha256": "823c7a9501c57d625992c8492bd3fa37e174aed293a502a916b7d36a224fc14b",
+			"centro": [
+				0.0234375,
+				1.0078125,
+				0.0234375
+			],
+			"tamanho": [
+				1.078125,
+				2.046875,
+				1.12694311141968
+			],
+			"triangulos": 204,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_girl_icecream",
+			"nome": "Menina do sorvete",
+			"arquivo": "mp_girl_icecream.glb",
+			"sha256": "043c01194b457c91174f4fb234171311bb925e552af7d4e0c76900aadc21d171",
+			"centro": [
+				-0.0000000298023223876953,
+				0.811919689178467,
+				-0.125418663024902
+			],
+			"tamanho": [
+				0.829689383506775,
+				1.62383937835693,
+				1.05585908889771
+			],
+			"triangulos": 216,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_hatchan",
+			"nome": "Hatchan",
+			"arquivo": "mp_hatchan.glb",
+			"sha256": "168c0be04f55ea192c9c77bcb69ee7ccb3546cb36eb796df975f97eadcd6e76c",
+			"centro": [
+				0.034109354019165,
+				1.17187488079071,
+				-0.685346961021423
+			],
+			"tamanho": [
+				1.97340178489685,
+				2.35624980926514,
+				2.07644534111023
+			],
+			"triangulos": 1212,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_helmeppo",
+			"nome": "Helmeppo",
+			"arquivo": "mp_helmeppo.glb",
+			"sha256": "8f99cb58b4813487fb145d0726c935241669cd7f5834a36bd96584bceb02da16",
+			"centro": [
+				0.0,
+				1.0078125,
+				-0.0119917690753937
+			],
+			"tamanho": [
+				1.03125,
+				2.046875,
+				0.586483538150787
+			],
+			"triangulos": 636,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_higuma",
+			"nome": "Higuma",
+			"arquivo": "mp_higuma.glb",
+			"sha256": "f7f300b7fdbdcd4ec8e92dbd23454e75c0657bd793ac334a77b8eb3cf121e7fc",
+			"centro": [
+				0.1796875,
+				1.0078125,
+				-0.1875
+			],
+			"tamanho": [
+				1.390625,
+				2.046875,
+				1.0
+			],
+			"triangulos": 3448,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_hongo",
+			"nome": "Hongo",
+			"arquivo": "mp_hongo.glb",
+			"sha256": "0d65e6041c079cc83598d9c5ff2cf60b8c5d147e9c6614b23b966b1792abd3a6",
+			"centro": [
+				0.0,
+				1.0078125,
+				-0.1875
+			],
+			"tamanho": [
+				1.03125,
+				2.046875,
+				2.25
+			],
+			"triangulos": 180,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_jango",
+			"nome": "Jango",
+			"arquivo": "mp_jango.glb",
+			"sha256": "030a1f7cba4065a2a591899476116a046fa1e6cd4424a0b08c9a2148b8fc7a5e",
+			"centro": [
+				0.149420559406281,
+				1.08437490463257,
+				-0.122553288936615
+			],
+			"tamanho": [
+				1.45115888118744,
+				2.20624995231628,
+				1.12989342212677
+			],
+			"triangulos": 500,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_jonny",
+			"nome": "Johnny",
+			"arquivo": "mp_jonny.glb",
+			"sha256": "cbf0d0e41bb354b83b6ef25eae6855fdb37acf3d024d2cba393c3cf186c608a1",
+			"centro": [
+				0.0,
+				1.0078125,
+				-0.652229070663452
+			],
+			"tamanho": [
+				1.03125,
+				2.046875,
+				1.8669581413269
+			],
+			"triangulos": 900,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_krieg",
+			"nome": "Don Krieg",
+			"arquivo": "mp_krieg.glb",
+			"sha256": "7f68fdbec9470310fb53e3aca52cf94196dc6371078bc8854380a87ee34e6cdf",
+			"centro": [
+				0.0,
+				1.00312507152557,
+				-0.5341796875
+			],
+			"tamanho": [
+				1.0625,
+				2.05625009536743,
+				2.787109375
+			],
+			"triangulos": 924,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_kuro",
+			"nome": "Kuro",
+			"arquivo": "mp_kuro.glb",
+			"sha256": "88ee1f108ba1ddb4fb8ad6a891b8ab65b3a76787b4b8bba0c41ff57bb639f395",
+			"centro": [
+				0.1875,
+				1.0078125,
+				0.0
+			],
+			"tamanho": [
+				1.40625,
+				2.046875,
+				0.5625
+			],
+			"triangulos": 360,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_kuroobi",
+			"nome": "Kuroobi",
+			"arquivo": "mp_kuroobi.glb",
+			"sha256": "1071ba5bc79df6f503d70d4f812ecf3be52267e29a0b1704f8c6b137e9f6e393",
+			"centro": [
+				0.0,
+				1.05364561080933,
+				0.0266556143760681
+			],
+			"tamanho": [
+				1.38750004768372,
+				2.13854122161865,
+				0.615811228752136
+			],
+			"triangulos": 284,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_lime_juice",
+			"nome": "Lime Juice",
+			"arquivo": "mp_lime_juice.glb",
+			"sha256": "f71052dd7a4acd53ab0e06213cd9f6257cf22a2b504a64ea8513195a54f72f9a",
+			"centro": [
+				0.0,
+				1.0078125,
+				-0.1875
+			],
+			"tamanho": [
+				1.03125,
+				2.046875,
+				2.25
+			],
+			"triangulos": 180,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_lucky_roux",
+			"nome": "Lucky Roux",
+			"arquivo": "mp_lucky_roux.glb",
+			"sha256": "e182d9065421adc863078997f88374f883be2493db56a947478b4831d52c2fd1",
+			"centro": [
+				0.0,
+				1.09375,
+				0.0
+			],
+			"tamanho": [
+				1.5,
+				2.1875,
+				0.75
+			],
+			"triangulos": 204,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_luffy_east_blue",
+			"nome": "Luffy",
+			"arquivo": "mp_luffy_east_blue.glb",
+			"sha256": "d561c20509da40578699f037715ca792505c46aab87249f440cdba25b6aeabcc",
+			"centro": [
+				-0.0000000596046447753906,
+				1.05781245231628,
+				0.0
+			],
+			"tamanho": [
+				1.03749990463257,
+				2.14687490463257,
+				0.812502861022949
+			],
+			"triangulos": 512,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_marine",
+			"nome": "Marinheiro",
+			"arquivo": "mp_marine.glb",
+			"sha256": "42a4364b1cba1311832c8957f6f6d690a6d7b41ef3b34181bcf74d2cf9f2755f",
+			"centro": [
+				0.0000000596046447753906,
+				1.04999995231628,
+				-0.645978927612305
+			],
+			"tamanho": [
+				1.03500008583069,
+				2.13750004768372,
+				1.8794584274292
+			],
+			"triangulos": 1280,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_monster_1",
+			"nome": "Monster",
+			"arquivo": "mp_monster_1.glb",
+			"sha256": "6e846d621574ba2b703954bebaefed279c683c897f63ad66eb941c03eddf6dbc",
+			"centro": [
+				0.0,
+				0.858764111995697,
+				0.457310974597931
+			],
+			"tamanho": [
+				1.0,
+				1.88391411304474,
+				1.41462194919586
+			],
+			"triangulos": 228,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_morgan",
+			"nome": "Morgan",
+			"arquivo": "mp_morgan.glb",
+			"sha256": "0e456f305dbfc2c0096d501d2aec8f7afdec40d075451517f67c6d478f4320d7",
+			"centro": [
+				0.0,
+				1.0078125,
+				0.214950948953629
+			],
+			"tamanho": [
+				1.03125,
+				2.046875,
+				0.992401897907257
+			],
+			"triangulos": 396,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_pirate",
+			"nome": "Pirata",
+			"arquivo": "mp_pirate.glb",
+			"sha256": "d5d228fe9f7885204c95e0c706a5030bf93a15d41e4ed7ff55503ca006980f11",
+			"centro": [
+				0.1796875,
+				1.0078125,
+				-0.1875
+			],
+			"tamanho": [
+				1.390625,
+				2.046875,
+				1.0
+			],
+			"triangulos": 3448,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_pirate_fishman1",
+			"nome": "Pirata homem-peixe",
+			"arquivo": "mp_pirate_fishman1.glb",
+			"sha256": "6c35dd0fd35e964ac10ee845533d4a907e12331e6d16f9e786ccc7db67e7941d",
+			"centro": [
+				0.1796875,
+				1.0078125,
+				-0.1875
+			],
+			"tamanho": [
+				1.390625,
+				2.046875,
+				1.0
+			],
+			"triangulos": 3448,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_pirate_fishman2",
+			"nome": "Pirata homem-peixe (fishman2)",
+			"arquivo": "mp_pirate_fishman2.glb",
+			"sha256": "07e7730bedc113a13ae9cc052602e34067e216401065568dd49b3cb014890801",
+			"centro": [
+				0.1796875,
+				1.0078125,
+				-0.1875
+			],
+			"tamanho": [
+				1.390625,
+				2.046875,
+				1.0
+			],
+			"triangulos": 3448,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_pirate_fishman3",
+			"nome": "Pirata homem-peixe (fishman3)",
+			"arquivo": "mp_pirate_fishman3.glb",
+			"sha256": "12dec59776fcd08129be90a919950d1a1e1471e2773544d984ba2ab41bc0e5c4",
+			"centro": [
+				0.1796875,
+				1.0078125,
+				-0.1875
+			],
+			"tamanho": [
+				1.390625,
+				2.046875,
+				1.0
+			],
+			"triangulos": 3448,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_pirate_fishman4",
+			"nome": "Pirata homem-peixe (fishman4)",
+			"arquivo": "mp_pirate_fishman4.glb",
+			"sha256": "690a2a43094874ebdeb6b71740cf9903acc3192831954174f49981ef01282729",
+			"centro": [
+				0.1796875,
+				1.0078125,
+				-0.1875
+			],
+			"tamanho": [
+				1.390625,
+				2.046875,
+				1.0
+			],
+			"triangulos": 3448,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_pirate_pirate1",
+			"nome": "Pirata (pirate1)",
+			"arquivo": "mp_pirate_pirate1.glb",
+			"sha256": "e00519fef33972eb052a1c5fcffcba900ea23ab53e52dcfc082d53c179c5c55f",
+			"centro": [
+				0.1796875,
+				1.0078125,
+				-0.1875
+			],
+			"tamanho": [
+				1.390625,
+				2.046875,
+				1.0
+			],
+			"triangulos": 3448,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_pirate_pirate2",
+			"nome": "Pirata (pirate2)",
+			"arquivo": "mp_pirate_pirate2.glb",
+			"sha256": "e8b1d1d0a74ccd15ebe3faf5c292a0fdc217d0a048797e9766b1654ae67f472d",
+			"centro": [
+				0.1796875,
+				1.0078125,
+				-0.1875
+			],
+			"tamanho": [
+				1.390625,
+				2.046875,
+				1.0
+			],
+			"triangulos": 3448,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_pirate_pirate3",
+			"nome": "Pirata (pirate3)",
+			"arquivo": "mp_pirate_pirate3.glb",
+			"sha256": "5aead0f31ecc9865c2ea98145e6f6762543c46009a65678c363c496416400032",
+			"centro": [
+				0.1796875,
+				1.0078125,
+				-0.1875
+			],
+			"tamanho": [
+				1.390625,
+				2.046875,
+				1.0
+			],
+			"triangulos": 3448,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_pirate_pirate4",
+			"nome": "Pirata (pirate4)",
+			"arquivo": "mp_pirate_pirate4.glb",
+			"sha256": "890d11fc4c1482c879fc2ddf9fcb6c40f7472a6219b744f1b251f958e8ada784",
+			"centro": [
+				0.1796875,
+				1.0078125,
+				-0.1875
+			],
+			"tamanho": [
+				1.390625,
+				2.046875,
+				1.0
+			],
+			"triangulos": 3448,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_pirate_pirate5",
+			"nome": "Pirata (pirate5)",
+			"arquivo": "mp_pirate_pirate5.glb",
+			"sha256": "7473e6f156f7240b8e578f9152b04a1f92ad8ae5127d7ee1348319b588e1d1b5",
+			"centro": [
+				0.1796875,
+				1.0078125,
+				-0.1875
+			],
+			"tamanho": [
+				1.390625,
+				2.046875,
+				1.0
+			],
+			"triangulos": 3448,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_pirate_pirate6",
+			"nome": "Pirata (pirate6)",
+			"arquivo": "mp_pirate_pirate6.glb",
+			"sha256": "e32442a2c24bd686c308c5541bcd7195e5170e995bd757efc75c5d7cb250ae62",
+			"centro": [
+				0.1796875,
+				1.0078125,
+				-0.1875
+			],
+			"tamanho": [
+				1.390625,
+				2.046875,
+				1.0
+			],
+			"triangulos": 3448,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_pirate_pirate7",
+			"nome": "Pirata (pirate7)",
+			"arquivo": "mp_pirate_pirate7.glb",
+			"sha256": "c5d701b48fdcd07025491c26e7b0061757a1f7f1a4a9385ad5b2dedf4808a9ae",
+			"centro": [
+				0.1796875,
+				1.0078125,
+				-0.1875
+			],
+			"tamanho": [
+				1.390625,
+				2.046875,
+				1.0
+			],
+			"triangulos": 3448,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_pirate_pirate8",
+			"nome": "Pirata (pirate8)",
+			"arquivo": "mp_pirate_pirate8.glb",
+			"sha256": "f463021e33351698b11585ed8e6b911361c19581d82732c1a7fdedc2cc542f89",
+			"centro": [
+				0.1796875,
+				1.0078125,
+				-0.1875
+			],
+			"tamanho": [
+				1.390625,
+				2.046875,
+				1.0
+			],
+			"triangulos": 3448,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_richie",
+			"nome": "Richie",
+			"arquivo": "mp_richie.glb",
+			"sha256": "02d7c6e5518a63d263904c518530686cba93ed95e73520aa090d516e3c220734",
+			"centro": [
+				0.0,
+				0.65625,
+				0.24094831943512
+			],
+			"tamanho": [
+				0.831250011920929,
+				1.3125,
+				2.48064661026001
+			],
+			"triangulos": 260,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_sanji_east_blue",
+			"nome": "Sanji",
+			"arquivo": "mp_sanji_east_blue.glb",
+			"sha256": "1370eb78e90a76f95ae6467a422b2c10093811d384c386c15ae80cc38bd549e1",
+			"centro": [
+				0.0,
+				1.015625,
+				0.0
+			],
+			"tamanho": [
+				1.0,
+				2.03125,
+				0.5625
+			],
+			"triangulos": 108,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_sham",
+			"nome": "Sham",
+			"arquivo": "mp_sham.glb",
+			"sha256": "4a920f3db02b2e1be631824291ce187cbe3f0a09eac3984b826bf9482e76ace8",
+			"centro": [
+				0.0,
+				0.986427664756775,
+				-0.046875
+			],
+			"tamanho": [
+				1.03750002384186,
+				1.97285532951355,
+				0.625
+			],
+			"triangulos": 264,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_shanks",
+			"nome": "Shanks",
+			"arquivo": "mp_shanks.glb",
+			"sha256": "59dd149d35c041b1a8e7bb2aa53c649e430db0904a7f5699419be16bc6647db0",
+			"centro": [
+				-0.0000000596046447753906,
+				1.05781245231628,
+				-0.796721339225769
+			],
+			"tamanho": [
+				1.03749990463257,
+				2.14687490463257,
+				2.40594553947449
+			],
+			"triangulos": 992,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_smoker",
+			"nome": "Smoker",
+			"arquivo": "mp_smoker.glb",
+			"sha256": "0342eea6c67b873568d5b6cd5bf940d1c1d368f3f40cf195c396447536359044",
+			"centro": [
+				0.0,
+				1.0078125,
+				-0.671875
+			],
+			"tamanho": [
+				1.03125,
+				2.046875,
+				1.90625
+			],
+			"triangulos": 240,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_tashigi",
+			"nome": "Tashigi",
+			"arquivo": "mp_tashigi.glb",
+			"sha256": "b57745a31b7205d8470484103c390a2b63b9f8cdbac03ee74afecb4c427e1193",
+			"centro": [
+				0.0,
+				1.06101846694946,
+				-0.322778224945068
+			],
+			"tamanho": [
+				1.71555972099304,
+				2.12203693389893,
+				2.52585983276367
+			],
+			"triangulos": 1664,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_yasopp",
+			"nome": "Yasopp",
+			"arquivo": "mp_yasopp.glb",
+			"sha256": "7497d445cb6c7705524ffefa4f7c1815ce8924f238cda0afaa0863c924cf264a",
+			"centro": [
+				0.0,
+				0.789408087730408,
+				-0.0151587128639221
+			],
+			"tamanho": [
+				1.03125,
+				2.48368358612061,
+				0.592817425727844
+			],
+			"triangulos": 600,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_yosaku",
+			"nome": "Yosaku",
+			"arquivo": "mp_yosaku.glb",
+			"sha256": "4ab360933c247b1df46452231ff31111284121b0df111e80ae023b5da5e4d694",
+			"centro": [
+				0.0,
+				1.0078125,
+				-0.652229070663452
+			],
+			"tamanho": [
+				1.03125,
+				2.046875,
+				1.8669581413269
+			],
+			"triangulos": 900,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_zoro_east_blue",
+			"nome": "Zoro",
+			"arquivo": "mp_zoro_east_blue.glb",
+			"sha256": "6d6a01e968096aa25fde37d6b4e95eb0fa34c0ef16e978fd9fbc9686566e4a2a",
+			"centro": [
+				-0.232147336006165,
+				1.07121205329895,
+				-0.2168790102005
+			],
+			"tamanho": [
+				1.85217905044556,
+				2.17992424964905,
+				2.73765826225281
+			],
+			"triangulos": 1260,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mpe_branch_153rd",
+			"nome": "Base da Marinha 153",
+			"arquivo": "mpe_branch_153rd.glb",
+			"sha256": "bc39aa5beaf21258613913c8372a572295db902edf940cad3fe0ad21163c80ad",
+			"centro": [
+				0.0,
+				22.4400005340576,
+				0.0
+			],
+			"tamanho": [
+				61.5999984741211,
+				44.8800010681152,
+				68.6399993896484
+			],
+			"triangulos": 19050,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 11126
+		},
+		{
+			"id": "mpe_ship_alvida",
+			"nome": "Navio da Alvida",
+			"arquivo": "mpe_ship_alvida.glb",
+			"sha256": "80a38509a19a81baae5ddbeaf75a094d342ebf912794327a69a7f42bf509c3c0",
+			"centro": [
+				0.0,
+				20.6800003051758,
+				0.0
+			],
+			"tamanho": [
+				20.2399997711182,
+				41.3600006103516,
+				46.6399993896484
+			],
+			"triangulos": 8530,
+			"categorias": [
+				"estruturas_mine_piece",
+				"navios"
+			],
+			"triangulos_colisao": 6728,
+			"navio": {
+				"classe": "galeao",
+				"comprimento": 46.6,
+				"velocidade": 7.1,
+				"curva": 19.3,
+				"vida": 2099,
+				"tripulacao": 29,
+				"carga": 93,
+				"canhoes": 12
+			}
+		},
+		{
+			"id": "mpe_ship_baratie",
+			"nome": "Baratie",
+			"arquivo": "mpe_ship_baratie.glb",
+			"sha256": "8d23a4d2f902bd99d1ebfc9aa0bc152666d7235760810f26974860d827cafe17",
+			"centro": [
+				-0.000003814697265625,
+				33.8800010681152,
+				0.0
+			],
+			"tamanho": [
+				70.3999938964844,
+				67.7600021362305,
+				55.439998626709
+			],
+			"triangulos": 210982,
+			"categorias": [
+				"estruturas_mine_piece",
+				"navios"
+			],
+			"triangulos_colisao": 70718,
+			"navio": {
+				"classe": "galeao",
+				"comprimento": 70.4,
+				"velocidade": 6.2,
+				"curva": 12.8,
+				"vida": 3168,
+				"tripulacao": 44,
+				"carga": 141,
+				"canhoes": 18
+			}
+		},
+		{
+			"id": "mpe_ship_going_merry",
+			"nome": "Going Merry",
+			"arquivo": "mpe_ship_going_merry.glb",
+			"sha256": "ba72fdf6929a8717c146b9ac7d64e464be964fd5060e04473dca1cb863fd1471",
+			"centro": [
+				0.0,
+				21.5599994659424,
+				0.0
+			],
+			"tamanho": [
+				22.0,
+				43.1199989318848,
+				49.2799987792969
+			],
+			"triangulos": 14908,
+			"categorias": [
+				"estruturas_mine_piece",
+				"navios"
+			],
+			"triangulos_colisao": 10090,
+			"navio": {
+				"classe": "galeao",
+				"comprimento": 49.3,
+				"velocidade": 7.0,
+				"curva": 18.3,
+				"vida": 2218,
+				"tripulacao": 31,
+				"carga": 99,
+				"canhoes": 12
+			}
+		},
+		{
+			"id": "mpe_ship_marine_large_1",
+			"nome": "Navio grande da Marinha",
+			"arquivo": "mpe_ship_marine_large_1.glb",
+			"sha256": "21f4624de4604a539d755e8b28c3b93b6372c480435530f48488ec3106e22f05",
+			"centro": [
+				-0.440000534057617,
+				24.6399993896484,
+				-0.439998626708984
+			],
+			"tamanho": [
+				39.5999984741211,
+				49.2799987792969,
+				87.120002746582
+			],
+			"triangulos": 28906,
+			"categorias": [
+				"estruturas_mine_piece",
+				"navios"
+			],
+			"triangulos_colisao": 16568,
+			"navio": {
+				"classe": "galeao",
+				"comprimento": 87.1,
+				"velocidade": 5.5,
+				"curva": 10.3,
+				"vida": 3920,
+				"tripulacao": 54,
+				"carga": 174,
+				"canhoes": 22
+			}
+		},
+		{
+			"id": "mpe_ship_mihawk",
+			"nome": "Barco do Mihawk",
+			"arquivo": "mpe_ship_mihawk.glb",
+			"sha256": "ea145d7cb9aa4d9c7585dc97ce6ee7bfe232ac899f7b65931a83622876c45ae4",
+			"centro": [
+				0.0,
+				5.72000026702881,
+				0.0
+			],
+			"tamanho": [
+				6.15999984741211,
+				7.92000007629395,
+				9.68000030517578
+			],
+			"triangulos": 538,
+			"categorias": [
+				"estruturas_mine_piece",
+				"navios"
+			],
+			"triangulos_colisao": 426,
+			"navio": {
+				"classe": "bote",
+				"comprimento": 9.7,
+				"velocidade": 8.5,
+				"curva": 70.0,
+				"vida": 436,
+				"tripulacao": 6,
+				"carga": 19,
+				"canhoes": 2
+			}
+		},
+		{
+			"id": "mpe_ship_moby_dick",
+			"nome": "Moby Dick",
+			"arquivo": "mpe_ship_moby_dick.glb",
+			"sha256": "833fd3aa70130f08d6a330997b215a5b6bc3dc9d337f86c0ae75bf3ef6718a2a",
+			"centro": [
+				0.0,
+				44.8800010681152,
+				0.0
+			],
+			"tamanho": [
+				47.5200004577637,
+				89.7600021362305,
+				84.4800033569336
+			],
+			"triangulos": 77764,
+			"categorias": [
+				"estruturas_mine_piece",
+				"navios"
+			],
+			"triangulos_colisao": 43248,
+			"navio": {
+				"classe": "galeao",
+				"comprimento": 84.5,
+				"velocidade": 5.6,
+				"curva": 10.7,
+				"vida": 3802,
+				"tripulacao": 53,
+				"carga": 169,
+				"canhoes": 21
+			}
+		},
+		{
+			"id": "mpe_ship_oro_jackson",
+			"nome": "Oro Jackson",
+			"arquivo": "mpe_ship_oro_jackson.glb",
+			"sha256": "1a19ab97ef35e68160de417f99f0fab1bf9d279433ff5730748f83b52a9187a9",
+			"centro": [
+				0.0,
+				37.8400001525879,
+				0.0
+			],
+			"tamanho": [
+				34.3199996948242,
+				75.6800003051758,
+				75.6800003051758
+			],
+			"triangulos": 61748,
+			"categorias": [
+				"estruturas_mine_piece",
+				"navios"
+			],
+			"triangulos_colisao": 31768,
+			"navio": {
+				"classe": "galeao",
+				"comprimento": 75.7,
+				"velocidade": 6.0,
+				"curva": 11.9,
+				"vida": 3406,
+				"tripulacao": 47,
+				"carga": 151,
+				"canhoes": 19
+			}
+		},
+		{
+			"id": "mpe_ship_pirate_mini_1",
+			"nome": "Navio pirata pequeno",
+			"arquivo": "mpe_ship_pirate_mini_1.glb",
+			"sha256": "fae74ded97ec1577de84ea05b5bf982d38e8cd173fa67f4c759c25e0c621cf44",
+			"centro": [
+				0.0,
+				12.7600002288818,
+				-0.164999961853027
+			],
+			"tamanho": [
+				9.68000030517578,
+				23.7600002288818,
+				26.9500007629395
+			],
+			"triangulos": 6490,
+			"categorias": [
+				"estruturas_mine_piece",
+				"navios"
+			],
+			"triangulos_colisao": 3970,
+			"navio": {
+				"classe": "chalupa",
+				"comprimento": 27.0,
+				"velocidade": 7.9,
+				"curva": 33.4,
+				"vida": 1213,
+				"tripulacao": 17,
+				"carga": 54,
+				"canhoes": 7
+			}
+		},
+		{
+			"id": "mpe_ship_red_force",
+			"nome": "Red Force",
+			"arquivo": "mpe_ship_red_force.glb",
+			"sha256": "7dba9224f9f94c24a4e930ab27c378684df95e4ebfa3fafe916c0ec6328a2a21",
+			"centro": [
+				0.0,
+				36.0799980163574,
+				-0.357501983642578
+			],
+			"tamanho": [
+				29.0400009155273,
+				66.879997253418,
+				68.8049926757812
+			],
+			"triangulos": 41280,
+			"categorias": [
+				"estruturas_mine_piece",
+				"navios"
+			],
+			"triangulos_colisao": 25058,
+			"navio": {
+				"classe": "galeao",
+				"comprimento": 68.8,
+				"velocidade": 6.2,
+				"curva": 13.1,
+				"vida": 3096,
+				"tripulacao": 43,
+				"carga": 138,
+				"canhoes": 17
+			}
+		},
+		{
+			"id": "mpe_ship_saber_of_xebec_1",
+			"nome": "Saber of Xebec (1)",
+			"arquivo": "mpe_ship_saber_of_xebec_1.glb",
+			"sha256": "8776668e5f654cc68abb72ad86e16299be1d4ed2f298f8d8e56a4ae8511f3a67",
+			"centro": [
+				0.0,
+				31.2399997711182,
+				0.0
+			],
+			"tamanho": [
+				39.5999984741211,
+				50.1599998474121,
+				34.3199996948242
+			],
+			"triangulos": 18060,
+			"categorias": [
+				"estruturas_mine_piece",
+				"navios"
+			],
+			"triangulos_colisao": 9866,
+			"navio": {
+				"classe": "galeao",
+				"comprimento": 39.6,
+				"velocidade": 7.4,
+				"curva": 22.7,
+				"vida": 1782,
+				"tripulacao": 25,
+				"carga": 79,
+				"canhoes": 10
+			}
+		},
+		{
+			"id": "mpe_ship_saber_of_xebec_2",
+			"nome": "Saber of Xebec (2)",
+			"arquivo": "mpe_ship_saber_of_xebec_2.glb",
+			"sha256": "a570f8148c5b8052f8458d0c7199d38adac6eb2f2ed5d91e39c0653e3701dacf",
+			"centro": [
+				0.0,
+				33.0000038146973,
+				0.0
+			],
+			"tamanho": [
+				43.1199989318848,
+				64.2400054931641,
+				58.9599990844727
+			],
+			"triangulos": 36778,
+			"categorias": [
+				"estruturas_mine_piece",
+				"navios"
+			],
+			"triangulos_colisao": 19166,
+			"navio": {
+				"classe": "galeao",
+				"comprimento": 59.0,
+				"velocidade": 6.6,
+				"curva": 15.3,
+				"vida": 2653,
+				"tripulacao": 37,
+				"carga": 118,
+				"canhoes": 15
+			}
+		},
+		{
+			"id": "mpe_ship_thousand_sunny",
+			"nome": "Thousand Sunny",
+			"arquivo": "mpe_ship_thousand_sunny.glb",
+			"sha256": "1f6b6e6f38282251d710ab9db93a5f349e8d141fe94f4979cbb2189a76cc4da8",
+			"centro": [
+				-4.84000015258789,
+				44.0,
+				0.000003814697265625
+			],
+			"tamanho": [
+				32.560001373291,
+				88.0,
+				75.6800079345703
+			],
+			"triangulos": 52642,
+			"categorias": [
+				"estruturas_mine_piece",
+				"navios"
+			],
+			"triangulos_colisao": 33754,
+			"navio": {
+				"classe": "galeao",
+				"comprimento": 75.7,
+				"velocidade": 6.0,
+				"curva": 11.9,
+				"vida": 3406,
+				"tripulacao": 47,
+				"carga": 151,
+				"canhoes": 19
+			}
+		},
+		{
+			"id": "mpe_shop_clothes",
+			"nome": "Loja de roupas",
+			"arquivo": "mpe_shop_clothes.glb",
+			"sha256": "a484e62641217197bb255498244d81f33d0d7a9be2dca42138779f0b7a99a26f",
+			"centro": [
+				0.0,
+				4.61999988555908,
+				0.0
+			],
+			"tamanho": [
+				17.6000003814697,
+				9.23999977111816,
+				19.3600006103516
+			],
+			"triangulos": 2226,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 674
+		},
+		{
+			"id": "mpe_shop_weapon",
+			"nome": "Loja de armas",
+			"arquivo": "mpe_shop_weapon.glb",
+			"sha256": "f5c21f18e5329245a49fd5734cc246bb58b9ed9251c7a68f2d12fa2d300461da",
+			"centro": [
+				0.0,
+				5.28000020980835,
+				0.0
+			],
+			"tamanho": [
+				29.9200000762939,
+				10.5600004196167,
+				24.6399993896484
+			],
+			"triangulos": 4722,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 2782
+		},
+		{
+			"id": "mpe_tent_bandit",
+			"nome": "Acampamento bandido",
+			"arquivo": "mpe_tent_bandit.glb",
+			"sha256": "99745d9cefa48f84fec9f138b052a39f2a3a5e3d062fbc56371cac51ed5a1428",
+			"centro": [
+				0.0,
+				1.98000001907349,
+				0.0
+			],
+			"tamanho": [
+				17.6000003814697,
+				3.96000003814697,
+				17.6000003814697
+			],
+			"triangulos": 1840,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 1392
+		},
+		{
+			"id": "mpe_tent_marine",
+			"nome": "Acampamento da Marinha",
+			"arquivo": "mpe_tent_marine.glb",
+			"sha256": "a22d84c862cb3d45351f99f183abbb2d3685fa9d67dc5d9a6e9174428ad34196",
+			"centro": [
+				0.0,
+				1.98000001907349,
+				0.0
+			],
+			"tamanho": [
+				17.6000003814697,
+				3.96000003814697,
+				17.6000003814697
+			],
+			"triangulos": 1896,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 1404
+		},
+		{
+			"id": "mpe_tent_pirates",
+			"nome": "Acampamento pirata",
+			"arquivo": "mpe_tent_pirates.glb",
+			"sha256": "158cb70b36e7af451f12faff72237b5cfbd4fbca8fdf60fff598c46d84b0c98c",
+			"centro": [
+				0.0,
+				1.98000001907349,
+				0.0
+			],
+			"tamanho": [
+				17.6000003814697,
+				3.96000003814697,
+				17.6000003814697
+			],
+			"triangulos": 1864,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 1370
+		},
+		{
+			"id": "mpe_village_foosha_house1",
+			"nome": "Foosha: casa 1",
+			"arquivo": "mpe_village_foosha_house1.glb",
+			"sha256": "c3abd04faa811f9c1ab4d88bc160bf3cc2ba9226d9a9ec17bf889f7fc05be47a",
+			"centro": [
+				0.0,
+				9.02000045776367,
+				0.0
+			],
+			"tamanho": [
+				22.8799991607666,
+				18.0400009155273,
+				22.8799991607666
+			],
+			"triangulos": 5312,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 3956
+		},
+		{
+			"id": "mpe_village_foosha_house2",
+			"nome": "Foosha: casa 2",
+			"arquivo": "mpe_village_foosha_house2.glb",
+			"sha256": "3965dd1b529247621b1c0d8ab8abfce75b3026b9138b843447e536142159225f",
+			"centro": [
+				0.0,
+				8.80000019073486,
+				0.0
+			],
+			"tamanho": [
+				22.8799991607666,
+				17.6000003814697,
+				22.8799991607666
+			],
+			"triangulos": 3768,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 2236
+		},
+		{
+			"id": "mpe_village_foosha_house3",
+			"nome": "Foosha: casa 3",
+			"arquivo": "mpe_village_foosha_house3.glb",
+			"sha256": "d065bc984f28de21788aafc890e6a1e8195ec8a5f4a2dfd61fa4dd8847a389dc",
+			"centro": [
+				0.0,
+				8.80000019073486,
+				0.0
+			],
+			"tamanho": [
+				22.8799991607666,
+				17.6000003814697,
+				22.8799991607666
+			],
+			"triangulos": 3390,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 2164
+		},
+		{
+			"id": "mpe_village_foosha_house4",
+			"nome": "Foosha: casa 4",
+			"arquivo": "mpe_village_foosha_house4.glb",
+			"sha256": "d22bb77f604affcdb9a68122037594d6afa0f4536f7dc2f98094e32ea5b61a72",
+			"centro": [
+				0.0,
+				8.80000019073486,
+				0.0
+			],
+			"tamanho": [
+				22.8799991607666,
+				17.6000003814697,
+				22.8799991607666
+			],
+			"triangulos": 3518,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 2356
+		},
+		{
+			"id": "mpe_village_foosha_ranch1",
+			"nome": "Foosha: rancho",
+			"arquivo": "mpe_village_foosha_ranch1.glb",
+			"sha256": "a1fefb43fa6a59d6ec382b08b978c56cf7b8e6eef38ca99dda48d2926ae3fdce",
+			"centro": [
+				0.0,
+				1.75999999046326,
+				0.0
+			],
+			"tamanho": [
+				22.8799991607666,
+				3.51999998092651,
+				22.8799991607666
+			],
+			"triangulos": 2368,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 394
+		},
+		{
+			"id": "mpe_village_foosha_road_cross",
+			"nome": "Foosha: cruzamento",
+			"arquivo": "mpe_village_foosha_road_cross.glb",
+			"sha256": "d12ca42a828721ddfad668ae86f94ac96f7dc14fac258e4061f2c3b4d4b479d7",
+			"centro": [
+				0.0,
+				0.852505028247833,
+				0.0
+			],
+			"tamanho": [
+				4.40000009536743,
+				1.70501005649567,
+				4.40000009536743
+			],
+			"triangulos": 54,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 22
+		},
+		{
+			"id": "mpe_village_foosha_road_street",
+			"nome": "Foosha: rua",
+			"arquivo": "mpe_village_foosha_road_street.glb",
+			"sha256": "7feaadf004de99cae048a3a04c503fb50d2beabab46b40e2be9dbdc189dbacbd",
+			"centro": [
+				0.0,
+				0.88000500202179,
+				0.0
+			],
+			"tamanho": [
+				4.40000009536743,
+				1.76001000404358,
+				45.7599983215332
+			],
+			"triangulos": 506,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 226
+		},
+		{
+			"id": "mpe_village_foosha_windmill1",
+			"nome": "Foosha: moinho 1",
+			"arquivo": "mpe_village_foosha_windmill1.glb",
+			"sha256": "ca397b7efc2d4b5966b41528084946c5b842377a5b8704671a507432c46b6d7a",
+			"centro": [
+				0.0,
+				9.68000030517578,
+				0.0
+			],
+			"tamanho": [
+				22.8799991607666,
+				19.3600006103516,
+				22.8799991607666
+			],
+			"triangulos": 6820,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 2520
+		},
+		{
+			"id": "mpe_village_foosha_windmill2",
+			"nome": "Foosha: moinho 2",
+			"arquivo": "mpe_village_foosha_windmill2.glb",
+			"sha256": "bb7a9b95565097a4900e356754c8e27a3e82c23c2bd1f9d6cb2ccd9962c5f691",
+			"centro": [
+				0.0,
+				9.68000030517578,
+				0.0
+			],
+			"tamanho": [
+				22.8799991607666,
+				19.3600006103516,
+				22.8799991607666
+			],
+			"triangulos": 6850,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 2522
+		},
+		{
+			"id": "mpe_village_heian_crossroad",
+			"nome": "Wano (Heian): cruzamento",
+			"arquivo": "mpe_village_heian_crossroad.glb",
+			"sha256": "8fb099fb30965745fae6105178b43ef7867378ba70a05d5b15a7d70130ff0047",
+			"centro": [
+				0.0,
+				0.879999995231628,
+				0.0
+			],
+			"tamanho": [
+				4.40000009536743,
+				1.75999999046326,
+				4.40000009536743
+			],
+			"triangulos": 78,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 72
+		},
+		{
+			"id": "mpe_village_heian_garage",
+			"nome": "Wano (Heian): galpão",
+			"arquivo": "mpe_village_heian_garage.glb",
+			"sha256": "58a6f6b5af88cc0ef158c52c4df647e948c619dc760f6cff9681019abef7c26d",
+			"centro": [
+				0.0,
+				4.40000009536743,
+				0.0
+			],
+			"tamanho": [
+				16.7199993133545,
+				8.80000019073486,
+				16.7199993133545
+			],
+			"triangulos": 2102,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 1442
+		},
+		{
+			"id": "mpe_village_heian_graveyard",
+			"nome": "Wano (Heian): cemitério",
+			"arquivo": "mpe_village_heian_graveyard.glb",
+			"sha256": "a2192bddaec332e32f5015070e73d71f9a3289e91131a16fc98be9d8d1be6a79",
+			"centro": [
+				0.0,
+				1.75999999046326,
+				0.0
+			],
+			"tamanho": [
+				16.7199993133545,
+				3.51999998092651,
+				16.7199993133545
+			],
+			"triangulos": 1734,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 684
+		},
+		{
+			"id": "mpe_village_heian_house1",
+			"nome": "Wano (Heian): casa 1",
+			"arquivo": "mpe_village_heian_house1.glb",
+			"sha256": "72200f7f8ecf29ca2987ab58ef8999a626dbacdcf9062eefd4ecfd7df9fe44b2",
+			"centro": [
+				0.0,
+				5.05999994277954,
+				0.0
+			],
+			"tamanho": [
+				16.7199993133545,
+				10.1199998855591,
+				16.7199993133545
+			],
+			"triangulos": 3444,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 2152
+		},
+		{
+			"id": "mpe_village_heian_house2",
+			"nome": "Wano (Heian): casa 2",
+			"arquivo": "mpe_village_heian_house2.glb",
+			"sha256": "dc7275e1b988f784c4939d055c0713cf5fb3c80df8957fcc8898bce95592d6ec",
+			"centro": [
+				0.0,
+				4.61999988555908,
+				0.00000095367431640625
+			],
+			"tamanho": [
+				16.7199993133545,
+				9.23999977111816,
+				16.7200012207031
+			],
+			"triangulos": 2008,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 1358
+		},
+		{
+			"id": "mpe_village_heian_house3",
+			"nome": "Wano (Heian): casa 3",
+			"arquivo": "mpe_village_heian_house3.glb",
+			"sha256": "9897f9d8b268ab0725de93a0f4fa952aa71e63d644dddc936a27fe9c3e52f9b2",
+			"centro": [
+				0.0,
+				6.59999990463257,
+				0.0
+			],
+			"tamanho": [
+				16.7199993133545,
+				13.1999998092651,
+				16.7199993133545
+			],
+			"triangulos": 2522,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 1756
+		},
+		{
+			"id": "mpe_village_heian_house4",
+			"nome": "Wano (Heian): casa 4",
+			"arquivo": "mpe_village_heian_house4.glb",
+			"sha256": "e1e4c225e67f1f56efa75da32709e6d1b596dcb0f52ffbe64811729492dea1fd",
+			"centro": [
+				0.0,
+				3.96000003814697,
+				0.0
+			],
+			"tamanho": [
+				16.7199993133545,
+				7.92000007629395,
+				16.7199993133545
+			],
+			"triangulos": 1526,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 1116
+		},
+		{
+			"id": "mpe_village_heian_prizon",
+			"nome": "Wano (Heian): prisão",
+			"arquivo": "mpe_village_heian_prizon.glb",
+			"sha256": "091c2bf00f9fd5867bcc286ba7a583e46e26c435a8c5066c697e709ee280e8ed",
+			"centro": [
+				0.0,
+				5.5,
+				0.0
+			],
+			"tamanho": [
+				16.7199993133545,
+				11.0,
+				16.7199993133545
+			],
+			"triangulos": 3348,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 2792
+		},
+		{
+			"id": "mpe_village_heian_road",
+			"nome": "Wano (Heian): rua",
+			"arquivo": "mpe_village_heian_road.glb",
+			"sha256": "e2a778217919b93b08246c8bcf1d75187d558c922a5e309951b53d629250cae0",
+			"centro": [
+				0.0,
+				0.879999995231628,
+				0.0000019073486328125
+			],
+			"tamanho": [
+				4.40000009536743,
+				1.75999999046326,
+				33.4400024414062
+			],
+			"triangulos": 200,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 40
+		},
+		{
+			"id": "mpe_village_heian_temple",
+			"nome": "Wano (Heian): templo",
+			"arquivo": "mpe_village_heian_temple.glb",
+			"sha256": "6e5f1b7486bd979e5da3eb6394ed9c4f9a5cd2fadbd1ffba05b93f3b71170a60",
+			"centro": [
+				0.0,
+				6.38000011444092,
+				0.0
+			],
+			"tamanho": [
+				16.7199993133545,
+				12.7600002288818,
+				16.7199993133545
+			],
+			"triangulos": 1666,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 1314
+		},
+		{
+			"id": "mpe_village_heian_watchtower",
+			"nome": "Wano (Heian): torre de vigia",
+			"arquivo": "mpe_village_heian_watchtower.glb",
+			"sha256": "1ec7bb2802f981032ddc85bdccce8be042a572ec054133596043fdb079bf80f2",
+			"centro": [
+				0.0,
+				17.6000003814697,
+				0.0
+			],
+			"tamanho": [
+				9.68000030517578,
+				35.2000007629395,
+				9.68000030517578
+			],
+			"triangulos": 6782,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 1260
+		},
+		{
+			"id": "mpe_village_shandora_bell",
+			"nome": "Shandora: sino de ouro",
+			"arquivo": "mpe_village_shandora_bell.glb",
+			"sha256": "aad8196ad2d597083c3ffd36cb3b73a3336be8dc19385b4127d8f593363e25b8",
+			"centro": [
+				0.0,
+				50.5999984741211,
+				0.0
+			],
+			"tamanho": [
+				124.080001831055,
+				101.199996948242,
+				90.6399993896484
+			],
+			"triangulos": 22590,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 22564
+		},
+		{
+			"id": "mpe_village_shandora_house1",
+			"nome": "Shandora: casa 1",
+			"arquivo": "mpe_village_shandora_house1.glb",
+			"sha256": "b4bb340f1cc00c78479cc1eb6def04df990298ce69208ecb5f72dd3e5fa9f44b",
+			"centro": [
+				0.0,
+				7.50749969482422,
+				0.0
+			],
+			"tamanho": [
+				16.7199993133545,
+				15.0149993896484,
+				16.7199993133545
+			],
+			"triangulos": 638,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 418
+		},
+		{
+			"id": "mpe_village_shandora_house2",
+			"nome": "Shandora: casa 2",
+			"arquivo": "mpe_village_shandora_house2.glb",
+			"sha256": "f16c46fb60ee2802d7331ebee680cfc680b0f5f8533ce6a34e2d046074e2c284",
+			"centro": [
+				0.0,
+				10.5600004196167,
+				0.0
+			],
+			"tamanho": [
+				16.7199993133545,
+				21.1200008392334,
+				16.7199993133545
+			],
+			"triangulos": 750,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 652
+		},
+		{
+			"id": "mpe_village_shandora_house3",
+			"nome": "Shandora: casa 3",
+			"arquivo": "mpe_village_shandora_house3.glb",
+			"sha256": "ae011fb3a9ca17706242a73a56edc2eaf5c235f4d49bf32f0998b41f292aa14b",
+			"centro": [
+				0.0,
+				10.5600004196167,
+				0.0
+			],
+			"tamanho": [
+				16.7199993133545,
+				21.1200008392334,
+				16.7199993133545
+			],
+			"triangulos": 540,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 474
+		},
+		{
+			"id": "mpe_village_shandora_road_cross",
+			"nome": "Shandora: cruzamento",
+			"arquivo": "mpe_village_shandora_road_cross.glb",
+			"sha256": "c7b6a73eb161d8c546cf853273fc2b62c2494c08218f8df920ad7c0e4776152e",
+			"centro": [
+				0.0,
+				0.439999997615814,
+				0.0
+			],
+			"tamanho": [
+				7.92000007629395,
+				0.879999995231628,
+				7.92000007629395
+			],
+			"triangulos": 12,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 12
+		},
+		{
+			"id": "mpe_village_shandora_road_street",
+			"nome": "Shandora: rua",
+			"arquivo": "mpe_village_shandora_road_street.glb",
+			"sha256": "44dc3ab566275626f91684e721c68bdb105d807c789c06b13a330aca03980cff",
+			"centro": [
+				0.0,
+				0.439999997615814,
+				0.0
+			],
+			"tamanho": [
+				50.1599998474121,
+				0.879999995231628,
+				7.92000007629395
+			],
+			"triangulos": 12,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 12
+		},
+		{
+			"id": "mpe_village_shimotsuki_dojo",
+			"nome": "Shimotsuki: dojo",
+			"arquivo": "mpe_village_shimotsuki_dojo.glb",
+			"sha256": "ab704100773664406b6277c336f706f51885fe15a56e6d12cb19089662131a07",
+			"centro": [
+				0.0,
+				9.02000045776367,
+				0.0
+			],
+			"tamanho": [
+				66.879997253418,
+				18.0400009155273,
+				86.2399978637695
+			],
+			"triangulos": 11496,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 8852
+		},
+		{
+			"id": "mpe_village_shimotsuki_field",
+			"nome": "Shimotsuki: campo",
+			"arquivo": "mpe_village_shimotsuki_field.glb",
+			"sha256": "a2b974ec58ead877340a96923a004dbf0683ebe789646773d2267d6151a7967e",
+			"centro": [
+				0.0,
+				0.385004997253418,
+				0.0
+			],
+			"tamanho": [
+				14.0799999237061,
+				0.880010008811951,
+				14.0799999237061
+			],
+			"triangulos": 3328,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 32
+		},
+		{
+			"id": "mpe_village_shimotsuki_road",
+			"nome": "Shimotsuki: rua",
+			"arquivo": "mpe_village_shimotsuki_road.glb",
+			"sha256": "c4528aada6fb5e8d064c15b58ebc378c651844dcb1be80b15d59800a4cf24692",
+			"centro": [
+				0.0,
+				1.75999999046326,
+				0.0
+			],
+			"tamanho": [
+				41.3600006103516,
+				3.51999998092651,
+				6.15999984741211
+			],
+			"triangulos": 888,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 632
+		},
+		{
+			"id": "mpe_village_yukaku_crossroad",
+			"nome": "Wano (Yukaku): cruzamento",
+			"arquivo": "mpe_village_yukaku_crossroad.glb",
+			"sha256": "cba7b2adb27bab152b61f3e1ee905971affa5669c4f60c06fca2cf6f695e84e1",
+			"centro": [
+				0.0,
+				0.88000500202179,
+				0.0
+			],
+			"tamanho": [
+				7.92000007629395,
+				1.76001000404358,
+				7.92000007629395
+			],
+			"triangulos": 48,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 12
+		},
+		{
+			"id": "mpe_village_yukaku_house_1",
+			"nome": "Wano (Yukaku): casa 1",
+			"arquivo": "mpe_village_yukaku_house_1.glb",
+			"sha256": "c1bd4ebfe95ddec79ec76727c70c982d281be787f94b40bc0bfd0d34e2d0f3db",
+			"centro": [
+				0.0,
+				6.81999969482422,
+				0.0
+			],
+			"tamanho": [
+				20.2399997711182,
+				13.6399993896484,
+				33.439998626709
+			],
+			"triangulos": 7544,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 3404
+		},
+		{
+			"id": "mpe_village_yukaku_house_2",
+			"nome": "Wano (Yukaku): casa 2",
+			"arquivo": "mpe_village_yukaku_house_2.glb",
+			"sha256": "0a36bd94d0702f69d6755c54ea07fde5c40e5f13cda6d7859bcfb7701b63789e",
+			"centro": [
+				0.0,
+				7.48000001907349,
+				0.0
+			],
+			"tamanho": [
+				20.2399997711182,
+				14.960000038147,
+				33.439998626709
+			],
+			"triangulos": 6070,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 2018
+		},
+		{
+			"id": "mpe_village_yukaku_house_3",
+			"nome": "Wano (Yukaku): casa 3",
+			"arquivo": "mpe_village_yukaku_house_3.glb",
+			"sha256": "0017deb09831f3b21af26277a5642a949d06fc9ea31faf97f012cd70c4b34b7b",
+			"centro": [
+				0.0,
+				11.0,
+				0.0
+			],
+			"tamanho": [
+				27.2800006866455,
+				22.0,
+				27.2800006866455
+			],
+			"triangulos": 7538,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 3724
+		},
+		{
+			"id": "mpe_village_yukaku_house_4",
+			"nome": "Wano (Yukaku): casa 4",
+			"arquivo": "mpe_village_yukaku_house_4.glb",
+			"sha256": "6b04b28e002a160f23cb44dec31c19d4625dfeca6fa68f3b6bb3102b08755ac9",
+			"centro": [
+				0.0,
+				12.3199996948242,
+				0.0
+			],
+			"tamanho": [
+				27.2800006866455,
+				24.6399993896484,
+				27.2800006866455
+			],
+			"triangulos": 9484,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 5616
+		},
+		{
+			"id": "mpe_village_yukaku_house_5",
+			"nome": "Wano (Yukaku): casa 5",
+			"arquivo": "mpe_village_yukaku_house_5.glb",
+			"sha256": "0ba66761b904a303a735b308c858e26ff72c693e2ec916ab5e9c60d4f5d09b69",
+			"centro": [
+				0.0,
+				8.35999965667725,
+				0.00000095367431640625
+			],
+			"tamanho": [
+				27.2800006866455,
+				16.7199993133545,
+				27.2800025939941
+			],
+			"triangulos": 3078,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 2692
+		},
+		{
+			"id": "mpe_village_yukaku_road",
+			"nome": "Wano (Yukaku): rua",
+			"arquivo": "mpe_village_yukaku_road.glb",
+			"sha256": "c8d3e4fe5e48f9b39a039792d06c2614a7e2b8fc37de5737db1c5e0a3348eda9",
+			"centro": [
+				0.0,
+				2.0625,
+				0.0
+			],
+			"tamanho": [
+				7.92000007629395,
+				4.125,
+				27.2800006866455
+			],
+			"triangulos": 108,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 96
+		},
+		{
+			"id": "mpe_water_seven_house_1",
+			"nome": "Water Seven: casa 1",
+			"arquivo": "mpe_water_seven_house_1.glb",
+			"sha256": "c45196b7687af18ce7fbb049fe15a907721ec751ece52bcd9cfea7a1c2ded857",
+			"centro": [
+				0.0,
+				11.0,
+				0.0
+			],
+			"tamanho": [
+				18.4799995422363,
+				22.0,
+				18.4799995422363
+			],
+			"triangulos": 3274,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 2078
+		},
+		{
+			"id": "mpe_water_seven_house_2",
+			"nome": "Water Seven: casa 2",
+			"arquivo": "mpe_water_seven_house_2.glb",
+			"sha256": "cb97c2107d78c97828383e827f4aee6cc39b8f6c86dabf98077f2c741efba6a8",
+			"centro": [
+				0.0,
+				14.0799999237061,
+				0.0
+			],
+			"tamanho": [
+				18.4799995422363,
+				28.1599998474121,
+				18.4799995422363
+			],
+			"triangulos": 3894,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 2752
+		},
+		{
+			"id": "mpe_water_seven_house_3",
+			"nome": "Water Seven: casa 3",
+			"arquivo": "mpe_water_seven_house_3.glb",
+			"sha256": "f2294ee75ae5642da07d8e65b2faeba30fa56e864a02fbe2544cf5d8db652297",
+			"centro": [
+				0.0,
+				10.5600004196167,
+				0.0
+			],
+			"tamanho": [
+				18.4799995422363,
+				21.1200008392334,
+				18.4799995422363
+			],
+			"triangulos": 3374,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 2282
+		},
+		{
+			"id": "mpe_water_seven_house_4",
+			"nome": "Water Seven: casa 4",
+			"arquivo": "mpe_water_seven_house_4.glb",
+			"sha256": "7479c86062c83415ac523ca0569d36e935a982b747c5f1929a9838142dac004e",
+			"centro": [
+				0.0,
+				15.8400001525879,
+				0.0
+			],
+			"tamanho": [
+				18.4799995422363,
+				31.6800003051758,
+				18.4799995422363
+			],
+			"triangulos": 8866,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 3786
+		},
+		{
+			"id": "mpe_water_seven_road",
+			"nome": "Water Seven: canal 1",
+			"arquivo": "mpe_water_seven_road.glb",
+			"sha256": "c6cc6e9e7cd40c5b161bcd0a360e3e6c358cda408d5407eddd70aa2be2c6468f",
+			"centro": [
+				0.0,
+				5.28000020980835,
+				0.0
+			],
+			"tamanho": [
+				34.3199996948242,
+				10.5600004196167,
+				55.439998626709
+			],
+			"triangulos": 4028,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 1386
+		},
+		{
+			"id": "mpe_water_seven_road_2",
+			"nome": "Water Seven: canal 2",
+			"arquivo": "mpe_water_seven_road_2.glb",
+			"sha256": "05f57338e22762ced3b2371b0909a9a6442ea430998ab4cc1b40c902b9e6eabc",
+			"centro": [
+				0.0,
+				5.28000020980835,
+				0.0
+			],
+			"tamanho": [
+				34.3199996948242,
+				10.5600004196167,
+				55.439998626709
+			],
+			"triangulos": 5498,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 2192
+		},
+		{
+			"id": "mpe_water_seven_road_cross",
+			"nome": "Water Seven: cruzamento de canais",
+			"arquivo": "mpe_water_seven_road_cross.glb",
+			"sha256": "d45e3c436fef231622998bcac646a499a9e5a3a9bae1e9b53704f2451c57a683",
+			"centro": [
+				0.0,
+				2.20000004768372,
+				0.0
+			],
+			"tamanho": [
+				34.3199996948242,
+				4.40000009536743,
+				35.2000007629395
+			],
+			"triangulos": 148,
+			"categorias": [
+				"estruturas_mine_piece"
+			],
+			"triangulos_colisao": 56
+		},
+		{
+			"id": "mp_ace_1",
+			"nome": "2nd Division Commander \"Fire Fist\" Ace",
+			"arquivo": "mp_ace_1.glb",
+			"sha256": "2ea68def4e3d5bd5b7c3703ed9ee669702dca8d3ad380baa0e0ed0d35ec4f35a",
+			"centro": [
+				-0.0234375,
+				1.0078125,
+				0.0
+			],
+			"tamanho": [
+				1.078125,
+				2.046875,
+				0.5625
+			],
+			"triangulos": 440,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_aokiji",
+			"nome": "Admiral Aokiji",
+			"arquivo": "mp_aokiji.glb",
+			"sha256": "b25960261f1fbd25cce67d69d5f6526195392e92872cfe562012dfd56407d7cc",
+			"centro": [
+				-0.0000000596046447753906,
+				1.00624990463257,
+				0.0
+			],
+			"tamanho": [
+				1.03499984741211,
+				2.04999995231628,
+				0.5625
+			],
+			"triangulos": 264,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_bananawani",
+			"nome": "Bananawani",
+			"arquivo": "mp_bananawani.glb",
+			"sha256": "22b1ff3b98bbdf7eb77230073acb423fc2a1c9a701f8aa1347c3ad8e885c1915",
+			"centro": [
+				0.0,
+				0.941389083862305,
+				3.17187523841858
+			],
+			"tamanho": [
+				4.22499990463257,
+				1.94527816772461,
+				12.5062503814697
+			],
+			"triangulos": 540,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_bellamy_grand_line",
+			"nome": "Bellamy \"the Hyena\" - Grand Line",
+			"arquivo": "mp_bellamy_grand_line.glb",
+			"sha256": "25bbfce0863a947c6e6fdbab9affa83b188e6811358bd5c2398b4328825eac96",
+			"centro": [
+				0.0,
+				1.0078125,
+				0.0
+			],
+			"tamanho": [
+				1.03125,
+				2.046875,
+				0.5625
+			],
+			"triangulos": 168,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_bellamy_new_world",
+			"nome": "Bellamy \"the Hyena\" - New World",
+			"arquivo": "mp_bellamy_new_world.glb",
+			"sha256": "f3299e83454df54f0bf58d22598b8db53398175cd5c52c01e385142d9a1cc0f6",
+			"centro": [
+				0.0,
+				1.0078125,
+				0.0
+			],
+			"tamanho": [
+				1.03125,
+				2.046875,
+				0.5625
+			],
+			"triangulos": 168,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_boa_hancock",
+			"nome": "\"Pirate Empress\" Boa Hancock - Seven Warlords of the Sea",
+			"arquivo": "mp_boa_hancock.glb",
+			"sha256": "a5afacc88630c3618a6f5f231724a64de1757c7bf544f67175c38539892a978e",
+			"centro": [
+				0.0,
+				1.00531256198883,
+				0.0117555558681488
+			],
+			"tamanho": [
+				1.25323355197906,
+				2.05187511444092,
+				0.795476794242859
+			],
+			"triangulos": 964,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_bon_clay",
+			"nome": "Mr. 2 Bon Clay",
+			"arquivo": "mp_bon_clay.glb",
+			"sha256": "36e02155bae7918f3323e77873a4c3a2f351663ae3fdbba3f5981c2e9e8749cc",
+			"centro": [
+				-0.0000000596046447753906,
+				1.03781247138977,
+				0.0
+			],
+			"tamanho": [
+				1.21249985694885,
+				2.11312508583069,
+				0.5625
+			],
+			"triangulos": 256,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_brogy",
+			"nome": "Brogy the Red Ogre",
+			"arquivo": "mp_brogy.glb",
+			"sha256": "428dfa4bcfb21923575f6e92f297429b1f20b33822db8c58c85702aa7bd140da",
+			"centro": [
+				0.0,
+				2.62224435806274,
+				0.079325795173645
+			],
+			"tamanho": [
+				4.47542333602905,
+				5.64910888671875,
+				3.2663369178772
+			],
+			"triangulos": 1484,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_brook",
+			"nome": "Humming Brook - Grand Line",
+			"arquivo": "mp_brook.glb",
+			"sha256": "119ed9efc66d4993b0702dccd014e3ccf89383d099cf8f64c313fac38c14e578",
+			"centro": [
+				0.0,
+				1.80953621864319,
+				0.265625
+			],
+			"tamanho": [
+				1.125,
+				3.61907243728638,
+				1.96875
+			],
+			"triangulos": 486,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_charlos",
+			"nome": "Saint Charlos",
+			"arquivo": "mp_charlos.glb",
+			"sha256": "b70b06633c4680813818c5cb4fa67534b7322bb355f053171736463f6b9ee3c9",
+			"centro": [
+				-0.0000000596046447753906,
+				1.1284373998642,
+				0.0
+			],
+			"tamanho": [
+				1.03749990463257,
+				2.30687475204468,
+				0.813750028610229
+			],
+			"triangulos": 840,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_charlotte_linlin_wano_country",
+			"nome": "Four Emperors \"Big Mom\" Charlotte Linlin - Wano Country",
+			"arquivo": "mp_charlotte_linlin_wano_country.glb",
+			"sha256": "60929bb25955e8e2cafb01a7a9d3c4c4dfdd7423dce946436f73d7abc151cc87",
+			"centro": [
+				0.000000238418579101562,
+				4.25882196426392,
+				0.668594598770142
+			],
+			"tamanho": [
+				6.5076150894165,
+				9.4784049987793,
+				5.63968896865845
+			],
+			"triangulos": 1980,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_chinjao",
+			"nome": "Chinjao",
+			"arquivo": "mp_chinjao.glb",
+			"sha256": "59e421f572d0b51f8965469fea8d88cbc1173b8a51b6ff65a74a68aa4b094248",
+			"centro": [
+				0.0,
+				2.53125,
+				-0.174756288528442
+			],
+			"tamanho": [
+				2.6875,
+				5.0625,
+				1.41201257705688
+			],
+			"triangulos": 292,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_chouchou",
+			"nome": "Chouchou",
+			"arquivo": "mp_chouchou.glb",
+			"sha256": "6af750c72bb7476342590ab3e4d4948c1b2b2b35fe3db08c23c1b727d03700d7",
+			"centro": [
+				0.0,
+				0.539485216140747,
+				0.00952774286270142
+			],
+			"tamanho": [
+				0.566996097564697,
+				1.07897043228149,
+				1.44274532794952
+			],
+			"triangulos": 228,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_coby_2",
+			"nome": "Captain \"Hero\" Coby",
+			"arquivo": "mp_coby_2.glb",
+			"sha256": "11dec51be8efea176ba0072bf38f087086b7606f081c62205ea2ff0a815c947d",
+			"centro": [
+				-0.0000000596046447753906,
+				1.00624990463257,
+				0.0
+			],
+			"tamanho": [
+				1.03499984741211,
+				2.04999995231628,
+				0.5625
+			],
+			"triangulos": 288,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_crocodile",
+			"nome": "\"Desert King\" Sir Crocodile - Seven Warlords of the Sea",
+			"arquivo": "mp_crocodile.glb",
+			"sha256": "2be0a997a2fe3b23eef52d281b0bfa355ee6a05b04c26db5a71fe22a5159cda9",
+			"centro": [
+				0.0,
+				1.00624990463257,
+				0.0
+			],
+			"tamanho": [
+				1.03125,
+				2.04999995231628,
+				0.5625
+			],
+			"triangulos": 232,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_crocodile_cross_guild",
+			"nome": "\"Desert King\" Sir Crocodile - Cross Guild",
+			"arquivo": "mp_crocodile_cross_guild.glb",
+			"sha256": "5203f355838bc8f5d72995252f66befa33784a83f2e846ecce0cf785c2bc69c1",
+			"centro": [
+				0.0,
+				1.00624990463257,
+				0.0
+			],
+			"tamanho": [
+				1.03125,
+				2.04999995231628,
+				0.5625
+			],
+			"triangulos": 232,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_dorry",
+			"nome": "Dorry the Blue Ogre",
+			"arquivo": "mp_dorry.glb",
+			"sha256": "23b344c158fa70d6afec3c144a8ced872224b626d92be49760bf60cef7e3582e",
+			"centro": [
+				0.0,
+				2.13701820373535,
+				-0.378372669219971
+			],
+			"tamanho": [
+				2.84182000160217,
+				4.63685655593872,
+				2.79445695877075
+			],
+			"triangulos": 1496,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_elizabello_ii",
+			"nome": "Elizabello II",
+			"arquivo": "mp_elizabello_ii.glb",
+			"sha256": "4f436c0f4c293479dbdb19ff9dbd01f1f85f1afcd1598b195b293db298ecd308",
+			"centro": [
+				0.0,
+				1.9797203540802,
+				-0.337139427661896
+			],
+			"tamanho": [
+				3.03854441642761,
+				4.09837293624878,
+				1.92106235027313
+			],
+			"triangulos": 852,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_fighting_fish",
+			"nome": "Fighting Fish",
+			"arquivo": "mp_fighting_fish.glb",
+			"sha256": "3f0a36bea98f8a6858632d1f0ae2fa79e63720e9f80d3231b66d439af73470b8",
+			"centro": [
+				0.0,
+				1.46875,
+				0.32706093788147
+			],
+			"tamanho": [
+				3.06827688217163,
+				3.0625,
+				6.34587812423706
+			],
+			"triangulos": 320,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_foxy",
+			"nome": "\"Silver Fox\" Foxy",
+			"arquivo": "mp_foxy.glb",
+			"sha256": "20c3b0f4f0b88aea4d6fbfead5b4bfb0f350e0088a826ff516f05b50b50f18c6",
+			"centro": [
+				0.0000000596046447753906,
+				1.20131659507751,
+				0.0222358107566833
+			],
+			"tamanho": [
+				1.25037574768066,
+				2.40263319015503,
+				0.926526546478271
+			],
+			"triangulos": 680,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_franky",
+			"nome": "\"Iron Man\" Franky - Grand Line",
+			"arquivo": "mp_franky.glb",
+			"sha256": "ba88f828ac6e1fc1c32e2f83b0743220abcd92fce383426977e781225076a293",
+			"centro": [
+				0.0,
+				1.01406252384186,
+				0.00312501192092896
+			],
+			"tamanho": [
+				1.0349999666214,
+				2.04062509536743,
+				0.5625
+			],
+			"triangulos": 260,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_gunko",
+			"nome": "\"Holy Knights\" Gunko",
+			"arquivo": "mp_gunko.glb",
+			"sha256": "197a11bea4d9eb62b333a145ca112139b2470c863d7118184bc188bdab52605f",
+			"centro": [
+				0.0,
+				1.08749985694885,
+				-0.00845348834991455
+			],
+			"tamanho": [
+				1.0625,
+				2.21249985694885,
+				1.08655977249146
+			],
+			"triangulos": 528,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_helmeppo_2",
+			"nome": "Helmeppo (2 Years Later)",
+			"arquivo": "mp_helmeppo_2.glb",
+			"sha256": "1bd38532b3b23ef4499275f214cb24b9cb55f9f9041feee990812a0904190f5f",
+			"centro": [
+				0.1796875,
+				1.0078125,
+				-0.1875
+			],
+			"tamanho": [
+				1.390625,
+				2.046875,
+				1.0
+			],
+			"triangulos": 384,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_hiking_bear",
+			"nome": "Hiking Bear",
+			"arquivo": "mp_hiking_bear.glb",
+			"sha256": "0bdcb309cd7ec8baac6f5d6bd9d0f0bf4b84f3b092b4164f7d1b3b2bdaf38287",
+			"centro": [
+				-0.0437499284744263,
+				1.44940996170044,
+				-0.300531566143036
+			],
+			"tamanho": [
+				2.02500009536743,
+				3.22618007659912,
+				1.47606313228607
+			],
+			"triangulos": 228,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_island_whale",
+			"nome": "Island Whale",
+			"arquivo": "mp_island_whale.glb",
+			"sha256": "a7864f47fe2ecc33e3fd22a6486faa299d29f8ab930966f5cd9cf8e6e40c5608",
+			"centro": [
+				-0.00009918212890625,
+				3.51759672164917,
+				11.8734378814697
+			],
+			"tamanho": [
+				19.7950572967529,
+				7.33980655670166,
+				37.3718757629395
+			],
+			"triangulos": 120,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_jango_marine",
+			"nome": "Jango",
+			"arquivo": "mp_jango_marine.glb",
+			"sha256": "9bc5537e619b32a5b6b393cef889afd53e0fc81d38539be336d34a9c60a882d4",
+			"centro": [
+				0.1796875,
+				1.04999995231628,
+				-0.1875
+			],
+			"tamanho": [
+				1.390625,
+				2.13750004768372,
+				1.0
+			],
+			"triangulos": 392,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_jinbe",
+			"nome": "\"Knight of the Sea\" Jinbe - Straw Hat Pirates",
+			"arquivo": "mp_jinbe.glb",
+			"sha256": "73448dfd9938e861e2d0899d658c32709efe82ebcc72e1fb43e9eacaadb46995",
+			"centro": [
+				0.0,
+				1.31246781349182,
+				0.197603762149811
+			],
+			"tamanho": [
+				2.46715760231018,
+				2.67287921905518,
+				1.67740905284882
+			],
+			"triangulos": 1140,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_kalgara",
+			"nome": "Kalgara",
+			"arquivo": "mp_kalgara.glb",
+			"sha256": "f43d167886243faf1eeee9cd8f9762b6f4b9d88877d0c8d54c5bba3fa599156b",
+			"centro": [
+				-0.0000000596046447753906,
+				1.00843739509583,
+				0.0576106309890747
+			],
+			"tamanho": [
+				1.03749990463257,
+				2.05187487602234,
+				2.19727873802185
+			],
+			"triangulos": 576,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_killer",
+			"nome": "\"Massacre Soldier\" Killer",
+			"arquivo": "mp_killer.glb",
+			"sha256": "234b95cf916bbebe91a59c7256e1a3e0533f722b45d9dbc19312d2e98de519d3",
+			"centro": [
+				0.0,
+				1.00312495231628,
+				-0.430678367614746
+			],
+			"tamanho": [
+				1.29375004768372,
+				2.00624990463257,
+				2.06005954742432
+			],
+			"triangulos": 1252,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_komachiyo",
+			"nome": "Komachiyo",
+			"arquivo": "mp_komachiyo.glb",
+			"sha256": "bbe853db257a063b0968595b9e1146b1f6e874c4e10577f8e602951184a68876",
+			"centro": [
+				0.0,
+				2.12620091438293,
+				0.532467603683472
+			],
+			"tamanho": [
+				3.19255399703979,
+				4.33121776580811,
+				6.48858642578125
+			],
+			"triangulos": 1572,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_kumacy",
+			"nome": "Kumacy",
+			"arquivo": "mp_kumacy.glb",
+			"sha256": "266e0b09b84ed640406475be41757f6d656621b9acd9fb6dcfccd90658d90d67",
+			"centro": [
+				0.0000000596046447753906,
+				1.88906252384186,
+				-0.12708044052124
+			],
+			"tamanho": [
+				1.52500009536743,
+				3.79062509536743,
+				1.50561428070068
+			],
+			"triangulos": 252,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_kungfu_jugon",
+			"nome": "Kungfu Jugon",
+			"arquivo": "mp_kungfu_jugon.glb",
+			"sha256": "2be340a08d2983197654eb49b0ac42e21fb1af084e2af353ea11c3c6b1bdc895",
+			"centro": [
+				0.0,
+				0.461464166641235,
+				0.0832900255918503
+			],
+			"tamanho": [
+				0.5625,
+				0.968539237976074,
+				0.581577360630035
+			],
+			"triangulos": 216,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_kuzan",
+			"nome": "Kuzan - Blackbeard Pirates",
+			"arquivo": "mp_kuzan.glb",
+			"sha256": "44c04624fba581e2f3a66360082f80f8d18b082a0e87d960335e3d7d76b8f111",
+			"centro": [
+				0.0,
+				1.00624990463257,
+				0.0
+			],
+			"tamanho": [
+				1.04375004768372,
+				2.04999995231628,
+				0.5625
+			],
+			"triangulos": 312,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_kyros",
+			"nome": "Kyros",
+			"arquivo": "mp_kyros.glb",
+			"sha256": "fe02470df651543c9afb49f773e2192c4c6c359e0a46a4482c78bac4104ff2a9",
+			"centro": [
+				0.0,
+				1.0078125,
+				-0.640625
+			],
+			"tamanho": [
+				1.03125,
+				2.046875,
+				2.0625
+			],
+			"triangulos": 348,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_mihawk",
+			"nome": "\"Hawk Eyes\" Dracule Mihawk - Seven Warlords of the Sea",
+			"arquivo": "mp_mihawk.glb",
+			"sha256": "273ea602ca923a29691bacadcb4c073c359487c05f7cd704b46218ab8f96331f",
+			"centro": [
+				-0.0000000596046447753906,
+				1.00624990463257,
+				-0.790472030639648
+			],
+			"tamanho": [
+				1.03749990463257,
+				2.04999995231628,
+				2.50594425201416
+			],
+			"triangulos": 1432,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_mihawk_cross_guild",
+			"nome": "\"Hawk Eyes\" Dracule Mihawk - Cross Guild",
+			"arquivo": "mp_mihawk_cross_guild.glb",
+			"sha256": "f5302497bc68aaa8eaf76e104fedd60ae80b1824a5391092ea2ab7cf91e6b5b4",
+			"centro": [
+				-0.0000000596046447753906,
+				1.00624990463257,
+				-0.790472030639648
+			],
+			"tamanho": [
+				1.03749990463257,
+				2.04999995231628,
+				2.50594425201416
+			],
+			"triangulos": 1432,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_monkey_d_garp",
+			"nome": "Monkey D. Garp",
+			"arquivo": "mp_monkey_d_garp.glb",
+			"sha256": "303dc12e0b8769ff7a996ab8646a8f5fbf1844a4a3984de87f3bfedeee67a421",
+			"centro": [
+				0.0,
+				0.998437464237213,
+				0.0
+			],
+			"tamanho": [
+				1.03125,
+				2.03437495231628,
+				0.53125
+			],
+			"triangulos": 192,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_mont_blanc_noland",
+			"nome": "Mont Blanc Noland",
+			"arquivo": "mp_mont_blanc_noland.glb",
+			"sha256": "5818c4fced453828ce481b46056f3bf2b9dc4d9476d7d9c18e0163efe8286397",
+			"centro": [
+				0.0,
+				1.10468745231628,
+				-0.652229070663452
+			],
+			"tamanho": [
+				1.03125,
+				2.24062490463257,
+				1.8669581413269
+			],
+			"triangulos": 948,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_mr_1",
+			"nome": "Mr. 1 \"The Killer\" Daz Bonez",
+			"arquivo": "mp_mr_1.glb",
+			"sha256": "cd030674911e2d78b1a50c1958e9717d790f92b071acec7eb43a328ffe089e84",
+			"centro": [
+				-0.0000000298023223876953,
+				1.0078125,
+				0.0
+			],
+			"tamanho": [
+				0.997487306594849,
+				2.046875,
+				0.5625
+			],
+			"triangulos": 168,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_mr_13",
+			"nome": "Mr.13",
+			"arquivo": "mp_mr_13.glb",
+			"sha256": "e8da835cba904834150ebc5aae089cee2949756fccffc21a2d93e9ed33f9323c",
+			"centro": [
+				0.0,
+				0.567106604576111,
+				0.082552045583725
+			],
+			"tamanho": [
+				0.782901763916016,
+				1.13421320915222,
+				0.837771773338318
+			],
+			"triangulos": 140,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_mr_5",
+			"nome": "Mr. 5 \"Border\" Gem",
+			"arquivo": "mp_mr_5.glb",
+			"sha256": "b459deb1b14ea4feea30cee0ce79d12eeab2a8e5af03c606807e08fb51a85e7f",
+			"centro": [
+				0.0,
+				1.0078125,
+				0.0
+			],
+			"tamanho": [
+				1.03125,
+				2.046875,
+				0.5625
+			],
+			"triangulos": 168,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_mr_9",
+			"nome": "Mr. 9",
+			"arquivo": "mp_mr_9.glb",
+			"sha256": "7fb255a1042e3bdff9179bb40feb5240732e37b07cb6d25d01871f3e53400d59",
+			"centro": [
+				0.1796875,
+				1.1484375,
+				-0.1875
+			],
+			"tamanho": [
+				1.390625,
+				2.328125,
+				1.0
+			],
+			"triangulos": 636,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_ms_goldenweek",
+			"nome": "Miss Goldenweek",
+			"arquivo": "mp_ms_goldenweek.glb",
+			"sha256": "183a1d660e1bee3a4e35aa36f7ea194ebf99badcb017e0edd6c5deb5119e5c06",
+			"centro": [
+				0.232562839984894,
+				1.03437495231628,
+				-0.0626606345176697
+			],
+			"tamanho": [
+				1.4776257276535,
+				2.06874990463257,
+				1.30375003814697
+			],
+			"triangulos": 688,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_ms_valentine",
+			"nome": "Miss Valentine",
+			"arquivo": "mp_ms_valentine.glb",
+			"sha256": "5091a3f7737ba2c7728d3cdb6f84595652b04f93df53777d416842192bf2c0bf",
+			"centro": [
+				0.0,
+				1.0078125,
+				0.0
+			],
+			"tamanho": [
+				1.03125,
+				2.046875,
+				0.5625
+			],
+			"triangulos": 168,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_pacifista",
+			"nome": "Pacifista",
+			"arquivo": "mp_pacifista.glb",
+			"sha256": "42de6c6b9c07847b2cbbabff121c0cb61cffb82ca231d43da5e0d359e8f2649c",
+			"centro": [
+				0.0,
+				0.983892798423767,
+				0.000392287969589233
+			],
+			"tamanho": [
+				1.19115090370178,
+				1.96778559684753,
+				0.600784599781036
+			],
+			"triangulos": 756,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_perona",
+			"nome": "Perona - 2 Years Later",
+			"arquivo": "mp_perona.glb",
+			"sha256": "706add72ea46b3a037721eecde679cc9500543ec1eeee4ec99e9617eb8c68daa",
+			"centro": [
+				0.332944095134735,
+				1.12187504768372,
+				-0.0915958285331726
+			],
+			"tamanho": [
+				1.62838816642761,
+				2.28125,
+				1.29345035552979
+			],
+			"triangulos": 900,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_queen",
+			"nome": "All-Stars Queen the Plague",
+			"arquivo": "mp_queen.glb",
+			"sha256": "4f03f3937a0b6626bfc335bec1282ed25d7c3f8b57a7a0520296edef67c5853b",
+			"centro": [
+				-0.224855899810791,
+				4.8354172706604,
+				2.1950626373291
+			],
+			"tamanho": [
+				5.86606502532959,
+				9.99554824829102,
+				9.14735126495361
+			],
+			"triangulos": 2410,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_ryokugyu",
+			"nome": "Admiral Ryokugyu",
+			"arquivo": "mp_ryokugyu.glb",
+			"sha256": "d3521e7958ace6698e3752f721256d669ab09ba9916068bd44ee6e2ece67d614",
+			"centro": [
+				0.0,
+				1.00656247138977,
+				0.0
+			],
+			"tamanho": [
+				1.0349999666214,
+				2.04937505722046,
+				0.5625
+			],
+			"triangulos": 264,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_sabo",
+			"nome": "Revolutionary Army, Chief of Staff Sabo",
+			"arquivo": "mp_sabo.glb",
+			"sha256": "d2331e19ed5f88aec065847f88a2778c2751b29ff3860e062e490b51a89f3412",
+			"centro": [
+				-0.0000000596046447753906,
+				1.0859375,
+				-0.203125
+			],
+			"tamanho": [
+				1.03749990463257,
+				2.20937490463257,
+				2.0625
+			],
+			"triangulos": 672,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_sabo_flame_emperor",
+			"nome": "Revolutionary Army, Chief of Staff \"Flame Emperor\" Sabo",
+			"arquivo": "mp_sabo_flame_emperor.glb",
+			"sha256": "ef7e65fd2d7b1e1a62c23e5a8dc13c02803a557a7befb1798be017362011871a",
+			"centro": [
+				0.0,
+				1.0859375,
+				-0.203125
+			],
+			"tamanho": [
+				1.03125,
+				2.20937490463257,
+				2.0625
+			],
+			"triangulos": 552,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_sentomaru",
+			"nome": "Sentomaru",
+			"arquivo": "mp_sentomaru.glb",
+			"sha256": "4959e6ee0f79bcdf948921f3fed611cf8d8da4e55dfdb52dea58324f0875c029",
+			"centro": [
+				0.154301524162292,
+				1.26826691627502,
+				-0.204240620136261
+			],
+			"tamanho": [
+				1.94139695167542,
+				2.56752872467041,
+				1.34151875972748
+			],
+			"triangulos": 1720,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_shamrock",
+			"nome": "\"Holy Knights\" Figarland Shamrock",
+			"arquivo": "mp_shamrock.glb",
+			"sha256": "b5f6203c6f9c640c0cfce7e44e00576de35355435e6e3833d604c0f5a9a639c6",
+			"centro": [
+				0.0,
+				1.00624990463257,
+				-0.796302199363708
+			],
+			"tamanho": [
+				1.04999995231628,
+				2.04999995231628,
+				2.40678381919861
+			],
+			"triangulos": 1124,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_shanks_knightsof_god",
+			"nome": "\"God Steel Devotee\" Figarland Shanks",
+			"arquivo": "mp_shanks_knightsof_god.glb",
+			"sha256": "ab0fc7e5c9d7ccc489bd710308871201dce3dde154794f4d440bf3626d6d606c",
+			"centro": [
+				0.0,
+				1.0078125,
+				-0.796302199363708
+			],
+			"tamanho": [
+				1.04999995231628,
+				2.05312490463257,
+				2.40678381919861
+			],
+			"triangulos": 1148,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_smoker_2_years",
+			"nome": "Vice Admiral \"White Hunter\" Smoker",
+			"arquivo": "mp_smoker_2_years.glb",
+			"sha256": "e7c17d47481d668d757a161e9aa5655e8059e710079984de7efaf00d339b9a59",
+			"centro": [
+				0.0,
+				1.00624990463257,
+				-0.671875
+			],
+			"tamanho": [
+				1.03125,
+				2.04999995231628,
+				1.90625
+			],
+			"triangulos": 288,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_super_penguin",
+			"nome": "Super Penguin",
+			"arquivo": "mp_super_penguin.glb",
+			"sha256": "7a3dcb8ca1cb86ff904887335cdaf5ed69ecf0ef80ba3dc4642c06e3b607d650",
+			"centro": [
+				0.0,
+				1.65625,
+				-0.360793352127075
+			],
+			"tamanho": [
+				1.875,
+				3.3125,
+				2.77841329574585
+			],
+			"triangulos": 296,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_suzume",
+			"nome": "Suzume",
+			"arquivo": "mp_suzume.glb",
+			"sha256": "376e018747b94c8eaf4834f5369ad6178e15f37d9d827ee6ba640f241286b18d",
+			"centro": [
+				0.0,
+				0.5390625,
+				0.03125
+			],
+			"tamanho": [
+				0.655330061912537,
+				1.078125,
+				1.0625
+			],
+			"triangulos": 124,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_tashigi_2_years",
+			"nome": "Captain Tashigi",
+			"arquivo": "mp_tashigi_2_years.glb",
+			"sha256": "baf7da974383f12efb23b73537d55dcbe397a865fc8e32d7aee1cc01aebe610d",
+			"centro": [
+				0.0,
+				1.06101846694946,
+				-0.322778224945068
+			],
+			"tamanho": [
+				1.71555972099304,
+				2.12203693389893,
+				2.52585983276367
+			],
+			"triangulos": 1664,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_trafalgar_d_water_law_grand_line",
+			"nome": "\"Surgeon of Death\" Trafalgar Law  - Grand Line",
+			"arquivo": "mp_trafalgar_d_water_law_grand_line.glb",
+			"sha256": "e88c69988bc30798a8242378febc4771c2d674fac2f9cd77a1baecff33ecd377",
+			"centro": [
+				-0.0000000596046447753906,
+				1.05312490463257,
+				0.0
+			],
+			"tamanho": [
+				1.03749990463257,
+				2.14374995231628,
+				0.8125
+			],
+			"triangulos": 472,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_trafalgar_d_water_law_seven_warlordsofthe_sea",
+			"nome": "mp_trafalgar_d_water_law_seven_warlordsofthe_sea",
+			"arquivo": "mp_trafalgar_d_water_law_seven_warlordsofthe_sea.glb",
+			"sha256": "bc2330ba74e8fc79a2e3a5ee05ed32eb15527d37405bcfc6a1d90631c6fa8fcf",
+			"centro": [
+				-0.0000000596046447753906,
+				1.05312490463257,
+				-0.0746475756168365
+			],
+			"tamanho": [
+				1.03749990463257,
+				2.14374995231628,
+				0.798849582672119
+			],
+			"triangulos": 760,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_trafalgar_d_water_law_wano_country",
+			"nome": "\"Surgeon of Death\" Trafalgar Law  - Wano Country",
+			"arquivo": "mp_trafalgar_d_water_law_wano_country.glb",
+			"sha256": "92d95dec3ee26c56b22067aa916586d3e2e4dbc6326d93214eddf8d526c89d13",
+			"centro": [
+				0.0,
+				1.05312490463257,
+				-0.0807861983776093
+			],
+			"tamanho": [
+				1.04999995231628,
+				2.14374995231628,
+				0.786572337150574
+			],
+			"triangulos": 460,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_urouge_san",
+			"nome": "\"Mad Monk\" Urouge",
+			"arquivo": "mp_urouge_san.glb",
+			"sha256": "3670ed411facaf6703cc9aa10dd0d28e3e391e3d3fd17fc238dca91acdb1af35",
+			"centro": [
+				0.230708599090576,
+				1.82103669643402,
+				-0.00180971622467041
+			],
+			"tamanho": [
+				2.84487652778625,
+				3.88917660713196,
+				2.25384616851807
+			],
+			"triangulos": 2062,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_vergo",
+			"nome": "\"Demon Bamboo\" Vergo",
+			"arquivo": "mp_vergo.glb",
+			"sha256": "8470fcad4b3df7257679b246b55196e7a516785c83dd45c281e60450874f88b0",
+			"centro": [
+				0.0,
+				1.0078125,
+				-0.0625
+			],
+			"tamanho": [
+				1.03125,
+				2.046875,
+				2.25
+			],
+			"triangulos": 180,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_waporu",
+			"nome": "Waporu",
+			"arquivo": "mp_waporu.glb",
+			"sha256": "6959ebbeda729eaa639eba7fec140520629f531787e73b537807b7bdaed482a9",
+			"centro": [
+				0.0,
+				1.1875,
+				0.0574120879173279
+			],
+			"tamanho": [
+				2.12046313285828,
+				2.375,
+				1.25293469429016
+			],
+			"triangulos": 726,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_yamato",
+			"nome": "Yamato",
+			"arquivo": "mp_yamato.glb",
+			"sha256": "f93b24fb6b43c80340fe529b804a8532d51d8573bd3dac46d523e7908c12b25d",
+			"centro": [
+				-0.000000119209289550781,
+				1.17705464363098,
+				-0.0905611515045166
+			],
+			"tamanho": [
+				2.58259344100952,
+				2.53880262374878,
+				3.91849565505981
+			],
+			"triangulos": 1916,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_zephyr",
+			"nome": "Neo Marines Supreme Commander \"Black Arm\" Zephyr",
+			"arquivo": "mp_zephyr.glb",
+			"sha256": "73db229628cb49444652671091e7831a84a31b11d54d0fce83cce1452c2f00f6",
+			"centro": [
+				0.111334502696991,
+				1.52607226371765,
+				0.000251471996307373
+			],
+			"tamanho": [
+				1.97753024101257,
+				3.19364714622498,
+				1.00144040584564
+			],
+			"triangulos": 2772,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_zoro_1",
+			"nome": "\"Pirate Hunter\" Zoro - Grand Line",
+			"arquivo": "mp_zoro_1.glb",
+			"sha256": "c9835b743920af1aedeeba3fbc8ca334f21d9b34e8ff70ac72837a5d97c94175",
+			"centro": [
+				-0.232147336006165,
+				1.07121205329895,
+				-0.2168790102005
+			],
+			"tamanho": [
+				1.85217905044556,
+				2.17992424964905,
+				2.73765826225281
+			],
+			"triangulos": 1260,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "npc_mestre_geppo",
+			"nome": "Mestre do Geppo",
+			"arquivo": "npc_mestre_geppo.glb",
+			"sha256": "5e8fe637384050ebd75b73edbdda9af78a0dbfc6900c0bb27c8180bdea55760d",
+			"centro": [
+				0.0,
+				1.00174999237061,
+				-0.027075007557869
+			],
+			"tamanho": [
+				1.06500005722046,
+				1.97750008106232,
+				0.419149994850159
+			],
+			"triangulos": 3872,
+			"categorias": [
+				"npcs"
+			],
+			"comportamento": "npc_mestre_geppo"
+		},
+		{
+			"id": "mp_macaco_humanoide",
+			"nome": "Macaco humanoide",
+			"arquivo": "mp_macaco_humanoide.glb",
+			"sha256": "8fe6498a212666ac9e224443bca9548274ba64fbfe125b5bd5351890dd897d3c",
+			"centro": [
+				0.1796875,
+				1.0078125,
+				-0.1875
+			],
+			"tamanho": [
+				1.390625,
+				2.046875,
+				1.0
+			],
+			"triangulos": 3448,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "mp_macaco_rei",
+			"nome": "Macaco-rei",
+			"arquivo": "mp_macaco_rei.glb",
+			"sha256": "eeac2ca57e6a1017a062e38a4da87bfbb59376c13a1b63bb4d7c6db704a24533",
+			"centro": [
+				0.1796875,
+				1.0078125,
+				-0.1875
+			],
+			"tamanho": [
+				1.390625,
+				2.046875,
+				1.0
+			],
+			"triangulos": 3448,
+			"categorias": [
+				"east_blue_mine_piece"
+			],
+			"comportamento": "mine_piece"
+		},
+		{
+			"id": "gorila_rei",
+			"nome": "Gorila-rei",
+			"arquivo": "gorila_rei.glb",
+			"sha256": "79f91ca3995a502133d95b5340a9e1d7704997b0d9cd015d04d65144af1b8d0a",
+			"centro": [
+				0.0,
+				3.09999990463257,
+				0.49999988079071
+			],
+			"tamanho": [
+				5.0,
+				6.19999980926514,
+				3.19999980926514
+			],
+			"triangulos": 1188,
+			"categorias": [
+				"animais",
+				"boss"
+			],
+			"tamanho_padrao": [
+				5.0,
+				6.19999980926514,
+				3.19999980926514
+			],
+			"animal": {
+				"comportamento": "predador",
+				"corpo": "quadrupede",
+				"boss": true,
+				"xp": 880.0,
+				"item": "none",
+				"altura_voo": 0.0,
+				"nome": "Gorila-rei",
+				"domavel": false,
+				"golpe_em": 0.0,
+				"vida": 1100.0,
+				"passeio": 2.6,
+				"corrida": 7.0,
+				"dano": 14.0,
+				"alerta": 30.0,
+				"alcance": 4.0,
+				"recarga": 2.0
+			}
+		},
+		{
+			"id": "macacos_cabana_geppo",
+			"nome": "Cabana do Mestre do Geppo",
+			"arquivo": "macacos_cabana_geppo.glb",
+			"sha256": "fa4c50fb7345d32d78002b24f31946eac2551c0d6f93cd55a634cc834ef72f8e",
+			"centro": [
+				0.0749998092651367,
+				4.02500009536743,
+				0.675000190734863
+			],
+			"tamanho": [
+				9.54999923706055,
+				8.05000019073486,
+				9.75
+			],
+			"triangulos": 408,
+			"categorias": [
+				"construao"
+			],
+			"tamanho_padrao": [
+				9.54999923706055,
+				8.05000019073486,
+				9.75
+			]
+		},
+		{
+			"id": "macacos_cabana_curandeiro",
+			"nome": "Cabana do Curandeiro",
+			"arquivo": "macacos_cabana_curandeiro.glb",
+			"sha256": "358937f93ed94d39a1c7f1191287911a3479ec17e43be80099c1845560a9bb1d",
+			"centro": [
+				0.0,
+				3.82500004768372,
+				0.0750000476837158
+			],
+			"tamanho": [
+				10.1999998092651,
+				7.65000009536743,
+				7.55000019073486
+			],
+			"triangulos": 504,
+			"categorias": [
+				"construao"
+			],
+			"tamanho_padrao": [
+				10.1999998092651,
+				7.65000009536743,
+				7.55000019073486
+			]
+		},
+		{
+			"id": "macacos_tenda",
+			"nome": "Tenda de palha",
+			"arquivo": "macacos_tenda.glb",
+			"sha256": "465eec2d64670392b381074d7730597cb4f3f3d2f47da3399d97d460868d9b3a",
+			"centro": [
+				0.0,
+				2.29999995231628,
+				0.0
+			],
+			"tamanho": [
+				5.0,
+				4.59999990463257,
+				5.19999980926514
+			],
+			"triangulos": 156,
+			"categorias": [
+				"construao"
+			],
+			"tamanho_padrao": [
+				5.0,
+				4.59999990463257,
+				5.19999980926514
+			]
+		},
+		{
+			"id": "macacos_torre_vigia",
+			"nome": "Torre de vigia",
+			"arquivo": "macacos_torre_vigia.glb",
+			"sha256": "f9b9a5ce00824f45291c1c5b1d84354dbb927cf7a781857a4507bb45dcf8d048",
+			"centro": [
+				0.0,
+				9.27499961853027,
+				0.0
+			],
+			"tamanho": [
+				6.19999980926514,
+				18.5499992370605,
+				6.19999980926514
+			],
+			"triangulos": 612,
+			"categorias": [
+				"construao"
+			],
+			"tamanho_padrao": [
+				6.19999980926514,
+				18.5499992370605,
+				6.19999980926514
+			]
+		},
+		{
+			"id": "macacos_cais",
+			"nome": "Cais rústico dos macacos",
+			"arquivo": "macacos_cais.glb",
+			"sha256": "09f3db203b1e95a5af6651eb99bd1f746dc0423540f8ad4a74184761cb1778f1",
+			"centro": [
+				0.0,
+				3.07500004768372,
+				-0.0250005722045898
+			],
+			"tamanho": [
+				5.40000009536743,
+				6.55000019073486,
+				22.0499992370605
+			],
+			"triangulos": 888,
+			"categorias": [
+				"construao"
+			],
+			"tamanho_padrao": [
+				5.40000009536743,
+				6.55000019073486,
+				22.0499992370605
+			]
+		},
+		{
+			"id": "macacos_portal",
+			"nome": "Portal da selva",
+			"arquivo": "macacos_portal.glb",
+			"sha256": "0927aeb3b0c4ff6dac4eb2ad1fec80ff589b40dcebccfe96e2dd560bdafd4e1c",
+			"centro": [
+				0.0,
+				4.25,
+				0.0499999523162842
+			],
+			"tamanho": [
+				10.5,
+				8.5,
+				2.19999980926514
+			],
+			"triangulos": 288,
+			"categorias": [
+				"construao"
+			],
+			"tamanho_padrao": [
+				10.5,
+				8.5,
+				2.19999980926514
+			]
+		},
+		{
+			"id": "macacos_totem_alegre",
+			"nome": "Totem alegre",
+			"arquivo": "macacos_totem_alegre.glb",
+			"sha256": "dd0a256ba4cfbbd90ab9604c3af35e854f46cbe2648f13ef7062ba884e26e2d4",
+			"centro": [
+				0.0,
+				2.15000009536743,
+				0.0
+			],
+			"tamanho": [
+				3.59999990463257,
+				4.30000019073486,
+				2.40000009536743
+			],
+			"triangulos": 264,
+			"categorias": [
+				"construao"
+			],
+			"tamanho_padrao": [
+				3.59999990463257,
+				4.30000019073486,
+				2.40000009536743
+			]
+		},
+		{
+			"id": "macacos_totem_guardiao",
+			"nome": "Totem guardião",
+			"arquivo": "macacos_totem_guardiao.glb",
+			"sha256": "2af3dfc04cc7c9ca3fe52892522a89f70cad5e4cf4099fed80772996edd94c70",
+			"centro": [
+				0.0,
+				2.45000004768372,
+				0.0
+			],
+			"tamanho": [
+				2.40000009536743,
+				4.90000009536743,
+				2.40000009536743
+			],
+			"triangulos": 264,
+			"categorias": [
+				"construao"
+			],
+			"tamanho_padrao": [
+				2.40000009536743,
+				4.90000009536743,
+				2.40000009536743
+			]
+		},
+		{
+			"id": "macacos_totem_sabio",
+			"nome": "Totem sábio",
+			"arquivo": "macacos_totem_sabio.glb",
+			"sha256": "0a4142368927eb9770c06c65f34b5c5ee993f358e20e0307cc3d7d8d3bb2547b",
+			"centro": [
+				0.0,
+				3.15000009536743,
+				0.0
+			],
+			"tamanho": [
+				2.40000009536743,
+				6.30000019073486,
+				2.40000009536743
+			],
+			"triangulos": 348,
+			"categorias": [
+				"construao"
+			],
+			"tamanho_padrao": [
+				2.40000009536743,
+				6.30000019073486,
+				2.40000009536743
+			]
+		},
+		{
+			"id": "macacos_altar_bananas",
+			"nome": "Altar das bananas",
+			"arquivo": "macacos_altar_bananas.glb",
+			"sha256": "980d66d8165da87e3fddcda5934c5ea509fb6620a898ec257ff66ce1818eaf40",
+			"centro": [
+				0.0,
+				1.66999995708466,
+				0.0
+			],
+			"tamanho": [
+				6.0,
+				3.33999991416931,
+				6.0
+			],
+			"triangulos": 288,
+			"categorias": [
+				"construao"
+			],
+			"tamanho_padrao": [
+				6.0,
+				3.33999991416931,
+				6.0
+			]
+		},
+		{
+			"id": "macacos_trono",
+			"nome": "Trono do Gorila-rei",
+			"arquivo": "macacos_trono.glb",
+			"sha256": "a93590621bfd584ff195755b90163271a0f8a0972619f286efe2f826be56944e",
+			"centro": [
+				0.0,
+				4.80000019073486,
+				0.0
+			],
+			"tamanho": [
+				13.0,
+				9.60000038146973,
+				9.0
+			],
+			"triangulos": 264,
+			"categorias": [
+				"construao"
+			],
+			"tamanho_padrao": [
+				13.0,
+				9.60000038146973,
+				9.0
+			]
+		},
+		{
+			"id": "macacos_fogueira",
+			"nome": "Fogueira da vila",
+			"arquivo": "macacos_fogueira.glb",
+			"sha256": "3e4f87577017ea6300f6404532dfcfcb87cdbb15554bb1ddfaa653baf1c8e24e",
+			"centro": [
+				0.0,
+				1.125,
+				0.0
+			],
+			"tamanho": [
+				3.5,
+				2.25,
+				3.36295819282532
+			],
+			"triangulos": 216,
+			"categorias": [
+				"construao"
+			],
+			"tamanho_padrao": [
+				3.5,
+				2.25,
+				3.36295819282532
+			]
+		},
+		{
+			"id": "macacos_cacho_banana",
+			"nome": "Cacho de banana",
+			"arquivo": "macacos_cacho_banana.glb",
+			"sha256": "08608772a8da49ba5e0d215e1408edd75444c8d5cf2f1e6db256c0bfea4237ed",
+			"centro": [
+				0.0,
+				0.550000011920929,
+				0.0
+			],
+			"tamanho": [
+				0.800000011920929,
+				1.10000002384186,
+				0.71961522102356
+			],
+			"triangulos": 84,
+			"categorias": [
+				"itens"
+			],
+			"tamanho_padrao": [
+				0.800000011920929,
+				1.10000002384186,
+				0.71961522102356
+			]
+		},
+		{
+			"id": "macacos_fruto_dourado",
+			"nome": "Fruto dourado",
+			"arquivo": "macacos_fruto_dourado.glb",
+			"sha256": "ea2e2e16dad26c37c0456c2ead90e0c86f673dd93f026b038686df6363ccba24",
+			"centro": [
+				0.0,
+				1.20000004768372,
+				0.0
+			],
+			"tamanho": [
+				1.60000002384186,
+				1.79999995231628,
+				1.60000002384186
+			],
+			"triangulos": 60,
+			"categorias": [
+				"itens"
+			],
+			"tamanho_padrao": [
+				1.60000002384186,
+				1.79999995231628,
+				1.60000002384186
+			]
+		},
+		{
+			"id": "macacos_bananeira",
+			"nome": "Bananeira",
+			"arquivo": "macacos_bananeira.glb",
+			"sha256": "5b616ade1db4f6726140c7281dce1e71b19462cf203fb9c744ba96ec405fc842",
+			"centro": [
+				0.0,
+				2.26249980926514,
+				0.0
+			],
+			"tamanho": [
+				6.30000019073486,
+				4.42499971389771,
+				6.09999990463257
+			],
+			"triangulos": 432,
+			"categorias": [
+				"arvores"
+			],
+			"tamanho_padrao": [
+				6.30000019073486,
+				4.42499971389771,
+				6.09999990463257
+			]
+		},
+		{
+			"id": "npc_macaco_cozinheira",
+			"nome": "Cozinheira da vila",
+			"arquivo": "npc_macaco_cozinheira.glb",
+			"sha256": "7a3ba6b3bdfe14980afbe05fd6dcb82452dbda11849226422c6dcb483dee4b4a",
+			"centro": [
+				0.0,
+				1.00174999237061,
+				-0.027075007557869
+			],
+			"tamanho": [
+				1.06500005722046,
+				1.97750008106232,
+				0.419149994850159
+			],
+			"triangulos": 3872,
+			"categorias": [
+				"npcs"
+			],
+			"comportamento": "npc_macaco_cozinheira"
+		},
+		{
+			"id": "npc_macaco_pescador",
+			"nome": "Pescador do cais",
+			"arquivo": "npc_macaco_pescador.glb",
+			"sha256": "708086168c9716502c94b3a579c31542ece25a591388c422a2e18a51accedd1a",
+			"centro": [
+				0.0,
+				1.00174999237061,
+				-0.027075007557869
+			],
+			"tamanho": [
+				1.06500005722046,
+				1.97750008106232,
+				0.419149994850159
+			],
+			"triangulos": 3872,
+			"categorias": [
+				"npcs"
+			],
+			"comportamento": "npc_macaco_pescador"
+		},
+		{
+			"id": "npc_macaco_vigia",
+			"nome": "Vigia da torre",
+			"arquivo": "npc_macaco_vigia.glb",
+			"sha256": "be009b486527548a8c12cb4282754448cbb33c266a2ade6b2642de447452b70e",
+			"centro": [
+				0.0,
+				1.00174999237061,
+				-0.027075007557869
+			],
+			"tamanho": [
+				1.06500005722046,
+				1.97750008106232,
+				0.419149994850159
+			],
+			"triangulos": 3872,
+			"categorias": [
+				"npcs"
+			],
+			"comportamento": "npc_macaco_vigia"
+		},
+		{
+			"id": "npc_macaco_curandeiro",
+			"nome": "Curandeiro",
+			"arquivo": "npc_macaco_curandeiro.glb",
+			"sha256": "78e5ee0681a9f04d69515713459aa95ab469dc1210774e3579ad47b7d935ba22",
+			"centro": [
+				0.0,
+				1.00174999237061,
+				-0.027075007557869
+			],
+			"tamanho": [
+				1.06500005722046,
+				1.97750008106232,
+				0.419149994850159
+			],
+			"triangulos": 3872,
+			"categorias": [
+				"npcs"
+			],
+			"comportamento": "npc_macaco_curandeiro"
+		},
+		{
+			"id": "npc_treinador",
+			"nome": "Instrutor",
+			"arquivo": "npc_treinador.glb",
+			"sha256": "9abcc94084da73ddbd7c12cb16bc65947f7da1b811951513384ca0256d6cd990",
+			"centro": [
+				0.0,
+				1.00174999237061,
+				-0.027075007557869
+			],
+			"tamanho": [
+				1.06500005722046,
+				1.97750008106232,
+				0.419149994850159
+			],
+			"triangulos": 3872,
+			"categorias": [
+				"npcs"
+			],
+			"comportamento": "npc_treinador"
 		}
 	]
 }

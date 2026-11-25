@@ -1,0 +1,31 @@
+{
+  "vertices": 47130,
+  "triangulos": 92556,
+  "ossos": 17,
+  "vertices_pesos_invalidos": 0,
+  "mandibula_deslocamento_m": 3.0027087321054324,
+  "dimensoes_blender_xyz": [
+    10.600000381469727,
+    18.80960464477539,
+    20.739569932222366
+  ],
+  "clips": [
+    "idle",
+    "dormindo",
+    "nadando_walk",
+    "mergulhando",
+    "nadando_submerso",
+    "emergindo",
+    "nadando_run",
+    "irritado",
+    "atacando",
+    "recebendo_dano",
+    "disparando_ataque",
+    "comendo",
+    "repouso",
+    "ameaca",
+    "boiando",
+    "andando_terra",
+    "correndo_terra"
+  ]
+}

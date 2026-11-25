@@ -60,6 +60,11 @@ func _run() -> void:
 			var prof := BodyScanner.scan(modelo)
 			var nodes: Dictionary = prof["nodes"]
 			var anim := ProceduralAnimator.new()
+			# Este teste é a especificação da marcha PROCEDURAL. Desde 03/10/2026 a
+			# corrida em jogo é o clipe do Mixamo (`test_corrida_mixamo.gd`); a
+			# procedural segue na arrancada lenta, no galope Mink e em quem não tem
+			# clipe — e é ela que se mede aqui.
+			anim.usar_clipe_de_corrida = false
 			modelo.add_child(anim)
 			anim.setup(prof)
 			# ⚠️ JANELA LONGA O BASTANTE PARA O CICLO. Eram 90 quadros, calibrados
@@ -142,21 +147,13 @@ func _checa(anim, nodes: Dictionary, prof: Dictionary, modelo: Node3D,
 		print("  ✗ não achei período — a marcha não está ciclando")
 		falhas += 1
 
-	# 2. BRAÇOS. Walk preserva o balanço oposto às pernas; sprint usa uma pose
-	# Naruto deliberadamente fixa para trás, portanto correlação de marcha não é
-	# mais um critério válido nesse caso.
+	# 2. BRAÇOS balançam opostos às pernas — no sprint também desde 03/10/2026,
+	# quando a "silhueta Naruto" (braços travados para trás) saiu a pedido do dono.
 	var corr := _corr(coxa_l, braco_l)
-	var braco_rel: float = _media(braco_l) - (prof["rest"].get("UpperArm_L", Vector3.ZERO) as Vector3).x
-	if sprint:
-		print("  braço Naruto: média relativa %+.1f° (tem que apontar para trás)" % rad_to_deg(braco_rel))
-		if braco_rel > -0.70:
-			print("  ✗ braço do sprint não ficou projetado para trás")
-			falhas += 1
-	else:
-		print("  braço x perna: correlação %+.2f (tem que ser negativa)" % corr)
-		if corr > -0.3:
-			print("  ✗ braço não está oposto à perna")
-			falhas += 1
+	print("  braço x perna: correlação %+.2f (tem que ser negativa)" % corr)
+	if corr > -0.3:
+		print("  ✗ braço não está oposto à perna")
+		falhas += 1
 
 	# 3. TRONCO sobe e desce
 	var amp_y := _amp(torso_y)
@@ -231,6 +228,28 @@ func _checa(anim, nodes: Dictionary, prof: Dictionary, modelo: Node3D,
 	if absf(olhar) > 12.0:
 		print("  ✗ cabeça não está estável")
 		falhas += 1
+
+	# 6b. OLHAR REAL — o mesmo item, medido na POSE em vez de na fórmula.
+	# ⚠️ POR QUE ISTO EXISTE (10/09/2026): o item 6 acima soma `-Head.x - Torso.x`
+	# e pronto. Isso valia quando a cabeça pendurava direto no tronco. Desde o
+	# `base_v2` a cadeia é Torso→SpineLower→SpineMid→Chest→Neck→NeckUpper→Head, e
+	# a COLUNA no meio não entra naquela soma. Consequência real, medida: o
+	# sprint marcava +3,7° aqui enquanto o personagem corria a -13,5° do
+	# horizonte, encarando o chão. O teste ficou verde o tempo todo.
+	# Agora o pitch sai do `global_basis` da cabeça, relativo à raiz do
+	# personagem — o que o olho vê, e não o que a conta promete.
+	if nodes.has("Chest"):
+		var raiz := modelo
+		var soma := 0.0
+		for i in 120:
+			anim.update(vel, true, false, DT, 0.0, sprint)
+			var b := raiz.global_basis.inverse() * (nodes["Head"] as Node3D).global_basis
+			soma += b.get_euler().x
+		var olhar_real := rad_to_deg(soma / 120.0)
+		print("  olhar REAL (com a coluna): %+.1f°" % olhar_real)
+		if absf(olhar_real) > 12.0:
+			print("  ✗ a cabeça está fora do horizonte quando a coluna entra na conta")
+			falhas += 1
 
 	# 7. INCLINAÇÃO do tronco
 	var inc := rad_to_deg(_media(tronco))

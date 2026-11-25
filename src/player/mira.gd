@@ -82,7 +82,7 @@ func mais_proximo(alcance: float) -> Node3D:
 	var arvore := _dono.get_tree()
 	if arvore == null or arvore.current_scene == null:
 		return null
-	for c in arvore.get_nodes_in_group("enemy") + arvore.get_nodes_in_group("player"):
+	for c in AlvosDeGolpe.todos(arvore):
 		if not (c is Node3D) or c == _dono:
 			continue
 		var d: float = _dono.global_position.distance_to(c.global_position)

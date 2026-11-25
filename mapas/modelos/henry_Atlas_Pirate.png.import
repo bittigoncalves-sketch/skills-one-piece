@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d1iw0o6atmn25"
-path="res://.godot/imported/henry_Atlas_Pirate.png-99a1c65b76a353d781ca5ab7aedb4a2f.ctex"
+path.bptc="res://.godot/imported/henry_Atlas_Pirate.png-99a1c65b76a353d781ca5ab7aedb4a2f.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "219f43be043845c1039f47f20d5b6de4"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://mapas/modelos/henry_Atlas_Pirate.png"
-dest_files=["res://.godot/imported/henry_Atlas_Pirate.png-99a1c65b76a353d781ca5ab7aedb4a2f.ctex"]
+dest_files=["res://.godot/imported/henry_Atlas_Pirate.png-99a1c65b76a353d781ca5ab7aedb4a2f.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

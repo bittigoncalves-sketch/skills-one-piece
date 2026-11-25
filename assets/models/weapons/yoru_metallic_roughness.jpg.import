@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://qlkag5l7djks"
-path="res://.godot/imported/yoru_metallic_roughness.jpg-76e0b767ee26ba83c8634364d69f200c.ctex"
+path.bptc="res://.godot/imported/yoru_metallic_roughness.jpg-76e0b767ee26ba83c8634364d69f200c.bptc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "a508911662702a1be292b07b2a58d122"
@@ -14,12 +15,12 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/weapons/yoru_metallic_roughness.jpg"
-dest_files=["res://.godot/imported/yoru_metallic_roughness.jpg-76e0b767ee26ba83c8634364d69f200c.ctex"]
+dest_files=["res://.godot/imported/yoru_metallic_roughness.jpg-76e0b767ee26ba83c8634364d69f200c.bptc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

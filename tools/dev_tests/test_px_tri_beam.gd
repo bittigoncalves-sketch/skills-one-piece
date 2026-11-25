@@ -33,10 +33,23 @@ func _init() -> void:
 		if no is Node3D and no.has_method("take_damage"):
 			alvo = no
 			break
+	if alvo == null:
+		# o mapa de teste não traz mais inimigo no grupo "enemy" (AutoDummy desativado): põe um boneco de duelo, que leva dano de verdade
+		var boneco = load("res://src/combat/direcional/boneco_de_duelo.gd").new()
+		boneco.vida_maxima = 100000.0
+		current_scene.add_child(boneco)
+		boneco.add_to_group("enemy")
+		alvo = boneco
 	if alvo != null:
 		alvo.set_physics_process(false)
 		if alvo is CharacterBody3D:
 			(alvo as CharacterBody3D).velocity = Vector3.ZERO
+		# Mira NIVELADA antes de pôr o alvo na linha da câmera. Com a mira no pitch de
+		# nascer (−0,25) e a câmera na altura da cabeça (16/09/2026), 8 m à frente já é
+		# DENTRO do chão (y −0,24) e o raio acerta a Plataforma, não o alvo.
+		p.set("_pitch", 0.0)
+		p.call("_update_pivot")
+		await process_frame
 		var cam := p.get("_cam") as Camera3D
 		var frente := (-cam.global_basis.z).normalized()
 		var ate_jogador := maxf((p.global_position - cam.global_position).dot(frente), 0.0)
@@ -50,7 +63,7 @@ func _init() -> void:
 		query.collide_with_areas = false
 		var hit := p.get_world_3d().direct_space_state.intersect_ray(query)
 		_checar("o raio da camera encontra o alvo preparado",
-			not hit.is_empty() and hit.get("collider") == alvo)
+			not hit.is_empty() and (hit.get("collider") == alvo or alvo.is_ancestor_of(hit.get("collider") as Node)))        # o boneco de duelo é atingido pela Hurtbox filha
 	var vida0 := float(alvo.health) if alvo != null else 0.0
 
 	p.begin_charge("V")

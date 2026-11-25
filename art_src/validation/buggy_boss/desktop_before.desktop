@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=SKILLS ONE PIECE
+Comment=Protótipo 3D — geração procedural matemática, skills e inventário
+Exec=/home/gabriel-bitti/dev/skills-one-piece/jogar.sh
+Icon=/home/gabriel-bitti/dev/skills-one-piece/icon.svg
+Terminal=false
+Categories=Game;

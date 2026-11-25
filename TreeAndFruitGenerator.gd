@@ -31,10 +31,59 @@ static func get_tree_definitions() -> Array[Dictionary]:
 		print("🌳 [Árvores] fora do mapa por não terem skills: ", ", ".join(fora))
 	return out
 
+# Frutas do Mine Piece (18/10/2026, pedido do dono: "adicionar as frutas e árvores novas
+# para as frutas que foram adicionadas através do mine piece"). São frutas do Skills
+# Builder (`mapas/skills/frutas.json`), por isso ficam fora do filtro do `SkillSystem`; o
+# `TreeScatter` as planta ALÉM das `TREE_COUNT` de sempre, sem mexer no mapa da arena.
+static func get_tree_definitions_mine_piece() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for d in _DEFINICOES_MINE_PIECE:
+		if KitDoBuilder.e_do_builder(str(d["id"])):
+			out.append(d)
+	return out
+
+const _DEFINICOES_MINE_PIECE: Array[Dictionary] = [
+	{
+		"id": "pika_pika_no_mi_mine_piece", "nome": "Árvore da Luz (Pika Pika, Mine Piece)",
+		"foliage_color": Color(1.0, 0.84, 0.32),     # Dourado de luz
+		"trunk_color": Color(0.36, 0.28, 0.16),
+		"fruit_color": Color(1.0, 0.93, 0.38),
+		"fruit_glow": Color(1.0, 1.0, 0.62), "leaf_shape": "rounded"
+	},
+	{
+		"id": "hie_hie_no_mi_mine_piece", "nome": "Árvore do Gelo (Hie Hie, Mine Piece)",
+		"foliage_color": Color(0.82, 0.95, 1.0),     # Branco de geada
+		"trunk_color": Color(0.55, 0.66, 0.76),
+		"fruit_color": Color(0.55, 0.86, 1.0),
+		"fruit_glow": Color(0.72, 0.96, 1.0), "leaf_shape": "crystal"
+	},
+	{
+		"id": "moku_moku_no_mi_mine_piece", "nome": "Árvore da Fumaça (Moku Moku, Mine Piece)",
+		"foliage_color": Color(0.8, 0.8, 0.84),      # Fumaça branca
+		"trunk_color": Color(0.4, 0.38, 0.36),
+		"fruit_color": Color(0.93, 0.93, 0.96),
+		"fruit_glow": Color(0.78, 0.8, 0.86), "leaf_shape": "canopy"
+	},
+	{
+		"id": "nikyu_nikyu_no_mi_mine_piece", "nome": "Árvore da Pata (Nikyu Nikyu, Mine Piece)",
+		"foliage_color": Color(0.46, 0.3, 0.36),     # Ameixa escura
+		"trunk_color": Color(0.25, 0.18, 0.15),
+		"fruit_color": Color(0.56, 0.26, 0.42),
+		"fruit_glow": Color(0.92, 0.52, 0.76), "leaf_shape": "split"
+	},
+]
+
 # O catálogo completo, inclusive o que ainda não é plantável. Não apague nada
 # daqui — é o inventário do que existe desenhado.
 static func _todas_as_definicoes() -> Array[Dictionary]:
 	return [
+		{
+			"id": "rocket", "nome": "Rocket Fruit",
+			"foliage_color": Color(0.55, 0.22, 0.06),
+			"trunk_color": Color(0.19, 0.16, 0.14),
+			"fruit_color": Color(0.25, 0.28, 0.32),
+			"fruit_glow": Color(1.0, 0.35, 0.03), "leaf_shape": "split"
+		},
 		{
 			"id": "sem_fruta",
 			"nome": "Fruta da Normalidade (Sem Fruta)",
@@ -176,159 +225,49 @@ static func _todas_as_definicoes() -> Array[Dictionary]:
 		}
 	]
 
-# Criar Modelo 3D de Árvore Voxel com Cores Personalizadas
 # ============================================================================
-#  A ÁRVORE (2026-08-25) — modelo 3D no lugar das seis caixas
+#  A ÁRVORE (2026-11-04) — seis formas voxel geradas por `ArvoreVoxel`
 #
-#  Até aqui a árvore era construída à mão: um `BoxMesh` de tronco (0,8 × 4 × 0,8)
-#  e seis blocos de copa. Agora é `assets/models/arvore_voxel.glb`, feita no
-#  Meshy AI a partir de uma referência 2D e preparada por
-#  `tools/blender/preparar_arvore.py`.
+#  Formas: carvalho, pinheiro, palmeira, acácia, baobá e salgueiro. Cada fruta
+#  recebe UMA forma fixa (pela ordem em `_todas_as_definicoes`, mod 6), então
+#  a mesma fruta é sempre a mesma árvore — forma + cor ajudam a achá-la.
 #
-#  ⚠️ AS CORES POR FRUTA CONTINUAM VALENDO, e isto é o ponto do desenho.
-#
-#  Cada fruta declara `foliage_color` e `trunk_color` logo acima: a Mera Mera é
-#  copa laranja-fogo sobre tronco ébano, a Hie Hie é azul-gelo sobre cinza
-#  glacial, a Yami Yami é roxo-trevas sobre obsidiana. É assim que o jogador
-#  acha a fruta que quer do outro lado do mapa — trocar tudo por nove cópias
-#  verdes idênticas ganharia forma e perderia leitura.
-#
-#  Para isso o modelo chega com duas coisas prontas do Blender:
-#   • **dois objetos**, `Folhagem` e `Tronco`, para cada um receber a sua cor;
-#   • a textura em **tons de cinza normalizados**. O Godot multiplica
-#     `albedo_texture × albedo_color`: textura verde × tinta laranja daria um
-#     marrom sujo, textura CINZA × tinta laranja dá laranja com todo o relevo
-#     de voxel preservado.
-#
-#  A árvore mede 6,4 m e tem o pivô na BASE — a mesma altura da torre de caixas
-#  que ela substitui, para não mexer em enquadramento nem em alcance de fruta.
-const CAMINHO_ARVORE := "res://assets/models/arvore_voxel.glb"
-static var _cena_arvore: PackedScene = null
+#  ⚠️ AS CORES POR FRUTA CONTINUAM VALENDO: `trunk_color` pinta a superfície 0
+#  (tronco) e `foliage_color` a superfície 1 (copa), pelo funil `Materiais`.
+#  O `arvore_voxel.glb` antigo segue em assets/ (testes de loja/inimigo o usam),
+#  mas o mapa não o carrega mais.
+# ============================================================================
+static var _forma_por_id: Dictionary = {}
 
-static func _carregar_arvore() -> PackedScene:
-	if _cena_arvore == null and ResourceLoader.exists(CAMINHO_ARVORE):
-		_cena_arvore = load(CAMINHO_ARVORE)
-	return _cena_arvore
+static func forma_da_arvore(id: String) -> String:
+	if _forma_por_id.is_empty():
+		var i := 0
+		for d in _todas_as_definicoes() + _DEFINICOES_MINE_PIECE:
+			_forma_por_id[str(d["id"])] = ArvoreVoxel.FORMAS[i % ArvoreVoxel.FORMAS.size()]
+			i += 1
+	return _forma_por_id.get(id, ArvoreVoxel.FORMAS[0])
 
 static func create_tree_3d(def: Dictionary) -> Node3D:
 	var tree_root := Node3D.new()
 	tree_root.name = "Tree_" + def["id"]
 
-	var cena := _carregar_arvore()
-	if cena != null:
-		var modelo: Node3D = cena.instantiate()
-		modelo.name = "Modelo"
-		tree_root.add_child(modelo)
-		_pintar(modelo, def)
-	else:
-		# ⚠️ RESERVA: sem o .glb, volta a árvore de caixas. Não é perfeccionismo
-		# — o modelo é um arquivo importado, e projeto recém-clonado (ou import
-		# ainda não rodado) ficaria com o mapa SEM ÁRVORE NENHUMA, ou seja sem
-		# nenhuma fruta pegável, e isso não daria erro em lugar nenhum.
-		push_warning("[Árvores] %s ausente — usando a árvore de caixas" % CAMINHO_ARVORE)
-		tree_root.add_child(_arvore_de_caixas(def))
+	var forma := forma_da_arvore(str(def["id"]))
+	var mi := MeshInstance3D.new()
+	mi.name = "Modelo"
+	mi.mesh = ArvoreVoxel.malha(forma)
+	var cores := {"tronco": def["trunk_color"], "copa": def["foliage_color"],
+		"copa_clara": (def["foliage_color"] as Color).lightened(0.14),
+		"corte": def["trunk_color"], "coco_verde": Color("7ac143"), "coco_seco": Color("4a2f1a")}
+	for i in mi.mesh.get_surface_count():
+		mi.set_surface_override_material(i, Materiais.superficie(cores[mi.mesh.surface_get_name(i)]))
+	tree_root.add_child(mi)
 
 	# --- FRUTA 3D (AKUMA NO MI), ao lado do tronco ---
 	var fruit_3d := create_fruit_3d(def)
-	fruit_3d.position = Vector3(0.6, 0.38, 0.6)
+	fruit_3d.position = ArvoreVoxel.posicao_da_fruta(forma)
 	tree_root.add_child(fruit_3d)
 
 	return tree_root
-
-# Pinta as duas partes do modelo com as cores da fruta. Procura por NOME, e cai
-# para "o maior pedaço é a copa" se o modelo vier de outro exportador — assim
-# uma árvore nova não precisa nascer com os nomes certos para funcionar.
-static func _pintar(modelo: Node3D, def: Dictionary) -> void:
-	var folhagem: MeshInstance3D = null
-	var tronco: MeshInstance3D = null
-	var malhas: Array[MeshInstance3D] = []
-	_coletar_malhas(modelo, malhas)
-	for m in malhas:
-		var n := m.name.to_lower()
-		if n.begins_with("folhagem") or n.begins_with("foliage"):
-			folhagem = m
-		elif n.begins_with("tronco") or n.begins_with("trunk"):
-			tronco = m
-	if folhagem == null and malhas.size() == 2:
-		malhas.sort_custom(func(a, b): return a.mesh.get_faces().size() > b.mesh.get_faces().size())
-		folhagem = malhas[0]
-		tronco = malhas[1]
-
-	if folhagem:
-		folhagem.material_override = _material_tingido(
-			folhagem, def["foliage_color"], 0.6, def["foliage_color"] * 0.25)
-	if tronco:
-		tronco.material_override = _material_tingido(tronco, def["trunk_color"], 0.85, Color.BLACK)
-
-static func _coletar_malhas(n: Node, fora: Array[MeshInstance3D]) -> void:
-	if n is MeshInstance3D:
-		fora.append(n)
-	for f in n.get_children():
-		_coletar_malhas(f, fora)
-
-# Reaproveita a TEXTURA que veio no modelo e troca só a cor. É por isso que a
-# textura foi exportada em cinza: aqui ela é multiplicada pela cor da fruta.
-# ⚠️ FUNIL DA ÁRVORE, e terceiro ponto da Fase 3 do plano visual.
-#
-# A textura em tons de cinza que veio do Blender continua sendo multiplicada
-# pela cor da fruta — é o mesmo truque de sempre, só que agora dentro do shader
-# de cel (`usar_textura`), que aplica a banda de luz por cima.
-#
-# O filtro NEAREST agora mora no shader (`filter_nearest_mipmap`): a textura
-# desenha voxel, e filtro linear borra a quina do cubo.
-static func _material_tingido(mi: MeshInstance3D, cor: Color, rugosidade: float,
-		emissao: Color) -> Material:
-	var textura: Texture2D = null
-	var original := mi.mesh.surface_get_material(0) if mi.mesh and mi.mesh.get_surface_count() > 0 else null
-	if original is BaseMaterial3D:
-		textura = (original as BaseMaterial3D).albedo_texture
-	return Materiais.superficie(cor, textura)
-
-# A árvore antiga, de seis caixas. Só roda se o modelo faltar (ver a reserva
-# em `create_tree_3d`).
-static func _arvore_de_caixas(def: Dictionary) -> Node3D:
-	var raiz := Node3D.new()
-	raiz.name = "ArvoreDeCaixas"
-
-	var trunk_mesh := BoxMesh.new()
-	trunk_mesh.size = Vector3(0.8, 4.0, 0.8)
-	var trunk_inst := MeshInstance3D.new()
-	trunk_inst.mesh = trunk_mesh
-	trunk_inst.position.y = 2.0
-	var trunk_mat := StandardMaterial3D.new()
-	trunk_mat.albedo_color = def["trunk_color"]
-	trunk_mat.roughness = 0.85
-	trunk_inst.material_override = trunk_mat
-	raiz.add_child(trunk_inst)
-
-	var leaf_mat := StandardMaterial3D.new()
-	leaf_mat.albedo_color = def["foliage_color"]
-	leaf_mat.roughness = 0.6
-	leaf_mat.emission_enabled = true
-	leaf_mat.emission = def["foliage_color"] * 0.25
-
-	var foliage_container := Node3D.new()
-	foliage_container.position.y = 4.2
-	raiz.add_child(foliage_container)
-
-	var center_leaf := MeshInstance3D.new()
-	var center_box := BoxMesh.new()
-	center_box.size = Vector3(2.8, 2.4, 2.8)
-	center_leaf.mesh = center_box
-	center_leaf.material_override = leaf_mat
-	foliage_container.add_child(center_leaf)
-
-	for pos in [Vector3(1.2, 0.4, 0), Vector3(-1.2, 0.4, 0),
-			Vector3(0, 0.4, 1.2), Vector3(0, 0.4, -1.2), Vector3(0, 1.4, 0)]:
-		var sub_leaf := MeshInstance3D.new()
-		var sub_box := BoxMesh.new()
-		sub_box.size = Vector3(1.8, 1.6, 1.8)
-		sub_leaf.mesh = sub_box
-		sub_leaf.position = pos
-		sub_leaf.material_override = leaf_mat
-		foliage_container.add_child(sub_leaf)
-
-	return raiz
 
 # Dicionário estático para rastrear todas as frutas 3D no mapa
 static var active_fruits_map: Dictionary = {}
@@ -338,8 +277,15 @@ static func register_fruit(fruit_id: String, fruit_node: Node3D) -> void:
 
 static func respawn_fruit(fruit_id: String) -> void:
 	if active_fruits_map.has(fruit_id):
-		var node: Node3D = active_fruits_map[fruit_id]
-		if node and is_instance_valid(node):
+		# ⚠️ SEM TIPO até conferir: o mapa é estático e sobrevive à troca de cena. Saindo
+		# da arena para o Modo História, a árvore já foi liberada, e ATRIBUIR a instância
+		# morta a uma variável `Node3D` dá erro antes do `is_instance_valid` (log de 16/09/2026).
+		var guardado: Variant = active_fruits_map[fruit_id]
+		if not is_instance_valid(guardado):
+			active_fruits_map.erase(fruit_id)
+			return
+		var node := guardado as Node3D
+		if node:
 			node.visible = true
 			var area := node.find_child("PickupArea", true, false) as Area3D
 			if area:
@@ -349,8 +295,15 @@ static func respawn_fruit(fruit_id: String) -> void:
 # Esconde+desativa a fruta na árvore (usado pela sincronização de rede — FruitNet).
 static func hide_fruit(fruit_id: String) -> void:
 	if active_fruits_map.has(fruit_id):
-		var node: Node3D = active_fruits_map[fruit_id]
-		if node and is_instance_valid(node):
+		# ⚠️ SEM TIPO até conferir: o mapa é estático e sobrevive à troca de cena. Saindo
+		# da arena para o Modo História, a árvore já foi liberada, e ATRIBUIR a instância
+		# morta a uma variável `Node3D` dá erro antes do `is_instance_valid` (log de 16/09/2026).
+		var guardado: Variant = active_fruits_map[fruit_id]
+		if not is_instance_valid(guardado):
+			active_fruits_map.erase(fruit_id)
+			return
+		var node := guardado as Node3D
+		if node:
 			node.visible = false
 			var area := node.find_child("PickupArea", true, false) as Area3D
 			if area:
@@ -375,14 +328,53 @@ static func pickup_fruit(body: Node, fruit_id: String) -> void:
 	print("🍎 Fruta [", fruit_id, "] coletada (peer ", peer_id, ")! Refletindo em todos.")
 
 # Criar Modelo 3D da Fruta do Diabo (Akuma no Mi) — ESTRITAMENTE CÚBICO E DETALHADO VOXEL
+## Frutas com MODELO AUTORAL trazem o proprio nó de coleta; as demais caem no
+## corpo voxel montado logo abaixo. Virou tabela na terceira entrada (Goro, em
+## 2026-09-12): três `if` iguais empilhados já eram o sinal de que a próxima
+## fruta autoral ia copiar o bloco de novo.
+const PICKUPS_AUTORAIS := {
+	"hito_hito_daibutsu": "res://src/world/BudaFruitPickup.gd",
+	"bara_bara": "res://src/world/BaraFruitPickup.gd",
+	"ope_ope": "res://src/world/OpeFruitPickup.gd",
+	"gomu_gomu": "res://src/world/GomuFruitPickup.gd",
+	"goro_goro": "res://src/world/GoroFruitPickup.gd",
+}
+
+## Qual modelo voxel vale para este id: variantes (`*_no_mi_mine_piece`, `*_mine_piece`, `_gear2`) e Hito Hito Nika
+## (= Gomu Gomu) usam o modelo da fruta base. Ver art_src/akuma_no_mi/LEIA-ME.md.
+const _ALIAS_DE_MODELO := {"hito_hito_nika": "gomu_gomu"}
+
+
+static func id_do_modelo(id: String) -> String:
+	if _ALIAS_DE_MODELO.has(id):
+		return _ALIAS_DE_MODELO[id]
+	for sufixo in ["_no_mi_mine_piece", "_mine_piece", "_gear2"]:
+		if id.ends_with(sufixo):
+			return id.trim_suffix(sufixo)
+	return id
+
+
 static func create_fruit_3d(def: Dictionary) -> Node3D:
-	if str(def.get("id", "")) == "ope_ope":
-		var ope := preload("res://src/world/OpeFruitPickup.gd").new()
-		ope.name = "Fruit3D_ope_ope"
-		register_fruit("ope_ope", ope)
-		return ope
+	var fid := str(def.get("id", ""))
+	if PICKUPS_AUTORAIS.has(fid):
+		var script := load(PICKUPS_AUTORAIS[fid]) as GDScript
+		if script != null:
+			var autoral: Node3D = script.new()
+			autoral.name = "Fruit3D_" + fid
+			register_fruit(fid, autoral)
+			return autoral
+		push_error("Fruta autoral sem script: " + str(PICKUPS_AUTORAIS[fid]))
 	var fruit_root := Node3D.new()
 	fruit_root.name = "Fruit3D_" + def["id"]
+	# Modelo voxel próprio da Akuma no Mi (Blender, tools/akuma_no_mi/gerar_frutas.py): substitui o corpo cúbico genérico.
+	var glb := "res://assets/models/akuma_no_mi/%s.glb" % id_do_modelo(fid)
+	if ResourceLoader.exists(glb):
+		var cena := load(glb) as PackedScene
+		if cena != null:
+			var modelo := cena.instantiate() as Node3D
+			modelo.name = "Modelo"
+			fruit_root.add_child(modelo)
+			return _finalizar_pickup(fruit_root, fid)
 
 	# --- 1. Corpo Central Cúbico Voxel ---
 	var body_inst := MeshInstance3D.new()
@@ -543,7 +535,11 @@ static func create_fruit_3d(def: Dictionary) -> Node3D:
 	leaf_inst.material_override = stem_mat
 	fruit_root.add_child(leaf_inst)
 
-	# --- 6. Area3D de Detecção de Toque do Jogador (Debaixo da Árvore) ---
+	return _finalizar_pickup(fruit_root, str(def["id"]))
+
+
+## Área de toque + registro + giro: o que todo pickup de fruta tem, com o corpo cúbico genérico ou com o modelo próprio.
+static func _finalizar_pickup(fruit_root: Node3D, fruit_id: String) -> Node3D:
 	var area := Area3D.new()
 	area.name = "PickupArea"
 	var col := CollisionShape3D.new()
@@ -552,19 +548,12 @@ static func create_fruit_3d(def: Dictionary) -> Node3D:
 	col.shape = sphere_shape
 	area.add_child(col)
 	fruit_root.add_child(area)
-
-	var fruit_id: String = def["id"]
 	area.body_entered.connect(func(b): pickup_fruit(b, fruit_id))
-
-	# Registra fruta no gerenciador estático
 	register_fruit(fruit_id, fruit_root)
-
-	# --- Animação Suave de Rotação Flutuante Cúbica ---
 	var anim_script := GDScript.new()
 	anim_script.source_code = "extends Node3D\nfunc _process(delta):\n\trotate_y(1.2 * delta)\n"
 	anim_script.reload()
 	fruit_root.set_script(anim_script)
-
 	return fruit_root
 
 # O autoload pego por CAMINHO, não por identificador.

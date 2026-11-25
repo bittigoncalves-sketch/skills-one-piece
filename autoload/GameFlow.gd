@@ -10,6 +10,13 @@ enum Mode { NONE, SINGLEPLAYER, HOST, CLIENT }
 
 const NetConf = preload("res://network/NetworkConfig.gd")
 const WORLD_SCENE := "res://Main.tscn"
+# Modo História: cena própria, com mapa lido de arquivo e jogador Civil.
+# Ver docs/MODO_HISTORIA.md.
+const STORY_SCENE := "res://src/historia/ModoHistoria.tscn"
+# Editor de mapa do Modo História (etapa 2). Edita o mesmo arquivo que o modo lê.
+const MAP_EDITOR_SCENE := "res://src/editor_mapa/EditorDeMapa.tscn"
+const SKILLS_BUILDER_SCENE := "res://src/skills_builder/SkillsBuilder.tscn"
+const MENU_SCENE := "res://MainMenu.tscn"
 const CONFIG_PATH := "user://settings.cfg"
 
 var mode: int = Mode.NONE
@@ -55,15 +62,39 @@ func set_dummy(tipo: String, ligado: bool) -> void:
 		mundo.pedir_dummy(tipo, ligado)
 
 func _ready() -> void:
+	GuiMinecraft.aplicar_global(get_tree().root)      # tema do Minecraft em todas as GUIs (12/11/2026)
+	GuiMinecraft.ligar_normalizacao(get_tree())
+	MonitorDeCarga.marco("autoloads ServerManager, ClientManager e FruitNet prontos; GameFlow começando")
 	print("[GameFlow] Display Server (Driver): ", DisplayServer.get_name())
 	Input.use_accumulated_input = false
-	
+	# Monitor de FPS (18/10/2026): filho do autoload, vale em todo modo e troca de cena.
+	if DisplayServer.get_name() != "headless":
+		var fps: CanvasLayer = load("res://src/ui/monitor_de_fps.gd").new()
+		fps.name = "MonitorDeFps"
+		add_child(fps)
+
 	_load_settings()
 	# Fase 10: se lançado com "--server" (ex.: servidor.sh), sobe como DEDICADO —
 	# hospeda e entra no mundo SEM criar um player local (o host não joga).
 	# ADIADO: trocar de cena durante o _ready do autoload deixa a árvore "busy".
 	if "--server" in OS.get_cmdline_user_args():
 		start_dedicated.call_deferred()
+	# Atalho de desenvolvimento (`jogar_historia.sh`): pula o menu direto para o
+	# Modo História. Mesmo adiamento do dedicado, pelo mesmo motivo.
+	elif "--historia" in OS.get_cmdline_user_args():
+		start_story.call_deferred()
+	# `jogar_teste_ilha.sh`: a última ilha, com dash, pulo no ar e a Pika (save de teste).
+	elif "--teste-ilha" in OS.get_cmdline_user_args():
+		var erro: String = load("res://src/historia/teste_de_ilha.gd").preparar(OS.get_cmdline_user_args())
+		if erro.is_empty():
+			start_story.call_deferred()
+		else:
+			push_error("[Teste de ilha] " + erro)
+	elif "--editor-mapa" in OS.get_cmdline_user_args():
+		start_map_editor.call_deferred()
+	elif "--skills-builder" in OS.get_cmdline_user_args():
+		start_skills_builder.call_deferred()
+	MonitorDeCarga.marco("GameFlow pronto (configurações lidas, atalho de linha de comando resolvido)")
 
 ## Servidor dedicado: hospeda e carrega o mundo, mas NÃO spawna player do host.
 ## Trocar p/ nuvem = só a porta/IP; a lógica do jogo é a mesma dos outros modos.
@@ -95,6 +126,56 @@ func start_singleplayer() -> void:
 		push_error("[GameFlow] falha ao iniciar servidor local offline")
 		return
 	_enter_world()
+
+## Modo História — singleplayer puro. Usa o MESMO servidor local offline do
+## singleplayer da arena (o Player é o mesmo e pergunta por autoridade), mas
+## entra numa cena que não tem nada da partida PvP.
+func start_story() -> void:
+	MonitorDeCarga.comecar("Modo História")      # a tela de carregamento aparece já, antes de a cena abrir
+	mode = Mode.SINGLEPLAYER
+	room_id = ""
+	is_dedicated = false
+	if not ServerManager.host_offline():
+		push_error("[GameFlow] falha ao iniciar servidor local do Modo História")
+		return
+	get_tree().change_scene_to_file(STORY_SCENE)
+
+## Editor de mapa. Hospeda offline pelo mesmo motivo do Modo História: o botão
+## "Testar" coloca o Player de verdade no mapa, e o Player pergunta por autoridade.
+func start_map_editor() -> void:
+	mode = Mode.SINGLEPLAYER
+	room_id = ""
+	is_dedicated = false
+	if not ServerManager.host_offline():
+		push_error("[GameFlow] falha ao iniciar servidor local do editor de mapa")
+		return
+	get_tree().change_scene_to_file(MAP_EDITOR_SCENE)
+
+## Sai de um modo para o menu principal como CENA (não como sobreposição): derruba
+## o servidor local e troca de cena. Usado pelo editor de mapa.
+func back_to_menu() -> void:
+	ServerManager.stop()
+	mode = Mode.NONE
+	room_id = ""
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	get_tree().change_scene_to_file(MENU_SCENE)
+
+## Ferramenta de autoria: a arena vive em mundo próprio e não precisa de servidor.
+func start_skills_builder() -> void:
+	if not SkillsPublicadas.ativo():
+		push_warning("[GameFlow] Skills Builder desativado (SOP_BUILDER=1 liga).")
+		return
+	ServerManager.stop()
+	mode = Mode.NONE
+	room_id = ""
+	is_dedicated = false
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	get_tree().change_scene_to_file(SKILLS_BUILDER_SCENE)
+
+## Público: o Modo História (`_escolher_corpo`) decide pular a tela de escolha de gênero em teste automatizado.
+func executando_teste_automatizado() -> bool:
+	return _executando_teste_automatizado()
+
 
 func _executando_teste_automatizado() -> bool:
 	for arg in OS.get_cmdline_args():
@@ -303,10 +384,47 @@ func _local_ip() -> String:
 			return a
 	return fallback if fallback != "" else NetConf.LOCAL_IP
 
+## CONFIGURAÇÕES DO MENU DE PAUSA (25/11/2026, pedido do dono: ESC abre "Configurações" + "Salvar e sair"): volume geral, tela cheia e
+## sensibilidade do mouse. Preferência do jogador: moram em `settings.cfg` e são aplicadas ao ler.
+var volume := 1.0             # 0..1, bus Master
+var tela_cheia := false
+var sensibilidade := 1.0      # multiplicador da câmera (0,25..2,0)
+
+
+func set_volume(v: float) -> void:
+	volume = clampf(v, 0.0, 1.0)
+	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(volume, 0.0001)))
+	AudioServer.set_bus_mute(0, volume <= 0.001)
+	_save_settings()
+
+
+func set_tela_cheia(sim: bool) -> void:
+	tela_cheia = sim
+	if DisplayServer.get_name() != "headless":
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if sim else DisplayServer.WINDOW_MODE_WINDOWED)
+	_save_settings()
+
+
+func set_sensibilidade(s: float) -> void:
+	sensibilidade = clampf(s, 0.25, 2.0)
+	_save_settings()
+
+
+func _aplicar_configuracoes() -> void:
+	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(volume, 0.0001)))
+	AudioServer.set_bus_mute(0, volume <= 0.001)
+	if tela_cheia and DisplayServer.get_name() != "headless":
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+
+
 func _load_settings() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(CONFIG_PATH) == OK:
 		device = str(cfg.get_value("client", "device", "pc"))
+		volume = clampf(float(cfg.get_value("client", "volume", 1.0)), 0.0, 1.0)
+		tela_cheia = bool(cfg.get_value("client", "tela_cheia", false))
+		sensibilidade = clampf(float(cfg.get_value("client", "sensibilidade", 1.0)), 0.25, 2.0)
+		_aplicar_configuracoes()
 		for tipo in DUMMIES:
 			dummies[tipo] = bool(cfg.get_value("client", "dummy_" + tipo, true))
 
@@ -314,6 +432,9 @@ func _save_settings() -> void:
 	var cfg := ConfigFile.new()
 	cfg.load(CONFIG_PATH)   # preserva outras chaves
 	cfg.set_value("client", "device", device)
+	cfg.set_value("client", "volume", volume)
+	cfg.set_value("client", "tela_cheia", tela_cheia)
+	cfg.set_value("client", "sensibilidade", sensibilidade)
 	for tipo in DUMMIES:
 		cfg.set_value("client", "dummy_" + tipo, dummy_ligado(tipo))
 	cfg.save(CONFIG_PATH)

@@ -1,0 +1,376 @@
+{
+	"animacao": {
+		"clipe": "Ataque",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.0
+	},
+	"ativacao": {
+		"andar_segurando": false,
+		"carga": 0.5,
+		"empurrao_carga_max": 1.0,
+		"modo": "Pressionar",
+		"paralisar_segurando": true,
+		"ponto_segurar": 0.5,
+		"repetir": false,
+		"segurar_max": 5.0,
+		"tecla": "X"
+	},
+	"audio": {
+		"som": "Impacto",
+		"tom": 1.0,
+		"volume": -12.0
+	},
+	"camera": {
+		"tremor": 0.2,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 10.0,
+		"exige_alvo": true,
+		"exige_chao": false,
+		"nivel_minimo": 1,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 10.0,
+		"custo": 18.0,
+		"custo_por_segundo": 0.0,
+		"duracao": 1.6,
+		"fim_sobre_alvo": 0.0,
+		"flutuar": false,
+		"inicio_do_fim": -1.0,
+		"intervalo_depois": 0.5,
+		"mirar_no_alvo": true,
+		"parar_no_vazio": false,
+		"recarga": 9.0
+	},
+	"dano": {
+		"atordoamento": 0.3,
+		"congelar": 0.0,
+		"critico": 0.0,
+		"cura_do_dano": 0.0,
+		"duracao_efeito": 1.0,
+		"empurrao": 2.0,
+		"lentidao": 0.0,
+		"multiplicador": 2.0,
+		"tipo": "Físico",
+		"valor": 40.0
+	},
+	"eventos": [
+		{
+			"duracao": 0.35,
+			"habilitado": true,
+			"id": "investir",
+			"inicio": 0.0,
+			"parametros": {
+				"clipe": "sprint",
+				"pose": "",
+				"velocidade": 1.4
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "avancar",
+			"inicio": 0.05,
+			"parametros": {
+				"direcao": "Frente",
+				"distancia": 9.0,
+				"velocidade": 30.0
+			},
+			"tipo": "movimento"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "vento",
+			"inicio": 0.05,
+			"parametros": {
+				"escala": 0.8,
+				"estilo": "Vento"
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 1.2,
+			"habilitado": true,
+			"id": "socos",
+			"inicio": 0.35,
+			"parametros": {
+				"clipe": "quad_punch",
+				"pose": "",
+				"velocidade": 1.2
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.12,
+			"habilitado": true,
+			"id": "soco_forte",
+			"inicio": 0.45,
+			"parametros": {
+				"altura": 3.0,
+				"forma": "Esfera",
+				"largura": 3.0,
+				"mirar": false,
+				"na_mao": false,
+				"profundidade": 3.0,
+				"raio": 1.5,
+				"unicos": true,
+				"x": 0.0,
+				"y": 1.0,
+				"z": -1.2
+			},
+			"tipo": "hitbox"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "impacto_forte",
+			"inicio": 0.45,
+			"parametros": {
+				"escala": 1.6,
+				"estilo": "Impacto",
+				"frente": 1.3
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_forte",
+			"inicio": 0.45,
+			"parametros": {
+				"som": "Impacto",
+				"tom": 0.7,
+				"volume": -4.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.2,
+			"habilitado": true,
+			"id": "tremor_forte",
+			"inicio": 0.45,
+			"parametros": {
+				"tremor": 0.18
+			},
+			"tipo": "camera"
+		},
+		{
+			"duracao": 0.75,
+			"habilitado": true,
+			"id": "rajada",
+			"inicio": 0.7,
+			"parametros": {
+				"altura": 2.4,
+				"forma": "Esfera",
+				"largura": 2.4,
+				"mirar": false,
+				"na_mao": false,
+				"profundidade": 2.4,
+				"raio": 1.2,
+				"unicos": false,
+				"x": 0.0,
+				"y": 1.0,
+				"z": -1.2
+			},
+			"tipo": "hitbox"
+		},
+		{
+			"duracao": 0.8,
+			"habilitado": true,
+			"id": "rachadura",
+			"inicio": 0.7,
+			"parametros": {
+				"ancora": "Alvo",
+				"escala": 2.2,
+				"estilo": "Rachadura"
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.16,
+			"habilitado": true,
+			"id": "impacto_0",
+			"inicio": 0.72,
+			"parametros": {
+				"altura": 1.0,
+				"escala": 0.9,
+				"estilo": "Impacto",
+				"frente": 1.2
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_rajada_0",
+			"inicio": 0.72,
+			"parametros": {
+				"som": "Impacto",
+				"tom": 1.1,
+				"volume": -9.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.16,
+			"habilitado": true,
+			"id": "impacto_1",
+			"inicio": 0.9,
+			"parametros": {
+				"altura": 1.25,
+				"escala": 0.9,
+				"estilo": "Impacto",
+				"frente": 1.2
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_rajada_1",
+			"inicio": 0.9,
+			"parametros": {
+				"som": "Impacto",
+				"tom": 1.18,
+				"volume": -9.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.16,
+			"habilitado": true,
+			"id": "impacto_2",
+			"inicio": 1.08,
+			"parametros": {
+				"altura": 1.0,
+				"escala": 0.9,
+				"estilo": "Impacto",
+				"frente": 1.2
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_rajada_2",
+			"inicio": 1.08,
+			"parametros": {
+				"som": "Impacto",
+				"tom": 1.26,
+				"volume": -9.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.16,
+			"habilitado": true,
+			"id": "impacto_3",
+			"inicio": 1.26,
+			"parametros": {
+				"altura": 1.25,
+				"escala": 0.9,
+				"estilo": "Impacto",
+				"frente": 1.2
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_rajada_3",
+			"inicio": 1.26,
+			"parametros": {
+				"som": "Impacto",
+				"tom": 1.34,
+				"volume": -9.0
+			},
+			"tipo": "audio"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 3.0,
+		"forma": "Esfera",
+		"largura": 3.0,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 1.5,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": -2.0
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "Com inimigo a até 10 m: avança até ele, dá um soco forte e emenda uma rajada de socos que racha o chão.",
+		"dono": "Jogador",
+		"fruta": "nikyu_nikyu_no_mi_mine_piece",
+		"id": "mp_nikyu_soco_do_urso",
+		"modelo": "Base",
+		"nome": "Soco do Urso"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 2.0,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 6.0
+	},
+	"poses": [],
+	"projeteis": {
+		"abertura": 20.0,
+		"area_chuva": 8.0,
+		"direcao_disparo": "Mira",
+		"explosao": 0.0,
+		"giro": 0.0,
+		"gravidade": 0.0,
+		"imunidade_gelo": true,
+		"modelo": "",
+		"perfurar": false,
+		"quantidade": 1,
+		"raio": 0.4,
+		"raio_de_acerto": 0.0,
+		"raio_do_anel": 2.5,
+		"rastro": "Nenhum",
+		"sai_de": "Corpo",
+		"sem_dano": false,
+		"som_explosao": "Impacto",
+		"velocidade": 12.0,
+		"vida": 2.0,
+		"visual": "Energia"
+	},
+	"transformacao": {
+		"alvo": "Usuário",
+		"cor": "#dce9ff",
+		"escala": 1.0,
+		"modelo": "",
+		"raio": 8.0,
+		"visual": "Fumaça"
+	},
+	"versao": 1,
+	"vfx": {
+		"altura": 1.0,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#ff8fb8",
+		"cor_2": "#ffffff",
+		"escala": 1.0,
+		"estilo": "Impacto",
+		"frente": 1.0,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "Mão direita",
+		"projetil_de": ""
+	}
+}

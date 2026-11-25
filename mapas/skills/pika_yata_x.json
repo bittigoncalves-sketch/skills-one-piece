@@ -1,0 +1,420 @@
+{
+	"animacao": {
+		"clipe": "Ataque",
+		"intensidade": 1.0,
+		"pose": "",
+		"pulso": 0.0,
+		"transicao": 0.15,
+		"velocidade": 1.0
+	},
+	"ativacao": {
+		"andar_segurando": false,
+		"carga": 0.5,
+		"empurrao_carga_max": 1.0,
+		"modo": "Pressionar",
+		"ponto_segurar": 0.5,
+		"repetir": false,
+		"segurar_max": 5.0,
+		"tecla": "X"
+	},
+	"audio": {
+		"som": "Impacto",
+		"tom": 1.0,
+		"volume": -12.0
+	},
+	"camera": {
+		"tremor": 0.2,
+		"zoom": 40.0
+	},
+	"condicoes": {
+		"distancia_maxima": 30.0,
+		"exige_alvo": false,
+		"exige_chao": false,
+		"nivel_minimo": 1,
+		"vida_minima": 0.0
+	},
+	"configuracoes": {
+		"alcance": 25.0,
+		"custo": 4.4,
+		"custo_por_segundo": 0.0,
+		"duracao": 1.3,
+		"fim_sobre_alvo": 6.0,
+		"flutuar": true,
+		"inicio_do_fim": 0.6,
+		"intervalo_depois": 0.5,
+		"mirar_no_alvo": false,
+		"parar_no_vazio": true,
+		"recarga": 7.0
+	},
+	"dano": {
+		"atordoamento": 0.3,
+		"critico": 0.0,
+		"duracao_efeito": 1.0,
+		"empurrao": 6.0,
+		"lentidao": 0.0,
+		"multiplicador": 2.0,
+		"tipo": "Físico",
+		"valor": 160.0
+	},
+	"eventos": [
+		{
+			"duracao": 0.08,
+			"habilitado": true,
+			"id": "sobe",
+			"inicio": 0.0,
+			"parametros": {
+				"direcao": "Acima",
+				"distancia": 6.0,
+				"so_do_chao": true,
+				"teleporte": true,
+				"velocidade": 100.0
+			},
+			"tipo": "movimento"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_sobe",
+			"inicio": 0.0,
+			"parametros": {
+				"som": "Luz: teleporte",
+				"tom": 1.0,
+				"volume": -8.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.12,
+			"habilitado": true,
+			"id": "clarao",
+			"inicio": 0.0,
+			"parametros": {
+				"altura": 1.0,
+				"escala": 0.9,
+				"estilo": "Carga",
+				"frente": 0.0
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.54,
+			"habilitado": true,
+			"id": "luz",
+			"inicio": 0.1,
+			"parametros": {
+				"altura": 0.9,
+				"escala": 0.6,
+				"estilo": "Cometa",
+				"frente": 0.0
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.17,
+			"habilitado": true,
+			"id": "perna_1",
+			"inicio": 0.1,
+			"parametros": {
+				"angulo": -35.5,
+				"curva": "Linear",
+				"direcao": "Frente",
+				"distancia": 8.6,
+				"velocidade": 100.0
+			},
+			"tipo": "movimento"
+		},
+		{
+			"duracao": 0.17,
+			"habilitado": true,
+			"id": "perna_2",
+			"inicio": 0.27,
+			"parametros": {
+				"angulo": 55.0,
+				"curva": "Linear",
+				"direcao": "Frente",
+				"distancia": 12.2,
+				"velocidade": 100.0
+			},
+			"tipo": "movimento"
+		},
+		{
+			"duracao": 0.17,
+			"habilitado": true,
+			"id": "perna_3",
+			"inicio": 0.44,
+			"parametros": {
+				"angulo": -55.0,
+				"curva": "Linear",
+				"direcao": "Frente",
+				"distancia": 12.2,
+				"velocidade": 100.0
+			},
+			"tipo": "movimento"
+		},
+		{
+			"duracao": 0.55,
+			"habilitado": true,
+			"id": "som_viagem",
+			"inicio": 0.1,
+			"parametros": {
+				"som": "Luz: viagem",
+				"tom": 1.0,
+				"volume": -8.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.4,
+			"habilitado": true,
+			"id": "pose_disparo",
+			"inicio": 0.62,
+			"parametros": {
+				"pose": "pose_1",
+				"transicao": 0.06
+			},
+			"tipo": "animacao"
+		},
+		{
+			"duracao": 0.12,
+			"habilitado": true,
+			"id": "carga",
+			"inicio": 0.6,
+			"parametros": {
+				"altura": 0.6,
+				"escala": 0.7,
+				"estilo": "Carga",
+				"frente": 0.6
+			},
+			"tipo": "vfx"
+		},
+		{
+			"duracao": 0.1,
+			"habilitado": true,
+			"id": "esfera",
+			"inicio": 0.66,
+			"parametros": {
+				"abertura": 0.0,
+				"direcao_disparo": "Abaixo",
+				"explosao": 4.5,
+				"gravidade": 0.0,
+				"perfurar": false,
+				"quantidade": 1,
+				"raio": 0.55,
+				"rastro": "Brilho",
+				"som_explosao": "Luz: explosão",
+				"velocidade": 30.0,
+				"vida": 3.0,
+				"visual": "Energia"
+			},
+			"tipo": "projetil"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "som_esfera",
+			"inicio": 0.66,
+			"parametros": {
+				"som": "Luz: disparo",
+				"tom": 0.8,
+				"volume": -8.0
+			},
+			"tipo": "audio"
+		},
+		{
+			"duracao": 0.3,
+			"habilitado": true,
+			"id": "tremor",
+			"inicio": 0.66,
+			"parametros": {
+				"tremor": 0.15
+			},
+			"tipo": "camera"
+		},
+		{
+			"duracao": 0.28,
+			"habilitado": true,
+			"id": "pose_pouso",
+			"inicio": 1.02,
+			"parametros": {
+				"pose": "pose_2",
+				"transicao": 0.2
+			},
+			"tipo": "animacao"
+		}
+	],
+	"formato": "skills-one-piece/skill",
+	"hitboxes": {
+		"altura": 3.0,
+		"forma": "Esfera",
+		"largura": 3.0,
+		"mirar": false,
+		"na_mao": false,
+		"profundidade": 3.0,
+		"raio": 1.5,
+		"unicos": true,
+		"x": 0.0,
+		"y": 1.0,
+		"z": -2.0
+	},
+	"identificacao": {
+		"atribuida_a": "",
+		"descricao": "Sobe, vira luz e cruza o ar em zigue-zague; no fim, atira para baixo uma esfera de luz que explode no chão.",
+		"dono": "Jogador",
+		"fruta": "pika_pika",
+		"id": "pika_yata_x",
+		"modelo": "Base",
+		"nome": "Yata no Kagami"
+	},
+	"movimento": {
+		"angulo": 0.0,
+		"curva": "Suave",
+		"direcao": "Frente",
+		"distancia": 2.0,
+		"inclinacao": 0.0,
+		"so_do_chao": false,
+		"teleporte": false,
+		"velocidade": 6.0
+	},
+	"poses": [
+		{
+			"id": "pose_1",
+			"nome": "Disparo para baixo",
+			"ossos": {
+				"ForeArm_L": [
+					10.0,
+					0.0,
+					0.0
+				],
+				"ForeArm_R": [
+					10.0,
+					0.0,
+					0.0
+				],
+				"Head": [
+					10.0,
+					0.0,
+					0.0
+				],
+				"Shin_L": [
+					-62.0,
+					0.0,
+					0.0
+				],
+				"Shin_R": [
+					-52.0,
+					0.0,
+					0.0
+				],
+				"Thigh_L": [
+					42.0,
+					0.0,
+					0.0
+				],
+				"Thigh_R": [
+					22.0,
+					0.0,
+					0.0
+				],
+				"Torso": [
+					32.0,
+					0.0,
+					0.0
+				],
+				"UpperArm_L": [
+					58.0,
+					0.0,
+					-10.0
+				],
+				"UpperArm_R": [
+					58.0,
+					0.0,
+					10.0
+				]
+			}
+		},
+		{
+			"id": "pose_2",
+			"nome": "Pouso",
+			"ossos": {
+				"ForeArm_L": [
+					22.0,
+					0.0,
+					0.0
+				],
+				"ForeArm_R": [
+					22.0,
+					0.0,
+					0.0
+				],
+				"Shin_L": [
+					-24.0,
+					0.0,
+					0.0
+				],
+				"Shin_R": [
+					-18.0,
+					0.0,
+					0.0
+				],
+				"Thigh_L": [
+					18.0,
+					0.0,
+					0.0
+				],
+				"Thigh_R": [
+					10.0,
+					0.0,
+					0.0
+				],
+				"Torso": [
+					10.0,
+					0.0,
+					0.0
+				],
+				"UpperArm_L": [
+					28.0,
+					0.0,
+					-14.0
+				],
+				"UpperArm_R": [
+					28.0,
+					0.0,
+					14.0
+				]
+			}
+		}
+	],
+	"projeteis": {
+		"abertura": 20.0,
+		"area_chuva": 8.0,
+		"direcao_disparo": "Mira",
+		"explosao": 0.0,
+		"giro": 0.0,
+		"gravidade": 0.0,
+		"modelo": "",
+		"perfurar": false,
+		"quantidade": 1,
+		"raio": 0.4,
+		"rastro": "Nenhum",
+		"sem_dano": false,
+		"som_explosao": "Impacto",
+		"velocidade": 12.0,
+		"vida": 2.0,
+		"visual": "Energia"
+	},
+	"versao": 1,
+	"vfx": {
+		"altura": 1.0,
+		"ancora": "Jogador",
+		"comprimento": 8.0,
+		"cor": "#ffd23f",
+		"cor_2": "#fff1b8",
+		"escala": 1.0,
+		"estilo": "Impacto",
+		"frente": 1.0,
+		"mirar": false,
+		"na_mao": false,
+		"osso": "Mão direita",
+		"projetil_de": ""
+	}
+}
